@@ -1,0 +1,8 @@
+#!/bin/sh
+set -e
+# Production deploys push the Convex functions and point the site at production; previews read the dev deployment.
+if [ "$VERCEL_ENV" = "production" ]; then
+  npx convex deploy --cmd 'npm run build' --cmd-url-env-var-name NEXT_PUBLIC_CONVEX_URL
+else
+  npm run build
+fi
