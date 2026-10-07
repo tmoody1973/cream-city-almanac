@@ -355,6 +355,12 @@
   align-items: flex-start;
 }
 
+.gridScroll {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
 .grid {
   border-collapse: collapse;
   font-size: var(--fs-small);
