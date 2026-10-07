@@ -28,6 +28,7 @@ import { fetchWithTimeout } from "./lib/http";
 import { matchSources, SOURCE_JSON_SCHEMA, SOURCE_SITES, SOURCE_SYSTEM, sourceProfileSchema } from "./lib/sources";
 import { fixTypos } from "./lib/titles";
 import type { Card, Column, Mismatch } from "./lib/types";
+import { retryOnConflict } from "./lib/retry";
 import { STALE_BUILD_MS } from "./buildStore";
 import type { Settings } from "./settings";
 
@@ -50,7 +51,9 @@ export const processFamily = internalAction({
     } catch (e) {
       result = { outcome: "failed", note: `${familyKey}: ${message(e)}` };
     }
-    await ctx.runMutation(internal.buildStore.markDone, { buildId, outcome: result.outcome, note: result.note });
+    await retryOnConflict(() =>
+      ctx.runMutation(internal.buildStore.markDone, { buildId, outcome: result.outcome, note: result.note }),
+    );
   },
 });
 
@@ -155,7 +158,9 @@ export const processReport = internalAction({
     } catch (e) {
       result = { outcome: "failed", note: `report ${hubId}: ${message(e)}` };
     }
-    await ctx.runMutation(internal.buildStore.markDone, { buildId, outcome: result.outcome, note: result.note });
+    await retryOnConflict(() =>
+      ctx.runMutation(internal.buildStore.markDone, { buildId, outcome: result.outcome, note: result.note }),
+    );
   },
 });
 
