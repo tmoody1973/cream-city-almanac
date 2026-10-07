@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { fetchColumns, pdfUrl } from "../../convex/lib/arcgis";
-import { scrapeMarkdown } from "../../convex/lib/firecrawl";
+import { retryAfterMs, scrapeMarkdown } from "../../convex/lib/firecrawl";
 import { hashInputs } from "../../convex/lib/hash";
 
 const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status });
@@ -33,6 +33,38 @@ describe("scrapeMarkdown", () => {
   it("throws when Firecrawl reports failure", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => json(200, { success: false })));
     await expect(scrapeMarkdown("u", "fc")).rejects.toThrow("no markdown");
+  });
+});
+
+describe("Firecrawl rate limits", () => {
+  it("waits for Retry-After on a 429 and then succeeds", async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ success: false }), { status: 429, headers: { "Retry-After": "2" } }))
+      .mockResolvedValueOnce(json(200, { success: true, data: { markdown: "# Hi" } }));
+    vi.stubGlobal("fetch", fetchMock);
+    const result = scrapeMarkdown("https://x.test/a.pdf", "fc");
+    await vi.advanceTimersByTimeAsync(2_000);
+    expect(await result).toBe("# Hi");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("gives up after three 429s", async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn(async () => json(429, { success: false, error: "Rate limit exceeded" }));
+    vi.stubGlobal("fetch", fetchMock);
+    const assertion = expect(scrapeMarkdown("https://x.test/a.pdf", "fc")).rejects.toThrow("Firecrawl 429");
+    await vi.advanceTimersByTimeAsync(300_000);
+    await assertion;
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it("reads Retry-After seconds, capped at two minutes, defaulting to one minute", () => {
+    expect(retryAfterMs("5")).toBe(5_000);
+    expect(retryAfterMs("999")).toBe(120_000);
+    expect(retryAfterMs(null)).toBe(60_000);
+    expect(retryAfterMs("Wed, 21 Oct 2026 07:28:00 GMT")).toBe(60_000);
   });
 });
 

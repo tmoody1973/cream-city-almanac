@@ -25,4 +25,14 @@ describe("settings", () => {
     expect(rows).toHaveLength(1);
     expect((await t.query(internal.settings.get, {})).buildCapUsd).toBe(2);
   });
+
+  it("update changes chosen settings and keeps the rest", async () => {
+    const t = convexTest(schema, modules);
+    await t.mutation(internal.settings.update, { firecrawlSpacingMs: 7000 });
+    const settings = await t.query(internal.settings.get, {});
+    expect(settings.firecrawlSpacingMs).toBe(7000);
+    expect(settings.buildCapUsd).toBe(DEFAULT_SETTINGS.buildCapUsd);
+    await t.mutation(internal.settings.update, { buildCapUsd: 3 });
+    expect(await t.query(internal.settings.get, {})).toMatchObject({ firecrawlSpacingMs: 7000, buildCapUsd: 3 });
+  });
 });
