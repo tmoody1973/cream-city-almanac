@@ -3,6 +3,8 @@ on:
   push:
     branches: [main]
   pull_request:
+  schedule:
+    - cron: "0 11 * * 1" # two hours after the Monday 09:00 UTC catalog rebuild
 
 jobs:
   check:
@@ -20,3 +22,23 @@ jobs:
       - run: npm run build
         env:
           NEXT_PUBLIC_CONVEX_URL: ${{ vars.NEXT_PUBLIC_CONVEX_URL }}
+
+  report-card:
+    # Grades search on 26 reporter-style questions against the live production deployment
+    # (one deploy behind the commit by design). Fails below 80% top-3, or if any answer fell back to keywords.
+    if: github.event_name != 'pull_request'
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx convex run evals:searchReportCard > card.json
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_REPORT_CARD_KEY }}
+      - run: >-
+          node -e "const c=require('./card.json'); console.log(c.passed + '/' + c.total, 'degraded', c.degraded, JSON.stringify(c.misses));
+          if (c.rate < 0.8 || c.degraded > 0) process.exit(1)"
