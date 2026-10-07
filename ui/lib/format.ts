@@ -44,6 +44,7 @@ export function yearShort(years: number[]): string {
 
 export function placeSummary(kind: HubKind, places: string[]): string {
   if (kind === "app") return "web app";
+  if (kind === "page") return "Hub page";
   if (places.length > 3) return `${places.length} neighborhoods`;
   return places.join(" · ");
 }

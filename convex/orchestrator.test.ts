@@ -40,9 +40,10 @@ describe("weekly build", () => {
       installFakeFetch();
       const build = await run(t);
       expect(build.status).toBe("completed");
-      expect(build.pending).toBe(46 + 180);
-      expect(await count(t, "families")).toBe(46);
-      expect(await count(t, "cards")).toBe(46);
+      expect(build.pending).toBe(49 + 180);
+      expect(build.hubCounts).toEqual({ rawData: 93, reports: 282, visualizations: 7 });
+      expect(await count(t, "families")).toBe(49);
+      expect(await count(t, "cards")).toBe(49);
       expect(await count(t, "docChunks")).toBe(360);
       expect(await count(t, "sources")).toBe(5);
       expect(build.mismatch!.unlinkedTabs).toEqual(["Milwaukee County Food Insecurit", "Milwaukee County Racial Demogra"]);
@@ -60,7 +61,7 @@ describe("weekly build", () => {
       const fake = installFakeFetch();
       const second = await run(t);
       expect(second.status).toBe("completed");
-      expect(second.skipped).toBe(226);
+      expect(second.skipped).toBe(229);
       expect(fake.countSchema("dataset_card")).toBe(0);
       expect(fake.count("api.firecrawl.dev")).toBe(0);
     },

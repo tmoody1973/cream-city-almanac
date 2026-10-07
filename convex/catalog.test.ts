@@ -57,14 +57,17 @@ describe("catalog queries", () => {
     expect(await t.query(api.catalog.familyPreview, { key: "dataset:nope" })).toBeNull();
   });
 
-  it("catalogStatus reports family and report counts from the last good build", async () => {
+  it("catalogStatus reports the Hub-collection counts from the last good build", async () => {
     const t = convexTest(schema, modules);
     const buildId = await seed(t);
     await t.mutation(internal.buildStore.setPending, {
-      buildId, pending: 226, familyCount: 46, reportCount: 180, notes: [],
+      buildId, pending: 229, hubCounts: { rawData: 93, reports: 282, visualizations: 7 }, notes: [],
       mismatch: { unlinkedTabs: [], suspectLinks: [], unmatchedHomeTitles: [], typoFixes: [] },
     });
     await t.mutation(internal.buildStore.completeBuild, { buildId, orphanChunksDeleted: 0 });
-    expect(await t.query(api.search.catalogStatus, {})).toMatchObject({ families: 46, reports: 180, lastRunFailed: false });
+    expect(await t.query(api.search.catalogStatus, {})).toMatchObject({
+      counts: { rawData: 93, reports: 282, visualizations: 7 },
+      lastRunFailed: false,
+    });
   });
 });

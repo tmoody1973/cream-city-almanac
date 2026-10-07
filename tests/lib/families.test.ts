@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { groupItems, isPdfFamily, reportDelays, searchTextWithCard } from "../../convex/lib/families";
+import { groupItems, hubCounts, isPdfFamily, reportDelays, searchTextWithCard } from "../../convex/lib/families";
 import { fixtureFamilies, fixtureItems } from "../helpers/fixtures";
 
 describe("groupItems on the real Hub catalog", () => {
@@ -7,14 +7,14 @@ describe("groupItems on the real Hub catalog", () => {
   const families = fixtureFamilies();
   const get = (key: string) => families.find((f) => f.key === key)!;
 
-  it("produces 46 families", () => {
-    expect(families).toHaveLength(46);
+  it("produces 49 families", () => {
+    expect(families).toHaveLength(49);
   });
 
-  it("places every non-page item in exactly one family", () => {
+  it("places every Hub item, help pages included, in exactly one family", () => {
     const memberIds = families.flatMap((f) => f.members.map((m) => m.hubId));
-    const expected = items.filter((i) => i.kind !== "page").map((i) => i.hubId);
-    expect(memberIds).toHaveLength(379);
+    const expected = items.map((i) => i.hubId);
+    expect(memberIds).toHaveLength(382);
     expect(new Set(memberIds)).toEqual(new Set(expected));
   });
 
@@ -91,5 +91,11 @@ describe("reportDelays", () => {
     const reports = ["a", "b", "c"].map((hubId) => ({ hubId, modified: "2026-01-01" }));
     const indexed = new Map(reports.map((r) => [r.hubId, r.modified]));
     expect(reportDelays(reports, indexed, 7000).map((d) => d.delayMs)).toEqual([0, 250, 500]);
+  });
+
+  it("counts items by the Hub's own collections: 93 raw data, 282 reports, 7 visualizations", () => {
+    const families = fixtureFamilies();
+    expect(hubCounts(families)).toEqual({ rawData: 93, reports: 282, visualizations: 7 });
+    expect(families.find((f) => f.key === "page:about-the-data")?.members).toHaveLength(1);
   });
 });

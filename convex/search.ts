@@ -158,8 +158,7 @@ export const catalogStatus = query({
       asOf: lastGood?.finishedAt ?? null,
       lastRunFailed: latest?.status === "failed",
       running: latest?.status === "running" && Date.now() - latest.startedAt < STALE_BUILD_MS,
-      families: lastGood?.familyCount ?? null,
-      reports: lastGood?.reportCount ?? null,
+      counts: lastGood?.hubCounts ?? null,
     };
   },
 });

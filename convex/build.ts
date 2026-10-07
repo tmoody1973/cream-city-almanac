@@ -20,7 +20,7 @@ import {
 import { chunkMarkdown } from "./lib/chunk";
 import { HUB_FEED_URL, parseDcat } from "./lib/dcat";
 import { INVENTORY_XLSX_URL, isSuspectLink, mapDictionaries, readInventory, unlinkedTabs, type Inventory } from "./lib/dictionary";
-import { groupItems, isPdfFamily, reportDelays, toFamilyInput } from "./lib/families";
+import { groupItems, hubCounts, isPdfFamily, reportDelays, toFamilyInput } from "./lib/families";
 import { firecrawlKey, scrapeMarkdown } from "./lib/firecrawl";
 import { chatJson, costUsd, embed, estimateTokens, gatewayKey } from "./lib/gateway";
 import { hashInputs } from "./lib/hash";
@@ -271,8 +271,7 @@ async function runBuild(ctx: ActionCtx, buildId: Id<"builds">) {
   await ctx.runMutation(internal.buildStore.setPending, {
     buildId,
     pending,
-    familyCount: families.length,
-    reportCount: reports.length,
+    hubCounts: hubCounts(families),
     notes,
     mismatch,
   });

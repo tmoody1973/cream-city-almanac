@@ -90,8 +90,10 @@ export default defineSchema({
     mismatch: v.union(vMismatch, v.null()),
     orphanChunksDeleted: v.number(),
     report: v.union(v.string(), v.null()),
+    // familyCount / reportCount: written by early Phase 2 builds only; kept so those rows still validate.
     familyCount: v.optional(v.number()),
     reportCount: v.optional(v.number()),
+    hubCounts: v.optional(v.object({ rawData: v.number(), reports: v.number(), visualizations: v.number() })),
   }).index("by_status", ["status"]),
 
   itemOverrides: defineTable({

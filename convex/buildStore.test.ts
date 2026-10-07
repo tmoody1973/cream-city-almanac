@@ -41,15 +41,15 @@ describe("beginBuild", () => {
 });
 
 describe("swapCatalog", () => {
-  it("writes 46 families, 379 members and unique permanent codes", async () => {
+  it("writes 49 families, 382 members and unique permanent codes", async () => {
     const t = convexTest(schema, modules);
     expect(await swap(t)).toEqual({ ok: true });
     const families = await t.run((ctx) => ctx.db.query("families").collect());
     const members = await t.run((ctx) => ctx.db.query("members").collect());
-    expect(families).toHaveLength(46);
-    expect(members).toHaveLength(379);
+    expect(families).toHaveLength(49);
+    expect(members).toHaveLength(382);
     const codes = families.map((f) => f.code);
-    expect(new Set(codes).size).toBe(46);
+    expect(new Set(codes).size).toBe(49);
     expect(codes.every((c) => /^[A-Z]\d{2,}$/.test(c))).toBe(true);
     expect(families.find((f) => f.key === "document:neighborhood-portrait")!.code).toMatch(/^N/);
   });
@@ -59,7 +59,7 @@ describe("swapCatalog", () => {
     await swap(t);
     const result = await swap(t, inputs().slice(0, 30));
     expect(result.ok).toBe(false);
-    expect(await t.run((ctx) => ctx.db.query("families").collect())).toHaveLength(46);
+    expect(await t.run((ctx) => ctx.db.query("families").collect())).toHaveLength(49);
   });
 
   it("refuses a feed that keeps every family but drops many items", async () => {
@@ -74,7 +74,7 @@ describe("swapCatalog", () => {
     );
     const result = await swap(t, trimmed);
     expect(result.ok).toBe(false);
-    expect(await t.run((ctx) => ctx.db.query("members").collect())).toHaveLength(379);
+    expect(await t.run((ctx) => ctx.db.query("members").collect())).toHaveLength(382);
   });
 
   it("keeps a retired family's name with its code", async () => {

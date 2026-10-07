@@ -20,6 +20,7 @@ describe("format", () => {
   });
   it("summarizes places and builds the row subline", () => {
     expect(placeSummary("app", [])).toBe("web app");
+    expect(placeSummary("page", [])).toBe("Hub page");
     expect(placeSummary("document", Array.from({ length: 29 }, (_, i) => `n${i}`))).toBe("29 neighborhoods");
     expect(placeSummary("dataset", ["City", "County"])).toBe("City · County");
     expect(subline({ kind: "dataset", places: ["City"], years: [2023, 2024, 2025] })).toBe("City · 2023–2025");

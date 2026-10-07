@@ -4,7 +4,7 @@ test("home shows today's rundown with live codes and the catalog line", async ({
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1, name: /cream city almanac/i })).toBeVisible();
   await expect(page.getByText("TODAY'S RUNDOWN")).toBeVisible();
-  await expect(page.getByText(/Catalog as of \w{3} \d{1,2} · 46 datasets · 180 neighborhood reports/)).toBeVisible();
+  await expect(page.getByText(/Catalog as of \w{3} \d{1,2} · \d+ raw data · \d+ reports · \d+ visualizations/)).toBeVisible();
   await expect(page.getByLabel("SLUG:")).toHaveAttribute("placeholder", "What are you reporting on?");
   await expect(page.getByRole("heading", { name: "UPDATED THIS SEASON" })).toBeVisible();
   const rows = page.locator("li[data-code]");

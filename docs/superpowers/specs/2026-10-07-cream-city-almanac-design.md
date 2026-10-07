@@ -177,6 +177,8 @@ All caps live in `settings` and change without a redeploy.
 
 **Revised 2026-10-07 (Tarik):** public production moved to the end of Phase 2, so CI and the Vercel deploy now ship with step 2. A **laptop layout** follows straight after: a two-pane master-detail view designed from its own comp, with room for the docked Ask panel. Then **Clerk + Ask chat** (Phase 3), then **saved items** (Phase 4), including Ask's "save this" tool. See decisions 008 and 010.
 
+**Catalog coverage (Tarik, 2026-10-07):** the app carries all 382 Hub items, the Hub's 3 help pages included, so its counts match the Hub's Collections filter: 93 raw data, 282 reports, 7 visualizations. The home catalog line uses those same words. The 99 Neighborhood Portrait spreadsheets are listed and downloadable, but their contents aren't read for search yet; reading them is part of Phase 3, alongside Ask.
+
 ## 12. Open decisions and unverified facts
 
 - **AI provider and models:** decided 2026-10-07: Vercel AI Gateway with `anthropic/claude-sonnet-5.5` for cards and chat, and `openai/text-embedding-3-small` (1536 dimensions) for meaning fingerprints. Still unverified: which provider strings CopilotKit's `BuiltInAgent` accepts (its docs example uses `"openai:gpt-4.1"`); checked when Phase 4 is planned.

@@ -20,7 +20,6 @@ export function groupItems(items: HubItem[], overrides: ItemOverride[] = []): Fa
   const groups = new Map<string, Group>();
 
   for (const item of items) {
-    if (item.kind === "page") continue;
     const parsed = parseTitle(item.title);
     const o = byHub.get(item.hubId);
     const measure = o?.measure ?? parsed.measure;
@@ -123,4 +122,21 @@ export function reportDelays(
       ? { hubId: r.hubId, delayMs: skipSlot++ * SKIP_STAGGER_MS }
       : { hubId: r.hubId, delayMs: readSlot++ * spacingMs },
   );
+}
+
+export interface HubCounts {
+  rawData: number;
+  reports: number;
+  visualizations: number;
+}
+
+// Counts members the way the Hub's own Collections filter does: datasets are "Raw Data", documents and the
+// Hub's help pages are "Reports", apps are "Visualizations". Lets the home page line up with the Hub exactly.
+export function hubCounts(families: Pick<Family, "members">[]): HubCounts {
+  const members = families.flatMap((f) => f.members);
+  return {
+    rawData: members.filter((m) => m.kind === "dataset").length,
+    reports: members.filter((m) => m.kind === "document" || m.kind === "page").length,
+    visualizations: members.filter((m) => m.kind === "app").length,
+  };
 }
