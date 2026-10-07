@@ -27,7 +27,7 @@ Checks: (1) explainer describes the dataset correctly · (2) every DYCU-tagged c
 - Do changes across the 2018-2022, 2019-2023 and 2020-2024 estimates fall outside the margins of error, or could they be statistical noise?
 - How do the margins of error differ across areas, and which places have estimates too uncertain to rely on for reporting?
 
-- [ ] (1) explainer correct  - [ ] (2) DYCU columns match  - [ ] (3) no numbers  - [ ] (4) angles are questions
+- [x] (1) explainer correct  - [ ] (2) DYCU columns match  - [ ] (3) no numbers  - [ ] (4) angles are questions
 
 Notes:
 
@@ -46,7 +46,7 @@ Notes:
 - Where do application withdrawals or incomplete files (fallout) make up a larger share of outcomes, and what might explain that?
 - How do origination rates for home-purchase loans vary from one part of Milwaukee to another, and which lenders are active in those areas?
 
-- [ ] (1) explainer correct  - [ ] (2) DYCU columns match  - [ ] (3) no numbers  - [ ] (4) angles are questions
+- [x] (1) explainer correct  - [ ] (2) DYCU columns match  - [ ] (3) no numbers  - [ ] (4) angles are questions
 
 Notes:
 
@@ -73,7 +73,7 @@ Notes:
 - Which areas have margins of error large enough that apparent differences in degree attainment may not be meaningful?
 - Do areas with many young adults show different degree patterns than areas with mostly older residents, and what might explain it?
 
-- [ ] (1) explainer correct  - [ ] (2) DYCU columns match  - [ ] (3) no numbers  - [ ] (4) angles are questions
+- [x] (1) explainer correct  - [ ] (2) DYCU columns match  - [ ] (3) no numbers  - [ ] (4) angles are questions
 
 Notes:
 
@@ -100,7 +100,7 @@ Notes:
 - What do the area descriptions in the data reveal about how HOLC judged different parts of Milwaukee?
 - How might policymakers use these boundaries to target efforts to reduce segregation and rebuild neighborhoods affected by redlining?
 
-- [ ] (1) explainer correct  - [ ] (2) DYCU columns match  - [ ] (3) no numbers  - [ ] (4) angles are questions
+- [x] (1) explainer correct  - [ ] (2) DYCU columns match  - [ ] (3) no numbers  - [ ] (4) angles are questions
 
 Notes:
 
@@ -127,7 +127,7 @@ Notes:
 - How did Latinx homeownership change between the 2018-2022 and 2019-2023 releases, and are the changes larger than the margins of error?
 - How do areas with many Latinx renters compare to areas with many Latinx owners, and what does that mean for housing affordability?
 
-- [ ] (1) explainer correct  - [ ] (2) DYCU columns match  - [ ] (3) no numbers  - [ ] (4) angles are questions
+- [x] (1) explainer correct  - [ ] (2) DYCU columns match  - [ ] (3) no numbers  - [ ] (4) angles are questions
 
 Notes:
 
@@ -154,7 +154,7 @@ Notes:
 - How does Hispanic homeownership differ between neighborhoods, and what local housing or lending factors might explain it?
 - Where are the margins of error too large to support firm conclusions, and what does that say about data on smaller communities?
 
-- [ ] (1) explainer correct  - [ ] (2) DYCU columns match  - [ ] (3) no numbers  - [ ] (4) angles are questions
+- [x] (1) explainer correct  - [ ] (2) DYCU columns match  - [ ] (3) no numbers  - [ ] (4) angles are questions
 
 Notes:
 
@@ -181,7 +181,7 @@ Notes:
 - How do poverty rate estimates in tracts compare with the city and county as a whole across the 5-year periods listed?
 - Do tracts with many households but a high poverty estimate point to areas where services or assistance may be most needed?
 
-- [ ] (1) explainer correct  - [ ] (2) DYCU columns match  - [ ] (3) no numbers  - [ ] (4) angles are questions
+- [x] (1) explainer correct  - [ ] (2) DYCU columns match  - [ ] (3) no numbers  - [ ] (4) angles are questions
 
 Notes:
 
@@ -208,7 +208,7 @@ Notes:
 - How do dental visit estimates line up with tract population, and do areas with more adults appear to differ from smaller ones?
 - Did the estimates for the City and the County move between the 2021 and 2022 data, and can the release differences explain any change?
 
-- [ ] (1) explainer correct  - [ ] (2) DYCU columns match  - [ ] (3) no numbers  - [ ] (4) angles are questions
+- [x] (1) explainer correct  - [ ] (2) DYCU columns match  - [ ] (3) no numbers  - [ ] (4) angles are questions
 
 Notes:
 
@@ -227,7 +227,7 @@ Notes:
 - How did The Bridge Project and the Zilber Family Foundation protect participant privacy on the map, and what does that mean for how reliable the geographic patterns are?
 - What have participants and program organizers said about the effect of unconditional cash on pregnant individuals in Milwaukee?
 
-- [ ] (1) explainer correct  - [ ] (2) DYCU columns match  - [ ] (3) no numbers  - [ ] (4) angles are questions
+- [x] (1) explainer correct  - [ ] (2) DYCU columns match  - [ ] (3) no numbers  - [ ] (4) angles are questions
 
 Notes:
 
@@ -243,6 +243,6 @@ Notes:
 - `total_renters` (DYCU): Estimate - total number of renters for which rent could be calculated
 - …and 14 more
 
-- [ ] (1) explainer correct  - [ ] (2) DYCU columns match  - [ ] (3) no numbers  - [ ] (4) angles are questions
+- [x] (1) explainer correct  - [ ] (2) DYCU columns match  - [ ] (3) no numbers  - [ ] (4) angles are questions
 
 Notes:
