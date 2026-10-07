@@ -8,7 +8,7 @@ describe("groupItems on the real Hub catalog", () => {
   const get = (key: string) => families.find((f) => f.key === key)!;
 
   it("produces 49 families", () => {
-    expect(families).toHaveLength(49);
+    expect(families).toHaveLength(50);
   });
 
   it("places every Hub item, help pages included, in exactly one family", () => {
