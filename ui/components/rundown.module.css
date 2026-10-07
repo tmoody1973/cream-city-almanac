@@ -23,12 +23,14 @@
 
 .wordmark {
   margin: 0;
-  font-family: var(--font-display);
-  font-weight: 400;
+  font-family: var(--font-caps);
+  font-weight: 900;
+  letter-spacing: -0.02em;
   font-size: var(--fs-wordmark);
   line-height: 0.9;
-  margin-left: -0.06em; /* optical: the comp's ink starts left of the rule */
   text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .side {
@@ -236,16 +238,27 @@
 }
 
 .openArrow {
-  width: 0.62em;
+  width: 1.2em;
   height: auto;
-  margin-right: 0.12em;
-  vertical-align: 0.05em;
+  margin-right: 0.25em;
+  vertical-align: -0.05em;
 }
 
+/* Comp C's grease-pencil swash, drawn below the title's descenders, not through them. */
 .rowHead[aria-expanded="true"] .name {
+  position: relative;
   align-self: flex-start;
-  padding-bottom: 0.3em;
-  background: url("/plates/pencil-underline.png") left bottom / 100% auto no-repeat;
+  margin-bottom: 0.55em;
+}
+
+.rowHead[aria-expanded="true"] .name::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 0.05em);
+  height: 0.5em;
+  background: url("/plates/pencil-underline.png") left top / 100% 100% no-repeat;
 }
 
 /* Tab bar and credit stay on screen like a phone tab bar, as in the approved comp's first viewport. */
@@ -454,7 +467,7 @@
 /* Results (comp C): single-line caps titles; place and years share the right-hand cell. */
 .results .colHeads,
 .results .rowHead {
-  grid-template-columns: minmax(3.5ch, 14%) 1fr minmax(9ch, 32%);
+  grid-template-columns: minmax(3.5ch, 18%) 1fr minmax(9ch, 30%);
 }
 
 .results .name {
@@ -468,13 +481,9 @@
   font-size: clamp(20px, 4.3vw, 44px);
 }
 
+/* Place over years: two short lines, never a divider stranded by a wrap. */
 .place,
 .years {
+  display: block;
   white-space: nowrap;
-}
-
-.place + .years {
-  margin-left: 0.25em;
-  padding-left: 0.5em;
-  border-left: var(--hair);
 }

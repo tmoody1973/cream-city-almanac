@@ -29,13 +29,15 @@ describe("format", () => {
     expect(firstSentence("Share of adults with asthma. Uses CDC PLACES.")).toBe("Share of adults with asthma.");
     expect(firstSentence("No period here")).toBe("No period here");
   });
-  it("cuts an explainer to one short line without the 'This dataset measures' lead-in", () => {
-    const long =
+  it("cuts an explainer to one complete line: no lead-in, cut at a clause, never mid-sentence", () => {
+    const f02 =
       "This dataset measures food insecurity prevalence, meaning the share of adults who report that the food they bought did not last and they had no money to get more. It uses CDC PLACES.";
-    const short = shortExplainer(long);
-    expect(short.startsWith("Food insecurity prevalence, meaning the share of adults")).toBe(true);
-    expect(short.length).toBeLessThanOrEqual(100);
-    expect(short.endsWith("…")).toBe(true);
+    expect(shortExplainer(f02)).toBe(
+      "Food insecurity prevalence, meaning the share of adults who report that the food they bought did not last and they had no money to get more.",
+    );
+    const w01 =
+      "This dataset estimates the share of adults (people 18 and older) who currently report having asthma, using the CDC PLACES project (a Centers for Disease Control and Prevention program that produces local health estimates) built on the Behavioral Risk Factor Surveillance System (a national health survey).";
+    expect(shortExplainer(w01)).toBe("The share of adults (people 18 and older) who currently report having asthma.");
     expect(shortExplainer("Estimated share of people who lack reliable access to enough food, by census tract.")).toBe(
       "Estimated share of people who lack reliable access to enough food, by census tract.",
     );

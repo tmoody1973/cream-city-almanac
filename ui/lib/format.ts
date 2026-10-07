@@ -57,14 +57,30 @@ export function firstSentence(text: string): string {
 }
 
 const LEAD_IN = /^(?:this|the) (?:dataset|data set|data|map|dashboard|report|app|tool|spreadsheet) (?:measures|estimates|shows|tracks|counts|lists|maps|describes|reports)\s+/i;
-const EXPLAINER_MAX = 100;
+const EXPLAINER_MAX = 160;
+const MIN_CLAUSE = 40;
 
-// The in-place preview promises a one-line explainer: first sentence, no "This dataset measures" lead-in,
-// cut at a word boundary.
+// End of the last top-level clause (a comma outside parentheses) that keeps the line within max.
+function lastClauseEnd(text: string, max: number): number {
+  let depth = 0;
+  let end = -1;
+  for (let i = 0; i < Math.min(text.length, max); i++) {
+    const ch = text[i];
+    if (ch === "(") depth++;
+    else if (ch === ")") depth = Math.max(0, depth - 1);
+    else if (ch === "," && depth === 0 && i >= MIN_CLAUSE) end = i;
+  }
+  return end;
+}
+
+// The in-place preview promises a one-line explainer: the first sentence without a "This dataset measures"
+// lead-in, and when that is still long, its first complete clause, never a cut mid-sentence.
 export function shortExplainer(text: string, max = EXPLAINER_MAX): string {
   const sentence = firstSentence(text).replace(LEAD_IN, "");
   const line = sentence.charAt(0).toUpperCase() + sentence.slice(1);
   if (line.length <= max) return line;
+  const clause = lastClauseEnd(line, max);
+  if (clause > 0) return `${line.slice(0, clause)}.`;
   const cut = line.slice(0, max - 1);
   return `${cut.slice(0, cut.lastIndexOf(" ")).replace(/[\s,;:–—-]+$/, "")}…`;
 }

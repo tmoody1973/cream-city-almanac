@@ -37,7 +37,7 @@ export function ResultRow({ row, mode, circled, opened }: { row: Row; mode: "run
               <span className={styles.name}>{row.name}</span>
             </span>
             <span className={styles.right}>
-              {place && <span className={styles.place}>{place}</span>}{" "}
+              {place && <span className={styles.place}>{place}</span>}
               <span className={styles.years}>{yearShort(row.years)}</span>
               {opened && <Tick />}
             </span>

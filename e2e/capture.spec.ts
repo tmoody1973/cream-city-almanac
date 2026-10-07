@@ -22,6 +22,8 @@ test.describe("@capture", () => {
   test("results state at the comp's size", async ({ page }) => {
     await page.clock.setFixedTime(FIXED);
     await page.setViewportSize({ width: 1024, height: 1536 });
+    // E01 was opened on an earlier visit, so its row shows the grease-pencil tick.
+    await page.addInitScript(() => localStorage.setItem("cca:opened", JSON.stringify(["E01"])));
     await page.goto("/?q=" + encodeURIComponent("kids who can't afford food"));
     await page.locator("li[data-code] button").first().click();
     await page.locator("[id^='preview-'] a", { hasText: "Open sheet" }).waitFor();
