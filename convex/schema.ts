@@ -18,6 +18,7 @@ export default defineSchema({
     dictionaryTab: v.union(v.string(), v.null()),
   })
     .index("by_key", ["key"])
+    .index("by_code", ["code"])
     .index("by_latestModified", ["latestModified"])
     .searchIndex("search_text", { searchField: "searchText", filterFields: ["topic", "kind"] }),
 
@@ -89,6 +90,8 @@ export default defineSchema({
     mismatch: v.union(vMismatch, v.null()),
     orphanChunksDeleted: v.number(),
     report: v.union(v.string(), v.null()),
+    familyCount: v.optional(v.number()),
+    reportCount: v.optional(v.number()),
   }).index("by_status", ["status"]),
 
   itemOverrides: defineTable({

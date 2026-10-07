@@ -148,9 +148,16 @@ async function retireFamily(ctx: MutationCtx, fam: Doc<"families">) {
 }
 
 export const setPending = internalMutation({
-  args: { buildId: v.id("builds"), pending: v.number(), notes: v.array(v.string()), mismatch: vMismatch },
-  handler: async (ctx, { buildId, pending, notes, mismatch }) => {
-    await ctx.db.patch(buildId, { pending, notes, mismatch });
+  args: {
+    buildId: v.id("builds"),
+    pending: v.number(),
+    familyCount: v.number(),
+    reportCount: v.number(),
+    notes: v.array(v.string()),
+    mismatch: vMismatch,
+  },
+  handler: async (ctx, { buildId, ...fields }) => {
+    await ctx.db.patch(buildId, fields);
   },
 });
 

@@ -41,6 +41,8 @@ async function seed(t: TestConvex<typeof schema>, settings: Partial<typeof DEFAU
   await t.mutation(internal.buildStore.setPending, {
     buildId,
     pending: 100,
+    familyCount: 46,
+    reportCount: 180,
     notes: [],
     mismatch: { unlinkedTabs: [], suspectLinks: [], unmatchedHomeTitles: [], typoFixes: [] },
   });

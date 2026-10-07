@@ -98,7 +98,7 @@ describe("catalogStatus", () => {
     await t.mutation(internal.buildStore.failBuild, { buildId: bad, reason: "Hub down" });
     const status = await t.query(api.search.catalogStatus, {});
     const goodRow = await t.run((ctx) => ctx.db.get(good));
-    expect(status).toEqual({ asOf: goodRow!.finishedAt, lastRunFailed: true, running: false });
+    expect(status).toEqual({ asOf: goodRow!.finishedAt, lastRunFailed: true, running: false, families: null, reports: null });
   });
 
   it("does not report a build stuck for more than two hours as running", async () => {

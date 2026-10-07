@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
-import { action, internalQuery, query, type ActionCtx } from "./_generated/server";
+import { action, internalQuery, query, type ActionCtx, type QueryCtx } from "./_generated/server";
 import { embed, gatewayKey } from "./lib/gateway";
 import { STALE_BUILD_MS } from "./buildStore";
 import { applyFilters, fuseRanks, keywordQuery, normalizeQuery, type Hit } from "./lib/rank";
@@ -14,7 +14,7 @@ const searchArgs = {
   year: v.optional(v.number()),
 };
 
-const toRow = (f: Doc<"families">): ResultRow => ({
+export const toRow = (f: Doc<"families">): ResultRow => ({
   key: f.key,
   code: f.code,
   name: f.name,
@@ -126,10 +126,13 @@ export const summaries = internalQuery({
   },
 });
 
+export async function rundownRows(ctx: QueryCtx): Promise<ResultRow[]> {
+  return (await ctx.db.query("families").withIndex("by_latestModified").order("desc").take(10)).map(toRow);
+}
+
 export const rundown = internalQuery({
   args: {},
-  handler: async (ctx) =>
-    (await ctx.db.query("families").withIndex("by_latestModified").order("desc").take(10)).map(toRow),
+  handler: (ctx) => rundownRows(ctx),
 });
 
 export const catalogStatus = query({
@@ -145,6 +148,8 @@ export const catalogStatus = query({
       asOf: lastGood?.finishedAt ?? null,
       lastRunFailed: latest?.status === "failed",
       running: latest?.status === "running" && Date.now() - latest.startedAt < STALE_BUILD_MS,
+      families: lastGood?.familyCount ?? null,
+      reports: lastGood?.reportCount ?? null,
     };
   },
 });

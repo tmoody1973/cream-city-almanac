@@ -263,7 +263,14 @@ async function runBuild(ctx: ActionCtx, buildId: Id<"builds">) {
   });
   const delays = reportDelays(reports, new Map(indexed.map((i) => [i.hubId, i.modified])), settings.firecrawlSpacingMs);
   const pending = families.length + reports.length;
-  await ctx.runMutation(internal.buildStore.setPending, { buildId, pending, notes, mismatch });
+  await ctx.runMutation(internal.buildStore.setPending, {
+    buildId,
+    pending,
+    familyCount: families.length,
+    reportCount: reports.length,
+    notes,
+    mismatch,
+  });
   for (const [i, f] of families.entries()) {
     await ctx.scheduler.runAfter(i * 500, internal.build.processFamily, { buildId, familyKey: f.key });
   }

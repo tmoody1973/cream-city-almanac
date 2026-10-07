@@ -10,6 +10,7 @@
 
 import type * as build from "../build.js";
 import type * as buildStore from "../buildStore.js";
+import type * as catalog from "../catalog.js";
 import type * as crons from "../crons.js";
 import type * as evals from "../evals.js";
 import type * as lib_arcgis from "../lib/arcgis.js";
@@ -22,6 +23,7 @@ import type * as lib_evalQuestions from "../lib/evalQuestions.js";
 import type * as lib_families from "../lib/families.js";
 import type * as lib_firecrawl from "../lib/firecrawl.js";
 import type * as lib_gateway from "../lib/gateway.js";
+import type * as lib_grid from "../lib/grid.js";
 import type * as lib_hash from "../lib/hash.js";
 import type * as lib_http from "../lib/http.js";
 import type * as lib_rank from "../lib/rank.js";
@@ -44,6 +46,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   build: typeof build;
   buildStore: typeof buildStore;
+  catalog: typeof catalog;
   crons: typeof crons;
   evals: typeof evals;
   "lib/arcgis": typeof lib_arcgis;
@@ -56,6 +59,7 @@ declare const fullApi: ApiFromModules<{
   "lib/families": typeof lib_families;
   "lib/firecrawl": typeof lib_firecrawl;
   "lib/gateway": typeof lib_gateway;
+  "lib/grid": typeof lib_grid;
   "lib/hash": typeof lib_hash;
   "lib/http": typeof lib_http;
   "lib/rank": typeof lib_rank;
