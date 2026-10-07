@@ -100,4 +100,15 @@ describe("catalogStatus", () => {
     const goodRow = await t.run((ctx) => ctx.db.get(good));
     expect(status).toEqual({ asOf: goodRow!.finishedAt, lastRunFailed: true, running: false });
   });
+
+  it("does not report a build stuck for more than two hours as running", async () => {
+    const t = convexTest(schema, modules);
+    await t.run((ctx) =>
+      ctx.db.insert("builds", {
+        status: "running", startedAt: Date.now() - 3 * 3600_000, finishedAt: null, pending: 1, done: 0, skipped: 0,
+        failed: 0, costUsd: 0, firecrawlCalls: 0, notes: [], mismatch: null, orphanChunksDeleted: 0, report: null,
+      }),
+    );
+    expect((await t.query(api.search.catalogStatus, {})).running).toBe(false);
+  });
 });

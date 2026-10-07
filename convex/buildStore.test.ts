@@ -62,6 +62,30 @@ describe("swapCatalog", () => {
     expect(await t.run((ctx) => ctx.db.query("families").collect())).toHaveLength(46);
   });
 
+  it("refuses a feed that keeps every family but drops many items", async () => {
+    const t = convexTest(schema, modules);
+    await swap(t);
+    const trimmed = inputs().map((f) =>
+      f.key === "document:neighborhood-portrait"
+        ? { ...f, members: f.members.slice(0, 20) }
+        : f.key === "document:neighborhood-change-over-time-report"
+          ? { ...f, members: f.members.slice(0, 10) }
+          : f,
+    );
+    const result = await swap(t, trimmed);
+    expect(result.ok).toBe(false);
+    expect(await t.run((ctx) => ctx.db.query("members").collect())).toHaveLength(379);
+  });
+
+  it("keeps a retired family's name with its code", async () => {
+    const t = convexTest(schema, modules);
+    await swap(t);
+    await swap(t, inputs().filter((f) => f.key !== "dataset:access-to-parks"));
+    const code = (await t.run((ctx) => ctx.db.query("codes").collect())).find((c) => c.familyKey === "dataset:access-to-parks")!;
+    expect(code.retiredAt).not.toBeNull();
+    expect(code.name).toBe("Access to Parks");
+  });
+
   it("retires removed families and never reissues their code", async () => {
     const t = convexTest(schema, modules);
     await swap(t);
@@ -93,6 +117,14 @@ describe("swapCatalog", () => {
 });
 
 describe("failBuild and latestReport", () => {
+  it("does not mark a completed build as failed", async () => {
+    const t = convexTest(schema, modules);
+    const buildId = await t.mutation(internal.buildStore.beginBuild, {});
+    await t.mutation(internal.buildStore.completeBuild, { buildId, orphanChunksDeleted: 0 });
+    await t.mutation(internal.buildStore.failBuild, { buildId, reason: "watchdog" });
+    expect((await t.run((ctx) => ctx.db.get(buildId)))!.status).toBe("completed");
+  });
+
   it("records the reason and renders a report", async () => {
     const t = convexTest(schema, modules);
     const buildId = await t.mutation(internal.buildStore.beginBuild, {});

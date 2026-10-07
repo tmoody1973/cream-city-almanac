@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyFilters, fuseRanks, normalizeQuery } from "../../convex/lib/rank";
+import { applyFilters, fuseRanks, keywordQuery, normalizeQuery } from "../../convex/lib/rank";
 import type { ResultRow } from "../../convex/lib/types";
 
 describe("normalizeQuery", () => {
@@ -37,5 +37,18 @@ describe("applyFilters", () => {
     expect(applyFilters(rows, { year: 2022 }).map((r) => r.key)).toEqual(["a"]);
     expect(applyFilters(rows, { topic: "Housing" }).map((r) => r.key)).toEqual(["b"]);
     expect(applyFilters(rows, {})).toHaveLength(2);
+  });
+});
+
+describe("keywordQuery", () => {
+  it("keeps at most 16 terms of at most 32 characters, splitting on punctuation", () => {
+    const words = Array.from({ length: 20 }, (_, i) => `w${i}`).join(" ");
+    const terms = keywordQuery(`kids who can't afford food ${"x".repeat(40)} ${words}`).split(" ");
+    expect(terms).toHaveLength(16);
+    expect(terms.slice(0, 6)).toEqual(["kids", "who", "can", "t", "afford", "food"]);
+    expect(terms[6]).toHaveLength(32);
+  });
+  it("returns an empty string for punctuation-only input", () => {
+    expect(keywordQuery("?!...")).toBe("");
   });
 });

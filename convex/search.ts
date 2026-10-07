@@ -3,7 +3,8 @@ import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import { action, internalQuery, query, type ActionCtx } from "./_generated/server";
 import { embed, gatewayKey } from "./lib/gateway";
-import { applyFilters, fuseRanks, normalizeQuery, type Hit } from "./lib/rank";
+import { STALE_BUILD_MS } from "./buildStore";
+import { applyFilters, fuseRanks, keywordQuery, normalizeQuery, type Hit } from "./lib/rank";
 import type { ResultRow, SearchResponse } from "./lib/types";
 
 const searchArgs = {
@@ -40,9 +41,18 @@ export async function runSearch(
     return { mode: "rundown", degraded: false, results: applyFilters(rows, args) };
   }
 
-  const keyword: Hit[] = await ctx.runQuery(internal.search.keywordHits, { query: q, topic: args.topic });
-  let vectorLists: Hit[][] = [];
   let degraded = false;
+  let keyword: Hit[] = [];
+  const kq = keywordQuery(q);
+  if (kq) {
+    try {
+      keyword = await ctx.runQuery(internal.search.keywordHits, { query: kq, topic: args.topic });
+    } catch (e) {
+      degraded = true;
+      console.warn(`keyword search failed: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+  let vectorLists: Hit[][] = [];
   try {
     const settings = await ctx.runQuery(internal.settings.get, {});
     const { vectors } = await embed([q], settings.embedModel, gatewayKey());
@@ -134,7 +144,7 @@ export const catalogStatus = query({
     return {
       asOf: lastGood?.finishedAt ?? null,
       lastRunFailed: latest?.status === "failed",
-      running: latest?.status === "running",
+      running: latest?.status === "running" && Date.now() - latest.startedAt < STALE_BUILD_MS,
     };
   },
 });

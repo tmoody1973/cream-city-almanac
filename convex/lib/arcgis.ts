@@ -1,9 +1,12 @@
+import { fetchWithTimeout } from "./http";
 import type { Column } from "./types";
+
+const COLUMNS_TIMEOUT_MS = 30_000;
 
 const SYSTEM_FIELDS = /^(objectid|fid|globalid|shape|shape__area|shape__length)$/i;
 
 export async function fetchColumns(featureServerUrl: string): Promise<Column[]> {
-  const res = await fetch(`${featureServerUrl}?f=json`);
+  const res = await fetchWithTimeout(`${featureServerUrl}?f=json`, {}, COLUMNS_TIMEOUT_MS);
   if (!res.ok) throw new Error(`FeatureServer ${res.status} for ${featureServerUrl}`);
   const body = await res.json();
   if (body.error) throw new Error(`FeatureServer error: ${body.error.message ?? "unknown"}`);

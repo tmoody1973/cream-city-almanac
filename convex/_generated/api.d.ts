@@ -23,6 +23,7 @@ import type * as lib_families from "../lib/families.js";
 import type * as lib_firecrawl from "../lib/firecrawl.js";
 import type * as lib_gateway from "../lib/gateway.js";
 import type * as lib_hash from "../lib/hash.js";
+import type * as lib_http from "../lib/http.js";
 import type * as lib_rank from "../lib/rank.js";
 import type * as lib_report from "../lib/report.js";
 import type * as lib_sources from "../lib/sources.js";
@@ -56,6 +57,7 @@ declare const fullApi: ApiFromModules<{
   "lib/firecrawl": typeof lib_firecrawl;
   "lib/gateway": typeof lib_gateway;
   "lib/hash": typeof lib_hash;
+  "lib/http": typeof lib_http;
   "lib/rank": typeof lib_rank;
   "lib/report": typeof lib_report;
   "lib/sources": typeof lib_sources;

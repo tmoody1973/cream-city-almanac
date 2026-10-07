@@ -5,7 +5,22 @@ import { hashInputs } from "../../convex/lib/hash";
 
 const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status });
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
+
+describe("timeouts", () => {
+  it("gives up on hung Firecrawl and ArcGIS requests", async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("fetch", vi.fn(() => new Promise<Response>(() => {})));
+    const scrape = expect(scrapeMarkdown("https://x.test/a.pdf", "fc")).rejects.toThrow("Timed out");
+    const columns = expect(fetchColumns("https://s.test/FeatureServer/0")).rejects.toThrow("Timed out");
+    await vi.advanceTimersByTimeAsync(200_000);
+    await scrape;
+    await columns;
+  });
+});
 
 describe("scrapeMarkdown", () => {
   it("posts to Firecrawl v2 and returns the markdown", async () => {

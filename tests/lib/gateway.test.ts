@@ -4,7 +4,10 @@ import { chatJson, costUsd, embed } from "../../convex/lib/gateway";
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
 
 describe("embed", () => {
   it("batches 64 inputs per call, restores order and sums tokens", async () => {
@@ -26,6 +29,16 @@ describe("embed", () => {
   it("reports the HTTP status on failure", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => json(429, { error: "slow down" })));
     await expect(embed(["a"], "m", "key")).rejects.toThrow("AI Gateway /embeddings 429");
+  });
+});
+
+describe("timeouts", () => {
+  it("gives up on a hung embeddings request", async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("fetch", vi.fn(() => new Promise<Response>(() => {})));
+    const assertion = expect(embed(["a"], "m", "key")).rejects.toThrow("Timed out");
+    await vi.advanceTimersByTimeAsync(120_000);
+    await assertion;
   });
 });
 

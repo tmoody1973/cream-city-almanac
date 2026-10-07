@@ -69,6 +69,7 @@ export default defineSchema({
     letter: v.string(),
     number: v.number(),
     familyKey: v.string(),
+    name: v.string(),
     retiredAt: v.union(v.number(), v.null()),
   })
     .index("by_familyKey", ["familyKey"])

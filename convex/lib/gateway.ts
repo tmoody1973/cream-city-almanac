@@ -1,4 +1,8 @@
+import { fetchWithTimeout } from "./http";
+
 export const GATEWAY_URL = "https://ai-gateway.vercel.sh/v1";
+const EMBED_TIMEOUT_MS = 60_000;
+const CHAT_TIMEOUT_MS = 120_000;
 
 export interface Usage {
   inputTokens: number;
@@ -11,12 +15,12 @@ export function gatewayKey(): string {
   return key;
 }
 
-async function post(path: string, body: unknown, key: string): Promise<any> {
-  const res = await fetch(`${GATEWAY_URL}${path}`, {
+async function post(path: string, body: unknown, key: string, timeoutMs: number): Promise<any> {
+  const res = await fetchWithTimeout(`${GATEWAY_URL}${path}`, {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
     body: JSON.stringify(body),
-  });
+  }, timeoutMs);
   if (!res.ok) throw new Error(`AI Gateway ${path} ${res.status}: ${(await res.text()).slice(0, 300)}`);
   return res.json();
 }
@@ -25,7 +29,7 @@ export async function embed(texts: string[], model: string, key: string): Promis
   const vectors: number[][] = [];
   let tokens = 0;
   for (let i = 0; i < texts.length; i += 64) {
-    const body = await post("/embeddings", { model, input: texts.slice(i, i + 64) }, key);
+    const body = await post("/embeddings", { model, input: texts.slice(i, i + 64) }, key, EMBED_TIMEOUT_MS);
     const data: { index: number; embedding: number[] }[] = [...(body.data ?? [])].sort((a, b) => a.index - b.index);
     vectors.push(...data.map((d) => d.embedding));
     tokens += body.usage?.prompt_tokens ?? 0;
@@ -50,6 +54,7 @@ export async function chatJson(
       response_format: { type: "json_schema", json_schema: { name: args.schemaName, schema: args.schema, strict: true } },
     },
     key,
+    CHAT_TIMEOUT_MS,
   );
   const content = body.choices?.[0]?.message?.content;
   if (typeof content !== "string") throw new Error("AI Gateway returned no message content");

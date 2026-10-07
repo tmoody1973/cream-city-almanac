@@ -19,9 +19,13 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
+// Advance the clock a minute at a time, like real time: vi.runAllTimers would jump straight to the
+// 2-hour watchdog while items are still mid-flight, which cannot happen in production.
+const drain = (t: TestConvex<typeof schema>) => t.finishAllScheduledFunctions(() => vi.advanceTimersByTime(60_000), 500);
+
 async function run(t: TestConvex<typeof schema>) {
   const buildId = await t.action(internal.build.start, {});
-  await t.finishAllScheduledFunctions(vi.runAllTimers);
+  await drain(t);
   return (await t.run((ctx) => ctx.db.get(buildId)))!;
 }
 
@@ -76,6 +80,26 @@ describe("weekly build", () => {
       expect(second.orphanChunksDeleted).toBe(2);
       const left = await t.run((ctx) => ctx.db.query("docChunks").withIndex("by_hubId", (q) => q.eq("hubId", goneId)).collect());
       expect(left).toEqual([]);
+    },
+    120_000,
+  );
+
+  it(
+    "fails a build that never finishes once the two-hour watchdog fires",
+    async () => {
+      const t = convexTest(schema, modules);
+      installFakeFetch();
+      const buildId = await t.action(internal.build.start, {});
+      await t.run(async (ctx) => {
+        const b = await ctx.db.get(buildId);
+        await ctx.db.patch(buildId, { pending: b!.pending + 1 });
+      });
+      await drain(t);
+      // Items are done; now let the clock run out to the 2-hour watchdog.
+      await t.finishAllScheduledFunctions(vi.runAllTimers);
+      const build = (await t.run((ctx) => ctx.db.get(buildId)))!;
+      expect(build.status).toBe("failed");
+      expect(build.report).toContain("did not finish within 2 hours");
     },
     120_000,
   );

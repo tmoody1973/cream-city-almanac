@@ -11,6 +11,8 @@ import { vCard, vOutcome } from "./validators";
 import { vDictionary, vFamilyInput, vMismatch } from "./validators";
 
 export const STALE_BUILD_MS = 2 * 60 * 60 * 1000;
+// A feed may not shrink the live catalog (families or items) by more than 10% in one run.
+const MIN_KEEP_RATIO = 0.9;
 
 export const beginBuild = internalMutation({
   args: {},
@@ -45,7 +47,7 @@ export const failBuild = internalMutation({
   args: { buildId: v.id("builds"), reason: v.string() },
   handler: async (ctx, { buildId, reason }) => {
     const b = await ctx.db.get(buildId);
-    if (!b) return;
+    if (!b || b.status !== "running") return;
     const final = { ...b, status: "failed" as const, finishedAt: Date.now(), notes: [...b.notes, reason] };
     await ctx.db.patch(buildId, {
       status: final.status,
@@ -85,10 +87,18 @@ export const swapCatalog = internalMutation({
   args: { buildId: v.id("builds"), families: v.array(vFamilyInput), dictionaries: v.array(vDictionary) },
   handler: async (ctx, { families, dictionaries }) => {
     const live = await ctx.db.query("families").collect();
-    if (live.length > 0 && families.length < Math.ceil(live.length * 0.9)) {
+    if (live.length > 0 && families.length < Math.ceil(live.length * MIN_KEEP_RATIO)) {
       return {
         ok: false as const,
         reason: `Feed produced ${families.length} families; live catalog has ${live.length}. Refusing to shrink by more than 10%.`,
+      };
+    }
+    const liveMembers = (await ctx.db.query("members").collect()).length;
+    const incomingMembers = families.reduce((n, f) => n + f.members.length, 0);
+    if (liveMembers > 0 && incomingMembers < Math.ceil(liveMembers * MIN_KEEP_RATIO)) {
+      return {
+        ok: false as const,
+        reason: `Feed produced ${incomingMembers} items; live catalog has ${liveMembers}. Refusing to shrink by more than 10%.`,
       };
     }
     const liveByKey = new Map(live.map((f) => [f.key, f]));
@@ -101,23 +111,23 @@ export const swapCatalog = internalMutation({
   },
 });
 
-async function issueCode(ctx: MutationCtx, familyKey: string, letter: string): Promise<string> {
+async function ensureCode(ctx: MutationCtx, familyKey: string, letter: string, name: string): Promise<string> {
   const prior = await ctx.db.query("codes").withIndex("by_familyKey", (q) => q.eq("familyKey", familyKey)).first();
   if (prior) {
-    if (prior.retiredAt !== null) await ctx.db.patch(prior._id, { retiredAt: null });
+    if (prior.retiredAt !== null || prior.name !== name) await ctx.db.patch(prior._id, { retiredAt: null, name });
     return prior.code;
   }
   const issued = (await ctx.db.query("codes").withIndex("by_letter", (q) => q.eq("letter", letter)).collect()).map(
     (c) => c.number,
   );
   const { code, number } = nextCode(letter, issued);
-  await ctx.db.insert("codes", { code, letter, number, familyKey, retiredAt: null });
+  await ctx.db.insert("codes", { code, letter, number, familyKey, name, retiredAt: null });
   return code;
 }
 
 async function upsertFamily(ctx: MutationCtx, f: FamilyInput, existing: Doc<"families"> | null) {
   const { members, ...fields } = f;
-  const code = existing?.code ?? (await issueCode(ctx, f.key, codeLetter(f.kind, f.topic)));
+  const code = await ensureCode(ctx, f.key, codeLetter(f.kind, f.topic), f.name);
   const card = await ctx.db.query("cards").withIndex("by_family", (q) => q.eq("familyKey", f.key)).first();
   const searchText = card ? searchTextWithCard(f.baseSearchText, card) : f.baseSearchText;
   if (existing) await ctx.db.patch(existing._id, { ...fields, code, searchText });

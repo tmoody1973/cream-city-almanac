@@ -1,6 +1,9 @@
 import type { ResultRow, Snippet } from "./types";
 
 export const MAX_QUERY_CHARS = 300;
+// Convex full-text limits: 16 terms per query, 32-character terms, tokenized on whitespace and punctuation.
+export const MAX_SEARCH_TERMS = 16;
+export const MAX_TERM_CHARS = 32;
 
 export interface Hit {
   familyKey: string;
@@ -15,6 +18,15 @@ export interface Ranked {
 
 export function normalizeQuery(q: string): string {
   return q.replace(/\s+/g, " ").trim().slice(0, MAX_QUERY_CHARS);
+}
+
+export function keywordQuery(q: string): string {
+  return q
+    .split(/[^\p{L}\p{N}]+/u)
+    .filter(Boolean)
+    .slice(0, MAX_SEARCH_TERMS)
+    .map((t) => t.slice(0, MAX_TERM_CHARS))
+    .join(" ");
 }
 
 // Reciprocal rank fusion: robust to lists whose scores aren't comparable.

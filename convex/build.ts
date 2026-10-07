@@ -24,9 +24,11 @@ import { groupItems, isPdfFamily, toFamilyInput } from "./lib/families";
 import { firecrawlKey, scrapeMarkdown } from "./lib/firecrawl";
 import { chatJson, costUsd, embed, estimateTokens, gatewayKey } from "./lib/gateway";
 import { hashInputs } from "./lib/hash";
+import { fetchWithTimeout } from "./lib/http";
 import { matchSources, SOURCE_JSON_SCHEMA, SOURCE_SITES, SOURCE_SYSTEM, sourceProfileSchema } from "./lib/sources";
 import { fixTypos } from "./lib/titles";
 import type { Card, Column, Mismatch } from "./lib/types";
+import { STALE_BUILD_MS } from "./buildStore";
 import type { Settings } from "./settings";
 
 type Outcome = "done" | "skipped" | "failed";
@@ -36,6 +38,7 @@ interface Result {
 }
 
 const MAX_CHUNKS_PER_REPORT = 60;
+const SOURCE_FETCH_TIMEOUT_MS = 60_000;
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 export const processFamily = internalAction({
@@ -197,7 +200,7 @@ export const finish = internalAction({
 });
 
 async function fetchOk(url: string, label: string): Promise<Response> {
-  const res = await fetch(url);
+  const res = await fetchWithTimeout(url, {}, SOURCE_FETCH_TIMEOUT_MS);
   if (!res.ok) throw new Error(`${label} request failed: ${res.status}`);
   return res;
 }
@@ -207,6 +210,11 @@ export const start = internalAction({
   handler: async (ctx): Promise<Id<"builds">> => {
     await ctx.runMutation(internal.settings.ensureDefaults, {});
     const buildId = await ctx.runMutation(internal.buildStore.beginBuild, {});
+    // Watchdog: if an item hangs or its action is killed, markDone never completes the count. failBuild ignores builds that already finished.
+    await ctx.scheduler.runAfter(STALE_BUILD_MS, internal.buildStore.failBuild, {
+      buildId,
+      reason: "Build did not finish within 2 hours (an item hung or its action was killed)",
+    });
     try {
       await runBuild(ctx, buildId);
     } catch (e) {
