@@ -8,3 +8,10 @@ node_modules/
 .impeccable/review/
 .vercel/
 .impeccable/questions/
+
+# Next.js and Playwright
+.next/
+next-env.d.ts
+test-results/
+playwright-report/
+*.tsbuildinfo
