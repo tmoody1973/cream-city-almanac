@@ -1,6 +1,6 @@
 /* Measured from the approved comp at 1024px wide (.impeccable/mocks/home-b.webp); vw values are px/10.24. */
 .page {
-  max-width: 1024px;
+  max-width: min(1280px, 100%);
   min-height: 100vh;
   margin: 0 auto;
   padding-inline: var(--gutter);
@@ -214,6 +214,17 @@
   height: auto;
   transform: translateY(-62%); /* the ellipse sits low in the plate; "new" rises above it */
   pointer-events: none;
+  /* The one signature motion: the grease pencil draws on, in frames, when the rundown loads. */
+  animation: pencil-draw 600ms steps(12, end) 250ms both;
+}
+
+@keyframes pencil-draw {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
 }
 
 .tick {
@@ -228,6 +239,13 @@
   bottom: 0;
   margin-top: clamp(16px, 5.2vw, 53px);
   background: var(--paper);
+}
+
+/* On wide landscape screens a pinned bar would hide most of the rundown; it returns to the end of the page. */
+@media (min-width: 1100px) and (orientation: landscape) {
+  .dock {
+    position: static;
+  }
 }
 
 .tabBar {

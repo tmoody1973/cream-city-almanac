@@ -1,4 +1,4 @@
-.page { max-width: 1024px; margin: 0 auto; padding-inline: var(--gutter); min-height: 100vh; display: flex; flex-direction: column; }
+.page { max-width: min(1280px, 100%); margin: 0 auto; padding-inline: var(--gutter); min-height: 100vh; display: flex; flex-direction: column; }
 .back { padding: 12px 0; border-bottom: var(--hair); font-size: var(--fs-small); }
 .back a { text-decoration: none; }
 .header { padding: clamp(16px, 3vw, 30px) 0; border-bottom: var(--rule); }

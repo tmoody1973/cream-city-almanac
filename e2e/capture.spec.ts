@@ -5,6 +5,7 @@ async function settle(page: Page) {
   await page.waitForLoadState("networkidle");
   await page.evaluate(() => document.fonts.ready);
   await page.waitForFunction(() => [...document.images].every((img) => img.complete && img.naturalWidth > 0));
+  await page.waitForTimeout(1000); // the pencil draw-on runs 250ms + 600ms
 }
 
 const FIXED = new Date("2026-10-07T17:00:00Z");
