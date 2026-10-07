@@ -4,7 +4,7 @@ import styles from "./rundown.module.css";
 export function PencilMark() {
   return (
     <>
-      <img className={styles.pencil} src="/plates/pencil-mark.png" alt="" aria-hidden="true" width={1024} height={1024} />
+      <img className={styles.pencil} src="/plates/pencil-mark.png" alt="" aria-hidden="true" width={684} height={315} />
       <span className="visually-hidden">updated since your last visit</span>
     </>
   );

@@ -4,7 +4,7 @@ import styles from "./rundown.module.css";
 export function Tick() {
   return (
     <>
-      <img className={styles.tick} src="/plates/pencil-tick.png" alt="" aria-hidden="true" width={664} height={529} />
+      <img className={styles.tick} src="/plates/pencil-tick.png" alt="" aria-hidden="true" width={96} height={76} />
       <span className="visually-hidden">opened before</span>
     </>
   );

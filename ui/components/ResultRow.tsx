@@ -27,7 +27,7 @@ export function ResultRow({ row, mode, circled, opened }: { row: Row; mode: "run
       <button type="button" className={styles.rowHead} aria-expanded={open} aria-controls={panelId} onClick={() => setOpen((o) => !o)}>
         <span className={styles.code}>
           {/* Comp C: the open row gets a grease-pencil arrow at its code and a swash under its title. */}
-          {open && <img className={styles.openArrow} src="/plates/pencil-arrow.png" alt="" aria-hidden="true" width={484} height={442} />}
+          {open && <img className={styles.openArrow} src="/plates/pencil-arrow.png" alt="" aria-hidden="true" width={216} height={197} />}
           {row.code}
         </span>
         {mode === "results" ? (
