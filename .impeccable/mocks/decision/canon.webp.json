@@ -1,0 +1,6 @@
+{
+  "prompt": "Mobile web app screen, portrait phone viewport 390x844, rendered flat as a real UI screenshot: no device frame, no hands, no desk, not a poster. Product: 'Cream City Almanac', an unofficial search app for Milwaukee public datasets. The visitor's job: type a plain-language question and pick the right dataset fast. Visual world: the clean modern civic-data search app, executed impeccably. Layout top to bottom: (1) header with wordmark 'Cream City Almanac' and a small 'Unofficial' badge. (2) Large rounded search field containing 'kids who can't afford food'. (3) Row of filter chips: Topic, Place, Year. (4) Result count '4 dataset families'. (5) Four white result cards with subtle borders: 'Food Insecurity Prevalence' tags Health, Food Access, 'City 2022 · County 2023'; 'Child Public Assistance Status' 'County 2022–2024'; 'Access to Grocery Stores' 'City 2019'; 'Households Living in Poverty' 'City · County 2022–2024'; each card with a small blue 'Download' link. (6) Bottom tab bar Search / Ask / Saved with simple line icons. (7) Footer 'Built on Data You Can Use's public data'. Palette: white #FFFFFF, near-black #111827 text, one blue accent #2563EB, light gray #F3F4F6 surfaces, system font, impeccable spacing.\n",
+  "createdAt": "2026-10-07T15:46:53.223Z",
+  "tool": "impeccable generate-image",
+  "model": "gpt-image-2.5-flare"
+}

@@ -1,0 +1,10 @@
+node_modules/
+.next/
+.env*
+!.env.example
+.DS_Store
+.remember/
+.impeccable/config.local.json
+.impeccable/review/
+.vercel/
+.impeccable/questions/
