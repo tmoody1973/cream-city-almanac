@@ -33,4 +33,22 @@ describe("searchReportCard", () => {
     expect(report.passed + report.misses.length).toBe(report.total);
     expect(report.rate).toBeCloseTo(report.passed / report.total);
   });
+
+  it("never spends the public search cap and reports any keyword-only answers", async () => {
+    const t = convexTest(schema, modules);
+    rateLimiterTest.register(t);
+    const fake = installFakeFetch();
+    const buildId = await t.mutation(internal.buildStore.beginBuild, {});
+    await t.mutation(internal.buildStore.swapCatalog, {
+      buildId,
+      families: fixtureFamilies().map((f) => toFamilyInput(f, null)),
+      dictionaries: [],
+    });
+    // Four runs need 104 searches, more than the public burst of 100.
+    for (let run = 0; run < 4; run++) {
+      const report = await t.action(internal.evals.searchReportCard, {});
+      expect(report.degraded).toBe(0);
+    }
+    expect(fake.count("/v1/embeddings")).toBe(4 * QUESTIONS.length);
+  }, 60_000);
 });

@@ -9,13 +9,15 @@ export const searchReportCard = internalAction({
   args: {},
   handler: async (ctx) => {
     const misses: { question: string; expected: string[]; got: string[] }[] = [];
+    let degraded = 0; // keyword-only answers grade the fallback, not real search; CI fails if any appear
     for (const q of QUESTIONS) {
       const res = await runSearch(ctx, { query: q.question });
+      if (res.degraded) degraded++;
       const got = res.results.map((r) => r.key);
       if (!passesTop3(q.expect, got)) misses.push({ question: q.question, expected: q.expect, got: got.slice(0, 3) });
     }
     const passed = QUESTIONS.length - misses.length;
-    return { total: QUESTIONS.length, passed, rate: passed / QUESTIONS.length, misses };
+    return { total: QUESTIONS.length, passed, rate: passed / QUESTIONS.length, misses, degraded };
   },
 });
 

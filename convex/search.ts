@@ -29,12 +29,17 @@ export const toRow = (f: Doc<"families">): ResultRow => ({
 
 export const searchCatalog = action({
   args: searchArgs,
-  handler: (ctx, args): Promise<SearchResponse> => runSearch(ctx, args),
+  // Only the public endpoint spends the shared embedding allowance; internal callers (the report card) never do.
+  handler: async (ctx, args): Promise<SearchResponse> => {
+    const capped = normalizeQuery(args.query) ? !(await rateLimiter.limit(ctx, "searchEmbeds")).ok : false;
+    return runSearch(ctx, args, { capped });
+  },
 });
 
 export async function runSearch(
   ctx: ActionCtx,
   args: { query: string; topic?: string; place?: string; year?: number },
+  opts: { capped?: boolean } = {},
 ): Promise<SearchResponse> {
   const q = normalizeQuery(args.query);
   if (!q) {
@@ -55,8 +60,7 @@ export async function runSearch(
   }
   let vectorLists: Hit[][] = [];
   try {
-    const allowance = await rateLimiter.limit(ctx, "searchEmbeds");
-    if (!allowance.ok) throw new Error(`search embedding cap reached; retry in ${Math.ceil(allowance.retryAfter / 1000)}s`);
+    if (opts.capped) throw new Error("public search embedding cap reached");
     const settings = await ctx.runQuery(internal.settings.get, {});
     const { vectors } = await embed([q], settings.embedModel, gatewayKey());
     const relevant = <T extends { _score: number }>(hits: T[]) => hits.filter((h) => h._score >= MIN_VECTOR_SCORE);
