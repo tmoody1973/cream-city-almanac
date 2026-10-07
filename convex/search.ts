@@ -4,6 +4,7 @@ import type { Doc } from "./_generated/dataModel";
 import { action, internalQuery, query, type ActionCtx, type QueryCtx } from "./_generated/server";
 import { embed, gatewayKey } from "./lib/gateway";
 import { STALE_BUILD_MS } from "./buildStore";
+import { rateLimiter } from "./limits";
 import { applyFilters, fuseRanks, keywordQuery, normalizeQuery, type Hit } from "./lib/rank";
 import type { ResultRow, SearchResponse } from "./lib/types";
 
@@ -54,6 +55,8 @@ export async function runSearch(
   }
   let vectorLists: Hit[][] = [];
   try {
+    const allowance = await rateLimiter.limit(ctx, "searchEmbeds");
+    if (!allowance.ok) throw new Error(`search embedding cap reached; retry in ${Math.ceil(allowance.retryAfter / 1000)}s`);
     const settings = await ctx.runQuery(internal.settings.get, {});
     const { vectors } = await embed([q], settings.embedModel, gatewayKey());
     const [cards, chunks] = await Promise.all([

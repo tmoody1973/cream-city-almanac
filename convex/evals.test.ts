@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 import { convexTest } from "convex-test";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import rateLimiterTest from "@convex-dev/rate-limiter/test";
 import { installFakeFetch } from "../tests/helpers/fakeFetch";
 import { fixtureFamilies } from "../tests/helpers/fixtures";
 import { internal } from "./_generated/api";
@@ -19,6 +20,7 @@ afterEach(() => {
 describe("searchReportCard", () => {
   it("grades every question and lists misses", async () => {
     const t = convexTest(schema, modules);
+    rateLimiterTest.register(t);
     installFakeFetch({ embeddingsStatus: 500 });
     const buildId = await t.mutation(internal.buildStore.beginBuild, {});
     await t.mutation(internal.buildStore.swapCatalog, {

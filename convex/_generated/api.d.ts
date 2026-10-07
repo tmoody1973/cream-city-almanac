@@ -33,6 +33,7 @@ import type * as lib_text from "../lib/text.js";
 import type * as lib_titles from "../lib/titles.js";
 import type * as lib_types from "../lib/types.js";
 import type * as lib_xlsx from "../lib/xlsx.js";
+import type * as limits from "../limits.js";
 import type * as search from "../search.js";
 import type * as settings from "../settings.js";
 import type * as validators from "../validators.js";
@@ -69,6 +70,7 @@ declare const fullApi: ApiFromModules<{
   "lib/titles": typeof lib_titles;
   "lib/types": typeof lib_types;
   "lib/xlsx": typeof lib_xlsx;
+  limits: typeof limits;
   search: typeof search;
   settings: typeof settings;
   validators: typeof validators;
@@ -100,4 +102,6 @@ export declare const internal: FilterApi<
   FunctionReference<any, "internal">
 >;
 
-export declare const components: {};
+export declare const components: {
+  rateLimiter: import("@convex-dev/rate-limiter/_generated/component.js").ComponentApi<"rateLimiter">;
+};
