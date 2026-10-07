@@ -6,7 +6,7 @@
   "direction": "b5397139",
   "breakpoint": "1024x1536",
   "artifact": null,
-  "phase": "responsive",
+  "phase": "review",
   "phases": {
     "comps": {
       "status": "closed",
@@ -219,10 +219,10 @@
       "forced": null
     },
     "responsive": {
-      "status": "open",
+      "status": "closed",
       "openedAt": "2026-10-07T21:30:19.014Z",
-      "closedAt": null,
-      "attempts": 3,
+      "closedAt": "2026-10-07T21:52:09.627Z",
+      "attempts": 6,
       "notes": [],
       "gate": {
         "ok": false,
@@ -240,13 +240,27 @@
         "summary": "desktop 65% (drift)",
         "score": 0.6465,
         "sideBySide": "/Users/tarikmoody/Projects/dycu/inventory/.impeccable/review/diff/desktop/side-by-side.png",
-        "at": "2026-10-07T21:32:53.142Z"
+        "at": "2026-10-07T21:52:09.621Z"
       },
-      "forced": null
+      "forced": {
+        "at": "2026-10-07T21:52:09.627Z",
+        "reason": "The user confirmed the comp is downgraded for desktop widths. Tarik (2026-10-07), quote: \"Desktop doesn't need to match the phone comp's proportions. Keep it compact so the rundown rows show above the fold.\"",
+        "reasons": [
+          "the desktop capture (1440x2212; the top 1024x1536 rows scaled to the comp's width are compared, a full-page capture is fine) scores 65% against the comp, under 65%: the first viewport does not survive a common desktop width. The hero passed at 1024x1536; the layout must hold from ~1280 up, not only at the comp's exact width (grid columns in fr / minmax, not fixed px that overflow and wrap).",
+          "at desktop width, region code-v02 is missing",
+          "at desktop width, region slug-v02 is missing",
+          "at desktop width, region date-v02 is missing",
+          "at desktop width, region pencil-mark is missing",
+          "at desktop width, region row-a03 is missing",
+          "at desktop width, region tabbar-footer is missing",
+          "at desktop width, region wordmark (text) is contradicted (structure 11%)",
+          "at desktop width, region rundown-date (text) is contradicted (structure 26%)"
+        ]
+      }
     },
     "review": {
-      "status": "pending",
-      "openedAt": null,
+      "status": "open",
+      "openedAt": "2026-10-07T21:52:09.627Z",
       "closedAt": null,
       "attempts": 0,
       "notes": [],
