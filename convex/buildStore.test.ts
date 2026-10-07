@@ -1,5 +1,5 @@
 /// <reference types="vite/client" />
-import { convexTest } from "convex-test";
+import { convexTest, type TestConvex } from "convex-test";
 import { describe, expect, it } from "vitest";
 import { fixtureFamilies } from "../tests/helpers/fixtures";
 import { internal } from "./_generated/api";
@@ -9,7 +9,7 @@ import schema from "./schema";
 const modules = import.meta.glob("./**/*.*s");
 const inputs = () => fixtureFamilies().map((f) => toFamilyInput(f, null));
 
-async function swap(t: ReturnType<typeof convexTest>, families = inputs(), dictionaries: { tab: string; dataSource: string; fields: never[] }[] = []) {
+async function swap(t: TestConvex<typeof schema>, families = inputs(), dictionaries: { tab: string; dataSource: string; fields: never[] }[] = []) {
   const buildId = await t.run((ctx) =>
     ctx.db.insert("builds", {
       status: "running", startedAt: Date.now(), finishedAt: null, pending: 0, done: 0, skipped: 0, failed: 0,

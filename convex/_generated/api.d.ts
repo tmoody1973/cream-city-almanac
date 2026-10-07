@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as build from "../build.js";
 import type * as buildStore from "../buildStore.js";
 import type * as lib_arcgis from "../lib/arcgis.js";
 import type * as lib_card from "../lib/card.js";
@@ -35,6 +36,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  build: typeof build;
   buildStore: typeof buildStore;
   "lib/arcgis": typeof lib_arcgis;
   "lib/card": typeof lib_card;
