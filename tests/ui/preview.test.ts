@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { fetchJson, fieldValue, headlineColumn, rowsUrl, sharedScale, valuesUrl } from "../../ui/lib/preview";
+import { fetchFeatures, fetchJson, fieldValue, headlineColumn, rowsUrl, sharedScale, valuesUrl } from "../../ui/lib/preview";
 
 describe("live preview helpers", () => {
   it("builds ArcGIS query URLs", () => {
@@ -36,6 +36,14 @@ describe("live preview helpers", () => {
     expect(await fetchJson("u", 8000, async () => new Response(JSON.stringify({ error: { message: "Invalid URL" } })))).toEqual({
       ok: false,
       reason: "Invalid URL",
+    });
+  });
+  it("fetchFeatures turns a 200 without a features list into a handled failure, not a crash", async () => {
+    const reply = (body: unknown) => async () => new Response(JSON.stringify(body));
+    expect(await fetchFeatures("u", 8000, reply({}))).toEqual({ ok: false, reason: "unexpected response from the Hub" });
+    expect(await fetchFeatures("u", 8000, reply({ features: [{ attributes: { per_asthma: 11 } }] }))).toEqual({
+      ok: true,
+      data: { features: [{ attributes: { per_asthma: 11 } }] },
     });
   });
 });

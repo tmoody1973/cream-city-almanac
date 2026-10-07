@@ -50,3 +50,17 @@ export async function fetchJson<T>(url: string, ms = PREVIEW_TIMEOUT_MS, fetchIm
     clearTimeout(timer);
   }
 }
+
+export type Features = { features: { attributes: Record<string, unknown> }[] };
+
+// A 200 from ArcGIS can still lack a features list (a renamed layer, a proxy page); treat that as a failed preview,
+// never as data to render, so the rest of the sheet keeps working.
+export async function fetchFeatures(url: string, ms = PREVIEW_TIMEOUT_MS, fetchImpl: typeof fetch = fetch): Promise<FetchResult<Features>> {
+  const r = await fetchJson<{ features?: unknown }>(url, ms, fetchImpl);
+  if (!r.ok) return r;
+  if (!Array.isArray(r.data.features)) return { ok: false, reason: "unexpected response from the Hub" };
+  const features = r.data.features.filter(
+    (f): f is { attributes: Record<string, unknown> } => typeof f?.attributes === "object" && f.attributes !== null,
+  );
+  return { ok: true, data: { features } };
+}

@@ -1,10 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
-import { fetchJson, fieldValue, headlineColumn, rowsUrl, sharedScale, valuesUrl, type FetchResult } from "@/ui/lib/preview";
+import { fetchFeatures, fieldValue, headlineColumn, rowsUrl, sharedScale, valuesUrl, type FetchResult, type Features } from "@/ui/lib/preview";
 import { StripChart } from "./StripChart";
 import styles from "./sheet.module.css";
 
-type Features = { features: { attributes: Record<string, unknown> }[] };
 type Member = { place: string | null; yearLabel: string | null; featureServerUrl: string | null };
 const SYSTEM = /^(objectid|object_id|fid|globalid|shape(__area|__length)?)$/i;
 const MAX_SERIES = 6;
@@ -20,15 +19,17 @@ export function LivePreview({ members, fields }: { members: Member[]; fields: st
   useEffect(() => {
     if (!latestUrl) return;
     let live = true;
-    fetchJson<Features>(rowsUrl(latestUrl)).then((r) => live && setRows(r));
+    fetchFeatures(rowsUrl(latestUrl)).then((r) => live && setRows(r));
     if (headline) {
       Promise.all(
         sources.map(async (m) => {
-          const r = await fetchJson<Features>(valuesUrl(m.featureServerUrl!, headline));
+          const r = await fetchFeatures(valuesUrl(m.featureServerUrl!, headline));
           const values = r.ok ? r.data.features.map((f) => Number(fieldValue(f.attributes, headline))).filter(Number.isFinite) : [];
           return { label: [m.place, m.yearLabel].filter(Boolean).join(" "), values };
         }),
-      ).then((s) => live && setSeries(s));
+      )
+        .then((s) => live && setSeries(s))
+        .catch(() => live && setSeries([]));
     }
     return () => {
       live = false;
