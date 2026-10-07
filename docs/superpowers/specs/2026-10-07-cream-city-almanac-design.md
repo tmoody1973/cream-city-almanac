@@ -177,7 +177,7 @@ All caps live in `settings` and change without a redeploy.
 
 ## 12. Open decisions and unverified facts
 
-- **AI provider and models** for card writing, chat, and embeddings (proposal: Vercel AI Gateway; embedding size must be ≤ 2048 for Convex). CopilotKit's docs example uses `"openai:gpt-4.1"`; which provider strings `BuiltInAgent` accepts is unverified.
+- **AI provider and models:** decided 2026-10-07: Vercel AI Gateway with `anthropic/claude-sonnet-5.5` for cards and chat, and `openai/text-embedding-3-small` (1536 dimensions) for meaning fingerprints. Still unverified: which provider strings CopilotKit's `BuiltInAgent` accepts (its docs example uses `"openai:gpt-4.1"`); checked when Phase 4 is planned.
 - **Costs:** per weekly run and per chat message, to be measured on the first full build; Firecrawl credits for ~180 PDFs unpriced.
 - **Firecrawl API key:** the CLI (v1.19.21) is installed; `FIRECRAWL_API_KEY` is not set in the environment.
 - **Convex:** per-action time limit and free-tier limits not verified.
