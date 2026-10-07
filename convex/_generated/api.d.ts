@@ -10,6 +10,7 @@
 
 import type * as build from "../build.js";
 import type * as buildStore from "../buildStore.js";
+import type * as crons from "../crons.js";
 import type * as lib_arcgis from "../lib/arcgis.js";
 import type * as lib_card from "../lib/card.js";
 import type * as lib_chunk from "../lib/chunk.js";
@@ -38,6 +39,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   build: typeof build;
   buildStore: typeof buildStore;
+  crons: typeof crons;
   "lib/arcgis": typeof lib_arcgis;
   "lib/card": typeof lib_card;
   "lib/chunk": typeof lib_chunk;

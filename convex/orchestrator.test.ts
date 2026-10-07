@@ -1,0 +1,91 @@
+/// <reference types="vite/client" />
+import { convexTest, type TestConvex } from "convex-test";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { installFakeFetch } from "../tests/helpers/fakeFetch";
+import { fixtureFamilies, hubCatalog } from "../tests/helpers/fixtures";
+import { internal } from "./_generated/api";
+import schema from "./schema";
+
+const modules = import.meta.glob("./**/*.*s");
+
+beforeEach(() => {
+  vi.useFakeTimers();
+  vi.stubEnv("AI_GATEWAY_API_KEY", "test-key");
+  vi.stubEnv("FIRECRAWL_API_KEY", "fc-test");
+});
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
+});
+
+async function run(t: TestConvex<typeof schema>) {
+  const buildId = await t.action(internal.build.start, {});
+  await t.finishAllScheduledFunctions(vi.runAllTimers);
+  return (await t.run((ctx) => ctx.db.get(buildId)))!;
+}
+
+const count = (t: TestConvex<typeof schema>, table: "families" | "cards" | "docChunks" | "sources") =>
+  t.run(async (ctx) => (await ctx.db.query(table).collect()).length);
+
+describe("weekly build", () => {
+  it(
+    "builds the whole catalog from the Hub, the sheet, Firecrawl and the AI",
+    async () => {
+      const t = convexTest(schema, modules);
+      installFakeFetch();
+      const build = await run(t);
+      expect(build.status).toBe("completed");
+      expect(build.pending).toBe(46 + 180);
+      expect(await count(t, "families")).toBe(46);
+      expect(await count(t, "cards")).toBe(46);
+      expect(await count(t, "docChunks")).toBe(360);
+      expect(await count(t, "sources")).toBe(5);
+      expect(build.mismatch!.unlinkedTabs).toEqual(["Milwaukee County Food Insecurit", "Milwaukee County Racial Demogra"]);
+      expect(build.report).toContain("Milwaukee County Racial Demogra");
+    },
+    120_000,
+  );
+
+  it(
+    "skips everything on an unchanged second run",
+    async () => {
+      const t = convexTest(schema, modules);
+      installFakeFetch();
+      await run(t);
+      const fake = installFakeFetch();
+      const second = await run(t);
+      expect(second.status).toBe("completed");
+      expect(second.skipped).toBe(226);
+      expect(fake.countSchema("dataset_card")).toBe(0);
+      expect(fake.count("api.firecrawl.dev")).toBe(0);
+    },
+    120_000,
+  );
+
+  it(
+    "removes report text for items that left the Hub",
+    async () => {
+      const t = convexTest(schema, modules);
+      installFakeFetch();
+      await run(t);
+      const goneId = fixtureFamilies().find((f) => f.key === "document:neighborhood-portrait")!.members[0].hubId;
+      const feed = hubCatalog as { dataset: { identifier: string }[] };
+      installFakeFetch({ hubFeed: { dataset: feed.dataset.filter((d) => !d.identifier.includes(goneId)) } });
+      const second = await run(t);
+      expect(second.orphanChunksDeleted).toBe(2);
+      const left = await t.run((ctx) => ctx.db.query("docChunks").withIndex("by_hubId", (q) => q.eq("hubId", goneId)).collect());
+      expect(left).toEqual([]);
+    },
+    120_000,
+  );
+
+  it("fails cleanly and keeps the catalog when the Hub feed is down", async () => {
+    const t = convexTest(schema, modules);
+    installFakeFetch({ hubStatus: 500 });
+    const build = await run(t);
+    expect(build.status).toBe("failed");
+    expect(build.report).toContain("Hub feed request failed: 500");
+    expect(await count(t, "families")).toBe(0);
+  });
+});

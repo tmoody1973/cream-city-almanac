@@ -18,11 +18,15 @@ import {
   type AiCard,
 } from "./lib/card";
 import { chunkMarkdown } from "./lib/chunk";
+import { HUB_FEED_URL, parseDcat } from "./lib/dcat";
+import { INVENTORY_XLSX_URL, isSuspectLink, mapDictionaries, readInventory, unlinkedTabs, type Inventory } from "./lib/dictionary";
+import { groupItems, isPdfFamily, toFamilyInput } from "./lib/families";
 import { firecrawlKey, scrapeMarkdown } from "./lib/firecrawl";
 import { chatJson, costUsd, embed, estimateTokens, gatewayKey } from "./lib/gateway";
 import { hashInputs } from "./lib/hash";
-import { matchSources } from "./lib/sources";
-import type { Card, Column } from "./lib/types";
+import { matchSources, SOURCE_JSON_SCHEMA, SOURCE_SITES, SOURCE_SYSTEM, sourceProfileSchema } from "./lib/sources";
+import { fixTypos } from "./lib/titles";
+import type { Card, Column, Mismatch } from "./lib/types";
 import type { Settings } from "./settings";
 
 type Outcome = "done" | "skipped" | "failed";
@@ -191,3 +195,101 @@ export const finish = internalAction({
     await ctx.runMutation(internal.buildStore.completeBuild, { buildId, orphanChunksDeleted: deleted });
   },
 });
+
+async function fetchOk(url: string, label: string): Promise<Response> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`${label} request failed: ${res.status}`);
+  return res;
+}
+
+export const start = internalAction({
+  args: {},
+  handler: async (ctx): Promise<Id<"builds">> => {
+    await ctx.runMutation(internal.settings.ensureDefaults, {});
+    const buildId = await ctx.runMutation(internal.buildStore.beginBuild, {});
+    try {
+      await runBuild(ctx, buildId);
+    } catch (e) {
+      await ctx.runMutation(internal.buildStore.failBuild, { buildId, reason: message(e) });
+    }
+    return buildId;
+  },
+});
+
+async function runBuild(ctx: ActionCtx, buildId: Id<"builds">) {
+  const settings = await ctx.runQuery(internal.settings.get, {});
+  const notes: string[] = [];
+
+  const items = parseDcat(await (await fetchOk(HUB_FEED_URL, "Hub feed")).json());
+  const overrides = await ctx.runQuery(internal.buildStore.listOverrides, {});
+  const families = groupItems(items, overrides.items);
+
+  let inventory: Inventory = { dictionaries: [], links: [], tabs: [] };
+  try {
+    inventory = readInventory(new Uint8Array(await (await fetchOk(INVENTORY_XLSX_URL, "Inventory sheet")).arrayBuffer()));
+  } catch (e) {
+    notes.push(`Inventory sheet unavailable, continuing without DYCU definitions: ${message(e)}`);
+  }
+  const { byFamily, unmatchedHomeTitles } = mapDictionaries(families, inventory.links, overrides.dictionaries);
+  const mismatch: Mismatch = {
+    unlinkedTabs: unlinkedTabs(inventory.tabs, inventory.links),
+    suspectLinks: inventory.links.filter(isSuspectLink),
+    unmatchedHomeTitles,
+    typoFixes: items.filter((i) => fixTypos(i.title) !== i.title).map((i) => i.title),
+  };
+
+  const swap = await ctx.runMutation(internal.buildStore.swapCatalog, {
+    buildId,
+    families: families.map((f) => toFamilyInput(f, byFamily[f.key] ?? null)),
+    dictionaries: inventory.dictionaries,
+  });
+  if (!swap.ok) throw new Error(swap.reason);
+
+  await refreshSources(ctx, buildId, settings, notes);
+
+  const reportIds = families.filter(isPdfFamily).flatMap((f) => f.members.map((m) => m.hubId));
+  const pending = families.length + reportIds.length;
+  await ctx.runMutation(internal.buildStore.setPending, { buildId, pending, notes, mismatch });
+  for (const [i, f] of families.entries()) {
+    await ctx.scheduler.runAfter(i * 500, internal.build.processFamily, { buildId, familyKey: f.key });
+  }
+  for (const [i, hubId] of reportIds.entries()) {
+    await ctx.scheduler.runAfter(i * settings.firecrawlSpacingMs, internal.build.processReport, { buildId, hubId });
+  }
+  if (pending === 0) await ctx.scheduler.runAfter(0, internal.build.finish, { buildId });
+}
+
+async function refreshSources(ctx: ActionCtx, buildId: Id<"builds">, settings: Settings, notes: string[]) {
+  const ages = new Map((await ctx.runQuery(internal.buildStore.sourceAges, {})).map((s) => [s.name, s.fetchedAt]));
+  const maxAgeMs = settings.sourceRefreshDays * 86_400_000;
+  for (const site of SOURCE_SITES) {
+    if (Date.now() - (ages.get(site.name) ?? 0) < maxAgeMs) continue;
+    try {
+      if (!(await ctx.runMutation(internal.buildStore.reserveFirecrawl, { buildId }))) {
+        notes.push(`Source ${site.name}: Firecrawl call cap reached`);
+        continue;
+      }
+      const page = await scrapeMarkdown(site.url, firecrawlKey());
+      const prompt = JSON.stringify({ source: site.name, url: site.url, page: page.slice(0, 12000) });
+      const estimate = costUsd(
+        { inputTokens: estimateTokens(SOURCE_SYSTEM + prompt), outputTokens: 600 },
+        settings.cardInputUsdPerToken,
+        settings.cardOutputUsdPerToken,
+      );
+      if (!(await ctx.runMutation(internal.buildStore.reserveSpend, { buildId, usd: estimate }))) {
+        notes.push(`Source ${site.name}: budget cap reached`);
+        continue;
+      }
+      const { value, usage } = await chatJson(
+        { model: settings.cardModel, system: SOURCE_SYSTEM, user: prompt, schemaName: "source_profile", schema: SOURCE_JSON_SCHEMA, maxTokens: 600 },
+        gatewayKey(),
+      );
+      const actual = costUsd(usage, settings.cardInputUsdPerToken, settings.cardOutputUsdPerToken);
+      await ctx.runMutation(internal.buildStore.settleSpend, { buildId, usd: actual - estimate });
+      const profile = sourceProfileSchema.parse(value);
+      await ctx.runMutation(internal.buildStore.upsertSource, { name: site.name, url: site.url, ...profile });
+    } catch (e) {
+      notes.push(`Source ${site.name}: ${message(e)}`);
+    }
+  }
+}

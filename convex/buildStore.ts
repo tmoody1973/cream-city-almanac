@@ -295,3 +295,18 @@ export const completeBuild = internalMutation({
     });
   },
 });
+
+export const sourceAges = internalQuery({
+  args: {},
+  handler: async (ctx) => (await ctx.db.query("sources").collect()).map((s) => ({ name: s.name, fetchedAt: s.fetchedAt })),
+});
+
+export const upsertSource = internalMutation({
+  args: { name: v.string(), url: v.string(), summary: v.string(), limits: v.string() },
+  handler: async (ctx, source) => {
+    const existing = await ctx.db.query("sources").withIndex("by_name", (q) => q.eq("name", source.name)).first();
+    const row = { ...source, fetchedAt: Date.now() };
+    if (existing) await ctx.db.patch(existing._id, row);
+    else await ctx.db.insert("sources", row);
+  },
+});
