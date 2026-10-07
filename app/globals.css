@@ -6,8 +6,8 @@
   --pencil: #d7261e;
   --rule: 2px solid var(--ink);
   --hair: 1px solid var(--ink);
-  /* Wordmark (900), codes, headings, labels (700): Saira Extra Condensed, matched to the comp's row code and,
-     after the finish review, to the wordmark's heavy rounded lettering. */
+  /* Codes, headings, labels: Saira Extra Condensed 700 (font-match on the comp's row code). The wordmark is
+     variable Saira at its ultra-condensed width, 900, matched to the comp's heavy rounded lettering. */
   --font-caps: var(--font-saira), "Arial Narrow", sans-serif;
   --font-wordmark: var(--font-saira-var), var(--font-caps);
   --font-body: var(--font-vazirmatn), "Helvetica Neue", Arial, sans-serif;

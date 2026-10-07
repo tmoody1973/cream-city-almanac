@@ -259,16 +259,20 @@
       }
     },
     "review": {
-      "status": "open",
+      "status": "closed",
       "openedAt": "2026-10-07T21:52:09.627Z",
-      "closedAt": null,
+      "closedAt": "2026-10-07T22:42:17.044Z",
       "attempts": 0,
       "notes": [],
       "gate": null,
       "forced": null
     }
   },
-  "finish": null,
+  "finish": {
+    "disposition": "ship",
+    "at": "2026-10-07T22:42:17.044Z",
+    "phaseAtFinish": "review"
+  },
   "plates": {
     "pencil-mark": {
       "status": "ok",

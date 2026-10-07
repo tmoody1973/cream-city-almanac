@@ -1,0 +1,356 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-07T22:48:47Z",
+  "title": "Design System: Cream City Almanac",
+  "extensions": {
+    "colorMeta": {
+      "pencil": {
+        "role": "primary",
+        "displayName": "Grease-Pencil Red",
+        "canonical": "#d7261e",
+        "oklch": "oklch(56.7% 0.212 28.8)",
+        "tonalRamp": [
+          "oklch(15% 0.212 28.8)",
+          "oklch(26% 0.212 28.8)",
+          "oklch(38% 0.212 28.8)",
+          "oklch(49% 0.212 28.8)",
+          "oklch(61% 0.212 28.8)",
+          "oklch(72% 0.212 28.8)",
+          "oklch(84% 0.212 28.8)",
+          "oklch(95% 0.212 28.8)"
+        ],
+        "usage": "Raster grease-pencil plates only; never a CSS paint."
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Rundown Paper",
+        "canonical": "#ffffff",
+        "oklch": "oklch(100% 0 0)",
+        "tonalRamp": [
+          "oklch(15% 0 0)",
+          "oklch(26% 0 0)",
+          "oklch(38% 0 0)",
+          "oklch(49% 0 0)",
+          "oklch(61% 0 0)",
+          "oklch(72% 0 0)",
+          "oklch(84% 0 0)",
+          "oklch(95% 0 0)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Press Ink",
+        "canonical": "#111111",
+        "oklch": "oklch(17.8% 0 0)",
+        "tonalRamp": [
+          "oklch(15% 0 0)",
+          "oklch(26% 0 0)",
+          "oklch(38% 0 0)",
+          "oklch(49% 0 0)",
+          "oklch(61% 0 0)",
+          "oklch(72% 0 0)",
+          "oklch(84% 0 0)",
+          "oklch(95% 0 0)"
+        ]
+      },
+      "band": {
+        "role": "neutral",
+        "displayName": "Rundown Band",
+        "canonical": "#ededea",
+        "oklch": "oklch(94.5% 0.004 106.5)",
+        "tonalRamp": [
+          "oklch(15% 0.004 106.5)",
+          "oklch(26% 0.004 106.5)",
+          "oklch(38% 0.004 106.5)",
+          "oklch(49% 0.004 106.5)",
+          "oklch(61% 0.004 106.5)",
+          "oklch(72% 0.004 106.5)",
+          "oklch(84% 0.004 106.5)",
+          "oklch(95% 0.004 106.5)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Graphite",
+        "canonical": "#5c5c5c",
+        "oklch": "oklch(47.5% 0 0)",
+        "tonalRamp": [
+          "oklch(15% 0 0)",
+          "oklch(26% 0 0)",
+          "oklch(38% 0 0)",
+          "oklch(49% 0 0)",
+          "oklch(61% 0 0)",
+          "oklch(72% 0 0)",
+          "oklch(84% 0 0)",
+          "oklch(95% 0 0)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Wordmark",
+        "purpose": "The Cream City Almanac wordmark only; uppercase, one line, Saira variable at font-stretch 50%."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Section titles and the family name on a dataset sheet."
+      },
+      "title": {
+        "displayName": "Result Title",
+        "purpose": "Family titles on search-result rows; the open row steps up to clamp(20px, 4.3vw, 44px)."
+      },
+      "code": {
+        "displayName": "Code",
+        "purpose": "Permanent row codes, the SLUG: label, sheet header codes; lining tabular figures."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Column heads, ruled buttons, sheet section headings and download links."
+      },
+      "tab": {
+        "displayName": "Tab",
+        "purpose": "SEARCH / ASK / SAVED."
+      },
+      "masthead-side": {
+        "displayName": "Masthead Side",
+        "purpose": "TODAY'S RUNDOWN, or RUNDOWN with a result count, beside the wordmark; uppercase."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Row names and sublines, dates, slug input, suggestion tags, explainers."
+      },
+      "body-small": {
+        "displayName": "Body Small",
+        "purpose": "Catalog line, notices, grid cells, sheet sublines, glossary and preview tables."
+      },
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "The credit footer."
+      }
+    },
+    "shadows": [],
+    "strokes": [
+      {
+        "name": "rule",
+        "value": "2px solid #111111",
+        "purpose": "Opens a block: section title, slug entry, sheet header, download bar, ruled buttons."
+      },
+      {
+        "name": "hair",
+        "value": "1px solid #111111",
+        "purpose": "Divides inside a block: masthead, catalog line, column heads, tag dividers, panels, tables, tab bar."
+      },
+      {
+        "name": "tab-active-bar",
+        "value": "6px #111111 bar, inset clamp(4px, 1.7vw, 17px) from the cell bottom",
+        "purpose": "Marks the active tab; drawn with ::after, never a shadow."
+      },
+      {
+        "name": "focus-ring",
+        "value": "outline: 3px solid #111111; outline-offset: 2px",
+        "purpose": "The single focus treatment for every interactive element."
+      }
+    ],
+    "motion": [
+      {
+        "name": "pencil-draw",
+        "value": "clip-path: inset(0 100% 0 0) to inset(0 0 0 0); 600ms steps(12, end) 250ms both",
+        "purpose": "The one signature motion: the grease-pencil circle draws on in frames when the rundown loads. Removed under prefers-reduced-motion, which also disables every animation and transition globally."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "comp",
+        "value": "1024px",
+        "purpose": "The approved comp's width; every clamp() tops out here, so type and row heights stop growing."
+      },
+      {
+        "name": "sheet-bar-static",
+        "value": "900px",
+        "purpose": "From here the dataset sheet's download bar sits in flow instead of pinning to the bottom."
+      },
+      {
+        "name": "dock-static",
+        "value": "1100px and orientation: landscape",
+        "purpose": "From here the home screen's tab bar and credit return to the page end instead of pinning."
+      },
+      {
+        "name": "column-max",
+        "value": "1280px",
+        "purpose": "Maximum width of the single centered column."
+      }
+    ],
+    "plates": [
+      {
+        "name": "pencil-mark",
+        "file": "public/plates/pencil-mark.png",
+        "meaning": "Circle plus \"new\": updated since the reader's last visit. Wraps the date; the only animated element."
+      },
+      {
+        "name": "pencil-tick",
+        "file": "public/plates/pencil-tick.png",
+        "meaning": "Opened before."
+      },
+      {
+        "name": "pencil-arrow",
+        "file": "public/plates/pencil-arrow.png",
+        "meaning": "The row open now; sits before its code."
+      },
+      {
+        "name": "pencil-underline",
+        "file": "public/plates/pencil-underline.png",
+        "meaning": "The row open now; swash drawn below its title's descenders."
+      },
+      {
+        "name": "saved-number",
+        "file": null,
+        "meaning": "Reserved by the direction contract (number = saved) for the Saved phase; not drawn yet."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Ruled Button",
+      "kind": "button",
+      "refersTo": "button-ruled",
+      "description": "Flat, square, 2px ink-ruled action in label capitals; Open sheet carries the drawn arrow. No hover fill; focus is the 3px ink ring.",
+      "html": "<div class=\"ds-actions\"><a class=\"ds-btn-ruled\" href=\"#\">Open sheet<svg class=\"ds-arrow\" viewBox=\"0 0 20 12\" aria-hidden=\"true\"><path d=\"M1 6 H17 M12 1.5 L17.5 6 L12 10.5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"square\"/></svg></a><a class=\"ds-btn-ruled\" href=\"#\">CSV</a></div>",
+      "css": ".ds-actions { display: flex; gap: 12px; } .ds-btn-ruled { display: inline-flex; align-items: center; min-height: clamp(44px, 7.4vw, 76px); padding: 0 clamp(14px, 4vw, 40px); border: 2px solid var(--ink, #111111); border-radius: 0; background: transparent; color: var(--ink, #111111); font-family: var(--font-caps, \"Saira Extra Condensed\", \"Arial Narrow\", sans-serif); font-weight: 700; font-size: clamp(14px, 3.03vw, 31px); text-decoration: none; } .ds-btn-ruled:focus-visible { outline: 3px solid var(--ink, #111111); outline-offset: 2px; } .ds-arrow { width: 0.85em; height: auto; margin-left: 0.35em; vertical-align: 0.05em; }"
+    },
+    {
+      "name": "Compact Ruled Button (download bar)",
+      "kind": "button",
+      "refersTo": "button-ruled-compact",
+      "description": "The dataset sheet's download bar: 44px ruled buttons on paper under a 2px rule; pinned on phones, in flow from 900px.",
+      "html": "<div class=\"ds-dlbar\"><a class=\"ds-btn-compact\" href=\"#\">CSV</a><a class=\"ds-btn-compact\" href=\"#\">View on Hub</a></div>",
+      "css": ".ds-dlbar { display: flex; gap: 12px; padding: 12px 0; border-top: 2px solid var(--ink, #111111); background: var(--paper, #ffffff); } .ds-btn-compact { display: inline-flex; align-items: center; min-height: 44px; padding: 0 clamp(14px, 3vw, 28px); border: 2px solid var(--ink, #111111); border-radius: 0; color: var(--ink, #111111); font-family: var(--font-caps, \"Saira Extra Condensed\", \"Arial Narrow\", sans-serif); font-weight: 700; font-size: clamp(14px, 3.03vw, 31px); text-decoration: none; } .ds-btn-compact:focus-visible { outline: 3px solid var(--ink, #111111); outline-offset: 2px; }"
+    },
+    {
+      "name": "Slug Entry",
+      "kind": "input",
+      "refersTo": "slug-input",
+      "description": "SLUG: in code capitals, then a borderless transparent search input on the same baseline, closed below by the 2px ink rule.",
+      "html": "<form class=\"ds-slug\" role=\"search\" onsubmit=\"return false\"><label class=\"ds-slug-label\" for=\"ds-slug\">SLUG:</label><input id=\"ds-slug\" class=\"ds-slug-input\" type=\"search\" autocomplete=\"off\" placeholder=\"What are you reporting on?\"></form>",
+      "css": ".ds-slug { display: flex; align-items: baseline; gap: clamp(10px, 3vw, 30px); padding: clamp(10px, 1.66vw, 17px) 0 clamp(6px, 1.2vw, 12px); border-bottom: 2px solid var(--ink, #111111); } .ds-slug-label { font-family: var(--font-caps, \"Saira Extra Condensed\", \"Arial Narrow\", sans-serif); font-weight: 700; font-size: clamp(22px, 5.76vw, 59px); line-height: 1; color: var(--ink, #111111); } .ds-slug-input { flex: 1; min-width: 0; min-height: 44px; border: 0; border-radius: 0; background: transparent; font-family: var(--font-body, Vazirmatn, \"Helvetica Neue\", Arial, sans-serif); font-size: clamp(16px, 2.93vw, 30px); color: var(--ink, #111111); caret-color: var(--ink, #111111); } .ds-slug-input::placeholder { color: var(--muted, #5c5c5c); } .ds-slug-input:focus-visible { outline: 3px solid var(--ink, #111111); outline-offset: 2px; }"
+    },
+    {
+      "name": "Suggestion Tags",
+      "kind": "chip",
+      "refersTo": "suggestion-tag",
+      "description": "Three plain-word searches in body type, divided by vertical hairlines; hover underlines. Hidden while a search runs.",
+      "html": "<div class=\"ds-tags\" aria-label=\"Suggested searches\"><button type=\"button\" class=\"ds-tag\">food insecurity</button><button type=\"button\" class=\"ds-tag\">rent burden</button><button type=\"button\" class=\"ds-tag\">air quality</button></div>",
+      "css": ".ds-tags { display: grid; grid-template-columns: repeat(3, 1fr); padding-block: clamp(6px, 2.15vw, 22px); border-bottom: 1px solid var(--ink, #111111); } .ds-tag { min-height: 44px; padding: 4px 8px; border: 0; border-left: 1px solid var(--ink, #111111); border-radius: 0; background: transparent; font-family: var(--font-body, Vazirmatn, \"Helvetica Neue\", Arial, sans-serif); font-size: clamp(16px, 2.93vw, 30px); color: var(--ink, #111111); cursor: pointer; } .ds-tag:first-child { border-left: 0; } .ds-tag:hover { text-decoration: underline; text-underline-offset: 0.18em; } .ds-tag:focus-visible { outline: 3px solid var(--ink, #111111); outline-offset: 2px; }"
+    },
+    {
+      "name": "Provenance Tag",
+      "kind": "chip",
+      "refersTo": "provenance-tag",
+      "description": "Boxed capital source tag (HUB, DYCU, SOURCE, AI) at 0.8em, trailing every sourced or AI-written fact; full meaning in its title.",
+      "html": "<p class=\"ds-explainer\">Food insecurity prevalence, meaning the share of adults who report that the food they bought did not last and they had no money to get more. <abbr class=\"ds-prov\" title=\"Written by AI from the facts above\">AI</abbr></p>",
+      "css": ".ds-explainer { margin: 0; font-family: var(--font-body, Vazirmatn, \"Helvetica Neue\", Arial, sans-serif); font-size: clamp(16px, 2.93vw, 30px); line-height: 1.3; color: var(--ink, #111111); } .ds-prov { display: inline-block; padding: 0 0.35em; border: 1px solid var(--ink, #111111); border-radius: 0; font-family: var(--font-caps, \"Saira Extra Condensed\", \"Arial Narrow\", sans-serif); font-weight: 700; font-size: 0.8em; text-decoration: none; vertical-align: 0.1em; }"
+    },
+    {
+      "name": "Tab Bar",
+      "kind": "nav",
+      "refersTo": "tab",
+      "description": "Three equal cells between hairlines; inactive and coming-soon tabs graphite, the active tab ink with a drawn 6px ink bar (no shadow).",
+      "html": "<nav class=\"ds-tabbar\" aria-label=\"Sections\"><a class=\"ds-tab ds-tab-active\" href=\"#\" aria-current=\"page\">SEARCH</a><span class=\"ds-tab\" aria-disabled=\"true\" title=\"Coming soon\">ASK</span><span class=\"ds-tab\" aria-disabled=\"true\" title=\"Coming soon\">SAVED</span></nav>",
+      "css": ".ds-tabbar { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--ink, #111111); border-bottom: 1px solid var(--ink, #111111); background: var(--paper, #ffffff); } .ds-tab { position: relative; display: flex; align-items: center; justify-content: center; min-height: clamp(56px, 9.8vw, 100px); font-family: var(--font-caps, \"Saira Extra Condensed\", \"Arial Narrow\", sans-serif); font-weight: 700; font-size: clamp(16px, 3.9vw, 40px); color: var(--muted, #5c5c5c); text-decoration: none; } .ds-tab-active { color: var(--ink, #111111); } .ds-tab-active::after { content: \"\"; position: absolute; left: 0; right: 0; bottom: clamp(4px, 1.7vw, 17px); height: 6px; background: var(--ink, #111111); } .ds-tab:focus-visible { outline: 3px solid var(--ink, #111111); outline-offset: 2px; }"
+    },
+    {
+      "name": "Rundown Table",
+      "kind": "custom",
+      "refersTo": "rundown-row",
+      "description": "Signature: section title under a 2px rule, label-voice column heads, then one banded row per family (code | slug | updated). The red grease-pencil plates are raster and are not reproduced here.",
+      "html": "<section class=\"ds-rundown\"><h2 class=\"ds-section-title\">UPDATED THIS SEASON</h2><div class=\"ds-cols\"><span>CODE</span><span>SLUG</span><span>UPDATED</span></div><ol class=\"ds-rows\"><li><button type=\"button\" class=\"ds-row\" aria-expanded=\"false\"><span class=\"ds-code\">V02</span><span class=\"ds-slugcell\"><span>Daily Air Quality —</span><span>City · 2023–2025</span></span><span class=\"ds-right\">Jul 28</span></button></li><li><button type=\"button\" class=\"ds-row\" aria-expanded=\"false\"><span class=\"ds-code\">S01</span><span class=\"ds-slugcell\"><span>Individuals with Bachelors Degree or Higher —</span><span>County · 2024</span></span><span class=\"ds-right\">Jul 16</span></button></li><li><button type=\"button\" class=\"ds-row\" aria-expanded=\"false\"><span class=\"ds-code\">A04</span><span class=\"ds-slugcell\"><span>MKE FreshAir Dashboard —</span><span>web app</span></span><span class=\"ds-right\">Jun 25</span></button></li></ol></section>",
+      "css": ".ds-rundown { color: var(--ink, #111111); font-family: var(--font-body, Vazirmatn, \"Helvetica Neue\", Arial, sans-serif); font-size: clamp(16px, 2.93vw, 30px); line-height: 1.3; } .ds-section-title { margin: 0; padding: clamp(6px, 1vw, 10px) 0 clamp(4px, 0.8vw, 8px); border-top: 2px solid var(--ink, #111111); border-bottom: 1px solid var(--ink, #111111); font-family: var(--font-caps, \"Saira Extra Condensed\", \"Arial Narrow\", sans-serif); font-weight: 700; font-size: clamp(26px, 5.86vw, 60px); line-height: 1; } .ds-cols, .ds-row { display: grid; grid-template-columns: minmax(3.5ch, 18%) 1fr minmax(6ch, 20%); align-items: center; padding-inline: 4px; } .ds-cols { padding-block: clamp(8px, 1.27vw, 13px); border-bottom: 1px solid var(--ink, #111111); font-family: var(--font-caps, \"Saira Extra Condensed\", \"Arial Narrow\", sans-serif); font-weight: 700; font-size: clamp(14px, 3.03vw, 31px); } .ds-rows { list-style: none; margin: 0; padding: 0; } .ds-rows li:nth-child(even) { background: var(--band, #ededea); } .ds-row { width: 100%; min-height: clamp(64px, 13.2vw, 135px); padding-block: clamp(12px, 1.6vw, 16px); border: 0; background: transparent; text-align: left; font: inherit; color: var(--ink, #111111); cursor: pointer; } .ds-row:focus-visible { outline: 3px solid var(--ink, #111111); outline-offset: 2px; } .ds-code { position: relative; top: -0.19em; font-family: var(--font-caps, \"Saira Extra Condensed\", \"Arial Narrow\", sans-serif); font-weight: 700; font-size: clamp(22px, 5.76vw, 59px); line-height: 1; font-variant-numeric: lining-nums tabular-nums; } .ds-slugcell { display: flex; flex-direction: column; min-width: 0; padding-right: 12px; overflow-wrap: anywhere; } .ds-right { white-space: nowrap; font-variant-numeric: tabular-nums; }"
+    },
+    {
+      "name": "Place-by-Year Grid",
+      "kind": "custom",
+      "refersTo": "grid-cell",
+      "description": "Hairline table of places by years; a solid ink square means the year exists, a graphite dash means it does not. Cells are 44px or larger.",
+      "html": "<table class=\"ds-grid\" aria-label=\"Places and years available\"><thead><tr><td></td><th scope=\"col\">2022</th><th scope=\"col\">2023</th></tr></thead><tbody><tr><th scope=\"row\">City</th><td><span class=\"ds-on\"></span></td><td class=\"ds-off\">—</td></tr><tr><th scope=\"row\">County</th><td class=\"ds-off\">—</td><td><span class=\"ds-on\"></span></td></tr></tbody></table>",
+      "css": ".ds-grid { border-collapse: collapse; font-family: var(--font-body, Vazirmatn, \"Helvetica Neue\", Arial, sans-serif); font-size: clamp(14px, 2.54vw, 26px); color: var(--ink, #111111); } .ds-grid th, .ds-grid td { min-width: clamp(44px, 8.2vw, 84px); height: clamp(44px, 6.4vw, 66px); border: 1px solid var(--ink, #111111); text-align: center; font-weight: 500; } .ds-grid th[scope=\"row\"] { padding: 0 10px; text-align: left; } .ds-on { display: inline-block; width: 0.9em; height: 0.9em; background: var(--ink, #111111); } .ds-off { color: var(--muted, #5c5c5c); }"
+    },
+    {
+      "name": "Masthead",
+      "kind": "custom",
+      "description": "The wordmark (Saira 900 at 50% width, uppercase, one line) left; TODAY'S RUNDOWN and the date right; closed by a hairline.",
+      "html": "<header class=\"ds-masthead\"><h1 class=\"ds-wordmark\">Cream City Almanac</h1><p class=\"ds-side\">TODAY'S RUNDOWN<span class=\"ds-side-date\">Wed Oct 7, 2026</span></p></header>",
+      "css": ".ds-masthead { display: flex; justify-content: space-between; align-items: flex-start; gap: clamp(16px, 3.5vw, 36px); padding: clamp(14px, 2.9vw, 30px) 0 clamp(12px, 3vw, 31px); border-bottom: 1px solid var(--ink, #111111); color: var(--ink, #111111); } .ds-wordmark { margin: 0; font-family: var(--font-wordmark, Saira, \"Saira Extra Condensed\", \"Arial Narrow\", sans-serif); font-weight: 900; font-stretch: 50%; font-size: clamp(30px, 9.6vw, 98px); line-height: 0.9; text-transform: uppercase; white-space: nowrap; flex-shrink: 0; } .ds-side { margin: 0; text-align: right; font-family: var(--font-caps, \"Saira Extra Condensed\", \"Arial Narrow\", sans-serif); font-weight: 700; font-size: clamp(15px, 3.9vw, 40px); line-height: 1.1; text-transform: uppercase; } .ds-side-date { display: block; margin-top: 0.2em; font-family: var(--font-body, Vazirmatn, \"Helvetica Neue\", Arial, sans-serif); font-weight: 400; font-size: clamp(16px, 2.93vw, 30px); text-transform: none; font-variant-numeric: tabular-nums; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Marked-Up Rundown",
+    "overview": "The almanac is laid out like a radio newsroom's show rundown: one white sheet, a heavy condensed masthead, and every dataset family set as a single slugged row with a permanent code. Structure comes from ruled ink lines and alternating gray bands, never from boxes. The only color on the sheet is a producer's red grease pencil, drawn by hand onto the paper to say what changed since your last visit, what you have already opened, and which row you have open now.\n\nDensity is set for a reporter on a phone on deadline. Rows are tall enough to tap one-handed, codes are big enough to scan, and the first viewport carries the masthead, the slug entry, the newest rows, and the tab bar together. Desktop is deliberately compact: the same column, capped at 1280px, with type that stops growing at the approved comp's 1024px sizes, so more of the rundown shows above the fold instead of a phone layout blown up.\n\nThe world refuses the category default for data catalogs: card grids with rounded tag chips and dashboards of charts. It also refuses shadows, corner radii, gradients, and cards. Hierarchy is carried by rule weight, type voice, and banding alone.",
+    "keyCharacteristics": [
+      "White rundown paper, ink text, ink rules; one hand-drawn red.",
+      "Bold condensed newsroom capitals for codes, headings, labels, buttons, and tabs over a plain sans for the data itself.",
+      "Permanent codes and dates in lining tabular figures, aligned down the column.",
+      "Two rule weights: a 2px ink rule opens a block, a 1px hairline divides inside it.",
+      "Flat, square-cornered, ruled buttons. No shadows, radii, gradients, or cards.",
+      "One motion: the grease-pencil circle draws itself on."
+    ],
+    "rules": [
+      {
+        "name": "The Grease Pencil Rule",
+        "body": "Red exists only as hand-drawn raster plates with a fixed meaning each; it is never a text color, border, fill, hover, focus ring, or vector icon.",
+        "section": "colors"
+      },
+      {
+        "name": "The Ink-and-Paper Rule",
+        "body": "Everything structural and interactive is ink on white: text, rules, buttons, the active tab, filled cells, focus. Gray is for banding, chart guides, and secondary text, never for rules or borders.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two Voices Rule",
+        "body": "Condensed capitals name things (codes, headings, labels, buttons, tabs); Vazirmatn carries the data (names, sublines, dates, explainers). A role never switches voice.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Figures Rule",
+        "body": "Codes, dates, years, and counts use tabular figures, and codes also lining figures, so every column of numbers aligns.",
+        "section": "typography"
+      },
+      {
+        "name": "The One Wordmark Rule",
+        "body": "Saira at 50% width and weight 900 is reserved for the wordmark. Nothing else uses the display face.",
+        "section": "typography"
+      },
+      {
+        "name": "The Compact Desk Rule",
+        "body": "Desktop is the phone sheet given room, not a new layout: a 1280px column, type capped at the comp's 1024px sizes, and nothing pinned that would hide rows on a wide landscape screen.",
+        "section": "layout"
+      },
+      {
+        "name": "The Ruled-Not-Raised Rule",
+        "body": "Nothing lifts off the page. Emphasis is a heavier rule, a heavier voice, or a red pencil mark, never a shadow; even the active tab is marked by a drawn 6px ink bar, not a glow or an underlay.",
+        "section": "elevation"
+      },
+      {
+        "name": "The One Motion Rule",
+        "body": "The pencil circle drawing on is the only animation in the system; nothing else fades, slides, or transitions, and reduced motion removes even that.",
+        "section": "components"
+      }
+    ],
+    "dos": [
+      "**Do** open every block with the 2px ink rule and divide inside it with 1px ink hairlines; let the band separate alternate rows.",
+      "**Do** set codes, dates, years, and counts in tabular figures, with codes in Saira Extra Condensed 700 and lining figures.",
+      "**Do** give every grease-pencil plate a visually hidden text equivalent and hide the image itself from assistive tech.",
+      "**Do** keep every touch target at 44px or taller.",
+      "**Do** tag every sourced or AI-written fact with the boxed provenance tag.",
+      "**Do** draw icons as inline strokes in the current text color, like the 2px square-capped arrow.",
+      "**Do** cap the column at 1280px and let type stop at the comp's 1024px sizes on desktop."
+    ],
+    "donts": [
+      "**Don't** use red for anything a stylesheet draws: text, borders, fills, hover, focus, or vector icons. Red is raster grease pencil only.",
+      "**Don't** add shadows, corner radii, gradients, or cards.",
+      "**Don't** present datasets as card grids with rounded tag chips or as dashboards of charts; a family is a ruled row or a ruled sheet.",
+      "**Don't** animate anything besides the pencil circle drawing on.",
+      "**Don't** pin the tab bar on wide landscape screens, or pin both the tab bar and the download bar on a sheet.",
+      "**Don't** use Unicode glyphs in place of drawn icons.",
+      "**Don't** use the display face for anything but the wordmark."
+    ]
+  }
+}
