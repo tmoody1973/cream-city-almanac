@@ -1,0 +1,30 @@
+{
+  "name": "cream-city-almanac",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p .",
+    "fixtures": "node scripts/make-fixtures.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "convex": "^1.46.0",
+    "fflate": "^0.8.3",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@edge-runtime/vm": "^5.0.0",
+    "convex-test": "^0.0.60",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.3"
+  }
+}
