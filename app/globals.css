@@ -11,8 +11,8 @@
   --font-caps: var(--font-saira), "Arial Narrow", sans-serif;
   --font-body: var(--font-vazirmatn), "Helvetica Neue", Arial, sans-serif;
   /* Measured from the approved comp at 1024px wide (.impeccable/build/spec.json), floored for phones. */
-  /* Below 900px the wordmark runs a touch smaller so it never wraps beside the masthead's right column. */
-  --fs-wordmark: clamp(26px, 9.2vw, 102px);
+  /* Sized to the comp's wordmark width (538px at 1024) in Saira 900 at normal spacing. */
+  --fs-wordmark: clamp(26px, 7.8vw, 80px);
   --fs-masthead-side: clamp(15px, 3.9vw, 40px);
   --fs-heading: clamp(26px, 5.86vw, 60px);
   --fs-code: clamp(22px, 5.76vw, 59px);
@@ -75,12 +75,6 @@ a {
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
-}
-
-@media (min-width: 900px) {
-  :root {
-    --fs-wordmark: clamp(26px, 9.96vw, 102px);
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
