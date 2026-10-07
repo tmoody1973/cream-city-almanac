@@ -7,17 +7,21 @@
   --rule: 2px solid var(--ink);
   --hair: 1px solid var(--ink);
   --font-display: var(--font-karantina), "Arial Narrow", sans-serif;
+  /* Codes, headings, labels: font-match on the comp's row code (Saira Extra Condensed 700, lining figures). */
+  --font-caps: var(--font-saira), "Arial Narrow", sans-serif;
   --font-body: var(--font-vazirmatn), "Helvetica Neue", Arial, sans-serif;
   /* Measured from the approved comp at 1024px wide (.impeccable/build/spec.json), floored for phones. */
   --fs-wordmark: clamp(36px, 9.96vw, 102px);
-  --fs-masthead-side: clamp(15px, 4vw, 41px);
-  --fs-heading: clamp(26px, 5.47vw, 56px);
-  --fs-code: clamp(22px, 5.66vw, 58px);
+  --fs-masthead-side: clamp(15px, 3.9vw, 40px);
+  --fs-heading: clamp(26px, 5.86vw, 60px);
+  --fs-code: clamp(22px, 5.76vw, 59px);
   --fs-body: clamp(16px, 2.93vw, 30px);
   --fs-small: clamp(14px, 2.54vw, 26px);
-  --fs-label: clamp(14px, 2.73vw, 28px);
+  --fs-label: clamp(14px, 3.03vw, 31px);
+  --fs-tab: clamp(16px, 3.9vw, 40px);
+  --fs-credit: clamp(13px, 1.76vw, 18px);
   --gutter: clamp(16px, 3.5vw, 36px);
-  --row-h: clamp(64px, 15vw, 154px);
+  --row-h: clamp(64px, 13.2vw, 135px);
 }
 
 *,
@@ -43,6 +47,19 @@ body {
 
 a {
   color: inherit;
+}
+
+::selection {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+input {
+  caret-color: var(--ink);
+}
+
+a {
+  text-underline-offset: 0.18em;
 }
 
 :focus-visible {

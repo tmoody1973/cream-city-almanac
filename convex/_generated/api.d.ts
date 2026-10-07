@@ -28,6 +28,7 @@ import type * as lib_hash from "../lib/hash.js";
 import type * as lib_http from "../lib/http.js";
 import type * as lib_rank from "../lib/rank.js";
 import type * as lib_report from "../lib/report.js";
+import type * as lib_retry from "../lib/retry.js";
 import type * as lib_sources from "../lib/sources.js";
 import type * as lib_text from "../lib/text.js";
 import type * as lib_titles from "../lib/titles.js";
@@ -65,6 +66,7 @@ declare const fullApi: ApiFromModules<{
   "lib/http": typeof lib_http;
   "lib/rank": typeof lib_rank;
   "lib/report": typeof lib_report;
+  "lib/retry": typeof lib_retry;
   "lib/sources": typeof lib_sources;
   "lib/text": typeof lib_text;
   "lib/titles": typeof lib_titles;

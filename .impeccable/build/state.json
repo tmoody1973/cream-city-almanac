@@ -1,0 +1,238 @@
+{
+  "tool": "build-phase",
+  "version": 2,
+  "startedAt": "2026-10-07T18:42:26.790Z",
+  "comp": ".impeccable/mocks/home-b.webp",
+  "direction": "b5397139",
+  "breakpoint": "1024x1536",
+  "artifact": null,
+  "phase": "sections",
+  "phases": {
+    "comps": {
+      "status": "closed",
+      "openedAt": "2026-10-07T18:42:26.789Z",
+      "closedAt": "2026-10-07T18:46:53.248Z",
+      "attempts": 1,
+      "notes": [],
+      "gate": {
+        "ok": true,
+        "reasons": [],
+        "summary": "3 comps, 1 approved",
+        "approved": ".impeccable/mocks/home-b.webp",
+        "at": "2026-10-07T18:46:53.245Z"
+      },
+      "forced": null
+    },
+    "spec": {
+      "status": "closed",
+      "openedAt": "2026-10-07T18:46:53.285Z",
+      "closedAt": "2026-10-07T18:53:54.375Z",
+      "attempts": 3,
+      "notes": [],
+      "gate": {
+        "ok": true,
+        "reasons": [],
+        "summary": "14 regions, 1 plates, 7 text regions measured",
+        "at": "2026-10-07T18:53:54.375Z"
+      },
+      "forced": null
+    },
+    "plates": {
+      "status": "closed",
+      "openedAt": "2026-10-07T18:53:54.375Z",
+      "closedAt": "2026-10-07T18:55:20.193Z",
+      "attempts": 1,
+      "notes": [],
+      "gate": {
+        "ok": true,
+        "reasons": [],
+        "summary": "1/1 plates",
+        "at": "2026-10-07T18:55:20.193Z"
+      },
+      "forced": null
+    },
+    "hero": {
+      "status": "closed",
+      "openedAt": "2026-10-07T18:55:20.193Z",
+      "closedAt": "2026-10-07T19:43:32.697Z",
+      "attempts": 1,
+      "notes": [],
+      "gate": {
+        "ok": true,
+        "reasons": [],
+        "summary": "hero 89% (match)",
+        "score": 0.8854,
+        "verdict": "match",
+        "report": ".impeccable/review/diff/hero/report.json",
+        "sideBySide": "/Users/tarikmoody/Projects/dycu/inventory/.impeccable/review/diff/hero/side-by-side.png",
+        "worst": [
+          "wordmark drift 55%",
+          "row-s01 drift 60%",
+          "rundown-date drift 62%"
+        ],
+        "worstIds": [
+          "wordmark",
+          "row-s01",
+          "rundown-date"
+        ],
+        "worstCrops": [
+          {
+            "id": "wordmark",
+            "verdict": "drift",
+            "score": {
+              "overall": 0.5453,
+              "structure": 0.3682,
+              "color": 0.7556,
+              "colorIntersection": 0.5332,
+              "paletteMatch": 0.8754,
+              "detail": 0.775,
+              "detailRaw": 0.8219,
+              "detailAdded": 0.0938,
+              "bands": 0.56
+            },
+            "file": ".impeccable/review/diff/hero/regions/wordmark.png"
+          },
+          {
+            "id": "row-s01",
+            "verdict": "drift",
+            "score": {
+              "overall": 0.6006,
+              "structure": 0.7586,
+              "color": 0.9485,
+              "colorIntersection": 0.8967,
+              "paletteMatch": 0.9764,
+              "detail": 0.24,
+              "detailRaw": 0.3182,
+              "detailAdded": 0.1563,
+              "bands": 0.2533
+            },
+            "file": ".impeccable/review/diff/hero/regions/row-s01.png"
+          },
+          {
+            "id": "rundown-date",
+            "verdict": "drift",
+            "score": {
+              "overall": 0.6243,
+              "structure": 0.6149,
+              "color": 0.8344,
+              "colorIntersection": 0.6996,
+              "paletteMatch": 0.907,
+              "detail": 0.6202,
+              "detailRaw": 0.6827,
+              "detailAdded": 0.125,
+              "bands": 0.1524
+            },
+            "file": ".impeccable/review/diff/hero/regions/rundown-date.png"
+          }
+        ],
+        "advisories": [
+          "(advisory, above the 72% bar; fix in the polish pass before responsive) 1 reading:",
+          "  text row-a04: the face renders 27% lighter than the comp's (ink density 0.43 vs 0.58); raise a weight step or use the ranked face",
+          "(advisory, unchanged for 3+ attempts) text row-a03: ink is #181818 in the build, #676875 in the comp; use the comp's colour"
+        ],
+        "regionVerdicts": {
+          "wordmark": "drift",
+          "rundown-date": "drift",
+          "catalog-and-slug": "match",
+          "suggestion-tags": "match",
+          "section-head": "match",
+          "code-v02": "drift",
+          "slug-v02": "drift",
+          "date-v02": "drift",
+          "pencil-mark": "match",
+          "row-s01": "drift",
+          "row-a04": "match",
+          "row-n01": "drift",
+          "row-a03": "drift",
+          "tabbar-footer": "match"
+        },
+        "at": "2026-10-07T19:43:32.697Z"
+      },
+      "forced": null,
+      "readingsSeen": {
+        "text row-a04: 1 line in the build, 2 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 1,
+        "text row-a04: the face renders 33% lighter than the comp's (ink density 0.39 vs 0.58); raise a weight step or use the ranked face": 1,
+        "text row-a03: ink is #181818 in the build, #676875 in the comp; use the comp's colour": 4,
+        "control catalog-and-slug: its rule sits 76px into the box in the comp and 44px in the build (-32px), so the strip is shorter than the comp's; match the height, not only the position": 1,
+        "control suggestion-tags: its rule sits 17px into the box in the comp and 1px in the build (-16px), so the strip is shorter than the comp's; match the height, not only the position": 1,
+        "chrome section-head: its rule sits 4px into the box in the comp and 80px in the build (+76px), so the strip is taller than the comp's; match the height, not only the position": 1,
+        "control tabbar-footer: its rule sits 61px into the box in the comp and 13px in the build (-48px), so the strip is shorter than the comp's; match the height, not only the position": 1,
+        "text row-a04: the face renders 26% lighter than the comp's (ink density 0.43 vs 0.58); raise a weight step or use the ranked face": 1,
+        "text row-a04: the face renders 27% lighter than the comp's (ink density 0.43 vs 0.58); raise a weight step or use the ranked face": 2
+      },
+      "records": 3,
+      "history": [
+        {
+          "at": "2026-10-07T19:43:32.697Z",
+          "score": 0.8854,
+          "worstIds": [
+            "wordmark",
+            "row-s01",
+            "rundown-date"
+          ],
+          "regionVerdicts": {
+            "wordmark": "drift",
+            "rundown-date": "drift",
+            "catalog-and-slug": "match",
+            "suggestion-tags": "match",
+            "section-head": "match",
+            "code-v02": "drift",
+            "slug-v02": "drift",
+            "date-v02": "drift",
+            "pencil-mark": "match",
+            "row-s01": "drift",
+            "row-a04": "match",
+            "row-n01": "drift",
+            "row-a03": "drift",
+            "tabbar-footer": "match"
+          },
+          "artifactHash": null
+        }
+      ]
+    },
+    "sections": {
+      "status": "open",
+      "openedAt": "2026-10-07T19:43:32.697Z",
+      "closedAt": null,
+      "attempts": 0,
+      "notes": [],
+      "gate": null,
+      "forced": null
+    },
+    "motion": {
+      "status": "pending",
+      "openedAt": null,
+      "closedAt": null,
+      "attempts": 0,
+      "notes": [],
+      "gate": null,
+      "forced": null
+    },
+    "responsive": {
+      "status": "pending",
+      "openedAt": null,
+      "closedAt": null,
+      "attempts": 0,
+      "notes": [],
+      "gate": null,
+      "forced": null
+    },
+    "review": {
+      "status": "pending",
+      "openedAt": null,
+      "closedAt": null,
+      "attempts": 0,
+      "notes": [],
+      "gate": null,
+      "forced": null
+    }
+  },
+  "finish": null,
+  "plates": {
+    "pencil-mark": {
+      "status": "ok",
+      "score": 0.4035,
+      "size": "1024x1024"
+    }
+  }
+}

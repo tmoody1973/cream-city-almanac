@@ -1,0 +1,280 @@
+/* Measured from the approved comp at 1024px wide (.impeccable/mocks/home-b.webp); vw values are px/10.24. */
+.page {
+  max-width: 1024px;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding-inline: var(--gutter);
+  display: flex;
+  flex-direction: column;
+}
+
+.main {
+  flex: 1;
+}
+
+.masthead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--gutter);
+  padding: clamp(14px, 2.9vw, 30px) 0 clamp(12px, 3vw, 31px);
+  border-bottom: var(--hair);
+}
+
+.wordmark {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-wordmark);
+  line-height: 0.9;
+  margin-left: -0.06em; /* optical: the comp's ink starts left of the rule */
+  text-transform: uppercase;
+}
+
+.side {
+  margin: 0;
+  text-align: right;
+  font-family: var(--font-caps);
+  font-weight: 700;
+  font-size: var(--fs-masthead-side);
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.sideDate {
+  display: block;
+  margin-top: 0.2em;
+  font-family: var(--font-body);
+  font-weight: 300;
+  font-size: var(--fs-body);
+  text-transform: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.catalogLine {
+  margin: 0;
+  padding: clamp(10px, 2.15vw, 22px) 0;
+  border-bottom: var(--hair);
+  font-size: var(--fs-small);
+  color: var(--muted);
+}
+
+.slugForm {
+  display: flex;
+  align-items: baseline;
+  gap: clamp(10px, 3vw, 30px);
+  padding: clamp(10px, 1.66vw, 17px) 0 clamp(6px, 1.2vw, 12px);
+  border-bottom: var(--rule);
+}
+
+.slugLabel {
+  font-family: var(--font-caps);
+  font-weight: 700;
+  font-size: var(--fs-code);
+  line-height: 1;
+}
+
+.slugInput {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: var(--fs-body);
+  color: var(--ink);
+}
+
+.slugInput::placeholder {
+  color: var(--muted);
+}
+
+.tags {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  padding-block: clamp(6px, 2.15vw, 22px);
+  border-bottom: var(--hair);
+}
+
+.tag {
+  min-height: 44px;
+  padding: 4px 8px;
+  border: 0;
+  border-left: var(--hair);
+  background: transparent;
+  font: inherit;
+  font-size: var(--fs-body);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.tag:first-child {
+  border-left: 0;
+}
+
+.tag:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.list {
+  padding-top: clamp(20px, 4.6vw, 47px);
+}
+
+.sectionTitle {
+  margin: 0;
+  padding: clamp(6px, 1vw, 10px) 0 clamp(4px, 0.8vw, 8px);
+  border-top: var(--rule);
+  border-bottom: var(--hair);
+  font-family: var(--font-caps);
+  font-weight: 700;
+  font-size: var(--fs-heading);
+  line-height: 1;
+}
+
+.colHeads,
+.rowHead {
+  display: grid;
+  grid-template-columns: minmax(3.5ch, 18%) 1fr minmax(6ch, 20%);
+  align-items: center;
+  padding-inline: 4px;
+}
+
+.colHeads {
+  padding-block: clamp(8px, 1.27vw, 13px);
+  border-bottom: var(--hair);
+  font-family: var(--font-caps);
+  font-weight: 700;
+  font-size: var(--fs-label);
+}
+
+.rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.row:nth-child(even) {
+  background: var(--band);
+}
+
+.rowHead {
+  width: 100%;
+  min-height: var(--row-h);
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.code {
+  font-family: var(--font-caps);
+  font-weight: 700;
+  font-size: var(--fs-code);
+  line-height: 1;
+  font-variant-numeric: lining-nums tabular-nums;
+  /* The comp lines the code's cap top up with the slug's first line, not the row's centre (spec box code-v02). */
+  position: relative;
+  top: -0.19em;
+}
+
+.slug {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding-right: 12px;
+}
+
+.name,
+.sub {
+  overflow-wrap: anywhere;
+}
+
+.right {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.when {
+  position: relative;
+  display: inline-block;
+}
+
+/* The grease-pencil plate (trimmed to its ink): the ellipse wraps the date, "new" trails right.
+   Sized in em so it tracks the date, capped in vw so "new" stays on a phone screen. */
+.pencil {
+  --mark-w: min(7.6em, 24vw);
+  position: absolute;
+  top: 50%;
+  left: calc(var(--mark-w) * -0.164);
+  width: var(--mark-w);
+  max-width: none;
+  height: auto;
+  transform: translateY(-62%); /* the ellipse sits low in the plate; "new" rises above it */
+  pointer-events: none;
+}
+
+.tick {
+  width: clamp(18px, 3vw, 30px);
+  margin-left: 0.4em;
+  vertical-align: middle;
+}
+
+/* Tab bar and credit stay on screen like a phone tab bar, as in the approved comp's first viewport. */
+.dock {
+  position: sticky;
+  bottom: 0;
+  margin-top: clamp(16px, 5.2vw, 53px);
+  background: var(--paper);
+}
+
+.tabBar {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-top: var(--hair);
+  border-bottom: var(--hair);
+}
+
+.tab,
+.tabActive {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: clamp(56px, 9.8vw, 100px);
+  font-family: var(--font-caps);
+  font-weight: 700;
+  font-size: var(--fs-tab);
+  text-decoration: none;
+}
+
+.tab {
+  color: var(--muted);
+}
+
+.tabActive {
+  position: relative;
+}
+
+/* The active tab's bar; a drawn rule, not a shadow (direction contract: no shadows). */
+.tabActive::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: clamp(4px, 1.7vw, 17px);
+  height: 6px;
+  background: var(--ink);
+}
+
+.footer {
+  padding: clamp(10px, 3.3vw, 34px) 0 calc(clamp(10px, 3.3vw, 34px) + env(safe-area-inset-bottom));
+  text-align: center;
+  font-size: var(--fs-credit);
+  color: var(--muted);
+}
+
+.footer a {
+  text-decoration: none;
+}
