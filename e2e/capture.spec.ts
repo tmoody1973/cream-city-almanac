@@ -18,6 +18,16 @@ test.describe("@capture", () => {
     await page.screenshot({ path: ".impeccable/review/hero-repro.png" });
   });
 
+  test("results state at the comp's size", async ({ page }) => {
+    await page.clock.setFixedTime(FIXED);
+    await page.setViewportSize({ width: 1024, height: 1536 });
+    await page.goto("/?q=" + encodeURIComponent("kids who can't afford food"));
+    await page.locator("li[data-code] button").first().click();
+    await page.locator("[id^='preview-'] a", { hasText: "Open sheet" }).waitFor();
+    await settle(page);
+    await page.screenshot({ path: ".impeccable/review/results-repro.png" });
+  });
+
   test("desktop and mobile full pages", async ({ page }) => {
     await page.clock.setFixedTime(FIXED);
     for (const [width, height, file] of [

@@ -53,6 +53,16 @@ describe("searchCatalog", () => {
     expect((await t.action(api.search.searchCatalog, { query: "a".repeat(5000) })).mode).toBe("search");
   });
 
+  it("returns nothing when no dataset is close in meaning or words", async () => {
+    const t = convexTest(schema, modules);
+    rateLimiterTest.register(t);
+    installFakeFetch();
+    await seed(t);
+    const res = await t.action(api.search.searchCatalog, { query: "zzqqxxjj" });
+    expect(res.degraded).toBe(false);
+    expect(res.results).toEqual([]);
+  });
+
   it("falls back to keywords when embeddings fail", async () => {
     const t = convexTest(schema, modules);
     rateLimiterTest.register(t);

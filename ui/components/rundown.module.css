@@ -278,3 +278,126 @@
 .footer a {
   text-decoration: none;
 }
+
+/* Loading state from spec §7: empty ruled rows. */
+.rowEmpty {
+  min-height: var(--row-h);
+  border-bottom: var(--hair);
+}
+
+.notice:empty {
+  display: none;
+}
+
+.notice {
+  margin: 0;
+  padding: 12px 0;
+  border-bottom: var(--hair);
+  font-size: var(--fs-small);
+}
+
+.panel {
+  /* Indented to the slug column, under the row's name. */
+  padding: 0 4px clamp(16px, 3vw, 30px) calc(18% + 4px);
+  border-bottom: var(--hair);
+}
+
+.panelBody {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(12px, 3vw, 32px);
+  align-items: flex-start;
+}
+
+.grid {
+  border-collapse: collapse;
+  font-size: var(--fs-small);
+}
+
+.grid th,
+.grid td {
+  min-width: clamp(44px, 8.2vw, 84px);
+  height: clamp(44px, 6.4vw, 66px);
+  border: var(--hair);
+  text-align: center;
+  font-weight: 500;
+}
+
+.grid th[scope="row"] {
+  padding: 0 10px;
+  text-align: left;
+}
+
+.cellOn {
+  display: inline-block;
+  width: 0.9em;
+  height: 0.9em;
+  background: var(--ink);
+}
+
+.cellOff {
+  color: var(--muted);
+}
+
+.gridSummary {
+  margin: 0;
+  font-size: var(--fs-small);
+}
+
+.explainer {
+  flex: 1 1 16ch;
+  margin: 0;
+}
+
+.provenance {
+  display: inline-block;
+  padding: 0 0.35em;
+  border: var(--hair);
+  font-family: var(--font-caps);
+  font-weight: 700;
+  font-size: 0.8em;
+  text-decoration: none;
+  vertical-align: 0.1em;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  margin-top: clamp(12px, 2.4vw, 24px);
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  min-height: clamp(44px, 7.4vw, 76px);
+  padding: 0 clamp(14px, 4vw, 40px);
+  border: var(--rule);
+  font-family: var(--font-caps);
+  font-weight: 700;
+  font-size: var(--fs-label);
+  text-decoration: none;
+}
+
+.sideCount {
+  font-family: var(--font-body);
+  font-weight: 300;
+  font-size: var(--fs-body);
+  text-transform: none;
+}
+
+/* Results rows are compact (comp C): shorter rows, smaller codes. */
+.rowsResults .rowHead {
+  min-height: clamp(56px, 9.8vw, 100px);
+}
+
+.rowsResults .right {
+  white-space: normal;
+}
+
+.rowsResults .code {
+  font-size: clamp(18px, 3.5vw, 36px);
+}
+
+.rowHead[aria-expanded="true"] .name {
+  font-weight: 700;
+}

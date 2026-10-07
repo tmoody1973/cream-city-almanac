@@ -57,3 +57,7 @@ export function applyFilters(rows: ResultRow[], f: { topic?: string; place?: str
       (f.year === undefined || r.years.includes(f.year)),
   );
 }
+
+// Vector search always returns its nearest neighbours, however far. Measured on the live catalog
+// (text-embedding-3-small, 2026-10-07): nonsense queries top out at 0.19; real reporter questions start at 0.23.
+export const MIN_VECTOR_SCORE = 0.2;

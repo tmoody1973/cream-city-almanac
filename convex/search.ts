@@ -5,7 +5,7 @@ import { action, internalQuery, query, type ActionCtx, type QueryCtx } from "./_
 import { embed, gatewayKey } from "./lib/gateway";
 import { STALE_BUILD_MS } from "./buildStore";
 import { rateLimiter } from "./limits";
-import { applyFilters, fuseRanks, keywordQuery, normalizeQuery, type Hit } from "./lib/rank";
+import { applyFilters, fuseRanks, keywordQuery, MIN_VECTOR_SCORE, normalizeQuery, type Hit } from "./lib/rank";
 import type { ResultRow, SearchResponse } from "./lib/types";
 
 const searchArgs = {
@@ -59,9 +59,10 @@ export async function runSearch(
     if (!allowance.ok) throw new Error(`search embedding cap reached; retry in ${Math.ceil(allowance.retryAfter / 1000)}s`);
     const settings = await ctx.runQuery(internal.settings.get, {});
     const { vectors } = await embed([q], settings.embedModel, gatewayKey());
+    const relevant = <T extends { _score: number }>(hits: T[]) => hits.filter((h) => h._score >= MIN_VECTOR_SCORE);
     const [cards, chunks] = await Promise.all([
-      ctx.vectorSearch("cards", "by_embedding", { vector: vectors[0], limit: 20 }),
-      ctx.vectorSearch("docChunks", "by_embedding", { vector: vectors[0], limit: 30 }),
+      ctx.vectorSearch("cards", "by_embedding", { vector: vectors[0], limit: 20 }).then(relevant),
+      ctx.vectorSearch("docChunks", "by_embedding", { vector: vectors[0], limit: 30 }).then(relevant),
     ]);
     const resolved: { cards: Hit[]; chunks: Hit[] } = await ctx.runQuery(internal.search.resolveVectorHits, {
       cardIds: cards.map((c) => c._id),

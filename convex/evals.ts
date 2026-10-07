@@ -1,5 +1,7 @@
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
 import { internalAction, internalQuery } from "./_generated/server";
+import { embed, gatewayKey } from "./lib/gateway";
 import { passesTop3, QUESTIONS } from "./lib/evalQuestions";
 import { runSearch } from "./search";
 
@@ -28,5 +30,20 @@ export const randomCards = internalQuery({
       out.push({ family: family?.name ?? card.familyKey, code: family?.code ?? "", card });
     }
     return out;
+  },
+});
+
+// Diagnostic: the top vector similarity scores for a query, used to calibrate search's relevance floor.
+export const vectorScores = internalAction({
+  args: { query: v.string() },
+  handler: async (ctx, { query }): Promise<{ cards: number[]; chunks: number[] }> => {
+    const settings = await ctx.runQuery(internal.settings.get, {});
+    const { vectors } = await embed([query], settings.embedModel, gatewayKey());
+    const [cards, chunks] = await Promise.all([
+      ctx.vectorSearch("cards", "by_embedding", { vector: vectors[0], limit: 5 }),
+      ctx.vectorSearch("docChunks", "by_embedding", { vector: vectors[0], limit: 5 }),
+    ]);
+    const round = (n: number) => Math.round(n * 1000) / 1000;
+    return { cards: cards.map((c) => round(c._score)), chunks: chunks.map((c) => round(c._score)) };
   },
 });

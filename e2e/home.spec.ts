@@ -14,3 +14,31 @@ test("home shows today's rundown with live codes and the catalog line", async ({
   await expect(page.getByRole("link", { name: "SEARCH" })).toHaveAttribute("aria-current", "page");
   await expect(page.getByText("Built on Data You Can Use's public data")).toBeVisible();
 });
+
+test("searching by meaning finds a dataset and opens it in place", async ({ page }) => {
+  await page.goto("/");
+  await page.getByLabel("SLUG:").fill("asthma");
+  await expect(page).toHaveURL(/\?q=asthma/);
+  const row = page.locator("[data-code='W01']");
+  await expect(row).toBeVisible();
+  await expect(page.getByText(/RUNDOWN · \d+ results/)).toBeVisible();
+  await row.getByRole("button").click();
+  await expect(row.getByRole("button")).toHaveAttribute("aria-expanded", "true");
+  await expect(row.getByRole("table", { name: /places and years/i })).toBeVisible();
+  await expect(row.getByText("AI", { exact: true })).toBeVisible();
+  await expect(row.getByRole("link", { name: "Open sheet →" })).toHaveAttribute("href", "/d/W01");
+  await expect(row.getByRole("link", { name: "CSV" })).toHaveAttribute("href", /\/csv/);
+});
+
+test("a suggestion tag runs a search and clearing returns to the rundown", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "food insecurity" }).click();
+  await expect(page.locator("[data-code='F02']")).toBeVisible();
+  await page.getByLabel("SLUG:").fill("");
+  await expect(page.getByRole("heading", { name: "UPDATED THIS SEASON" })).toBeVisible();
+});
+
+test("a nonsense search explains that nothing matched", async ({ page }) => {
+  await page.goto("/?q=zzqqxxjj");
+  await expect(page.getByRole("status")).toContainText("No datasets matched");
+});
