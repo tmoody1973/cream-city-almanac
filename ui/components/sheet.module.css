@@ -1,0 +1,28 @@
+.page { max-width: 1024px; margin: 0 auto; padding-inline: var(--gutter); min-height: 100vh; display: flex; flex-direction: column; }
+.back { padding: 12px 0; border-bottom: var(--hair); font-size: var(--fs-small); }
+.back a { text-decoration: none; }
+.header { padding: clamp(16px, 3vw, 30px) 0; border-bottom: var(--rule); }
+.code { font-family: var(--font-caps); font-weight: 700; font-size: var(--fs-code); font-variant-numeric: tabular-nums; }
+.name { margin: 4px 0 0; font-family: var(--font-caps); font-weight: 700; font-size: var(--fs-heading); line-height: 1; overflow-wrap: anywhere; }
+.sub { margin: 8px 0 0; color: var(--muted); font-size: var(--fs-small); }
+.section { padding: clamp(16px, 3vw, 30px) 0; border-bottom: var(--hair); overflow-wrap: anywhere; }
+.section ul { margin: 0; padding-left: 1.2em; }
+.heading { margin: 0 0 12px; font-family: var(--font-caps); font-weight: 700; font-size: var(--fs-label); letter-spacing: 0.02em; }
+.glossary { width: 100%; border-collapse: collapse; font-size: var(--fs-small); }
+.glossary th, .glossary td { padding: 10px 8px; border-top: var(--hair); text-align: left; vertical-align: top; }
+.glossary th { width: 32%; font-weight: 500; overflow-wrap: anywhere; }
+.scroll { overflow-x: auto; border: var(--hair); }
+.rowsTable { border-collapse: collapse; font-size: var(--fs-small); font-variant-numeric: tabular-nums; }
+.rowsTable th, .rowsTable td { padding: 6px 10px; border-bottom: var(--hair); white-space: nowrap; text-align: left; }
+.rowsTable tbody tr:nth-child(even) { background: var(--band); }
+.chart { margin: 16px 0 0; }
+.chart svg { width: 100%; height: auto; }
+.chart figcaption { font-size: var(--fs-small); color: var(--muted); }
+.chartLabel { font-size: 12px; fill: var(--ink); }
+.versions { list-style: none; margin: 0; padding: 0; }
+.versions li { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; padding: 10px 0; border-top: var(--hair); }
+.updated { color: var(--muted); font-size: var(--fs-small); }
+.dl { font-family: var(--font-caps); font-weight: 700; font-size: var(--fs-label); text-decoration: none; }
+.downloadBar { position: sticky; bottom: 0; display: flex; gap: 12px; padding: 12px 0; border-top: var(--rule); background: var(--paper); }
+.button { display: inline-flex; align-items: center; min-height: 44px; padding: 0 clamp(14px, 3vw, 28px); border: var(--rule); font-family: var(--font-caps); font-weight: 700; font-size: var(--fs-label); text-decoration: none; }
+@media (min-width: 900px) { .downloadBar { position: static; } }

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { fetchJson, headlineColumn, rowsUrl, sharedScale, valuesUrl } from "../../ui/lib/preview";
+import { fetchJson, fieldValue, headlineColumn, rowsUrl, sharedScale, valuesUrl } from "../../ui/lib/preview";
 
 describe("live preview helpers", () => {
   it("builds ArcGIS query URLs", () => {
@@ -12,6 +12,12 @@ describe("live preview helpers", () => {
     expect(headlineColumn(["GEOID", "NAME", "per_asthma", "TotalPopulation"])).toBe("per_asthma");
     expect(headlineColumn(["GEOID", "median_income"])).toBe("median_income");
     expect(headlineColumn(["GEOID", "NAME"])).toBeNull();
+  });
+  it("reads a column whatever its capitalisation in that year's layer", () => {
+    // W01's 2021 and 2022 layers answer a per_asthma query with "Per_Asthma"; 2023 uses "per_asthma".
+    expect(fieldValue({ Per_Asthma: 10.7 }, "per_asthma")).toBe(10.7);
+    expect(fieldValue({ per_asthma: 11.1 }, "per_asthma")).toBe(11.1);
+    expect(fieldValue({ GEOID: "55079130100" }, "per_asthma")).toBeUndefined();
   });
   it("puts every year on one shared scale", () => {
     expect(sharedScale([[1, 5], [3, 9]])).toEqual({ min: 1, max: 9 });

@@ -15,6 +15,14 @@ export function headlineColumn(fields: string[]): string | null {
   return fields.find((f) => HEADLINE.test(f)) ?? null;
 }
 
+// Layers for different years spell the same column differently (per_asthma vs Per_Asthma); ArcGIS accepts
+// any case in outFields but answers with the layer's own spelling.
+export function fieldValue(attributes: Record<string, unknown>, field: string): unknown {
+  if (field in attributes) return attributes[field];
+  const key = Object.keys(attributes).find((k) => k.toLowerCase() === field.toLowerCase());
+  return key === undefined ? undefined : attributes[key];
+}
+
 export function sharedScale(series: number[][]): { min: number; max: number } | null {
   const all = series.flat().filter(Number.isFinite);
   if (all.length === 0) return null;
