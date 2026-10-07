@@ -1,0 +1,113 @@
+import { describe, expect, it } from "vitest";
+import {
+  aiCardSchema,
+  assembleCard,
+  basicCard,
+  buildCardPrompt,
+  cardEmbeddingText,
+  latestDescription,
+  type CardBase,
+} from "../../convex/lib/card";
+
+const base: CardBase = {
+  familyKey: "dataset:obesity-prevalence",
+  name: "Obesity Prevalence",
+  hubSummary: "Share of adults with obesity by census tract.",
+  columns: [
+    { name: "GEOID", alias: "GEOID", type: "String" },
+    { name: "per_obesity", alias: "per_obesity", type: "Double" },
+    { name: "TotalPopulation", alias: "TotalPopulation", type: "Integer" },
+  ],
+  dictionary: {
+    tab: "Milwaukee County Obesity Preval",
+    dataSource: "CDC Places",
+    fields: [
+      { label: "GEOID", description: "Census Tract identifier", source: "", calculation: "" },
+      { label: "TotalPopulation", description: "Total population", source: "ACS", calculation: "Sum of tracts" },
+    ],
+  },
+};
+
+const ai = {
+  explainer: "Estimated share of adults with obesity in each census tract.",
+  glossary: [
+    { field: "GEOID", meaning: "AI's own guess" },
+    { field: "per_obesity", meaning: "Estimated percent of adults with obesity." },
+    { field: "made_up_column", meaning: "Should vanish." },
+  ],
+  caveats: ["one", "two", "three", "four", "five"].map((w) => `Caveat ${w} is long enough.`),
+  storyAngles: ["Which tracts changed most?", "How does this track income?", "Where are clinics?", "Extra angle?"],
+};
+
+describe("assembleCard", () => {
+  const card = assembleCard(ai, base);
+
+  it("uses DYCU wording over the AI's for defined columns, with calculations", () => {
+    expect(card.glossary).toContainEqual({ field: "GEOID", meaning: "Census Tract identifier", provenance: "DYCU" });
+    expect(card.glossary).toContainEqual({
+      field: "TotalPopulation",
+      meaning: "Total population Calculation: Sum of tracts",
+      provenance: "DYCU",
+    });
+  });
+
+  it("keeps AI meanings for columns DYCU did not define, tagged AI", () => {
+    expect(card.glossary).toContainEqual({
+      field: "per_obesity",
+      meaning: "Estimated percent of adults with obesity.",
+      provenance: "AI",
+    });
+  });
+
+  it("drops AI glossary entries for columns that do not exist", () => {
+    expect(card.glossary.map((g) => g.field)).not.toContain("made_up_column");
+  });
+
+  it("tags the explainer AI, caps caveats at 4 and angles at 3", () => {
+    expect(card.explainerProvenance).toBe("AI");
+    expect(card.caveats).toHaveLength(4);
+    expect(card.storyAngles).toHaveLength(3);
+    expect(card.basic).toBe(false);
+  });
+});
+
+describe("basicCard", () => {
+  it("uses only Hub and DYCU facts", () => {
+    const card = basicCard(base);
+    expect(card).toMatchObject({ explainer: base.hubSummary, explainerProvenance: "HUB", caveats: [], storyAngles: [], basic: true });
+    expect(card.glossary.every((g) => g.provenance === "DYCU")).toBe(true);
+  });
+  it("falls back to the family name when the Hub has no description", () => {
+    expect(basicCard({ ...base, hubSummary: "" }).explainer).toBe("Obesity Prevalence");
+  });
+});
+
+describe("aiCardSchema", () => {
+  it("rejects output missing the explainer", () => {
+    expect(aiCardSchema.safeParse({ glossary: [], caveats: [], storyAngles: [] }).success).toBe(false);
+  });
+});
+
+describe("prompt and embedding text", () => {
+  it("puts columns and DYCU definitions in the prompt", () => {
+    const prompt = buildCardPrompt({
+      name: "Obesity Prevalence",
+      kind: "dataset",
+      places: ["County"],
+      years: [2022],
+      descriptions: ["desc"],
+      columns: base.columns,
+      dycuDefinitions: base.dictionary!.fields,
+      sources: [],
+    });
+    expect(JSON.parse(prompt)).toMatchObject({ dataset: "Obesity Prevalence", columns: [{ name: "GEOID" }, { name: "per_obesity" }, { name: "TotalPopulation" }] });
+  });
+  it("starts the embedding text with the family name", () => {
+    const text = cardEmbeddingText({ name: "Obesity Prevalence", places: ["County"], years: [2022] }, assembleCard(ai, base));
+    expect(text.startsWith("Obesity Prevalence.")).toBe(true);
+    expect(text).toContain("Census Tract identifier");
+  });
+  it("picks the newest member's description", () => {
+    expect(latestDescription([{ description: "old", modified: "2025-01-01" }, { description: "new", modified: "2026-01-01" }])).toBe("new");
+  });
+});
