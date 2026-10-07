@@ -1,0 +1,11 @@
+{
+  "prompt": "Use the provided crop as the approved visual reference and recreate it as a clean production asset. This is a designed illustration plate. Output the same drawing, same style, same line weight. The artwork is ONLY the red (#D7261E) grease-pencil ink drawn by hand on paper: keep the waxy grease-pencil stroke texture and uneven line weight. Remove every black word, letter, rule, and any other non-red mark completely. Remove the page ground to genuine transparent alpha; no checkerboard, no matte, no shadow. Do not add objects or restyle. Output a transparent PNG cutout, the mark centred with clear margins.\n\nThe reference shows the approved grease-pencil ellipse and the word \"new\" only for stroke style and texture. Draw instead ONE hand-drawn red grease-pencil check mark (a tick), the kind an editor makes beside a line already handled, in exactly that stroke texture and line weight. Only the tick: no ellipse, no letters.\n",
+  "createdAt": "2026-10-07T22:22:50.282Z",
+  "tool": "impeccable generate-image",
+  "model": "gpt-image-2.5-flare",
+  "background": "transparent",
+  "outputFormat": "png",
+  "refs": [
+    "assets/plates/pencil-mark.png"
+  ]
+}

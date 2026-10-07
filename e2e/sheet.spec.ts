@@ -23,7 +23,7 @@ test("unknown code shows the not-found page", async ({ page }) => {
   const res = await page.goto("/d/Z99");
   expect(res?.status()).toBe(404);
   await expect(page.getByText("No dataset with that code")).toBeVisible();
-  await expect(page.getByRole("link", { name: "← Back to the rundown" })).toHaveAttribute("href", "/");
+  await expect(page.getByRole("link", { name: "Back to the rundown" })).toHaveAttribute("href", "/");
 });
 
 test("when the Hub is down the preview says so and offers a retry", async ({ page }) => {

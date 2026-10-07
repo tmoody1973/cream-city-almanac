@@ -4,7 +4,7 @@ import styles from "./rundown.module.css";
 
 export function RundownList({ title, mode, rows, circled, opened }: { title?: string; mode: "rundown" | "results"; rows: Row[]; circled: Set<string>; opened: Set<string> }) {
   return (
-    <section className={title ? styles.list : undefined} aria-label={title ?? "Search results"}>
+    <section className={title ? styles.list : styles.results} aria-label={title ?? "Search results"}>
       {title && <h2 className={styles.sectionTitle}>{title}</h2>}
       <div className={styles.colHeads} aria-hidden="true">
         <span>CODE</span>

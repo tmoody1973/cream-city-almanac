@@ -6,7 +6,7 @@ import "./globals.css";
 
 const display = Karantina({ subsets: ["latin"], weight: ["400", "700"], variable: "--font-karantina", display: "swap" });
 const caps = Saira_Extra_Condensed({ subsets: ["latin"], weight: ["700"], variable: "--font-saira", display: "swap" });
-const body = Vazirmatn({ subsets: ["latin"], weight: ["300", "500", "700"], variable: "--font-vazirmatn", display: "swap" });
+const body = Vazirmatn({ subsets: ["latin"], weight: ["400", "500", "700"], variable: "--font-vazirmatn", display: "swap" });
 
 export const metadata: Metadata = {
   title: "Cream City Almanac",

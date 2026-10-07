@@ -26,7 +26,7 @@ test("searching by meaning finds a dataset and opens it in place", async ({ page
   await expect(row.getByRole("button")).toHaveAttribute("aria-expanded", "true");
   await expect(row.getByRole("table", { name: /places and years/i })).toBeVisible();
   await expect(row.getByText("AI", { exact: true })).toBeVisible();
-  await expect(row.getByRole("link", { name: "Open sheet →" })).toHaveAttribute("href", "/d/W01");
+  await expect(row.getByRole("link", { name: "Open sheet" })).toHaveAttribute("href", "/d/W01");
   await expect(row.getByRole("link", { name: "CSV" })).toHaveAttribute("href", /\/csv/);
 });
 

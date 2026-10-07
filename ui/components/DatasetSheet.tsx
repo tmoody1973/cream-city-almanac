@@ -2,6 +2,7 @@ import type { FunctionReturnType } from "convex/server";
 import Link from "next/link";
 import type { api } from "@/convex/_generated/api";
 import { shortDate, subline, yearSpan } from "@/ui/lib/format";
+import { Arrow } from "./Arrow";
 import { CreditFooter } from "./CreditFooter";
 import { LivePreview } from "./LivePreview";
 import { Masthead } from "./Masthead";
@@ -25,7 +26,10 @@ export function DatasetSheet({ sheet }: { sheet: SheetData }) {
       <OpenedMark code={family.code} />
       <Masthead side="RUNDOWN" showDate={false} />
       <main>
-        <nav className={styles.back}><Link href="/">← Rundown</Link></nav>
+        <nav className={styles.back}><Link href="/">
+            <Arrow direction="left" />
+            Rundown
+          </Link></nav>
         <header className={styles.header}>
           <span className={styles.code}>{family.code}</span>
           <h2 className={styles.name}>{family.name}</h2>

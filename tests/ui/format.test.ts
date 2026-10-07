@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { asOfLabel, firstSentence, placeSummary, shortDate, subline, todayLabel, yearShort, yearSpan } from "../../ui/lib/format";
+import { asOfLabel, firstSentence, placeSummary, shortDate, shortExplainer, subline, todayLabel, yearShort, yearSpan } from "../../ui/lib/format";
 
 describe("format", () => {
   it("formats dates the way the comp does", () => {
@@ -15,6 +15,8 @@ describe("format", () => {
     expect(yearSpan([])).toBe("");
     expect(yearShort([2022, 2023, 2024])).toBe("22 · 23 · 24");
     expect(yearShort([])).toBe("—");
+    expect(yearShort([2021, 2022, 2023, 2024])).toBe("21–24");
+    expect(yearShort([2010, 2020, 2021, 2022, 2023])).toBe("10 · 20–23");
   });
   it("summarizes places and builds the row subline", () => {
     expect(placeSummary("app", [])).toBe("web app");
@@ -26,5 +28,16 @@ describe("format", () => {
   it("takes the first sentence of an explainer", () => {
     expect(firstSentence("Share of adults with asthma. Uses CDC PLACES.")).toBe("Share of adults with asthma.");
     expect(firstSentence("No period here")).toBe("No period here");
+  });
+  it("cuts an explainer to one short line without the 'This dataset measures' lead-in", () => {
+    const long =
+      "This dataset measures food insecurity prevalence, meaning the share of adults who report that the food they bought did not last and they had no money to get more. It uses CDC PLACES.";
+    const short = shortExplainer(long);
+    expect(short.startsWith("Food insecurity prevalence, meaning the share of adults")).toBe(true);
+    expect(short.length).toBeLessThanOrEqual(100);
+    expect(short.endsWith("…")).toBe(true);
+    expect(shortExplainer("Estimated share of people who lack reliable access to enough food, by census tract.")).toBe(
+      "Estimated share of people who lack reliable access to enough food, by census tract.",
+    );
   });
 });

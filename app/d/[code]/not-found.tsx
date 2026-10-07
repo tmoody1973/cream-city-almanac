@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Arrow } from "@/ui/components/Arrow";
 import { Masthead } from "@/ui/components/Masthead";
 import styles from "@/ui/components/sheet.module.css";
 
@@ -8,7 +9,10 @@ export default function NotFound() {
       <Masthead side="RUNDOWN" showDate={false} />
       <main className={styles.section}>
         <p>No dataset with that code. It may have left DYCU&apos;s Hub.</p>
-        <Link href="/">← Back to the rundown</Link>
+        <Link href="/">
+          <Arrow direction="left" />
+          Back to the rundown
+        </Link>
       </main>
     </div>
   );

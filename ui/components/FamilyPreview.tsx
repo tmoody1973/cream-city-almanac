@@ -2,7 +2,8 @@
 import { useQuery } from "convex/react";
 import Link from "next/link";
 import { api } from "@/convex/_generated/api";
-import { firstSentence } from "@/ui/lib/format";
+import { shortExplainer } from "@/ui/lib/format";
+import { Arrow } from "./Arrow";
 import { PlaceYearGrid } from "./PlaceYearGrid";
 import { ProvenanceTag } from "./ProvenanceTag";
 import styles from "./rundown.module.css";
@@ -16,11 +17,14 @@ export function FamilyPreview({ id, familyKey }: { id: string; familyKey: string
       <div className={styles.panelBody}>
         <PlaceYearGrid grid={preview.grid} compact />
         <p className={styles.explainer}>
-          {firstSentence(preview.explainer)} <ProvenanceTag source={preview.explainerProvenance} />
+          {shortExplainer(preview.explainer)} <ProvenanceTag source={preview.explainerProvenance} />
         </p>
       </div>
       <div className={styles.actions}>
-        <Link className={styles.button} href={`/d/${preview.code}`}>Open sheet →</Link>
+        <Link className={styles.button} href={`/d/${preview.code}`}>
+          Open sheet
+          <Arrow />
+        </Link>
         {preview.csvUrl && <a className={styles.button} href={preview.csvUrl}>CSV</a>}
       </div>
     </div>

@@ -1,11 +1,10 @@
 import styles from "./rundown.module.css";
 
+// Grease-pencil tick plate (assets/plates/pencil-tick.png, trimmed): the "opened before" mark.
 export function Tick() {
   return (
     <>
-      <svg className={styles.tick} viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M3 13 L9 19 L21 5" fill="none" stroke="var(--pencil)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
+      <img className={styles.tick} src="/plates/pencil-tick.png" alt="" aria-hidden="true" width={664} height={529} />
       <span className="visually-hidden">opened before</span>
     </>
   );

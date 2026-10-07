@@ -1,0 +1,11 @@
+{
+  "prompt": "Use the provided crop as the approved visual reference and recreate it as a clean production asset. This is a designed illustration plate. Output the same drawing, same style, same line weight. The artwork is ONLY the red (#D7261E) grease-pencil ink drawn by hand on paper: keep the waxy grease-pencil stroke texture and uneven line weight. Remove every black word, letter, rule, and any other non-red mark completely. Remove the page ground to genuine transparent alpha; no checkerboard, no matte, no shadow. Do not add objects or restyle. Output a transparent PNG cutout, the mark centred with clear margins.\n\nRegion: one long hand-drawn red grease-pencil underline swash, slightly curved and tapering at the ends, the kind an editor draws under a headline. Only the underline stroke, long and horizontal.\n",
+  "createdAt": "2026-10-07T22:22:47.678Z",
+  "tool": "impeccable generate-image",
+  "model": "gpt-image-2.5-flare",
+  "background": "transparent",
+  "outputFormat": "png",
+  "refs": [
+    ".impeccable/build/crops/pencil-underline.png"
+  ]
+}

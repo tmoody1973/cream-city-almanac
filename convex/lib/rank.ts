@@ -61,3 +61,11 @@ export function applyFilters(rows: ResultRow[], f: { topic?: string; place?: str
 // Vector search always returns its nearest neighbours, however far. Measured on the live catalog
 // (text-embedding-3-small, 2026-10-07): nonsense queries top out at 0.19; real reporter questions start at 0.23.
 export const MIN_VECTOR_SCORE = 0.2;
+
+// Fused score of a top-5 place in one list (1 / (60 + 5)). Any place in two lists scores higher, so a result
+// survives only with a strong showing in one ranking or support from two; the off-topic tail is neither.
+export const MIN_FUSED_SCORE = 1 / 65;
+
+export function relevantRanks(ranked: Ranked[]): Ranked[] {
+  return ranked.filter((r) => r.score >= MIN_FUSED_SCORE);
+}

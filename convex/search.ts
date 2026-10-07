@@ -5,7 +5,7 @@ import { action, internalQuery, query, type ActionCtx, type QueryCtx } from "./_
 import { embed, gatewayKey } from "./lib/gateway";
 import { STALE_BUILD_MS } from "./buildStore";
 import { rateLimiter } from "./limits";
-import { applyFilters, fuseRanks, keywordQuery, MIN_VECTOR_SCORE, normalizeQuery, type Hit } from "./lib/rank";
+import { applyFilters, fuseRanks, keywordQuery, MIN_VECTOR_SCORE, normalizeQuery, relevantRanks, type Hit } from "./lib/rank";
 import type { ResultRow, SearchResponse } from "./lib/types";
 
 const searchArgs = {
@@ -74,7 +74,9 @@ export async function runSearch(
     console.warn(`search degraded to keywords: ${e instanceof Error ? e.message : String(e)}`);
   }
 
-  const ranked = fuseRanks([keyword, ...vectorLists]).slice(0, 40);
+  const fused = fuseRanks([keyword, ...vectorLists]);
+  // Keyword-only (degraded) search keeps its full list; the relevance rule assumes several rankings to agree.
+  const ranked = (vectorLists.length ? relevantRanks(fused) : fused).slice(0, 40);
   const rows: ResultRow[] = await ctx.runQuery(internal.search.summaries, { keys: ranked.map((r) => r.familyKey) });
   const byKey = new Map(rows.map((r) => [r.key, r]));
   const results = ranked.flatMap((r) => {

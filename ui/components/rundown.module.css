@@ -45,7 +45,7 @@
   display: block;
   margin-top: 0.2em;
   font-family: var(--font-body);
-  font-weight: 300;
+  font-weight: 400;
   font-size: var(--fs-body);
   text-transform: none;
   font-variant-numeric: tabular-nums;
@@ -167,6 +167,7 @@
   font: inherit;
   color: var(--ink);
   cursor: pointer;
+  padding-block: clamp(12px, 1.6vw, 16px);
 }
 
 .code {
@@ -229,8 +230,22 @@
 
 .tick {
   width: clamp(18px, 3vw, 30px);
+  height: auto;
   margin-left: 0.4em;
   vertical-align: middle;
+}
+
+.openArrow {
+  width: 0.62em;
+  height: auto;
+  margin-right: 0.12em;
+  vertical-align: 0.05em;
+}
+
+.rowHead[aria-expanded="true"] .name {
+  align-self: flex-start;
+  padding-bottom: 0.3em;
+  background: url("/plates/pencil-underline.png") left bottom / 100% auto no-repeat;
 }
 
 /* Tab bar and credit stay on screen like a phone tab bar, as in the approved comp's first viewport. */
@@ -398,7 +413,7 @@
 
 .sideCount {
   font-family: var(--font-body);
-  font-weight: 300;
+  font-weight: 400;
   font-size: var(--fs-body);
   text-transform: none;
 }
@@ -418,4 +433,48 @@
 
 .rowHead[aria-expanded="true"] .name {
   font-weight: 700;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.arrow {
+  width: 0.85em;
+  height: auto;
+  margin-left: 0.35em;
+  vertical-align: 0.05em;
+}
+
+.arrowLeft {
+  margin: 0 0.35em 0 0;
+  transform: scaleX(-1);
+}
+
+/* Results (comp C): single-line caps titles; place and years share the right-hand cell. */
+.results .colHeads,
+.results .rowHead {
+  grid-template-columns: minmax(3.5ch, 14%) 1fr minmax(9ch, 32%);
+}
+
+.results .name {
+  font-family: var(--font-caps);
+  font-weight: 700;
+  font-size: clamp(17px, 3.4vw, 35px);
+  line-height: 1.05;
+}
+
+.results .rowHead[aria-expanded="true"] .name {
+  font-size: clamp(20px, 4.3vw, 44px);
+}
+
+.place,
+.years {
+  white-space: nowrap;
+}
+
+.place + .years {
+  margin-left: 0.25em;
+  padding-left: 0.5em;
+  border-left: var(--hair);
 }

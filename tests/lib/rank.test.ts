@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyFilters, fuseRanks, keywordQuery, normalizeQuery } from "../../convex/lib/rank";
+import { applyFilters, fuseRanks, keywordQuery, normalizeQuery, relevantRanks } from "../../convex/lib/rank";
 import type { ResultRow } from "../../convex/lib/types";
 
 describe("normalizeQuery", () => {
@@ -24,6 +24,14 @@ describe("fuseRanks", () => {
   });
   it("breaks ties alphabetically", () => {
     expect(fuseRanks([[{ familyKey: "z" }], [{ familyKey: "m" }]]).map((r) => r.familyKey)).toEqual(["m", "z"]);
+  });
+});
+
+describe("relevantRanks", () => {
+  it("keeps a result only with a top-5 place in one list or a place in two", () => {
+    const list = (keys: string[]) => keys.map((familyKey) => ({ familyKey }));
+    const fused = fuseRanks([list(["a", "b", "c", "d", "e", "f", "g"]), list(["g", "x"])]);
+    expect(relevantRanks(fused).map((r) => r.familyKey).sort()).toEqual(["a", "b", "c", "d", "e", "g", "x"]);
   });
 });
 
