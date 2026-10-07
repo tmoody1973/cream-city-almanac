@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { groupItems, isPdfFamily, searchTextWithCard } from "../../convex/lib/families";
+import { groupItems, isPdfFamily, reportDelays, searchTextWithCard } from "../../convex/lib/families";
 import { fixtureFamilies, fixtureItems } from "../helpers/fixtures";
 
 describe("groupItems on the real Hub catalog", () => {
@@ -64,5 +64,26 @@ describe("searchTextWithCard", () => {
     const text = searchTextWithCard("base", { explainer: "Explains.", glossary: [{ field: "GEOID", meaning: "Tract id", provenance: "DYCU" }] });
     expect(text).toBe("base Explains. GEOID Tract id");
     expect(searchTextWithCard("x".repeat(20000), { explainer: "", glossary: [] }).length).toBe(12000);
+  });
+});
+
+describe("reportDelays", () => {
+  it("spaces only reports that need reading and runs unchanged ones immediately", () => {
+    const reports = [
+      { hubId: "a", modified: "2026-01-01" },
+      { hubId: "b", modified: "2026-02-01" },
+      { hubId: "c", modified: "2026-03-01" },
+      { hubId: "d", modified: "2026-04-01" },
+    ];
+    const indexed = new Map([
+      ["a", "2026-01-01"],
+      ["c", "2025-12-01"],
+    ]);
+    expect(reportDelays(reports, indexed, 7000)).toEqual([
+      { hubId: "a", delayMs: 0 },
+      { hubId: "b", delayMs: 0 },
+      { hubId: "c", delayMs: 7000 },
+      { hubId: "d", delayMs: 14000 },
+    ]);
   });
 });

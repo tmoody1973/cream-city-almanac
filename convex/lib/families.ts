@@ -104,3 +104,16 @@ export function toFamilyInput(f: Family, dictionaryTab: string | null): FamilyIn
 export function isPdfFamily(f: Pick<Family, "key" | "kind">): boolean {
   return f.kind === "document" && !f.key.endsWith("-spreadsheet");
 }
+
+// Reports whose text is already indexed for their current version run immediately (they just skip);
+// only reports that need a Firecrawl read get spaced out, so weekly runs aren't slowed by unchanged PDFs.
+export function reportDelays(
+  reports: { hubId: string; modified: string }[],
+  indexed: Map<string, string>,
+  spacingMs: number,
+): { hubId: string; delayMs: number }[] {
+  let slot = 0;
+  return reports.map((r) =>
+    indexed.get(r.hubId) === r.modified ? { hubId: r.hubId, delayMs: 0 } : { hubId: r.hubId, delayMs: slot++ * spacingMs },
+  );
+}

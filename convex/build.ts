@@ -20,7 +20,7 @@ import {
 import { chunkMarkdown } from "./lib/chunk";
 import { HUB_FEED_URL, parseDcat } from "./lib/dcat";
 import { INVENTORY_XLSX_URL, isSuspectLink, mapDictionaries, readInventory, unlinkedTabs, type Inventory } from "./lib/dictionary";
-import { groupItems, isPdfFamily, toFamilyInput } from "./lib/families";
+import { groupItems, isPdfFamily, reportDelays, toFamilyInput } from "./lib/families";
 import { firecrawlKey, scrapeMarkdown } from "./lib/firecrawl";
 import { chatJson, costUsd, embed, estimateTokens, gatewayKey } from "./lib/gateway";
 import { hashInputs } from "./lib/hash";
@@ -255,14 +255,18 @@ async function runBuild(ctx: ActionCtx, buildId: Id<"builds">) {
 
   await refreshSources(ctx, buildId, settings, notes);
 
-  const reportIds = families.filter(isPdfFamily).flatMap((f) => f.members.map((m) => m.hubId));
-  const pending = families.length + reportIds.length;
+  const reports = families.filter(isPdfFamily).flatMap((f) => f.members.map((m) => ({ hubId: m.hubId, modified: m.modified })));
+  const indexed: { hubId: string; modified: string }[] = await ctx.runQuery(internal.buildStore.indexedModified, {
+    hubIds: reports.map((r) => r.hubId),
+  });
+  const delays = reportDelays(reports, new Map(indexed.map((i) => [i.hubId, i.modified])), settings.firecrawlSpacingMs);
+  const pending = families.length + reports.length;
   await ctx.runMutation(internal.buildStore.setPending, { buildId, pending, notes, mismatch });
   for (const [i, f] of families.entries()) {
     await ctx.scheduler.runAfter(i * 500, internal.build.processFamily, { buildId, familyKey: f.key });
   }
-  for (const [i, hubId] of reportIds.entries()) {
-    await ctx.scheduler.runAfter(i * settings.firecrawlSpacingMs, internal.build.processReport, { buildId, hubId });
+  for (const { hubId, delayMs } of delays) {
+    await ctx.scheduler.runAfter(delayMs, internal.build.processReport, { buildId, hubId });
   }
   if (pending === 0) await ctx.scheduler.runAfter(0, internal.build.finish, { buildId });
 }

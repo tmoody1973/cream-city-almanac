@@ -320,3 +320,15 @@ export const upsertSource = internalMutation({
     else await ctx.db.insert("sources", row);
   },
 });
+
+export const indexedModified = internalQuery({
+  args: { hubIds: v.array(v.string()) },
+  handler: async (ctx, { hubIds }) => {
+    const out: { hubId: string; modified: string }[] = [];
+    for (const hubId of hubIds) {
+      const chunk = await ctx.db.query("docChunks").withIndex("by_hubId", (q) => q.eq("hubId", hubId)).first();
+      if (chunk) out.push({ hubId, modified: chunk.modified });
+    }
+    return out;
+  },
+});
