@@ -15,3 +15,8 @@ next-env.d.ts
 test-results/
 playwright-report/
 *.tsbuildinfo
+
+# Vendored Convex agent skills (reinstall: npx convex ai-files install)
+.claude/
+.agents/
+skills-lock.json
