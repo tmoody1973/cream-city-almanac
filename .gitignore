@@ -20,3 +20,4 @@ playwright-report/
 .claude/
 .agents/
 skills-lock.json
+.vercel
