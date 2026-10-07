@@ -105,15 +105,22 @@ export function isPdfFamily(f: Pick<Family, "key" | "kind">): boolean {
   return f.kind === "document" && !f.key.endsWith("-spreadsheet");
 }
 
-// Reports whose text is already indexed for their current version run immediately (they just skip);
-// only reports that need a Firecrawl read get spaced out, so weekly runs aren't slowed by unchanged PDFs.
+// Every item updates one shared progress row (builds), so items must not all finish at once: 180 simultaneous
+// updates exhausted Convex's write retries in a real build. Unchanged reports (which just skip) go 250ms apart;
+// reports that need a Firecrawl read go spacingMs apart to respect the plan's rate limit.
+// ponytail: one hot progress row; per-item outcome rows + a periodic checker if builds grow to thousands of items.
+const SKIP_STAGGER_MS = 250;
+
 export function reportDelays(
   reports: { hubId: string; modified: string }[],
   indexed: Map<string, string>,
   spacingMs: number,
 ): { hubId: string; delayMs: number }[] {
-  let slot = 0;
+  let readSlot = 0;
+  let skipSlot = 0;
   return reports.map((r) =>
-    indexed.get(r.hubId) === r.modified ? { hubId: r.hubId, delayMs: 0 } : { hubId: r.hubId, delayMs: slot++ * spacingMs },
+    indexed.get(r.hubId) === r.modified
+      ? { hubId: r.hubId, delayMs: skipSlot++ * SKIP_STAGGER_MS }
+      : { hubId: r.hubId, delayMs: readSlot++ * spacingMs },
   );
 }

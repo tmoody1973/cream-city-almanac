@@ -86,4 +86,10 @@ describe("reportDelays", () => {
       { hubId: "d", delayMs: 14000 },
     ]);
   });
+
+  it("staggers unchanged reports so their progress updates don't collide", () => {
+    const reports = ["a", "b", "c"].map((hubId) => ({ hubId, modified: "2026-01-01" }));
+    const indexed = new Map(reports.map((r) => [r.hubId, r.modified]));
+    expect(reportDelays(reports, indexed, 7000).map((d) => d.delayMs)).toEqual([0, 250, 500]);
+  });
 });
