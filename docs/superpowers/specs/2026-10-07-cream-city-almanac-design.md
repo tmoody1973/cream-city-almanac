@@ -175,6 +175,8 @@ All caps live in `settings` and change without a redeploy.
 4. **Ask chat** with tools and guardrails.
 5. **CI, then Vercel deploy.**
 
+**Revised 2026-10-07 (Tarik):** public production moved to the end of Phase 2, so CI and the Vercel deploy now ship with step 2. A **laptop layout** follows straight after: a two-pane master-detail view designed from its own comp, with room for the docked Ask panel. Then **Clerk + Ask chat** (Phase 3), then **saved items** (Phase 4), including Ask's "save this" tool. See decisions 008 and 010.
+
 ## 12. Open decisions and unverified facts
 
 - **AI provider and models:** decided 2026-10-07: Vercel AI Gateway with `anthropic/claude-sonnet-5.5` for cards and chat, and `openai/text-embedding-3-small` (1536 dimensions) for meaning fingerprints. Still unverified: which provider strings CopilotKit's `BuiltInAgent` accepts (its docs example uses `"openai:gpt-4.1"`); checked when Phase 4 is planned.
