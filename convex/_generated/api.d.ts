@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as buildStore from "../buildStore.js";
 import type * as lib_arcgis from "../lib/arcgis.js";
 import type * as lib_card from "../lib/card.js";
 import type * as lib_chunk from "../lib/chunk.js";
@@ -18,6 +19,7 @@ import type * as lib_families from "../lib/families.js";
 import type * as lib_firecrawl from "../lib/firecrawl.js";
 import type * as lib_gateway from "../lib/gateway.js";
 import type * as lib_hash from "../lib/hash.js";
+import type * as lib_report from "../lib/report.js";
 import type * as lib_sources from "../lib/sources.js";
 import type * as lib_text from "../lib/text.js";
 import type * as lib_titles from "../lib/titles.js";
@@ -33,6 +35,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  buildStore: typeof buildStore;
   "lib/arcgis": typeof lib_arcgis;
   "lib/card": typeof lib_card;
   "lib/chunk": typeof lib_chunk;
@@ -43,6 +46,7 @@ declare const fullApi: ApiFromModules<{
   "lib/firecrawl": typeof lib_firecrawl;
   "lib/gateway": typeof lib_gateway;
   "lib/hash": typeof lib_hash;
+  "lib/report": typeof lib_report;
   "lib/sources": typeof lib_sources;
   "lib/text": typeof lib_text;
   "lib/titles": typeof lib_titles;
