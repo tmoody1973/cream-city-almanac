@@ -5,6 +5,7 @@ import {
   basicCard,
   buildCardPrompt,
   cardEmbeddingText,
+  cardMaxTokens,
   latestDescription,
   type CardBase,
 } from "../../convex/lib/card";
@@ -109,5 +110,13 @@ describe("prompt and embedding text", () => {
   });
   it("picks the newest member's description", () => {
     expect(latestDescription([{ description: "old", modified: "2025-01-01" }, { description: "new", modified: "2026-01-01" }])).toBe("new");
+  });
+});
+
+describe("cardMaxTokens", () => {
+  it("grows with the number of columns and is capped", () => {
+    expect(cardMaxTokens(0)).toBe(1500);
+    expect(cardMaxTokens(30)).toBe(3300);
+    expect(cardMaxTokens(500)).toBe(8000);
   });
 });

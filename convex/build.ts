@@ -9,9 +9,9 @@ import {
   basicCard,
   buildCardPrompt,
   CARD_JSON_SCHEMA,
-  CARD_MAX_TOKENS,
   CARD_SYSTEM,
   cardEmbeddingText,
+  cardMaxTokens,
   latestDescription,
   PROMPT_VERSION,
   uniqueDescriptions,
@@ -83,8 +83,9 @@ async function writeCard(ctx: ActionCtx, buildId: Id<"builds">, familyKey: strin
     dycuDefinitions: dictionary?.fields ?? [],
     sources: matchSources(sources, [dictionary?.dataSource ?? "", ...members.map((m) => m.description)].join(" ")),
   });
+  const maxTokens = cardMaxTokens(columns.length);
   const estimate = costUsd(
-    { inputTokens: estimateTokens(CARD_SYSTEM + prompt), outputTokens: CARD_MAX_TOKENS },
+    { inputTokens: estimateTokens(CARD_SYSTEM + prompt), outputTokens: maxTokens },
     settings.cardInputUsdPerToken,
     settings.cardOutputUsdPerToken,
   );
@@ -92,7 +93,7 @@ async function writeCard(ctx: ActionCtx, buildId: Id<"builds">, familyKey: strin
   let card: Card | null = null;
   let reason = "budget cap reached";
   if (await ctx.runMutation(internal.buildStore.reserveSpend, { buildId, usd: estimate })) {
-    const ai = await writeAiCard(prompt, settings, key);
+    const ai = await writeAiCard(prompt, settings, key, maxTokens);
     await ctx.runMutation(internal.buildStore.settleSpend, { buildId, usd: ai.costUsd - estimate });
     if (ai.card) card = assembleCard(ai.card, base);
     else reason = `AI failed twice (${ai.error})`;
@@ -117,6 +118,7 @@ async function writeAiCard(
   prompt: string,
   settings: Settings,
   key: string,
+  maxTokens: number,
 ): Promise<{ card: AiCard | null; costUsd: number; error: string }> {
   let spent = 0;
   let error = "";
@@ -129,7 +131,7 @@ async function writeAiCard(
           user: prompt,
           schemaName: "dataset_card",
           schema: CARD_JSON_SCHEMA,
-          maxTokens: CARD_MAX_TOKENS,
+          maxTokens,
         },
         key,
       );

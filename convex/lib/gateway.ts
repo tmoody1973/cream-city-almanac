@@ -56,7 +56,11 @@ export async function chatJson(
     key,
     CHAT_TIMEOUT_MS,
   );
-  const content = body.choices?.[0]?.message?.content;
+  const choice = body.choices?.[0];
+  if (choice?.finish_reason === "length") {
+    throw new Error(`AI reply was cut off at the ${args.maxTokens}-token limit`);
+  }
+  const content = choice?.message?.content;
   if (typeof content !== "string") throw new Error("AI Gateway returned no message content");
   let value: unknown;
   try {

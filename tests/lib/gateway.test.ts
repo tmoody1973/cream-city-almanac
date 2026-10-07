@@ -55,6 +55,16 @@ describe("chatJson", () => {
     expect(body.messages.map((m: { role: string }) => m.role)).toEqual(["system", "user"]);
   });
 
+  it("says plainly when the reply was cut off by the token limit", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => json(200, { choices: [{ finish_reason: "length", message: { content: '{"explainer":"This dataset' } }] })),
+    );
+    await expect(chatJson({ model: "m", system: "s", user: "u", schemaName: "x", schema: {}, maxTokens: 5 }, "k")).rejects.toThrow(
+      "AI reply was cut off at the 5-token limit",
+    );
+  });
+
   it("throws on non-JSON content", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => json(200, { choices: [{ message: { content: "not json" } }] })));
     await expect(chatJson({ model: "m", system: "s", user: "u", schemaName: "x", schema: {}, maxTokens: 5 }, "k")).rejects.toThrow("invalid JSON");
