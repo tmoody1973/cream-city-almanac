@@ -42,3 +42,15 @@ test("a nonsense search explains that nothing matched", async ({ page }) => {
   await page.goto("/?q=zzqqxxjj");
   await expect(page.getByRole("status")).toContainText("No datasets matched");
 });
+
+test("a dropped connection ends in the failure notice, not endless loading", async ({ page, context }, info) => {
+  // WebKit's emulated offline mode keeps an open WebSocket alive (search still answers, measured 2026-10-07),
+  // so only Chromium can simulate the dropped connection.
+  test.skip(info.project.name === "phone", "WebKit offline emulation does not drop open WebSockets");
+  await page.goto("/");
+  await expect(page.locator("li[data-code]").first()).toBeVisible();
+  await context.setOffline(true);
+  await page.getByLabel("SLUG:").fill("asthma");
+  await expect(page.getByRole("status")).toContainText("Search failed", { timeout: 20_000 });
+  await context.setOffline(false);
+});

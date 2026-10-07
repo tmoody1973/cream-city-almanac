@@ -28,6 +28,14 @@ describe("format", () => {
   it("takes the first sentence of an explainer", () => {
     expect(firstSentence("Share of adults with asthma. Uses CDC PLACES.")).toBe("Share of adults with asthma.");
     expect(firstSentence("No period here")).toBe("No period here");
+    // Live D02 / H09 explainers: "U.S." is not a sentence end.
+    expect(firstSentence("This dataset uses the American Community Survey (a U.S. Census Bureau survey) to estimate disability. More.")).toBe(
+      "This dataset uses the American Community Survey (a U.S. Census Bureau survey) to estimate disability.",
+    );
+    expect(firstSentence("How many homes are empty, using estimates from the U.S. Census Bureau. Second sentence.")).toBe(
+      "How many homes are empty, using estimates from the U.S. Census Bureau.",
+    );
+    expect(firstSentence("Rates vs. counts, e.g. per tract. Next.")).toBe("Rates vs. counts, e.g. per tract.");
   });
   it("cuts an explainer to one complete line: no lead-in, cut at a clause, never mid-sentence", () => {
     const f02 =
@@ -38,6 +46,13 @@ describe("format", () => {
     const w01 =
       "This dataset estimates the share of adults (people 18 and older) who currently report having asthma, using the CDC PLACES project (a Centers for Disease Control and Prevention program that produces local health estimates) built on the Behavioral Risk Factor Surveillance System (a national health survey).";
     expect(shortExplainer(w01)).toBe("The share of adults (people 18 and older) who currently report having asthma.");
+    // Live E04: no top-level comma, so drop the parenthetical definitions instead of cutting mid-word.
+    const e04 =
+      "This dataset measures the median sales price (the middle price when all sales are lined up from lowest to highest) of residential properties sold within each census tract (a neighborhood-sized area the Census Bureau uses) in the City of Milwaukee for 2023 and 2024. More.";
+    expect(shortExplainer(e04)).toBe(
+      "The median sales price of residential properties sold within each census tract in the City of Milwaukee for 2023 and 2024.",
+    );
+    expect(shortExplainer(e04)).not.toContain("…");
     expect(shortExplainer("Estimated share of people who lack reliable access to enough food, by census tract.")).toBe(
       "Estimated share of people who lack reliable access to enough food, by census tract.",
     );

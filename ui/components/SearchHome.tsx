@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import type { ResultRow, SearchResponse } from "@/convex/lib/types";
 import { circledCodes, LAST_VISIT_KEY, OPENED_KEY, readOpened, safeStorage } from "@/ui/lib/marks";
-import { searchNotice, type SearchState } from "@/ui/lib/search";
+import { SEARCH_TIMEOUT_MS, searchNotice, withTimeout, type SearchState } from "@/ui/lib/search";
 import { CatalogLine, type CatalogStatus } from "./CatalogLine";
 import { CreditFooter } from "./CreditFooter";
 import { Masthead } from "./Masthead";
@@ -45,7 +45,7 @@ export function SearchHome({ rundown, status }: { rundown: ResultRow[]; status: 
     const id = ++requestId.current;
     setState("loading");
     const timer = setTimeout(() => {
-      search({ query: q })
+      withTimeout(search({ query: q }), SEARCH_TIMEOUT_MS)
         .then((r) => {
           if (id !== requestId.current) return;
           setResponse(r);

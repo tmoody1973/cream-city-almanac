@@ -52,8 +52,11 @@ export function subline(row: { kind: HubKind; places: string[]; years: number[] 
   return [placeSummary(row.kind, row.places), yearSpan(row.years)].filter(Boolean).join(" · ");
 }
 
+// A sentence ends at . ! or ? followed by a space, except after initials ("U.S.") or common abbreviations.
+const SENTENCE = /^.*?(?<!\b(?:[A-Z]|vs|e\.g|i\.e|St|Dr|No|Mt))[.!?](?=\s|$)/;
+
 export function firstSentence(text: string): string {
-  return /^.*?[.!?](?=\s|$)/.exec(text.trim())?.[0] ?? text.trim();
+  return SENTENCE.exec(text.trim())?.[0] ?? text.trim();
 }
 
 const LEAD_IN = /^(?:this|the) (?:dataset|data set|data|map|dashboard|report|app|tool|spreadsheet) (?:measures|estimates|shows|tracks|counts|lists|maps|describes|reports)\s+/i;
@@ -73,14 +76,19 @@ function lastClauseEnd(text: string, max: number): number {
   return end;
 }
 
-// The in-place preview promises a one-line explainer: the first sentence without a "This dataset measures"
-// lead-in, and when that is still long, its first complete clause, never a cut mid-sentence.
+const PARENTHETICAL = /\s*\([^()]*\)/g;
+
+// The in-place preview promises a one-line explainer: the first sentence without a "This dataset measures" lead-in.
+// When that is long: cut at its last whole clause; failing that, drop the parenthetical definitions (the full sheet
+// keeps them) and try again; failing that, show the whole sentence. Never a cut mid-word.
 export function shortExplainer(text: string, max = EXPLAINER_MAX): string {
   const sentence = firstSentence(text).replace(LEAD_IN, "");
   const line = sentence.charAt(0).toUpperCase() + sentence.slice(1);
   if (line.length <= max) return line;
   const clause = lastClauseEnd(line, max);
   if (clause > 0) return `${line.slice(0, clause)}.`;
-  const cut = line.slice(0, max - 1);
-  return `${cut.slice(0, cut.lastIndexOf(" ")).replace(/[\s,;:–—-]+$/, "")}…`;
+  const plain = line.replace(PARENTHETICAL, "");
+  if (plain.length <= max) return plain;
+  const plainClause = lastClauseEnd(plain, max);
+  return plainClause > 0 ? `${plain.slice(0, plainClause)}.` : plain;
 }
