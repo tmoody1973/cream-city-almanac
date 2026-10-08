@@ -2,10 +2,11 @@ import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
 import { query, type QueryCtx } from "./_generated/server";
 import { pdfUrl } from "./lib/arcgis";
-import { isPdfFamily } from "./lib/families";
+import { isPdfFamily, isSpreadsheetFamily } from "./lib/families";
 import { placeYearGrid } from "./lib/grid";
 import { matchSources } from "./lib/sources";
 import { rundownRows, toRow } from "./search";
+import { placeKey } from "./lib/portrait";
 
 const MAX_CODE_CHARS = 8;
 const newestFirst = (a: Doc<"members">, b: Doc<"members">) => b.modified.localeCompare(a.modified);
@@ -19,6 +20,36 @@ async function familyCard(ctx: QueryCtx, key: string) {
 }
 
 export const rundown = query({ args: {}, handler: (ctx) => rundownRows(ctx) });
+
+type MemberDoc = Doc<"members">;
+
+const tableView = ({ _id, _creationTime, hubId, modified, ...rest }: Doc<"portraitTables">) => rest;
+
+async function tablesFor(ctx: QueryCtx, hubId: string) {
+  return (await ctx.db.query("portraitTables").withIndex("by_hubId", (q) => q.eq("hubId", hubId)).collect())
+    .sort((a, b) => a.order - b.order)
+    .map(tableView);
+}
+
+// Neighborhoods for the spreadsheet pickers; members arrive newest first.
+async function portraitIndex(ctx: QueryCtx, members: MemberDoc[]) {
+  const byKey = new Map<string, { key: string; label: string; files: { hubId: string; year: number | null }[] }>();
+  for (const m of members) {
+    const place = m.place ?? m.title;
+    const key = placeKey(place);
+    const entry = byKey.get(key) ?? { key, label: place, files: [] };
+    entry.files.push({ hubId: m.hubId, year: m.years[0] ?? null });
+    byKey.set(key, entry);
+  }
+  const neighborhoods = [...byKey.values()].sort((a, b) => a.label.localeCompare(b.label));
+  const newest = members[0];
+  return { neighborhoods, initial: newest ? { hubId: newest.hubId, tables: await tablesFor(ctx, newest.hubId) } : null };
+}
+
+export const portraitTables = query({
+  args: { hubId: v.string() },
+  handler: (ctx, { hubId }) => tablesFor(ctx, hubId),
+});
 
 export const familySheet = query({
   args: { code: v.string() },
@@ -60,6 +91,7 @@ export const familySheet = query({
             basic: card.basic,
           }
         : null,
+      portraits: isSpreadsheetFamily(family) ? await portraitIndex(ctx, members) : null,
       sources: matchSources(profiles, [dictionary?.dataSource ?? "", ...members.map((m) => m.description)].join(" ")),
     };
   },

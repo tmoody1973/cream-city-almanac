@@ -72,3 +72,30 @@ describe("catalog queries", () => {
     });
   });
 });
+
+describe("neighborhood spreadsheets", () => {
+  it("groups files into neighborhoods whatever their name order, newest first", async () => {
+    const t = convexTest(schema, modules);
+    await seed(t);
+    const code = await codeOf(t, "document:neighborhood-portrait-spreadsheet");
+    const sheet = (await t.query(api.catalog.familySheet, { code }))!;
+    const silver = sheet.portraits!.neighborhoods.find((n) => n.key === "burnham-park-layton-park-silver-city")!;
+    expect(silver.files.map((f) => f.year)).toEqual([2024, 2023, 2022, 2021]);
+    expect(sheet.portraits!.neighborhoods.length).toBeGreaterThan(20);
+    const other = (await t.query(api.catalog.familySheet, { code: await codeOf(t, "dataset:food-insecurity-prevalence") }))!;
+    expect(other.portraits).toBeNull();
+  });
+
+  it("returns a file's tables in tab order", async () => {
+    const t = convexTest(schema, modules);
+    await seed(t);
+    await t.run(async (ctx) => {
+      for (const [order, slug] of [[1, "sex-and-age"], [0, "race-and-ethnicity"]] as const) {
+        await ctx.db.insert("portraitTables", {
+          hubId: "h1", modified: "m", slug, topic: slug, tab: slug, order, tableIds: [], tableIdText: "", vintage: null, groups: [""], rows: [], issues: [],
+        });
+      }
+    });
+    expect((await t.query(api.catalog.portraitTables, { hubId: "h1" })).map((x) => x.slug)).toEqual(["race-and-ethnicity", "sex-and-age"]);
+  });
+});
