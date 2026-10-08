@@ -1,6 +1,6 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
-import { vDictionaryField, vGlossaryEntry, vKind, vMember, vMismatch, vProvenance } from "./validators";
+import { vDictionaryField, vGlossaryEntry, vKind, vMember, vMismatch, vProvenance, vPortraitTable } from "./validators";
 
 export default defineSchema({
   families: defineTable({
@@ -21,6 +21,8 @@ export default defineSchema({
     .index("by_code", ["code"])
     .index("by_latestModified", ["latestModified"])
     .searchIndex("search_text", { searchField: "searchText", filterFields: ["topic", "kind"] }),
+
+  portraitTables: defineTable({ hubId: v.string(), modified: v.string(), ...vPortraitTable.fields }).index("by_hubId", ["hubId"]),
 
   members: defineTable({ familyKey: v.string(), ...vMember.fields })
     .index("by_family", ["familyKey"])

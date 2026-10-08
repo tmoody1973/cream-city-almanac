@@ -20,7 +20,8 @@ import {
 import { chunkMarkdown } from "./lib/chunk";
 import { HUB_FEED_URL, parseDcat } from "./lib/dcat";
 import { INVENTORY_XLSX_URL, isSuspectLink, mapDictionaries, readInventory, unlinkedTabs, type Inventory } from "./lib/dictionary";
-import { groupItems, hubCounts, isPdfFamily, reportDelays, toFamilyInput } from "./lib/families";
+import { groupItems, hubCounts, isPdfFamily, isSpreadsheetFamily, reportDelays, toFamilyInput } from "./lib/families";
+import { parsePortrait, portraitPassage } from "./lib/portrait";
 import { firecrawlKey, scrapeMarkdown } from "./lib/firecrawl";
 import { chatJson, costUsd, embed, estimateTokens, gatewayKey } from "./lib/gateway";
 import { hashInputs } from "./lib/hash";
@@ -189,6 +190,45 @@ async function indexReport(ctx: ActionCtx, buildId: Id<"builds">, hubId: string)
   return { outcome: "done" };
 }
 
+const PORTRAIT_SPACING_MS = 1500;
+
+export const processPortrait = internalAction({
+  args: { buildId: v.id("builds"), hubId: v.string() },
+  handler: async (ctx, { buildId, hubId }) => {
+    let result: Result;
+    try {
+      result = await storePortrait(ctx, buildId, hubId);
+    } catch (e) {
+      result = { outcome: "failed", note: `spreadsheet ${hubId}: ${message(e)}` };
+    }
+    await retryOnConflict(() =>
+      ctx.runMutation(internal.buildStore.markDone, { buildId, outcome: result.outcome, note: result.note }),
+    );
+  },
+});
+
+async function storePortrait(ctx: ActionCtx, buildId: Id<"builds">, hubId: string): Promise<Result> {
+  const data = await ctx.runQuery(internal.buildStore.portraitContext, { hubId });
+  if (!data) return { outcome: "skipped", note: `spreadsheet ${hubId}: no longer in catalog` };
+  if (data.indexedModified === data.member.modified) return { outcome: "skipped" };
+  const res = await fetchOk(pdfUrl(hubId), `spreadsheet ${hubId}`);
+  const tables = parsePortrait(new Uint8Array(await res.arrayBuffer()));
+  if (tables.length === 0) return { outcome: "failed", note: `spreadsheet ${hubId}: no tabs found` };
+  const passages = tables.map((t) => portraitPassage(data.member.place, data.member.year, t));
+  const { vectors, tokens } = await embed(passages, data.settings.embedModel, gatewayKey());
+  await ctx.runMutation(internal.buildStore.settleSpend, { buildId, usd: tokens * data.settings.embedUsdPerToken });
+  await ctx.runMutation(internal.buildStore.replacePortrait, {
+    hubId,
+    modified: data.member.modified,
+    tables,
+    chunks: tables.map((t, i) => ({ section: t.topic, text: passages[i], embedding: vectors[i] })),
+  });
+  const unknown = tables.filter((t) => t.issues.some((x) => x.startsWith("This tab isn't one we've seen")));
+  return unknown.length
+    ? { outcome: "done", note: `spreadsheet ${hubId}: unrecognized tabs ${unknown.map((t) => t.tab).join(", ")}` }
+    : { outcome: "done" };
+}
+
 export const finish = internalAction({
   args: { buildId: v.id("builds") },
   handler: async (ctx, { buildId }) => {
@@ -267,7 +307,12 @@ async function runBuild(ctx: ActionCtx, buildId: Id<"builds">) {
     hubIds: reports.map((r) => r.hubId),
   });
   const delays = reportDelays(reports, new Map(indexed.map((i) => [i.hubId, i.modified])), settings.firecrawlSpacingMs);
-  const pending = families.length + reports.length;
+  const portraits = families.filter(isSpreadsheetFamily).flatMap((f) => f.members.map((m) => ({ hubId: m.hubId, modified: m.modified })));
+  const portraitStored: { hubId: string; modified: string }[] = await ctx.runQuery(internal.buildStore.portraitIndexed, {
+    hubIds: portraits.map((p) => p.hubId),
+  });
+  const portraitDelays = reportDelays(portraits, new Map(portraitStored.map((p) => [p.hubId, p.modified])), PORTRAIT_SPACING_MS);
+  const pending = families.length + reports.length + portraits.length;
   await ctx.runMutation(internal.buildStore.setPending, {
     buildId,
     pending,
@@ -281,6 +326,9 @@ async function runBuild(ctx: ActionCtx, buildId: Id<"builds">) {
   }
   for (const { hubId, delayMs } of delays) {
     await ctx.scheduler.runAfter(delayMs, internal.build.processReport, { buildId, hubId });
+  }
+  for (const { hubId, delayMs } of portraitDelays) {
+    await ctx.scheduler.runAfter(delayMs, internal.build.processPortrait, { buildId, hubId });
   }
   if (pending === 0) await ctx.scheduler.runAfter(0, internal.build.finish, { buildId });
 }

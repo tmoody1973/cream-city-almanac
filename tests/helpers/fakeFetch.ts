@@ -1,5 +1,5 @@
 import { vi } from "vitest";
-import { hubCatalog, inventoryBase64 } from "./fixtures";
+import { hubCatalog, inventoryBase64, portraitBytes } from "./fixtures";
 
 export interface FakeOptions {
   card?: unknown;
@@ -10,6 +10,8 @@ export interface FakeOptions {
   hubFeed?: unknown;
   hubStatus?: number;
   columns?: { name: string; alias?: string; type?: string }[];
+  portraitBytes?: Uint8Array;
+  portraitStatus?: number;
 }
 
 export const DEFAULT_CARD = {
@@ -82,6 +84,10 @@ export function installFakeFetch(opts: FakeOptions = {}) {
     if (url.includes("api.firecrawl.dev/v2/scrape")) {
       if (opts.firecrawlStatus && opts.firecrawlStatus !== 200) return json(opts.firecrawlStatus, { success: false });
       return json(200, { success: true, data: { markdown: opts.firecrawlMarkdown ?? DEFAULT_MARKDOWN, metadata: {} } });
+    }
+    if (url.startsWith("https://www.arcgis.com/sharing/rest/content/items/") && url.endsWith("/data")) {
+      const status = opts.portraitStatus ?? 200;
+      return new Response(status === 200 ? new Uint8Array(opts.portraitBytes ?? portraitBytes(2023)) : "down", { status });
     }
     return json(404, { error: `unexpected URL in test: ${url}` });
   });

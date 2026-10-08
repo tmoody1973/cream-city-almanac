@@ -26,6 +26,7 @@ import type * as lib_gateway from "../lib/gateway.js";
 import type * as lib_grid from "../lib/grid.js";
 import type * as lib_hash from "../lib/hash.js";
 import type * as lib_http from "../lib/http.js";
+import type * as lib_portrait from "../lib/portrait.js";
 import type * as lib_rank from "../lib/rank.js";
 import type * as lib_report from "../lib/report.js";
 import type * as lib_retry from "../lib/retry.js";
@@ -64,6 +65,7 @@ declare const fullApi: ApiFromModules<{
   "lib/grid": typeof lib_grid;
   "lib/hash": typeof lib_hash;
   "lib/http": typeof lib_http;
+  "lib/portrait": typeof lib_portrait;
   "lib/rank": typeof lib_rank;
   "lib/report": typeof lib_report;
   "lib/retry": typeof lib_retry;

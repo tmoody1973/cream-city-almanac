@@ -7,7 +7,7 @@ import { searchTextWithCard } from "./lib/families";
 import { renderReport } from "./lib/report";
 import type { FamilyInput } from "./lib/types";
 import { readSettings } from "./settings";
-import { vCard, vOutcome } from "./validators";
+import { vCard, vOutcome, vPortraitTable } from "./validators";
 import { vDictionary, vFamilyInput, vMismatch } from "./validators";
 
 export const STALE_BUILD_MS = 2 * 60 * 60 * 1000;
@@ -337,5 +337,50 @@ export const indexedModified = internalQuery({
       if (chunk) out.push({ hubId, modified: chunk.modified });
     }
     return out;
+  },
+});
+
+export const portraitContext = internalQuery({
+  args: { hubId: v.string() },
+  handler: async (ctx, { hubId }) => {
+    const member = await ctx.db.query("members").withIndex("by_hubId", (q) => q.eq("hubId", hubId)).first();
+    if (!member) return null;
+    const stored = await ctx.db.query("portraitTables").withIndex("by_hubId", (q) => q.eq("hubId", hubId)).first();
+    return {
+      member: { hubId, place: member.place ?? member.title, year: member.years[0] ?? null, modified: member.modified },
+      indexedModified: stored?.modified ?? null,
+      settings: await readSettings(ctx),
+    };
+  },
+});
+
+export const portraitIndexed = internalQuery({
+  args: { hubIds: v.array(v.string()) },
+  handler: async (ctx, { hubIds }) => {
+    const out: { hubId: string; modified: string }[] = [];
+    for (const hubId of hubIds) {
+      const t = await ctx.db.query("portraitTables").withIndex("by_hubId", (q) => q.eq("hubId", hubId)).first();
+      if (t) out.push({ hubId, modified: t.modified });
+    }
+    return out;
+  },
+});
+
+export const replacePortrait = internalMutation({
+  args: {
+    hubId: v.string(),
+    modified: v.string(),
+    tables: v.array(vPortraitTable),
+    chunks: v.array(v.object({ section: v.string(), text: v.string(), embedding: v.array(v.float64()) })),
+  },
+  handler: async (ctx, { hubId, modified, tables, chunks }) => {
+    for (const old of await ctx.db.query("portraitTables").withIndex("by_hubId", (q) => q.eq("hubId", hubId)).collect()) {
+      await ctx.db.delete(old._id);
+    }
+    for (const old of await ctx.db.query("docChunks").withIndex("by_hubId", (q) => q.eq("hubId", hubId)).collect()) {
+      await ctx.db.delete(old._id);
+    }
+    for (const table of tables) await ctx.db.insert("portraitTables", { hubId, modified, ...table });
+    for (const c of chunks) await ctx.db.insert("docChunks", { hubId, modified, ...c });
   },
 });

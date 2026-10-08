@@ -81,3 +81,22 @@ export const vMismatch = v.object({
 });
 
 export const vOutcome = v.union(v.literal("done"), v.literal("skipped"), v.literal("failed"));
+
+export const vPortraitTable = v.object({
+  slug: v.string(),
+  topic: v.string(),
+  tab: v.string(),
+  order: v.number(),
+  tableIds: v.array(v.string()),
+  tableIdText: v.string(),
+  vintage: v.union(v.string(), v.null()),
+  groups: v.array(v.string()),
+  rows: v.array(
+    v.object({
+      label: v.string(),
+      heading: v.boolean(),
+      values: v.array(v.union(v.null(), v.object({ estimate: v.string(), moe: v.union(v.string(), v.null()) }))),
+    }),
+  ),
+  issues: v.array(v.string()),
+});

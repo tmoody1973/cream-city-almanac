@@ -110,6 +110,10 @@ export function isPdfFamily(f: Pick<Family, "key" | "kind">): boolean {
 // ponytail: one hot progress row; per-item outcome rows + a periodic checker if builds grow to thousands of items.
 const SKIP_STAGGER_MS = 250;
 
+export function isSpreadsheetFamily(f: Pick<Family, "key" | "kind">): boolean {
+  return f.kind === "document" && f.key.endsWith("-spreadsheet");
+}
+
 export function reportDelays(
   reports: { hubId: string; modified: string }[],
   indexed: Map<string, string>,
