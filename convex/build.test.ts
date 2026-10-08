@@ -42,6 +42,7 @@ async function seed(t: TestConvex<typeof schema>, settings: Partial<typeof DEFAU
     buildId,
     pending: 100,
     hubCounts: { rawData: 93, reports: 282, visualizations: 7 },
+    pdfReports: 180,
     notes: [],
     mismatch: { unlinkedTabs: [], suspectLinks: [], unmatchedHomeTitles: [], typoFixes: [] },
   });

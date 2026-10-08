@@ -152,6 +152,7 @@ export const setPending = internalMutation({
     buildId: v.id("builds"),
     pending: v.number(),
     hubCounts: v.object({ rawData: v.number(), reports: v.number(), visualizations: v.number() }),
+    pdfReports: v.number(),
     notes: v.array(v.string()),
     mismatch: vMismatch,
   },

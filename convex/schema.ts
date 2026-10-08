@@ -94,6 +94,7 @@ export default defineSchema({
     familyCount: v.optional(v.number()),
     reportCount: v.optional(v.number()),
     hubCounts: v.optional(v.object({ rawData: v.number(), reports: v.number(), visualizations: v.number() })),
+    pdfReports: v.optional(v.number()),
   }).index("by_status", ["status"]),
 
   itemOverrides: defineTable({

@@ -61,12 +61,13 @@ describe("catalog queries", () => {
     const t = convexTest(schema, modules);
     const buildId = await seed(t);
     await t.mutation(internal.buildStore.setPending, {
-      buildId, pending: 229, hubCounts: { rawData: 93, reports: 282, visualizations: 7 }, notes: [],
+      buildId, pending: 229, hubCounts: { rawData: 93, reports: 282, visualizations: 7 }, pdfReports: 180, notes: [],
       mismatch: { unlinkedTabs: [], suspectLinks: [], unmatchedHomeTitles: [], typoFixes: [] },
     });
     await t.mutation(internal.buildStore.completeBuild, { buildId, orphanChunksDeleted: 0 });
     expect(await t.query(api.search.catalogStatus, {})).toMatchObject({
       counts: { rawData: 93, reports: 282, visualizations: 7 },
+      pdfReports: 180,
       lastRunFailed: false,
     });
   });
