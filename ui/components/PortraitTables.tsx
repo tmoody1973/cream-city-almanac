@@ -1,9 +1,10 @@
 "use client";
 import { useQuery } from "convex/react";
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { TOPICS } from "@/convex/lib/portrait";
-import { censusTableUrl, formatPortraitNumber, resolvePortraitFocus } from "@/ui/lib/portrait";
+import { censusTableUrl, formatPortraitMargin, formatPortraitNumber, resolvePortraitFocus } from "@/ui/lib/portrait";
+import { LAPTOP_QUERY } from "@/ui/lib/selection";
 import { ProvenanceTag } from "./ProvenanceTag";
 import type { SheetData } from "./SheetBody";
 import styles from "./sheet.module.css";
@@ -24,6 +25,7 @@ export function PortraitTables({ index }: { index: Index }) {
   const loaded = useQuery(api.catalog.portraitTables, isInitial ? "skip" : { hubId: file.hubId });
   const tables = isInitial ? index.initial!.tables : loaded;
   const table = useMemo(() => tables?.find((t) => t.slug === focus.topic) ?? tables?.[0], [tables, focus.topic]);
+  const shown = useRef<HTMLDivElement>(null);
   const idsBySlug = new Map((tables ?? []).map((t) => [t.slug, t.tableIds.join(", ")]));
 
   const go = (next: Focus) => {
@@ -78,7 +80,15 @@ export function PortraitTables({ index }: { index: Index }) {
         {TOPICS.map((t) =>
           !tables || idsBySlug.has(t.slug) ? (
             <li key={t.slug}>
-              <button type="button" aria-pressed={table?.slug === t.slug} onClick={() => go({ place: place.key, hubId: file.hubId, topic: t.slug })}>
+              <button
+                type="button"
+                aria-pressed={table?.slug === t.slug}
+                onClick={() => {
+                  go({ place: place.key, hubId: file.hubId, topic: t.slug });
+                  // Narrow screens list the topics above the table: show the table that was picked.
+                  if (!window.matchMedia(LAPTOP_QUERY).matches) requestAnimationFrame(() => shown.current?.scrollIntoView({ block: "start" }));
+                }}
+              >
                 <span>{t.topic}</span>
                 {idsBySlug.get(t.slug) && <span className={styles.portraitIds}>{idsBySlug.get(t.slug)}</span>}
               </button>
@@ -97,7 +107,7 @@ export function PortraitTables({ index }: { index: Index }) {
       ) : !table ? (
         <p role="status">No tables were read from this file.</p>
       ) : (
-        <>
+        <div ref={shown}>
           {table.issues.map((issue) => (
             <p key={issue} className={styles.portraitIssue}>
               {issue}
@@ -149,7 +159,7 @@ export function PortraitTables({ index }: { index: Index }) {
                       {r.values.map((v, j) => (
                         <Fragment key={j}>
                           <td>{v ? formatPortraitNumber(v.estimate) : ""}</td>
-                          <td>{v?.moe ? `±${formatPortraitNumber(v.moe)}` : ""}</td>
+                          <td>{v?.moe ? formatPortraitMargin(v.moe) : ""}</td>
                         </Fragment>
                       ))}
                     </tr>
@@ -171,7 +181,7 @@ export function PortraitTables({ index }: { index: Index }) {
           <p className={styles.portraitNote}>
             Margin of error: the range the true number likely falls in, at the Census Bureau&apos;s 90% confidence level.
           </p>
-        </>
+        </div>
       )}
     </section>
   );

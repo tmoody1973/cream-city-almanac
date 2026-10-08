@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { censusTableUrl, formatPortraitNumber, portraitFocusQuery, resolvePortraitFocus } from "../../ui/lib/portrait";
+import { censusTableUrl, formatPortraitMargin, formatPortraitNumber, portraitFocusQuery, resolvePortraitFocus } from "../../ui/lib/portrait";
 
 const index = {
   neighborhoods: [
@@ -14,6 +14,20 @@ describe("formatPortraitNumber", () => {
   it("rounds estimates and margins to whole numbers with commas", () => {
     expect(formatPortraitNumber("28133")).toBe("28,133");
     expect(formatPortraitNumber("1694.69348260976")).toBe("1,695");
+  });
+  it("keeps decimals DYCU wrote to three places or fewer exactly as written", () => {
+    expect(formatPortraitNumber("2.904")).toBe("2.904");
+    expect(formatPortraitNumber("2.4")).toBe("2.4");
+    expect(formatPortraitNumber("1882.117")).toBe("1,882.117");
+  });
+  it("rounds long computed decimals by size, never a household size to a whole number", () => {
+    expect(formatPortraitNumber("2.4348109517601")).toBe("2.43");
+    expect(formatPortraitNumber("60.3407")).toBe("60");
+  });
+  it("writes a margin with ±, except a zero or a text cell", () => {
+    expect(formatPortraitMargin("105.853672586264")).toBe("±106");
+    expect(formatPortraitMargin("0")).toBe("0");
+    expect(formatPortraitMargin("#NUM!")).toBe("#NUM!");
   });
   it("keeps rates readable and text exactly as written", () => {
     expect(formatPortraitNumber("0.745902875254698")).toBe("0.746");

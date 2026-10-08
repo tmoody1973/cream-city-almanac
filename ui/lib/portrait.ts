@@ -1,4 +1,12 @@
-export { formatPortraitNumber } from "../../convex/lib/portrait";
+import { formatPortraitNumber } from "../../convex/lib/portrait";
+
+export { formatPortraitNumber };
+
+// A margin reads ±n; a zero margin, or a text or error cell, is shown as written.
+export function formatPortraitMargin(moe: string): string {
+  const f = formatPortraitNumber(moe);
+  return /^\d/.test(f) && Number(moe) !== 0 ? `±${f}` : f;
+}
 
 export interface PortraitIndex {
   neighborhoods: { key: string; label: string; files: { hubId: string; year: number | null }[] }[];

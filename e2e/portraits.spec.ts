@@ -56,3 +56,17 @@ test("a neighborhood search opens that table", async ({ page }, info) => {
   await expect(page).toHaveURL(/open=N03/);
   await expect(page).toHaveURL(/topic=race-and-ethnicity/);
 });
+
+test("on a phone, choosing a topic brings its table into view", async ({ page }, info) => {
+  test.skip(info.project.name !== "phone", "the list sits above the table only on narrow screens");
+  await page.goto("/d/N03?place=walkers-point&year=2023&topic=household-income");
+  await page.waitForLoadState("networkidle"); // a tap before hydration is replayed before the table's ref attaches
+  const s = section(page);
+  const first = s.getByRole("button", { name: /Race and Ethnicity/ });
+  await first.evaluate((b) => b.scrollIntoView({ block: "start" }));
+  await first.click();
+  await expect(s.getByText("Walker's Point, 2023: Race and Ethnicity")).toBeVisible();
+  // WebKit's intersection check reports 0 for a <caption>, so measure where the caption landed.
+  const half = page.viewportSize()!.height / 2;
+  await expect.poll(() => s.locator("caption").evaluate((c) => c.getBoundingClientRect().top)).toBeLessThan(half);
+});

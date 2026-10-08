@@ -98,8 +98,8 @@
 /* .section breaks text anywhere, which crushes table and list columns to one letter; break between words here (the table scrolls). */
 .portraitPickers, .portraitTopics, .portraitTable { overflow-wrap: normal; }
 .portraitPickers { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 36px; margin: 16px 0; }
-.portraitPickers label { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; max-width: 100%; font-weight: 700; font-size: var(--fs-small); }
-.portraitPickers select { min-height: 44px; min-width: min(10em, 100%); max-width: 100%; padding: 0 10px; border: var(--hair); border-radius: 0; background: var(--paper); color: var(--ink); font: inherit; font-weight: 400; }
+.portraitPickers label { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: var(--fs-small); }
+.portraitPickers select { min-width: 8em; max-width: 17.5em; min-height: 44px; padding: 0 36px 0 10px; border: var(--hair); border-radius: 0; appearance: none; background: var(--paper) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23111' stroke-width='2'/%3E%3C/svg%3E") right 12px center / 12px 8px no-repeat; color: var(--ink); font: inherit; font-weight: 400; }
 .portraitTopics { list-style: none; margin: 16px 0; padding: 4px 12px; columns: 14em 2; column-gap: 20px; border: var(--hair); }
 .portraitTopics li { break-inside: avoid; border-bottom: var(--hair); }
 .portraitTopics button { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-height: 44px; padding: 6px 4px; border: 0; background: none; color: var(--ink); text-align: left; font: inherit; font-size: var(--fs-small); cursor: pointer; }
@@ -108,23 +108,37 @@
 .portraitMissing { padding: 10px 4px; color: var(--muted); font-size: var(--fs-small); }
 .portraitIssue { margin: 16px 0; padding: 6px 12px; border: var(--hair); font-size: var(--fs-small); }
 .portraitScroll { overflow-x: auto; }
-.portraitCaption { caption-side: top; padding: 0 0 10px; text-align: left; font-family: var(--font-caps); font-weight: 700; font-size: clamp(20px, 2.6vw, 26px); }
+.portraitCaption { caption-side: top; padding: 0 0 10px; text-align: left; font-family: var(--font-caps); font-weight: 700; font-size: var(--fs-label); text-transform: uppercase; }
 .portraitTable { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: var(--fs-small); }
 .portraitTable th, .portraitTable td { padding: 8px 10px; border: var(--hair); text-align: right; white-space: nowrap; }
-.portraitTable thead th { font-weight: 400; text-align: center; }
+.portraitTable thead th { background: var(--band); font-weight: 400; text-align: center; }
 .portraitTable thead th[scope="colgroup"] { font-family: var(--font-caps); font-weight: 700; font-size: var(--fs-body); text-transform: uppercase; }
 .portraitTable th[scope="row"], .portraitTable th[scope="rowgroup"] { min-width: 8em; text-align: left; white-space: normal; font-weight: 400; }
 .portraitTable th[scope="rowgroup"] { background: var(--band); font-family: var(--font-caps); font-weight: 700; }
-.portraitTable tbody tr:first-child { background: var(--band); }
+.portraitTable tbody tr:nth-child(even) { background: var(--band); }
+.portraitTable tbody tr:first-child > * { font-weight: 700; }
 .portraitNote { color: var(--muted); font-size: var(--fs-small); }
+
+/* Narrow phones: a select holds its widest option, so each label sits above a full-width select. */
+@media (max-width: 480px) {
+  .portraitPickers label { flex-direction: column; align-items: flex-start; gap: 6px; width: 100%; }
+  .portraitPickers select { width: 100%; max-width: 100%; }
+}
 
 @media (min-width: 1100px) and (orientation: landscape) {
   /* Laptop (comp B): topics as a wrapped strip of boxed buttons; the grease pencil marks the one in view. */
-  .portraitTopics { display: flex; flex-wrap: wrap; gap: 12px; columns: auto; border: 0; padding: 0; }
+  .portraitTopics { display: flex; flex-wrap: wrap; gap: 14px 12px; columns: auto; margin-top: 32px; border: 0; padding: 0; }
   .portraitTopics li { border: 0; }
   .portraitTopics button { width: auto; min-height: 34px; padding: 4px 14px; border: var(--hair); }
-  .portraitTopics button[aria-pressed="true"]::after { content: ""; position: absolute; right: -10px; top: -34px; width: 20px; height: 38px; background: url("/plates/topic-arrow.png") center / contain no-repeat; pointer-events: none; }
+  .portraitTopics button[aria-pressed="true"] { font-family: var(--font-caps); font-size: var(--fs-body); }
+  /* The arrow's tip (its lower left) lands on the chip's top-right corner. */
+  .portraitTopics button[aria-pressed="true"]::after { content: ""; position: absolute; left: calc(100% - 6px); bottom: calc(100% - 6px); width: 28px; height: 28px; background: url("/plates/topic-arrow.png") left bottom / contain no-repeat; pointer-events: none; }
   .portraitIds { display: none; }
   .portraitMissing { padding: 4px 0; }
-  .portraitPickers select { min-height: 38px; max-width: 17.5em; }
+  .portraitPickers select { min-height: 38px; }
+  .portraitCaption { font-size: calc(var(--fs-label) * 0.8); text-transform: none; }
+  .portraitTable thead th { background: none; }
+  .portraitTable tbody tr:nth-child(even) { background: none; }
+  .portraitTable tbody tr:first-child { background: var(--band); }
+  .portraitTable tbody tr:first-child > * { font-weight: 400; }
 }

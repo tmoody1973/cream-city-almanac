@@ -131,13 +131,18 @@ export function readPortraitSheet(sheet: Sheet, order: number): PortraitTable {
   return { ...base, tableIds: tableIdsOf(tableIdText), tableIdText, vintage: meta.get("VINTAGE") || null, groups: names, rows, issues };
 }
 
-// Estimates and margins as whole numbers with commas; rates (between 0 and 1) to 3 places; anything else as written.
+// DYCU's value as written when it reads as typed: a whole number, or up to three decimals (2.904 people per
+// household). Longer decimals are computed (margins, rates) and are rounded by size: under 1 to three places,
+// under 10 to two (a household size of 2.4348 stays 2.43), otherwise to a whole number. Text is kept as written.
 export function formatPortraitNumber(s: string): string {
   const t = s.trim();
-  if (!/^-?\d+(\.\d+)?$/.test(t)) return s;
+  const m = /^(-?)(\d+)(?:\.(\d+))?$/.exec(t);
+  if (!m) return s;
+  const [, sign, whole, dec = ""] = m;
+  if (dec.length <= 3) return `${sign}${Number(whole).toLocaleString("en-US")}${dec ? `.${dec}` : ""}`;
   const n = Number(t);
-  if (n !== 0 && Math.abs(n) < 1) return n.toFixed(3);
-  return Math.round(n).toLocaleString("en-US");
+  const places = Math.abs(n) < 1 ? 3 : Math.abs(n) < 10 ? 2 : 0;
+  return n.toLocaleString("en-US", { minimumFractionDigits: places, maximumFractionDigits: places });
 }
 
 const MAX_PASSAGE_CHARS = 1500;
