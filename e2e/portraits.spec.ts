@@ -48,3 +48,11 @@ test("switching neighborhoods quickly shows only the last choice", async ({ page
   const label = await pick.locator("option").first().textContent();
   await expect(section(page).getByRole("table").first()).toHaveAccessibleName(new RegExp(`^${label!.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}, `));
 });
+
+test("a neighborhood search opens that table", async ({ page }, info) => {
+  test.skip(info.project.name !== "desktop", "laptop pane");
+  await page.goto("/?q=" + encodeURIComponent("Walker's Point race and ethnicity 2023"));
+  await page.locator("li[data-code='N03'] button").click();
+  await expect(page).toHaveURL(/open=N03/);
+  await expect(page).toHaveURL(/topic=race-and-ethnicity/);
+});

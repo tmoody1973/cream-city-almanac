@@ -94,6 +94,24 @@ describe("searchCatalog", () => {
     expect(hit.snippet).toEqual({ hubId: harambee.hubId, title: harambee.title, section: "Housing", text: "Harambee homes were mostly built before 1950." });
   });
 
+  it("a spreadsheet passage carries the neighborhood, year and topic it came from", async () => {
+    const t = convexTest(schema, modules);
+    rateLimiterTest.register(t);
+    installFakeFetch();
+    await seed(t);
+    const sheets = fixtureFamilies().find((f) => f.key === "document:neighborhood-portrait-spreadsheet")!;
+    const walkers = sheets.members.find((m) => m.place === "Walker's Point" && m.years[0] === 2023)!;
+    await t.run((ctx) =>
+      ctx.db.insert("docChunks", {
+        hubId: walkers.hubId, modified: walkers.modified, section: "Rent Paid",
+        text: "Walker's Point 2023 · Rent Paid (DP04)", embedding: fakeEmbedding("walkersrent"),
+      }),
+    );
+    const res = await t.action(api.search.searchCatalog, { query: "walkersrent" });
+    const hit = res.results.find((r) => r.key === "document:neighborhood-portrait-spreadsheet")!;
+    expect(hit.snippet?.focus).toEqual({ place: "walkers-point", year: 2023, topic: "rent-paid" });
+  });
+
   it("applies the place filter", async () => {
     const t = convexTest(schema, modules);
     rateLimiterTest.register(t);

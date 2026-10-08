@@ -27,6 +27,8 @@ export const QUESTIONS: { question: string; expect: string[] }[] = [
   { question: "Latino population growth", expect: ["dataset:hispanic-population", "dataset:population-change"] },
   { question: "racial makeup of the county", expect: ["dataset:racial-demographics", "dataset:racial-and-ethnic-diversity"] },
   { question: "what has changed in Harambee", expect: ["document:neighborhood-change-over-time-report", "document:neighborhood-portrait"] },
+  { question: "rent paid in Walker's Point", expect: ["document:neighborhood-portrait-spreadsheet", "document:neighborhood-portrait"] },
+  { question: "how many people in Harambee live in poverty", expect: ["document:neighborhood-portrait-spreadsheet", "document:neighborhood-portrait"] },
 ];
 
 export function passesTop3(expected: string[], resultKeys: string[]): boolean {

@@ -4,13 +4,14 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/convex/_generated/api";
 import { shortExplainer } from "@/ui/lib/format";
+import { portraitFocusQuery, type PortraitFocus } from "@/ui/lib/portrait";
 import { SEARCH_TIMEOUT_MS } from "@/ui/lib/search";
 import { Arrow } from "./Arrow";
 import { PlaceYearGrid } from "./PlaceYearGrid";
 import { ProvenanceTag } from "./ProvenanceTag";
 import styles from "./rundown.module.css";
 
-export function FamilyPreview({ id, familyKey }: { id: string; familyKey: string }) {
+export function FamilyPreview({ id, familyKey, focus }: { id: string; familyKey: string; focus?: PortraitFocus | null }) {
   const preview = useQuery(api.catalog.familyPreview, { key: familyKey });
   // useQuery waits silently while the connection is down; after the search timeout, say so instead.
   const [stalled, setStalled] = useState(false);
@@ -33,7 +34,7 @@ export function FamilyPreview({ id, familyKey }: { id: string; familyKey: string
         </p>
       </div>
       <div className={styles.actions}>
-        <Link className={styles.button} href={`/d/${preview.code}`}>
+        <Link className={styles.button} href={`/d/${preview.code}${portraitFocusQuery(focus)}`}>
           Open sheet
           <Arrow />
         </Link>

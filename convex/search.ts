@@ -5,6 +5,7 @@ import { action, internalQuery, query, type ActionCtx, type QueryCtx } from "./_
 import { embed, gatewayKey } from "./lib/gateway";
 import { STALE_BUILD_MS } from "./buildStore";
 import { rateLimiter } from "./limits";
+import { placeKey, topicFor } from "./lib/portrait";
 import { applyFilters, fuseRanks, keywordQuery, MIN_VECTOR_SCORE, normalizeQuery, relevantRanks, type Hit } from "./lib/rank";
 import type { ResultRow, SearchResponse } from "./lib/types";
 
@@ -115,9 +116,12 @@ export const resolveVectorHits = internalQuery({
       if (!chunk) continue;
       const member = await ctx.db.query("members").withIndex("by_hubId", (q) => q.eq("hubId", chunk.hubId)).first();
       if (!member) continue;
+      const focus = member.familyKey.endsWith("-spreadsheet")
+        ? { focus: { place: placeKey(member.place ?? member.title), year: member.years[0] ?? null, topic: topicFor(chunk.section).slug } }
+        : {};
       chunks.push({
         familyKey: member.familyKey,
-        snippet: { hubId: chunk.hubId, title: member.title, section: chunk.section, text: chunk.text.slice(0, 280) },
+        snippet: { hubId: chunk.hubId, title: member.title, section: chunk.section, text: chunk.text.slice(0, 280), ...focus },
       });
     }
     return { cards, chunks };

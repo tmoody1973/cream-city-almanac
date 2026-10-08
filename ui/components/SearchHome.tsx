@@ -6,6 +6,7 @@ import { api } from "@/convex/_generated/api";
 import type { ResultRow, SearchResponse } from "@/convex/lib/types";
 import { circledCodes, LAST_VISIT_KEY, OPENED_KEY, readOpened, safeStorage } from "@/ui/lib/marks";
 import { SEARCH_TIMEOUT_MS, searchNotice, withTimeout, type SearchState } from "@/ui/lib/search";
+import { portraitFocusQuery } from "@/ui/lib/portrait";
 import { LAPTOP_QUERY, parseSelection, selectionSearch } from "@/ui/lib/selection";
 import { useLaptop } from "@/ui/lib/useLaptop";
 import { CatalogLine, type CatalogStatus } from "./CatalogLine";
@@ -90,10 +91,15 @@ export function SearchHome({ rundown, status }: { rundown: ResultRow[]; status: 
   };
 
   const select = (code: string, viaKeyboard: boolean) => {
+    const already = code === open;
     setOpen(code);
     setFocusPane(viaKeyboard);
-    // Choosing the row that's already open doesn't add a Back step.
-    const url = `${window.location.pathname}${selectionSearch({ q: query, open: code })}`;
+    // The address already names this row, with any neighborhood picks made in its sheet; keep them.
+    if (already) return;
+    // A spreadsheet passage match opens the table it came from.
+    const focus = rows.find((r) => r.code === code)?.snippet?.focus;
+    const url = `${window.location.pathname}${selectionSearch({ q: query, open: code })}${focus ? `&${portraitFocusQuery(focus).slice(1)}` : ""}`;
+    // Choosing the row that's already shown doesn't add a Back step.
     if (code === selected) window.history.replaceState(null, "", url);
     else window.history.pushState(null, "", url);
   };
