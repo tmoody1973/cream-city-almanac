@@ -177,6 +177,8 @@ All caps live in `settings` and change without a redeploy.
 
 **Revised 2026-10-07 (Tarik):** public production moved to the end of Phase 2, so CI and the Vercel deploy now ship with step 2. A **laptop layout** follows straight after: a two-pane master-detail view designed from its own comp, with room for the docked Ask panel. Then **Clerk + Ask chat** (Phase 3), then **saved items** (Phase 4), including Ask's "save this" tool. See decisions 008 and 010.
 
+**Revised 2026-10-08 (Tarik; decision 014):** the laptop layout and How it works page shipped (Phase 2.5). The order ahead is **Phase 3: Clerk + Ask chat** over DYCU's data and reports, with Ask's tools built so a second data source can plug in; **Phase 4: City of Milwaukee open data** (data.milwaukee.gov: 186 datasets, mostly CSV with 855 files queryable through its API, plus 77 ArcGIS layers and 67 PDFs), first as findable, explained datasets beside DYCU's, with person-level columns left out of previews; **Phase 5: saved items.** Combining the two sources across geographies (tracts vs wards and addresses) comes after Phase 4.
+
 **Catalog coverage (Tarik, 2026-10-07):** the app carries all 382 Hub items, the Hub's 3 help pages included, so its counts match the Hub's Collections filter: 93 raw data, 282 reports, 7 visualizations. The home catalog line uses those same words. The 99 Neighborhood Portrait spreadsheets are listed and downloadable, but their contents aren't read for search yet; reading them is part of Phase 3, alongside Ask.
 
 ## 12. Open decisions and unverified facts
