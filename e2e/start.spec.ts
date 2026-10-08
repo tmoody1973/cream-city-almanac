@@ -75,3 +75,12 @@ test("the resident chart's labels stay readable", async ({ page }) => {
   await expect(label).toBeVisible();
   expect((await label.boundingBox())!.height).toBeGreaterThanOrEqual(11);
 });
+
+test("a guide page's phone preview links out and to Start here", async ({ page }, info) => {
+  test.skip(info.project.name !== "phone", "the inline preview is the phone's");
+  await page.goto("/?q=" + encodeURIComponent("getting started"));
+  await page.locator("li[data-code='X02'] button").click();
+  const preview = page.locator("li[data-code='X02'] [id^=preview-]");
+  await expect(preview.getByText("A guide page on DYCU's Hub, not a dataset.")).toBeVisible();
+  await expect(preview.getByRole("link", { name: "Start here" })).toHaveAttribute("href", "/start-here");
+});

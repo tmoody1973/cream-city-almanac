@@ -1,3 +1,4 @@
+import { canChart } from "../../ui/lib/preview";
 import { describe, expect, it, vi } from "vitest";
 import { bySeriesYear, chartSeries, fetchFeatures, fetchJson, fieldValue, formatCell, formatScale, headlineColumn, isSystemColumn, rowsUrl, sharedScale, valuesUrl } from "../../ui/lib/preview";
 
@@ -84,5 +85,14 @@ describe("chartSeries", () => {
   it("keeps a multi-year layer when it is all there is, and orders by year", () => {
     expect(chartSeries([s("City 2021–2023")]).map((x) => x.label)).toEqual(["City 2021–2023"]);
     expect(chartSeries([s("County 2023"), s("City 2021")]).map((x) => x.label)).toEqual(["City 2021", "County 2023"]);
+  });
+});
+
+describe("canChart", () => {
+  const feed = [{ featureServerUrl: "https://example.com/FeatureServer/0" }];
+  it("needs a headline column and a live feed", () => {
+    expect(canChart(["Day", "AvgAQI"], feed)).toBe(true);
+    expect(canChart([], feed)).toBe(false);
+    expect(canChart(["Day", "AvgAQI"], [{ featureServerUrl: null }])).toBe(false);
   });
 });

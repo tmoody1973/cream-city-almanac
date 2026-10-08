@@ -175,6 +175,18 @@ describe("startHere", () => {
     expect(d.guides.every((g) => g.url?.startsWith("https://"))).toBe(true);
   });
 
+  it("lists a guide page without a link when it has no landing page", async () => {
+    const t = convexTest(schema, modules);
+    await seed(t);
+    await t.run(async (ctx) => {
+      for (const m of await ctx.db.query("members").withIndex("by_family", (q) => q.eq("familyKey", "page:getting-started")).collect()) {
+        await ctx.db.patch(m._id, { landingPage: "" });
+      }
+    });
+    const guide = (await t.query(api.catalog.startHere, {})).guides.find((g) => g.name === "Getting Started")!;
+    expect(guide.url).toBeFalsy();
+  });
+
   it("uses the newest Harambee year that has the poverty table", async () => {
     const t = convexTest(schema, modules);
     await seed(t);

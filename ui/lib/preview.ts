@@ -15,6 +15,11 @@ export function headlineColumn(fields: string[]): string | null {
   return fields.find((f) => HEADLINE.test(f)) ?? null;
 }
 
+// A chart needs a column to plot and at least one live feed; without both, say the data didn't load.
+export function canChart(fields: string[], members: { featureServerUrl: string | null }[]): boolean {
+  return headlineColumn(fields) !== null && members.some((m) => m.featureServerUrl);
+}
+
 // Layers for different years spell the same column differently (per_asthma vs Per_Asthma); ArcGIS accepts
 // any case in outFields but answers with the layer's own spelling.
 export function fieldValue(attributes: Record<string, unknown>, field: string): unknown {

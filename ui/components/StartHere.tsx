@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import type { api } from "@/convex/_generated/api";
 import { formatPortraitMargin, formatPortraitNumber } from "@/ui/lib/portrait";
+import { canChart } from "@/ui/lib/preview";
 import { Arrow } from "./Arrow";
 import { CreditFooter } from "./CreditFooter";
 import { LivePreview } from "./LivePreview";
@@ -117,7 +118,7 @@ export function StartHere({ data }: { data: Data | null }) {
             <>Read the caveat before comparing days or years.</>,
           ]}
           excerpt={
-            air ? (
+            air && canChart(air.fields, air.members) ? (
               <>
                 <p className={styles.excerptLabel}>{air.code} daily readings</p>
                 <LivePreview members={air.members} fields={air.fields} chartOnly unit="day" />
