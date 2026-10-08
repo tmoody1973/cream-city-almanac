@@ -493,3 +493,22 @@
   display: block;
   white-space: nowrap;
 }
+
+.mastNav {
+  display: none;
+}
+
+.mastTab,
+.mastTabActive {
+  font-family: var(--font-caps);
+  font-weight: 700;
+  font-size: var(--fs-label);
+  text-decoration: none;
+  color: var(--muted);
+  padding-bottom: 6px;
+}
+
+.mastTabActive {
+  color: var(--ink);
+  border-bottom: 4px solid var(--ink);
+}

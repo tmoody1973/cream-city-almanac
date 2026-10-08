@@ -47,3 +47,9 @@ test("the live chart plots every year, even when layers spell the column differe
   await expect(series).toHaveCount(3, { timeout: 20_000 });
   for (const g of await series.all()) await expect(g.locator("circle").first()).toBeAttached({ timeout: 20_000 });
 });
+
+test("a dataset sheet doesn't claim SEARCH as the current page", async ({ page }, info) => {
+  test.skip(info.project.name !== "phone", "laptops open sheets in the two-pane view (Task 4)");
+  await page.goto("/d/W01");
+  await expect(page.getByRole("link", { name: "SEARCH" })).not.toHaveAttribute("aria-current", "page");
+});

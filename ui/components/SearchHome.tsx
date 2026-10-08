@@ -9,8 +9,8 @@ import { CatalogLine, type CatalogStatus } from "./CatalogLine";
 import { CreditFooter } from "./CreditFooter";
 import { Masthead } from "./Masthead";
 import { RundownList } from "./RundownList";
+import { SiteNav } from "./SiteNav";
 import { SlugBar } from "./SlugBar";
-import { TabBar } from "./TabBar";
 import styles from "./rundown.module.css";
 
 const DEBOUNCE_MS = 350;
@@ -73,6 +73,7 @@ export function SearchHome({ rundown, status }: { rundown: ResultRow[]; status: 
           )
         }
         showDate={!searching}
+        nav={<SiteNav placement="masthead" current="search" />}
       />
       <main className={styles.main}>
         {/* Results follow comp C: no catalog line or suggestions once a search is running. */}
@@ -96,7 +97,7 @@ export function SearchHome({ rundown, status }: { rundown: ResultRow[]; status: 
         )}
       </main>
       <div className={styles.dock}>
-        <TabBar />
+        <SiteNav placement="dock" current="search" />
         <CreditFooter />
       </div>
     </div>
