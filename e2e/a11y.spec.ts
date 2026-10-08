@@ -82,7 +82,8 @@ for (const width of [1024, 1440]) {
   test(`no sideways scroll at ${width}px on the new pages`, async ({ page }, info) => {
     test.skip(info.project.name !== "desktop");
     await page.setViewportSize({ width, height: 900 });
-    for (const path of ["/", "/how-it-works", "/?q=asthma&open=W01"]) {
+    const focus = "place=walkers-point&year=2023&topic=sex-and-age"; // a wide, grouped neighborhood table
+    for (const path of ["/", "/how-it-works", "/?q=asthma&open=W01", `/?open=N03&${focus}`, `/d/N03?${focus}`]) {
       await page.goto(path);
       await page.waitForLoadState("networkidle");
       expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth), path).toBeLessThanOrEqual(0);

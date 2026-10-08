@@ -65,4 +65,45 @@ test.describe("@capture", () => {
       await page.screenshot({ path: `.impeccable/review/${file}` });
     }
   });
+  test("neighborhood spreadsheet section at the comp crop", async ({ page }) => {
+    await page.clock.setFixedTime(FIXED);
+    // Laptop: the gate diffs the section against .impeccable/mocks/portraits-b-laptop-section.png, comp px 628,236 (788x752).
+    await page.setViewportSize({ width: 1536, height: 1024 });
+    await page.goto("/?open=N03&place=walkers-point&year=2023&topic=sex-and-age");
+    const section = page.locator("section[aria-labelledby=portrait-heading]");
+    await section.locator("table").waitFor();
+    await settle(page);
+    await section.evaluate((s) => {
+      const pane = document.getElementById("sheet-pane")!;
+      pane.scrollTop += s.getBoundingClientRect().top - 236;
+    });
+    await page.screenshot({ path: ".impeccable/review/hero-repro.png", clip: { x: 628, y: 236, width: 788, height: 752 } });
+    // Phone: compared with portraits-a-phone.webp by eye.
+    await page.setViewportSize({ width: 1024, height: 1536 });
+    await page.goto("/d/N03?place=walkers-point&year=2023&topic=sex-and-age");
+    await section.locator("table").waitFor();
+    await settle(page);
+    await section.evaluate((s) => window.scrollBy(0, s.getBoundingClientRect().top - 220));
+    await page.screenshot({ path: ".impeccable/review/portraits-phone-repro.png" });
+  });
+  test("neighborhood spreadsheet section, responsive", async ({ page }) => {
+    await page.clock.setFixedTime(FIXED);
+    const section = page.locator("section[aria-labelledby=portrait-heading]");
+    // Desktop 1440: the same crop of the section the comp shows (the gate diffs it against the comp).
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/?open=N03&place=walkers-point&year=2023&topic=sex-and-age");
+    await section.locator("table").waitFor();
+    await settle(page);
+    await section.evaluate((s) => {
+      document.getElementById("sheet-pane")!.scrollTop += s.getBoundingClientRect().top - 100;
+    });
+    const box = (await section.boundingBox())!;
+    await page.screenshot({ path: ".impeccable/review/desktop.png", clip: { x: box.x - 16, y: 100, width: 788, height: 752 } });
+    // Phone 390: the whole section.
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/d/N03?place=walkers-point&year=2023&topic=sex-and-age");
+    await section.locator("table").waitFor();
+    await settle(page);
+    await section.screenshot({ path: ".impeccable/review/mobile.png" });
+  });
 });

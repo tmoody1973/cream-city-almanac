@@ -48,7 +48,7 @@ export function PortraitTables({ index }: { index: Index }) {
       </p>
       <div className={styles.portraitPickers}>
         <label>
-          Neighborhood
+          Neighborhood:
           <select
             value={place.key}
             onChange={(e) => {
@@ -64,7 +64,7 @@ export function PortraitTables({ index }: { index: Index }) {
           </select>
         </label>
         <label>
-          Year
+          Year:
           <select value={file.hubId} onChange={(e) => go({ place: place.key, hubId: e.target.value, topic: focus.topic })}>
             {place.files.map((f) => (
               <option key={f.hubId} value={f.hubId}>
@@ -74,7 +74,7 @@ export function PortraitTables({ index }: { index: Index }) {
           </select>
         </label>
       </div>
-      <ul className={styles.portraitTopics}>
+      <ol className={styles.portraitTopics}>
         {TOPICS.map((t) =>
           !tables || idsBySlug.has(t.slug) ? (
             <li key={t.slug}>
@@ -89,7 +89,7 @@ export function PortraitTables({ index }: { index: Index }) {
             </li>
           ),
         )}
-      </ul>
+      </ol>
       {tables === undefined ? (
         <p role="status" aria-busy="true">
           Loading…
@@ -111,7 +111,9 @@ export function PortraitTables({ index }: { index: Index }) {
               <thead>
                 {table.groups.length > 1 && (
                   <tr>
-                    <td />
+                    <th scope="col" rowSpan={2}>
+                      <span className="visually-hidden">Variable</span>
+                    </th>
                     {table.groups.map((g) => (
                       <th key={g} scope="colgroup" colSpan={2}>
                         {g}
@@ -120,7 +122,11 @@ export function PortraitTables({ index }: { index: Index }) {
                   </tr>
                 )}
                 <tr>
-                  <th scope="col">Variable</th>
+                  {table.groups.length <= 1 && (
+                    <th scope="col">
+                      <span className="visually-hidden">Variable</span>
+                    </th>
+                  )}
                   {table.groups.map((g) => (
                     <Fragment key={g}>
                       <th scope="col">Estimate</th>

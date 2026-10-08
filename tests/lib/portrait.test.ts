@@ -80,6 +80,8 @@ describe("cells and names", () => {
   it("pulls every Census table ID out of a phrase", () => {
     expect(tableIdsOf("B08301 and B08303 (and S0801 if only one census tract)")).toEqual(["B08301", "B08303", "S0801"]);
     expect(tableIdsOf("B01001, (S1101 for avg size)")).toEqual(["B01001", "S1101"]);
+    // Data profile tables have two digits (DP02 to DP05).
+    expect(tableIdsOf("DP04")).toEqual(["DP04"]);
   });
   it("knows the topics, and marks a tab it hasn't seen", () => {
     expect(topicFor("Bedroom and Year")).toEqual({ slug: "bedrooms-and-year", topic: "Bedrooms and Year", known: true });

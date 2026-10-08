@@ -46,7 +46,8 @@ export const TOPICS: { slug: string; topic: string; about: string; aliases?: str
 const ESTIMATE = /Estimate$/;
 const MOE = /(^|[\s.])MOE$/;
 const DERIVED = /(%|Percent|(^|[\s.])SE$|(^|[\s.])CV)/;
-const TABLE_ID = /\b(?:B|C|S|DP)\d{4,5}[A-Z]?\b/g;
+// Detailed (B, C) and subject (S) tables have 4-5 digits; data profiles have two (DP02 to DP05).
+const TABLE_ID = /\b(?:[BCS]\d{4,5}[A-Z]?|DP\d{2})\b/g;
 
 const norm = (s: string) => s.trim().toLowerCase();
 

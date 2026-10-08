@@ -95,32 +95,36 @@
 }
 
 /* Neighborhood spreadsheets (comps: portraits-a-phone, portraits-b-laptop). */
-.portraitPickers { display: flex; flex-wrap: wrap; gap: 12px 24px; margin: 12px 0; }
-.portraitPickers label { display: flex; align-items: center; gap: 10px; font-family: var(--font-caps); font-weight: 700; font-size: var(--fs-label); }
-.portraitPickers select { min-height: 44px; min-width: 9em; padding: 0 10px; border: var(--hair); border-radius: 0; background: var(--paper); color: var(--ink); font-family: var(--font-body); font-weight: 400; font-size: var(--fs-body); }
-.portraitTopics { list-style: none; margin: 12px 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 20px; border: var(--hair); padding: 4px 12px; }
-.portraitTopics li { border-bottom: var(--hair); }
-.portraitTopics button { display: flex; justify-content: space-between; gap: 8px; width: 100%; min-height: 44px; padding: 6px 4px; border: 0; background: none; color: var(--ink); text-align: left; font: inherit; font-size: var(--fs-small); cursor: pointer; }
+/* .section breaks text anywhere, which crushes table and list columns to one letter; break between words here (the table scrolls). */
+.portraitPickers, .portraitTopics, .portraitTable { overflow-wrap: normal; }
+.portraitPickers { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 36px; margin: 16px 0; }
+.portraitPickers label { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; max-width: 100%; font-weight: 700; font-size: var(--fs-small); }
+.portraitPickers select { min-height: 44px; min-width: min(10em, 100%); max-width: 100%; padding: 0 10px; border: var(--hair); border-radius: 0; background: var(--paper); color: var(--ink); font: inherit; font-weight: 400; }
+.portraitTopics { list-style: none; margin: 16px 0; padding: 4px 12px; columns: 14em 2; column-gap: 20px; border: var(--hair); }
+.portraitTopics li { break-inside: avoid; border-bottom: var(--hair); }
+.portraitTopics button { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-height: 44px; padding: 6px 4px; border: 0; background: none; color: var(--ink); text-align: left; font: inherit; font-size: var(--fs-small); cursor: pointer; }
 .portraitTopics button[aria-pressed="true"] { background: var(--band); font-weight: 700; }
-.portraitIds { color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.portraitIds { color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
 .portraitMissing { padding: 10px 4px; color: var(--muted); font-size: var(--fs-small); }
-.portraitIssue { margin: 12px 0; padding: 8px 12px; border: var(--hair); font-size: var(--fs-small); }
-.portraitScroll { overflow-x: auto; border: var(--hair); }
-.portraitCaption { padding: 10px 10px 6px; text-align: left; font-family: var(--font-caps); font-weight: 700; font-size: var(--fs-label); }
+.portraitIssue { margin: 16px 0; padding: 6px 12px; border: var(--hair); font-size: var(--fs-small); }
+.portraitScroll { overflow-x: auto; }
+.portraitCaption { caption-side: top; padding: 0 0 10px; text-align: left; font-family: var(--font-caps); font-weight: 700; font-size: clamp(20px, 2.6vw, 26px); }
 .portraitTable { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: var(--fs-small); }
-.portraitTable th, .portraitTable td { padding: 8px 10px; border-top: var(--hair); text-align: right; white-space: nowrap; }
-.portraitTable thead th { font-family: var(--font-caps); font-weight: 700; text-align: center; }
-.portraitTable thead th[scope="colgroup"] { background: var(--band); }
-.portraitTable th[scope="row"], .portraitTable th[scope="rowgroup"], .portraitTable thead th:first-child { text-align: left; white-space: normal; }
-.portraitTable th[scope="rowgroup"] { background: var(--band); font-family: var(--font-caps); }
-.portraitTable tbody tr:nth-child(even) { background: var(--band); }
+.portraitTable th, .portraitTable td { padding: 8px 10px; border: var(--hair); text-align: right; white-space: nowrap; }
+.portraitTable thead th { font-weight: 400; text-align: center; }
+.portraitTable thead th[scope="colgroup"] { font-family: var(--font-caps); font-weight: 700; font-size: var(--fs-body); text-transform: uppercase; }
+.portraitTable th[scope="row"], .portraitTable th[scope="rowgroup"] { min-width: 8em; text-align: left; white-space: normal; font-weight: 400; }
+.portraitTable th[scope="rowgroup"] { background: var(--band); font-family: var(--font-caps); font-weight: 700; }
+.portraitTable tbody tr:first-child { background: var(--band); }
 .portraitNote { color: var(--muted); font-size: var(--fs-small); }
 
 @media (min-width: 1100px) and (orientation: landscape) {
-  /* Laptop (comp B): topics as a wrapped strip of boxed buttons above a full-width table. */
-  .portraitTopics { display: flex; flex-wrap: wrap; gap: 10px; border: 0; padding: 0; }
+  /* Laptop (comp B): topics as a wrapped strip of boxed buttons; the grease pencil marks the one in view. */
+  .portraitTopics { display: flex; flex-wrap: wrap; gap: 12px; columns: auto; border: 0; padding: 0; }
   .portraitTopics li { border: 0; }
-  .portraitTopics button { width: auto; min-height: 40px; padding: 6px 14px; border: var(--hair); }
+  .portraitTopics button { width: auto; min-height: 34px; padding: 4px 14px; border: var(--hair); }
+  .portraitTopics button[aria-pressed="true"]::after { content: ""; position: absolute; right: -10px; top: -34px; width: 20px; height: 38px; background: url("/plates/topic-arrow.png") center / contain no-repeat; pointer-events: none; }
   .portraitIds { display: none; }
-  .portraitMissing { padding: 6px 14px; border: var(--hair); border-style: dashed; }
+  .portraitMissing { padding: 4px 0; }
+  .portraitPickers select { min-height: 38px; max-width: 17.5em; }
 }
