@@ -33,3 +33,30 @@
   padding: 16px 0;
   border-top: var(--rule);
 }
+
+.laptopOnly { display: none; }
+
+/* Laptop pane (comp B): code and name on one line, grid beside its explainer, preview rows beside the chart.
+   Keep this media query identical to LAPTOP_QUERY in ui/lib/selection.ts. */
+@media (min-width: 1100px) and (orientation: landscape) {
+  .laptopOnly { display: block; }
+  .header { display: flex; flex-wrap: wrap; align-items: center; column-gap: clamp(16px, 1.8vw, 28px); padding: clamp(14px, 1.6vw, 24px) 0; }
+  .header .code { line-height: 1; }
+  .header .name { margin: 0; padding-left: clamp(16px, 1.8vw, 28px); border-left: var(--hair); }
+  .sub { flex-basis: 100%; }
+  .lead { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: clamp(20px, 2.2vw, 34px); border-bottom: var(--hair); }
+  .lead > .section { border-bottom: 0; }
+  .lead > section { padding-left: clamp(20px, 2.2vw, 34px); border-left: var(--hair); }
+  .preview { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 0 16px; align-items: start; }
+  .preview > .heading { grid-column: 1 / -1; }
+  .preview .chart { margin: 0; }
+}
+@media (min-width: 1100px) and (orientation: landscape) {
+  /* Comp B's pane header is code and name only; place and years are in the grid right below. */
+  .sub { display: none; }
+}
+@media (min-width: 1100px) and (orientation: landscape) {
+  /* Comp B: the column guide is one ruled box, field names in the body face. */
+  .glossary { border: var(--hair); }
+  .glossary code { font-family: inherit; }
+}

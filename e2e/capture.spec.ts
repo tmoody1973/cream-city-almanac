@@ -44,4 +44,12 @@ test.describe("@capture", () => {
       await page.screenshot({ path: `.impeccable/review/${file}`, fullPage: true });
     }
   });
+  test("laptop two-pane at the comp's size", async ({ page }) => {
+    await page.clock.setFixedTime(FIXED);
+    await page.setViewportSize({ width: 1536, height: 1024 });
+    await page.goto("/");
+    await page.locator("#sheet-pane h2").waitFor();
+    await settle(page);
+    await page.screenshot({ path: ".impeccable/review/laptop-repro.png" });
+  });
 });

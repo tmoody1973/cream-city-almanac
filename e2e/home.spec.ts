@@ -77,3 +77,26 @@ test("a shared search link with a selection expands that row on a phone", async 
   await page.goto("/?q=asthma&open=W01");
   await expect(page.locator("li[data-code='W01'] button")).toHaveAttribute("aria-expanded", "true");
 });
+
+const BAND = "Milwaukee data in plain English.";
+
+test("the home page explains itself in one line and links to How it works", async ({ page }) => {
+  await page.goto("/");
+  const band = page.getByText(BAND);
+  await expect(band).toBeVisible();
+  // One line: the band's height is no more than one line of its own text plus its padding.
+  const lines = await band.evaluate((el) => {
+    const cs = getComputedStyle(el);
+    const pad = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+    return Math.round((el.clientHeight - pad) / parseFloat(cs.lineHeight));
+  });
+  expect(lines).toBe(1);
+  await expect(page.getByRole("link", { name: "How it works" }).first()).toHaveAttribute("href", "/how-it-works");
+  await page.getByLabel("SLUG:").fill("asthma");
+  await expect(band).toBeHidden();
+});
+
+test("every page's footer links to How it works", async ({ page }) => {
+  await page.goto("/d/W01");
+  await expect(page.getByRole("contentinfo").getByRole("link", { name: "How it works" })).toHaveAttribute("href", "/how-it-works");
+});

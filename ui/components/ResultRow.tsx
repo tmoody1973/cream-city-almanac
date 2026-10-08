@@ -70,7 +70,10 @@ export function ResultRow({
         ) : (
           <>
             <span className={styles.slug}>
-              <span className={styles.name}>{sub ? `${row.name} —` : row.name}</span>
+              <span className={styles.name}>
+                {row.name}
+                {sub && <span className={styles.dash}> —</span>}
+              </span>
               {sub && (
                 <span className={styles.sub}>
                   <Parts text={sub} />

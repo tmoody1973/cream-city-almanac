@@ -1,282 +1,248 @@
 {
   "tool": "build-phase",
   "version": 2,
-  "startedAt": "2026-10-07T18:42:26.790Z",
-  "comp": ".impeccable/mocks/home-b.webp",
-  "direction": "b5397139",
-  "breakpoint": "1024x1536",
+  "startedAt": "2026-10-08T01:19:13.578Z",
+  "comp": ".impeccable/mocks/laptop-b.webp",
+  "direction": null,
+  "breakpoint": "1536x1024",
   "artifact": null,
-  "phase": "review",
+  "phase": "hero",
   "phases": {
     "comps": {
-      "status": "closed",
-      "openedAt": "2026-10-07T18:42:26.789Z",
-      "closedAt": "2026-10-07T18:46:53.248Z",
-      "attempts": 1,
-      "notes": [],
-      "gate": {
-        "ok": true,
-        "reasons": [],
-        "summary": "3 comps, 1 approved",
-        "approved": ".impeccable/mocks/home-b.webp",
-        "at": "2026-10-07T18:46:53.245Z"
-      },
+      "status": "skipped",
+      "openedAt": null,
+      "closedAt": null,
+      "attempts": 0,
+      "notes": [
+        {
+          "at": "2026-10-08T01:19:13.578Z",
+          "text": "started with an approved comp; the comp round happened before this state (surface round or manual)"
+        }
+      ],
+      "gate": null,
       "forced": null
     },
     "spec": {
       "status": "closed",
-      "openedAt": "2026-10-07T18:46:53.285Z",
-      "closedAt": "2026-10-07T18:53:54.375Z",
+      "openedAt": "2026-10-08T01:19:13.578Z",
+      "closedAt": "2026-10-08T01:20:17.147Z",
       "attempts": 3,
       "notes": [],
       "gate": {
         "ok": true,
         "reasons": [],
-        "summary": "14 regions, 1 plates, 7 text regions measured",
-        "at": "2026-10-07T18:53:54.375Z"
+        "summary": "16 regions, 1 plates, 6 text regions measured",
+        "at": "2026-10-08T01:20:17.147Z"
       },
       "forced": null
     },
     "plates": {
       "status": "closed",
-      "openedAt": "2026-10-07T18:53:54.375Z",
-      "closedAt": "2026-10-07T18:55:20.193Z",
-      "attempts": 1,
+      "openedAt": "2026-10-08T01:20:17.147Z",
+      "closedAt": "2026-10-08T01:20:29.457Z",
+      "attempts": 2,
       "notes": [],
       "gate": {
         "ok": true,
         "reasons": [],
         "summary": "1/1 plates",
-        "at": "2026-10-07T18:55:20.193Z"
+        "at": "2026-10-08T01:20:29.457Z"
       },
       "forced": null
     },
     "hero": {
-      "status": "closed",
-      "openedAt": "2026-10-07T18:55:20.193Z",
-      "closedAt": "2026-10-07T19:43:32.697Z",
-      "attempts": 1,
-      "notes": [],
-      "gate": {
-        "ok": true,
-        "reasons": [],
-        "summary": "hero 89% (match)",
-        "score": 0.8854,
-        "verdict": "match",
-        "report": ".impeccable/review/diff/hero/report.json",
-        "sideBySide": "/Users/tarikmoody/Projects/dycu/inventory/.impeccable/review/diff/hero/side-by-side.png",
-        "worst": [
-          "wordmark drift 55%",
-          "row-s01 drift 60%",
-          "rundown-date drift 62%"
-        ],
-        "worstIds": [
-          "wordmark",
-          "row-s01",
-          "rundown-date"
-        ],
-        "worstCrops": [
-          {
-            "id": "wordmark",
-            "verdict": "drift",
-            "score": {
-              "overall": 0.5453,
-              "structure": 0.3682,
-              "color": 0.7556,
-              "colorIntersection": 0.5332,
-              "paletteMatch": 0.8754,
-              "detail": 0.775,
-              "detailRaw": 0.8219,
-              "detailAdded": 0.0938,
-              "bands": 0.56
-            },
-            "file": ".impeccable/review/diff/hero/regions/wordmark.png"
-          },
-          {
-            "id": "row-s01",
-            "verdict": "drift",
-            "score": {
-              "overall": 0.6006,
-              "structure": 0.7586,
-              "color": 0.9485,
-              "colorIntersection": 0.8967,
-              "paletteMatch": 0.9764,
-              "detail": 0.24,
-              "detailRaw": 0.3182,
-              "detailAdded": 0.1563,
-              "bands": 0.2533
-            },
-            "file": ".impeccable/review/diff/hero/regions/row-s01.png"
-          },
-          {
-            "id": "rundown-date",
-            "verdict": "drift",
-            "score": {
-              "overall": 0.6243,
-              "structure": 0.6149,
-              "color": 0.8344,
-              "colorIntersection": 0.6996,
-              "paletteMatch": 0.907,
-              "detail": 0.6202,
-              "detailRaw": 0.6827,
-              "detailAdded": 0.125,
-              "bands": 0.1524
-            },
-            "file": ".impeccable/review/diff/hero/regions/rundown-date.png"
-          }
-        ],
-        "advisories": [
-          "(advisory, above the 72% bar; fix in the polish pass before responsive) 1 reading:",
-          "  text row-a04: the face renders 27% lighter than the comp's (ink density 0.43 vs 0.58); raise a weight step or use the ranked face",
-          "(advisory, unchanged for 3+ attempts) text row-a03: ink is #181818 in the build, #676875 in the comp; use the comp's colour"
-        ],
-        "regionVerdicts": {
-          "wordmark": "drift",
-          "rundown-date": "drift",
-          "catalog-and-slug": "match",
-          "suggestion-tags": "match",
-          "section-head": "match",
-          "code-v02": "drift",
-          "slug-v02": "drift",
-          "date-v02": "drift",
-          "pencil-mark": "match",
-          "row-s01": "drift",
-          "row-a04": "match",
-          "row-n01": "drift",
-          "row-a03": "drift",
-          "tabbar-footer": "match"
-        },
-        "at": "2026-10-07T19:43:32.697Z"
-      },
-      "forced": null,
-      "readingsSeen": {
-        "text row-a04: 1 line in the build, 2 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 1,
-        "text row-a04: the face renders 33% lighter than the comp's (ink density 0.39 vs 0.58); raise a weight step or use the ranked face": 1,
-        "text row-a03: ink is #181818 in the build, #676875 in the comp; use the comp's colour": 4,
-        "control catalog-and-slug: its rule sits 76px into the box in the comp and 44px in the build (-32px), so the strip is shorter than the comp's; match the height, not only the position": 1,
-        "control suggestion-tags: its rule sits 17px into the box in the comp and 1px in the build (-16px), so the strip is shorter than the comp's; match the height, not only the position": 1,
-        "chrome section-head: its rule sits 4px into the box in the comp and 80px in the build (+76px), so the strip is taller than the comp's; match the height, not only the position": 1,
-        "control tabbar-footer: its rule sits 61px into the box in the comp and 13px in the build (-48px), so the strip is shorter than the comp's; match the height, not only the position": 1,
-        "text row-a04: the face renders 26% lighter than the comp's (ink density 0.43 vs 0.58); raise a weight step or use the ranked face": 1,
-        "text row-a04: the face renders 27% lighter than the comp's (ink density 0.43 vs 0.58); raise a weight step or use the ranked face": 2
-      },
-      "records": 3,
-      "history": [
-        {
-          "at": "2026-10-07T19:43:32.697Z",
-          "score": 0.8854,
-          "worstIds": [
-            "wordmark",
-            "row-s01",
-            "rundown-date"
-          ],
-          "regionVerdicts": {
-            "wordmark": "drift",
-            "rundown-date": "drift",
-            "catalog-and-slug": "match",
-            "suggestion-tags": "match",
-            "section-head": "match",
-            "code-v02": "drift",
-            "slug-v02": "drift",
-            "date-v02": "drift",
-            "pencil-mark": "match",
-            "row-s01": "drift",
-            "row-a04": "match",
-            "row-n01": "drift",
-            "row-a03": "drift",
-            "tabbar-footer": "match"
-          },
-          "artifactHash": null
-        }
-      ]
-    },
-    "sections": {
-      "status": "closed",
-      "openedAt": "2026-10-07T19:43:32.697Z",
-      "closedAt": "2026-10-07T19:58:05.562Z",
-      "attempts": 1,
-      "notes": [],
-      "gate": {
-        "ok": true,
-        "reasons": [],
-        "summary": "no mechanical gate",
-        "at": "2026-10-07T19:58:05.562Z"
-      },
-      "forced": null
-    },
-    "motion": {
-      "status": "closed",
-      "openedAt": "2026-10-07T19:58:05.562Z",
-      "closedAt": "2026-10-07T21:30:19.014Z",
-      "attempts": 1,
-      "notes": [],
-      "gate": {
-        "ok": true,
-        "reasons": [],
-        "summary": "no mechanical gate",
-        "at": "2026-10-07T21:30:19.013Z"
-      },
-      "forced": null
-    },
-    "responsive": {
-      "status": "closed",
-      "openedAt": "2026-10-07T21:30:19.014Z",
-      "closedAt": "2026-10-07T21:52:09.627Z",
-      "attempts": 6,
+      "status": "open",
+      "openedAt": "2026-10-08T01:20:29.457Z",
+      "closedAt": null,
+      "attempts": 0,
       "notes": [],
       "gate": {
         "ok": false,
         "reasons": [
-          "the desktop capture (1440x2212; the top 1024x1536 rows scaled to the comp's width are compared, a full-page capture is fine) scores 65% against the comp, under 65%: the first viewport does not survive a common desktop width. The hero passed at 1024x1536; the layout must hold from ~1280 up, not only at the comp's exact width (grid columns in fr / minmax, not fixed px that overflow and wrap).",
-          "at desktop width, region code-v02 is missing",
-          "at desktop width, region slug-v02 is missing",
-          "at desktop width, region date-v02 is missing",
-          "at desktop width, region pencil-mark is missing",
-          "at desktop width, region row-a03 is missing",
-          "at desktop width, region tabbar-footer is missing",
-          "at desktop width, region wordmark (text) is contradicted (structure 11%)",
-          "at desktop width, region rundown-date (text) is contradicted (structure 26%)"
+          "hero overall 68.7% < 72% (structure 48%, color 95%, detail 55%)",
+          "region catalog-band is missing (detail 0%, structure 62%): the comp shows material the build does not",
+          "region pencil-mark is missing (detail 0%, structure 61%): the comp shows material the build does not",
+          "region column-guide is missing (detail 0%, structure 39%): the comp shows material the build does not",
+          "region place-year-grid (control) is contradicted (structure 33%, detail added 35%): this control does not read as the comp's: rebuild its chrome from the crop (border, fill, radius, chevron or arrow, label size) rather than from a component default",
+          "region what-it-measures (text) is contradicted (structure 42%, detail added 49%): the composition of this text region differs from the comp; re-derive it from the spec box",
+          "region live-preview (control) is contradicted (structure 34%, detail added 54%): this control does not read as the comp's: rebuild its chrome from the crop (border, fill, radius, chevron or arrow, label size) rather than from a component default",
+          "region pane-downloads (control) is contradicted (structure 40%, detail added 52%): this control does not read as the comp's: rebuild its chrome from the crop (border, fill, radius, chevron or arrow, label size) rather than from a component default",
+          "READINGS, each one CSS edit (2):",
+          "control slug-tags: its rule sits 6px into the box in the comp and 17px in the build (+11px), so the strip is taller than the comp's; match the height, not only the position",
+          "chrome section-head: its rule sits 5px into the box in the comp and 18px in the build (+13px), so the strip is taller than the comp's; match the height, not only the position",
+          "plate pencil-mark is clipped at the left and bottom: the comp's artwork keeps a margin there (ink box 87x82 at 53,2 in the region) and the build's runs to the edge (147x102 at 0,0); size the box to the artwork's aspect and use object-fit: contain, or place the <img> at the artwork's own size, never cover on a narrower box",
+          "the build carries ink in 6 grid cells where the comp is calm (H4, A9, B9, D9, H9, I9); nothing exists on the page that the comp does not show (a kicker, an extra nav item, a divider, a second row of controls); remove it or name it in a stated decision after the hero passes"
         ],
-        "summary": "desktop 65% (drift)",
-        "score": 0.6465,
-        "sideBySide": "/Users/tarikmoody/Projects/dycu/inventory/.impeccable/review/diff/desktop/side-by-side.png",
-        "at": "2026-10-07T21:52:09.621Z"
+        "summary": "hero 69% (drift)",
+        "score": 0.6866,
+        "verdict": "drift",
+        "report": ".impeccable/review/diff/hero/report.json",
+        "sideBySide": "/Users/tarikmoody/Projects/dycu/inventory/.impeccable/review/diff/hero/side-by-side.png",
+        "worst": [
+          "pencil-mark missing 35%",
+          "column-guide missing 49%",
+          "live-preview contradicted 49%"
+        ],
+        "worstIds": [
+          "pencil-mark",
+          "column-guide",
+          "live-preview"
+        ],
+        "worstCrops": [
+          {
+            "id": "pencil-mark",
+            "verdict": "missing",
+            "score": {
+              "overall": 0.3523,
+              "structure": 0.613,
+              "color": 0.8703,
+              "colorIntersection": 0.7377,
+              "paletteMatch": 0.9416,
+              "detail": 0,
+              "detailRaw": 0.0994,
+              "detailAdded": 0.2604,
+              "bands": 0.5
+            },
+            "file": ".impeccable/review/diff/hero/regions/pencil-mark.png"
+          },
+          {
+            "id": "column-guide",
+            "verdict": "missing",
+            "score": {
+              "overall": 0.4881,
+              "structure": 0.3901,
+              "color": 0.8925,
+              "colorIntersection": 0.7793,
+              "paletteMatch": 0.9535,
+              "detail": 0.0009,
+              "detailRaw": 0.1363,
+              "detailAdded": 0.2708,
+              "bands": 0.6667
+            },
+            "file": ".impeccable/review/diff/hero/regions/column-guide.png"
+          },
+          {
+            "id": "live-preview",
+            "verdict": "contradicted",
+            "score": {
+              "overall": 0.4931,
+              "structure": 0.3375,
+              "color": 0.8889,
+              "colorIntersection": 0.7703,
+              "paletteMatch": 0.9528,
+              "detail": 0.1504,
+              "detailRaw": 0.4213,
+              "detailAdded": 0.5417,
+              "bands": 0.981
+            },
+            "file": ".impeccable/review/diff/hero/regions/live-preview.png"
+          }
+        ],
+        "advisories": [
+          "(advisory, unchanged for 3+ attempts) text what-it-measures: cap height 13.8px in the build, 18.3px in the comp (-25%); set font-size so the cap height renders at 18.3px",
+          "(advisory, unchanged for 3+ attempts) text what-it-measures: 4 lines in the build, 2 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape",
+          "(advisory, unchanged for 3+ attempts) text catalog-band: its first line starts 21px higher than in the comp (5px vs 26px into the region box); the spacing above it is too small",
+          "(advisory, unchanged for 3+ attempts) control column-guide: its rule sits 28px into the box in the comp and 167px in the build (+139px), so the strip is taller than the comp's; match the height, not only the position",
+          "(advisory, unchanged for 3+ attempts) control pane-downloads: its rule sits 1px into the box in the comp and 26px in the build (+25px), so the strip is taller than the comp's; match the height, not only the position"
+        ],
+        "regionVerdicts": {
+          "wordmark": "drift",
+          "masthead-nav": "drift",
+          "catalog-band": "missing",
+          "slug-tags": "drift",
+          "section-head": "drift",
+          "code-v02": "drift",
+          "slug-v02": "drift",
+          "pencil-mark": "missing",
+          "rows-rest": "drift",
+          "sheet-header": "drift",
+          "place-year-grid": "contradicted",
+          "what-it-measures": "contradicted",
+          "column-guide": "missing",
+          "live-preview": "contradicted",
+          "pane-downloads": "contradicted",
+          "ask-rail": "drift"
+        },
+        "at": "2026-10-08T01:26:36.945Z"
       },
-      "forced": {
-        "at": "2026-10-07T21:52:09.627Z",
-        "reason": "The user confirmed the comp is downgraded for desktop widths. Tarik (2026-10-07), quote: \"Desktop doesn't need to match the phone comp's proportions. Keep it compact so the rundown rows show above the fold.\"",
-        "reasons": [
-          "the desktop capture (1440x2212; the top 1024x1536 rows scaled to the comp's width are compared, a full-page capture is fine) scores 65% against the comp, under 65%: the first viewport does not survive a common desktop width. The hero passed at 1024x1536; the layout must hold from ~1280 up, not only at the comp's exact width (grid columns in fr / minmax, not fixed px that overflow and wrap).",
-          "at desktop width, region code-v02 is missing",
-          "at desktop width, region slug-v02 is missing",
-          "at desktop width, region date-v02 is missing",
-          "at desktop width, region pencil-mark is missing",
-          "at desktop width, region row-a03 is missing",
-          "at desktop width, region tabbar-footer is missing",
-          "at desktop width, region wordmark (text) is contradicted (structure 11%)",
-          "at desktop width, region rundown-date (text) is contradicted (structure 26%)"
-        ]
-      }
+      "forced": null,
+      "readingsSeen": {
+        "text what-it-measures: 3 lines in the build, 2 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 1,
+        "text code-v02: ink is #e51916 in the build, #0b0a0a in the comp; use the comp's colour": 1,
+        "text what-it-measures: its first line starts 58px lower than in the comp (63px vs 5px into the region box); the spacing above it is too large": 1,
+        "control slug-tags: its rule sits 6px into the box in the comp and 20px in the build (+14px), so the strip is taller than the comp's; match the height, not only the position": 1,
+        "control column-guide: its rule sits 28px into the box in the comp and 1px in the build (-27px), so the strip is shorter than the comp's; match the height, not only the position": 1,
+        "control pane-downloads: its rule sits 1px into the box in the comp and 42px in the build (+41px), so the strip is taller than the comp's; match the height, not only the position": 1,
+        "text slug-v02: cap height 10.2px in the build, 17.5px in the comp (-42%); set font-size so the cap height renders at 17.5px": 1,
+        "text what-it-measures: 5 lines in the build, 2 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 1,
+        "text code-v02: ink is #e61814 in the build, #0b0a0a in the comp; use the comp's colour": 3,
+        "control slug-tags: its rule sits 6px into the box in the comp and 39px in the build (+33px), so the strip is taller than the comp's; match the height, not only the position": 1,
+        "chrome section-head: its rule sits 5px into the box in the comp and 80px in the build (+75px), so the strip is taller than the comp's; match the height, not only the position": 1,
+        "control column-guide: its rule sits 28px into the box in the comp and 180px in the build (+152px), so the strip is taller than the comp's; match the height, not only the position": 1,
+        "control pane-downloads: its rule sits 1px into the box in the comp and 33px in the build (+32px), so the strip is taller than the comp's; match the height, not only the position": 1,
+        "text what-it-measures: cap height 13.8px in the build, 18.3px in the comp (-25%); set font-size so the cap height renders at 18.3px": 4,
+        "text what-it-measures: 4 lines in the build, 2 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 6,
+        "text catalog-band: its first line starts 21px higher than in the comp (5px vs 26px into the region box); the spacing above it is too small": 4,
+        "control column-guide: its rule sits 28px into the box in the comp and 167px in the build (+139px), so the strip is taller than the comp's; match the height, not only the position": 4,
+        "control pane-downloads: its rule sits 1px into the box in the comp and 26px in the build (+25px), so the strip is taller than the comp's; match the height, not only the position": 4,
+        "control slug-tags: its rule sits 6px into the box in the comp and 17px in the build (+11px), so the strip is taller than the comp's; match the height, not only the position": 2,
+        "chrome section-head: its rule sits 5px into the box in the comp and 18px in the build (+13px), so the strip is taller than the comp's; match the height, not only the position": 2,
+        "text slug-v02: cap height 11.4px in the build, 17.5px in the comp (-35%); set font-size so the cap height renders at 17.5px": 2,
+        "text what-it-measures: cap height 13.6px in the build, 18.3px in the comp (-26%); set font-size so the cap height renders at 18.3px": 1,
+        "control slug-tags: its rule sits 6px into the box in the comp and 36px in the build (+30px), so the strip is taller than the comp's; match the height, not only the position": 2,
+        "chrome section-head: its rule sits 5px into the box in the comp and 63px in the build (+58px), so the strip is taller than the comp's; match the height, not only the position": 2,
+        "control column-guide: its rule sits 28px into the box in the comp and 181px in the build (+153px), so the strip is taller than the comp's; match the height, not only the position": 1,
+        "control pane-downloads: its rule sits 1px into the box in the comp and 39px in the build (+38px), so the strip is taller than the comp's; match the height, not only the position": 1,
+        "text what-it-measures: cap height 13.7px in the build, 18.3px in the comp (-25%); set font-size so the cap height renders at 18.3px": 1,
+        "text catalog-band: its first line starts 26px higher than in the comp (0px vs 26px into the region box); the spacing above it is too small": 1,
+        "text sheet-header: its first line starts 30px lower than in the comp (30px vs 0px into the region box); the spacing above it is too large": 1,
+        "control column-guide: its rule sits 28px into the box in the comp and 157px in the build (+129px), so the strip is taller than the comp's; match the height, not only the position": 1,
+        "control pane-downloads: its rule sits 1px into the box in the comp and 16px in the build (+15px), so the strip is taller than the comp's; match the height, not only the position": 1
+      },
+      "records": 8
+    },
+    "sections": {
+      "status": "pending",
+      "openedAt": null,
+      "closedAt": null,
+      "attempts": 0,
+      "notes": [],
+      "gate": null,
+      "forced": null
+    },
+    "motion": {
+      "status": "pending",
+      "openedAt": null,
+      "closedAt": null,
+      "attempts": 0,
+      "notes": [],
+      "gate": null,
+      "forced": null
+    },
+    "responsive": {
+      "status": "pending",
+      "openedAt": null,
+      "closedAt": null,
+      "attempts": 0,
+      "notes": [],
+      "gate": null,
+      "forced": null
     },
     "review": {
-      "status": "closed",
-      "openedAt": "2026-10-07T21:52:09.627Z",
-      "closedAt": "2026-10-07T22:42:17.044Z",
+      "status": "pending",
+      "openedAt": null,
+      "closedAt": null,
       "attempts": 0,
       "notes": [],
       "gate": null,
       "forced": null
     }
   },
-  "finish": {
-    "disposition": "ship",
-    "at": "2026-10-07T22:42:17.044Z",
-    "phaseAtFinish": "review"
-  },
+  "finish": null,
   "plates": {
     "pencil-mark": {
       "status": "ok",
-      "score": 0.4035,
+      "score": 0.4524,
       "size": "1024x1024"
     }
   }

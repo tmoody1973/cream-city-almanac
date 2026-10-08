@@ -1,18 +1,20 @@
 {
   "regions": [
-    { "id": "wordmark", "kind": "text", "grid": "A0:F0", "note": "CREAM CITY ALMANAC wordmark, bold condensed black capitals" },
-    { "id": "rundown-date", "kind": "text", "grid": "H0:J0", "note": "TODAY'S RUNDOWN label over the date 'Wed Oct 7, 2026', right aligned" },
-    { "id": "catalog-and-slug", "kind": "control", "grid": "A1:J1", "snap": false, "note": "rule, gray catalog-as-of line, rule, then SLUG: label with gray placeholder 'What are you reporting on?'" },
-    { "id": "suggestion-tags", "kind": "control", "grid": "A2:J2", "snap": false, "note": "rule, three suggestion tags 'food insecurity' 'rent burden' 'air quality' split by vertical rules, rule" },
-    { "id": "section-head", "kind": "chrome", "grid": "A3:J3", "snap": false, "note": "rule, UPDATED THIS SEASON heading, rule, column headers CODE SLUG UPDATED, rule" },
-    { "id": "code-v02", "kind": "text", "grid": "A4:A4", "note": "row code V02, bold condensed" },
-    { "id": "slug-v02", "kind": "text", "grid": "C4:G4", "note": "Daily Air Quality over 'City · 2023–2025'" },
-    { "id": "date-v02", "kind": "text", "grid": "H4:I4", "note": "date Jul 28 inside the grease-pencil circle" },
-    { "id": "pencil-mark", "kind": "plate", "grid": "H3:J4", "note": "hand-drawn red grease-pencil ellipse around the date and the scrawled word 'new', transparent ground" },
-    { "id": "row-s01", "kind": "chrome", "grid": "A5:J5", "snap": false, "note": "gray banded row: S01, Bachelor's Degree or Higher, County · 2024, Jul 16" },
-    { "id": "row-a04", "kind": "text", "grid": "A6:J6", "snap": false, "note": "row: A04, MKE FreshAir Dashboard, map app, Jun 25" },
-    { "id": "row-n01", "kind": "chrome", "grid": "A7:J7", "snap": false, "note": "gray banded row: N01, Neighborhood Change Over Time Report, 29 neighborhoods · 2022–2024, Jun 1" },
-    { "id": "row-a03", "kind": "text", "grid": "A8:J8", "snap": false, "note": "row: A03, CDA Property Reference Map, map app, May 22, then the rule above the tab bar" },
-    { "id": "tabbar-footer", "kind": "control", "grid": "A9:J9", "snap": false, "note": "SEARCH ASK SAVED tabs, thick underline under SEARCH, rule, credit line 'Built on Data You Can Use's public data'" }
+    { "id": "wordmark", "kind": "text", "grid": "A0:D0", "note": "CREAM CITY ALMANAC wordmark, heavy condensed black capitals" },
+    { "id": "masthead-nav", "kind": "control", "grid": "G0:J0", "snap": false, "note": "SEARCH (black, underlined active) ASK SAVED (gray), a vertical rule, HOW IT WORKS (black); one rule under the whole masthead" },
+    { "id": "catalog-band", "kind": "text", "grid": "A1:D1", "snap": false, "note": "gray 'Catalog as of Oct 7 · 93 raw data · 282 reports · 7 visualizations', then black one-line band 'Milwaukee's public data, searchable in plain English.  How it works →' (link underlined)" },
+    { "id": "slug-tags", "kind": "control", "grid": "A2:D2", "snap": false, "note": "SLUG: label and a boxed input with gray placeholder, then three boxed suggestion tags" },
+    { "id": "section-head", "kind": "chrome", "grid": "A3:D3", "snap": false, "note": "UPDATED THIS SEASON heading over a rule; no CODE/SLUG/UPDATED column-header row" },
+    { "id": "code-v02", "kind": "text", "grid": "A4:A4", "note": "red grease-pencil arrow pointing at the selected row's code V02" },
+    { "id": "slug-v02", "kind": "text", "grid": "B4:C4", "note": "selected row on gray band: 'Daily Air Quality' condensed bold, 'City · 2023-2025' under it" },
+    { "id": "pencil-mark", "kind": "plate", "grid": "D4:D4", "note": "red grease-pencil circle around 'Jul 28' with 'new' written under it" },
+    { "id": "rows-rest", "kind": "control", "grid": "A5:D8", "snap": false, "note": "rundown rows S01 A04 N01 A03 alternating white and gray bands, code, title, sub line, date at right" },
+    { "id": "sheet-header", "kind": "text", "grid": "E1:I1", "snap": false, "note": "huge V02 code, a short vertical rule, 'Daily Air Quality' large condensed; rule under" },
+    { "id": "place-year-grid", "kind": "control", "grid": "E2:G3", "snap": false, "note": "PLACE BY YEAR heading over a ruled grid: years across, City row with black squares" },
+    { "id": "what-it-measures", "kind": "text", "grid": "H2:I3", "snap": false, "note": "vertical rule at left; WHAT IT MEASURES heading, one-sentence explainer, boxed AI tag" },
+    { "id": "column-guide", "kind": "control", "grid": "E4:I5", "snap": false, "note": "COLUMN GUIDE heading over a ruled table with a gray header row COLUMN DESCRIPTION TAG" },
+    { "id": "live-preview", "kind": "control", "grid": "E6:I8", "snap": false, "note": "LIVE PREVIEW heading over one ruled box: rows table at left, dot strip chart by year at right" },
+    { "id": "pane-downloads", "kind": "control", "grid": "E9:G9", "snap": false, "note": "two outlined buttons 'Download CSV' and 'View on Hub'" },
+    { "id": "ask-rail", "kind": "chrome", "grid": "J1:J9", "snap": false, "note": "thin outlined rail: ASK heading, gray 'coming soon'" }
   ]
 }

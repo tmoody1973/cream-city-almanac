@@ -24,12 +24,17 @@ export function SheetBody({ sheet, headingId }: { sheet: SheetData; headingId?: 
         </h2>
         <p className={styles.sub}>{subline(family)}</p>
       </header>
-      <div className={styles.section}><PlaceYearGrid grid={grid} /></div>
+      <div className={styles.lead}>
+        <div className={styles.section}>
+          <h3 className={`${styles.heading} ${styles.laptopOnly}`}>PLACE BY YEAR</h3>
+          <PlaceYearGrid grid={grid} />
+        </div>
 
-      <section className={styles.section}>
-        <h3 className={styles.heading}>WHAT IT MEASURES</h3>
-        <p>{card?.explainer ?? latest?.title} {card && <ProvenanceTag source={card.explainerProvenance} />}</p>
-      </section>
+        <section className={styles.section}>
+          <h3 className={styles.heading}>WHAT IT MEASURES</h3>
+          <p>{card?.explainer ?? latest?.title} {card && <ProvenanceTag source={card.explainerProvenance} />}</p>
+        </section>
+      </div>
 
       {card && card.glossary.length > 0 && (
         <section className={styles.section}>
@@ -55,7 +60,7 @@ export function SheetBody({ sheet, headingId }: { sheet: SheetData; headingId?: 
       )}
 
       {members.some((m) => m.featureServerUrl) && (
-        <section className={styles.section}>
+        <section className={`${styles.section} ${styles.preview}`}>
           <h3 className={styles.heading}>LIVE PREVIEW</h3>
           <LivePreview members={members} fields={card?.glossary.map((g) => g.field) ?? []} />
         </section>

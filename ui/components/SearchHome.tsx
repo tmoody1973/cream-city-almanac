@@ -10,6 +10,7 @@ import { LAPTOP_QUERY, parseSelection, selectionSearch } from "@/ui/lib/selectio
 import { useLaptop } from "@/ui/lib/useLaptop";
 import { CatalogLine, type CatalogStatus } from "./CatalogLine";
 import { CreditFooter } from "./CreditFooter";
+import { ExplainerBand } from "./ExplainerBand";
 import { Masthead } from "./Masthead";
 import { RundownList } from "./RundownList";
 import { SheetPane } from "./SheetPane";
@@ -125,6 +126,7 @@ export function SearchHome({ rundown, status }: { rundown: ResultRow[]; status: 
       <div className={styles.split}>
         <main className={styles.main}>
           {!searching && <CatalogLine status={status} />}
+          {!searching && <ExplainerBand />}
           <SlugBar value={query} onChange={onQueryChange} showTags={!searching} />
           <p className={styles.notice} role="status">{notice ?? ""}</p>
           {searching ? (
