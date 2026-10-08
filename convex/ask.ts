@@ -139,3 +139,5 @@ export const readReport = action({
     return { status: "ok", passages: passages.filter((p) => !wanted || p.code === wanted).slice(0, 3) };
   },
 });
+
+export const askSettings = query({ args: {}, handler: async (ctx) => ({ askModel: (await readSettings(ctx)).askModel }) });
