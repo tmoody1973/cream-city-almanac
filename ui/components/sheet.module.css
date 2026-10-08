@@ -141,3 +141,6 @@
   .portraitTable tbody:first-of-type > tr:first-child { background: var(--band); }
   .portraitTable tbody:first-of-type > tr:first-child > * { font-weight: 400; }
 }
+
+/* A row Ask pointed at (row= in the address): a 2px ink outline, never red. */
+.markedRow { outline: 2px solid var(--ink); outline-offset: -2px; }

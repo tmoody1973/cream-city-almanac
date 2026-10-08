@@ -30,3 +30,8 @@ test.describe("signed in", () => {
     await expect(page.getByRole("button", { name: "Sign in to ask" })).toBeVisible();
   });
 });
+
+test("a table address with row= outlines that row", async ({ page }) => {
+  await page.goto("/d/N03?place=harambee&year=2024&topic=poverty-status-by-age&row=Under+5+years");
+  await expect(page.locator("[data-row-marked]")).toContainText("Under 5 years");
+});

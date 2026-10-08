@@ -24,10 +24,12 @@ export function PortraitTables({ index, focus: requested }: { index: Index; focu
   const [focus, setFocus] = useState<Focus>(() => resolvePortraitFocus(index, new URLSearchParams(), SLUGS));
   // The address picks the table, unless a search result in the laptop pane asks for one; the pickers change it after.
   const requestedQuery = portraitFocusQuery(requested);
-  useEffect(
-    () => setFocus(resolvePortraitFocus(index, new URLSearchParams(requestedQuery || window.location.search), SLUGS)),
-    [index, requestedQuery],
-  );
+  // A row Ask pointed at (row=label), outlined until the reader picks another table.
+  const [marked, setMarked] = useState<string | null>(null);
+  useEffect(() => {
+    setFocus(resolvePortraitFocus(index, new URLSearchParams(requestedQuery || window.location.search), SLUGS));
+    setMarked(new URLSearchParams(window.location.search).get("row"));
+  }, [index, requestedQuery]);
 
   const place = index.neighborhoods.find((n) => n.key === focus.place) ?? index.neighborhoods[0];
   const file = place.files.find((f) => f.hubId === focus.hubId) ?? place.files[0];
@@ -40,7 +42,9 @@ export function PortraitTables({ index, focus: requested }: { index: Index; focu
 
   const go = (next: Focus) => {
     setFocus(next);
+    setMarked(null);
     const params = new URLSearchParams(window.location.search);
+    params.delete("row");
     const year = index.neighborhoods.find((n) => n.key === next.place)?.files.find((f) => f.hubId === next.hubId)?.year;
     params.set("place", next.place);
     if (year) params.set("year", String(year));
@@ -169,13 +173,13 @@ export function PortraitTables({ index, focus: requested }: { index: Index; focu
                 <tbody key={si}>
                   {rows.map((r, i) =>
                     r.heading ? (
-                      <tr key={i}>
+                      <tr key={i} data-row-marked={r.label === marked || undefined} className={r.label === marked ? styles.markedRow : undefined}>
                         <th scope="rowgroup" colSpan={1 + table.groups.length * 2}>
                           {r.label}
                         </th>
                       </tr>
                     ) : (
-                      <tr key={i}>
+                      <tr key={i} data-row-marked={r.label === marked || undefined} className={r.label === marked ? styles.markedRow : undefined}>
                         <th scope="row">{r.label}</th>
                         {r.values.map((v, j) => (
                           <Fragment key={j}>

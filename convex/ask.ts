@@ -83,6 +83,9 @@ export const getNumber = query({
       if (!table) continue;
       const picked = pickRow(table.rows, args.row);
       if ("choose" in picked) return { status: "choose-row" as const, rows: picked.choose };
+      // The row and the rows on either side of it, for a phone's excerpt; only the asked-for row is marked.
+      const at = table.rows.indexOf(picked.row);
+      const nearby = table.rows.slice(Math.max(0, at - 1), at + 2).map((r) => ({ label: r.label, values: r.values, marked: r === picked.row }));
       return {
         status: "ok" as const,
         code: family.code,
@@ -96,6 +99,7 @@ export const getNumber = query({
         groups: table.groups,
         label: picked.row.label,
         values: picked.row.values,
+        nearby,
         issues: table.issues,
       };
     }

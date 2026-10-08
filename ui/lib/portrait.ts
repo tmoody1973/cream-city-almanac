@@ -59,9 +59,9 @@ export function portraitTopics(tables?: { slug: string; topic: string; tableIds:
   return [...known, ...extra];
 }
 
-const FOCUS_KEYS = ["place", "year", "topic"] as const;
+const FOCUS_KEYS = ["place", "year", "topic", "row"] as const;
 
-// The table choice in an address (place, year, topic), to carry through a redirect.
+// The table choice in an address (place, year, topic, and a row Ask marked), to carry through a redirect.
 export function portraitParams(search: string): string {
   const from = new URLSearchParams(search);
   return new URLSearchParams(FOCUS_KEYS.flatMap((k) => (from.get(k) ? [[k, from.get(k)!]] : []))).toString();

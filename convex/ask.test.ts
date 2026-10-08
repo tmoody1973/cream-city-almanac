@@ -121,6 +121,19 @@ describe("getNumber", () => {
     expect(r).toMatchObject({ status: "ok", neighborhood: "Harambee", year: 2024, slug: "poverty-status-by-age", tableIdText: "B17001", label: "Under 5 years", values: [{ estimate: "608", moe: "252" }] });
     expect(r.status === "ok" && r.issues.length).toBe(1);
   });
+  it("returns the row with its neighbors, the asked-for one marked, for the phone excerpt", async () => {
+    const t = convexTest(schema, modules);
+    await seed(t);
+    await t.run((ctx) => ctx.db.insert("portraitTables", poverty(harambee(2024).hubId)));
+    const r = await t.query(api.ask.getNumber, { neighborhood: "Harambee", topic: "Poverty Status by Age", row: "Under 5 years" });
+    expect(r.status === "ok" && r.nearby.map((x) => [x.label, x.marked])).toEqual([
+      ["Income in the past 12 months below poverty level", false],
+      ["Under 5 years", true],
+      ["5 years", false],
+    ]);
+    const first = await t.query(api.ask.getNumber, { neighborhood: "Harambee", topic: "Poverty Status by Age", row: "Total" });
+    expect(first.status === "ok" && first.nearby.map((x) => x.label)).toEqual(["Total", "Income in the past 12 months below poverty level"]);
+  });
   it("uses the asked-for year when it has the table, else the newest that does", async () => {
     const t = convexTest(schema, modules);
     await seed(t);
