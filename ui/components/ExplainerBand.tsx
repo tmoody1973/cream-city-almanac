@@ -6,8 +6,8 @@ export function ExplainerBand() {
   return (
     <p className={styles.band}>
       Milwaukee data in plain English.{" "}
-      <Link href="/how-it-works">
-        How it works
+      <Link href="/start-here">
+        Start here
         <Arrow />
       </Link>
     </p>

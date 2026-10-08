@@ -31,6 +31,8 @@ export const QUESTIONS: { question: string; expect: string[] }[] = [
   { question: "how many people in Harambee live in poverty", expect: ["document:neighborhood-portrait-spreadsheet", "document:neighborhood-portrait"] },
   // How it works uses this as its neighborhood example; it must keep landing on the spreadsheets.
   { question: "Lincoln Park employment status by sex", expect: ["document:neighborhood-portrait-spreadsheet"] },
+  // Start here's reporter example searches this; it must keep finding both datasets.
+  { question: "older housing and asthma rates", expect: ["dataset:asthma-prevalence", "dataset:housing-built-before-1950"] },
 ];
 
 export function passesTop3(expected: string[], resultKeys: string[]): boolean {

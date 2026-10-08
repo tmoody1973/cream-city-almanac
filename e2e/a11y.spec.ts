@@ -2,7 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { type Page } from "@playwright/test";
 import { expect, test } from "./fixtures";
 
-const PAGES = ["/", "/?q=asthma", "/d/W01", "/d/N02", "/d/N03", "/how-it-works", "/?q=asthma&open=W01"];
+const PAGES = ["/", "/?q=asthma", "/d/W01", "/d/N02", "/d/N03", "/how-it-works", "/start-here", "/?q=asthma&open=W01"];
 
 // networkidle doesn't wait for Convex's WebSocket search, so wait for real result rows on search pages.
 async function settle(page: Page, path: string) {

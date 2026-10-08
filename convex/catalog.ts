@@ -53,6 +53,57 @@ async function portraitIndex(ctx: QueryCtx, unordered: MemberDoc[]) {
   return { neighborhoods, initial: members[0] ? { hubId: members[0].hubId, tables: [] } : null };
 }
 
+const START_HERE = {
+  asthma: "dataset:asthma-prevalence",
+  housing: "dataset:housing-built-before-1950",
+  air: "dataset:daily-air-quality",
+  spreadsheets: "document:neighborhood-portrait-spreadsheet",
+  place: "harambee",
+  topic: "poverty-status-by-age",
+} as const;
+
+async function familyWithCard(ctx: QueryCtx, key: string) {
+  const family = await ctx.db.query("families").withIndex("by_key", (q) => q.eq("key", key)).first();
+  return family ? { family, card: await familyCard(ctx, key), members: await familyMembers(ctx, key) } : null;
+}
+
+// The newest neighborhood file that has the topic's table (a new or failing file never becomes the example).
+async function neighborhoodTable(ctx: QueryCtx, place: string, topic: string) {
+  const files = (await familyMembers(ctx, START_HERE.spreadsheets)).filter((m) => placeKey(m.place ?? m.title) === place).sort(newestYearFirst);
+  for (const m of files) {
+    const table = (await tablesFor(ctx, m.hubId)).find((t) => t.slug === topic);
+    if (table) return { place: m.place ?? m.title, year: m.years[0] ?? null, table };
+  }
+  return null;
+}
+
+// Everything the Start here page shows, read live; a missing piece comes back null, never invented.
+export const startHere = query({
+  args: {},
+  handler: async (ctx) => {
+    const [asthma, housing, air] = await Promise.all([START_HERE.asthma, START_HERE.housing, START_HERE.air].map((k) => familyWithCard(ctx, k)));
+    const pages = (await ctx.db.query("families").collect()).filter((f) => f.kind === "page").sort((a, b) => a.code.localeCompare(b.code));
+    const guides = await Promise.all(
+      pages.map(async (f) => ({ code: f.code, name: f.name, url: (await familyMembers(ctx, f.key))[0]?.landingPage ?? null })),
+    );
+    return {
+      reporter: {
+        asthma: asthma && { code: asthma.family.code, name: asthma.family.name, caveat: asthma.card?.caveats[0] ?? null },
+        housing: housing && { code: housing.family.code, name: housing.family.name, angles: housing.card?.storyAngles.slice(0, 2) ?? [] },
+      },
+      nonprofit: await neighborhoodTable(ctx, START_HERE.place, START_HERE.topic),
+      resident: air && {
+        code: air.family.code,
+        name: air.family.name,
+        members: air.members.map((m) => ({ place: m.place, yearLabel: m.yearLabel, featureServerUrl: m.featureServerUrl })),
+        fields: air.card?.glossary.map((g) => g.field) ?? [],
+        caveat: air.card?.caveats[0] ?? null,
+      },
+      guides,
+    };
+  },
+});
+
 export const portraitTables = query({
   args: { hubId: v.string() },
   handler: (ctx, { hubId }) => tablesFor(ctx, hubId),
@@ -117,6 +168,9 @@ export const familyPreview = query({
       explainerProvenance: card ? card.explainerProvenance : ("HUB" as const),
       grid: placeYearGrid(members),
       csvUrl: members.find((m) => m.downloads.CSV)?.downloads.CSV ?? null,
+      kind: family.kind,
+      // DYCU's guide pages explain the Hub; their preview links out instead of describing data.
+      guideUrl: family.kind === "page" ? (members[0]?.landingPage ?? null) : null,
     };
   },
 });

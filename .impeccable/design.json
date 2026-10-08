@@ -377,6 +377,22 @@
       "description": "One hairline-boxed line of small body type per problem in DYCU's file, above the table.",
       "html": "<p class=\"ds-issue\">The Total columns are 0 for every row in DYCU's file; this may be missing data.</p>",
       "css": ".ds-issue { margin: 16px 0; padding: 6px 12px; border: 1px solid var(--ink, #111); font-size: var(--fs-small, 15px); }"
+    },
+    {
+      "name": "Start Here Example",
+      "kind": "custom",
+      "refersTo": "start-example",
+      "description": "One person's walkthrough: band label, large condensed question, numbered steps, a live excerpt in a hairline box, and a Try it link underlined by one thick bar.",
+      "html": "<section class=\"ds-ex\"><h3 class=\"ds-who\">A REPORTER</h3><p class=\"ds-q\">Do the neighborhoods with the most old housing also have the most asthma?</p><ol class=\"ds-steps\"><li>Search older housing and asthma rates.</li><li>Read each sheet's caveats first.</li></ol><div class=\"ds-excerpt\">Live excerpt</div><p class=\"ds-try\"><a href=\"#\">Try it →</a></p></section>",
+      "css": ".ds-ex { display: flex; flex-direction: column; gap: 8px; } .ds-who { margin: 0; padding: 4px 12px; background: var(--band, #ededea); font-family: var(--font-caps, 'Saira Extra Condensed', sans-serif); font-weight: 700; } .ds-q { margin: 0; font-family: var(--font-caps, 'Saira Extra Condensed', sans-serif); font-weight: 700; font-size: 32px; line-height: 1.05; } .ds-steps { margin: 0; padding-left: 1.5em; } .ds-excerpt { padding: 10px; border: 1px solid var(--ink, #111); } .ds-try { margin: 0; font-weight: 700; } .ds-try a { border-bottom: 3px solid currentColor; text-decoration: none; }"
+    },
+    {
+      "name": "Guide Page Block",
+      "kind": "custom",
+      "refersTo": "guide-page",
+      "description": "A DYCU Hub guide page's sheet: one line saying it is a guide, not a dataset, linking out to the Hub with the HUB tag.",
+      "html": "<p>A guide page on DYCU's Hub, not a dataset. <a href=\"#\">Open it on the Hub</a> <span class=\"ds-tag\">HUB</span></p>",
+      "css": ".ds-tag { display: inline-block; padding: 0 0.35em; border: 1px solid var(--ink, #111); font-size: 0.8em; }"
     }
   ],
   "narrative": {

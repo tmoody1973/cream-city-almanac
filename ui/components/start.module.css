@@ -1,0 +1,92 @@
+/* Start here, from the approved comps: .impeccable/mocks/start-b-laptop.webp (three ruled columns, 1536x1024) and
+   .impeccable/mocks/start-a-phone.webp (one column, 1024 wide). Red is grease pencil only. */
+.page {
+  max-width: min(1280px, 100%);
+  min-height: 100vh;
+  margin: 0 auto;
+  padding-inline: var(--gutter);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Phones mark the current page by underlining the masthead's side label. */
+.side {
+  text-decoration: underline;
+  text-decoration-thickness: 3px;
+  text-underline-offset: 0.2em;
+}
+
+.main { flex: 1; padding-bottom: 32px; }
+/* Both comps set START HERE in the wordmark's lettering. */
+.headline { margin: clamp(16px, 3vw, 32px) 0 8px; font-family: var(--font-wordmark); font-weight: 900; font-stretch: 62%; font-size: clamp(38px, 9.6vw, 100px); line-height: 0.95; text-transform: uppercase; }
+.lede { margin: 0 0 clamp(16px, 3vw, 32px); padding-bottom: clamp(12px, 2vw, 20px); border-bottom: var(--hair); }
+
+.examples { display: grid; gap: clamp(28px, 5vw, 48px); }
+.example { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.who { margin: 0; padding: 6px 12px; background: var(--band); font-family: var(--font-caps); font-weight: 700; font-size: var(--fs-label); }
+.question { margin: 0; font-family: var(--font-caps); font-weight: 700; font-size: clamp(24px, 5vw, 40px); line-height: 1.05; }
+.steps { margin: 0; padding: 0; list-style: none; counter-reset: step; }
+.steps li { counter-increment: step; display: grid; grid-template-columns: 1.8em minmax(0, 1fr); padding: 8px 0; border-bottom: var(--hair); }
+.steps li::before { content: counter(step); font-family: var(--font-caps); font-weight: 700; }
+.excerpt { padding: 12px; border: var(--hair); overflow-wrap: anywhere; }
+.excerpt ul { margin: 0 0 10px; padding-left: 1.2em; }
+.excerpt p { margin: 0 0 8px; }
+.excerpt > :last-child { margin-bottom: 0; }
+.excerpt figure + p { margin-top: 8px; padding-top: 8px; border-top: var(--hair); }
+.excerptLabel { padding: 4px 8px; background: var(--band); font-weight: 700; font-size: var(--fs-small); }
+.issue { padding: 6px 10px; border: var(--hair); font-size: var(--fs-small); }
+.table { width: 100%; margin-bottom: 8px; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: var(--fs-small); }
+.table caption { caption-side: top; padding: 4px 8px; background: var(--band); text-align: left; font-weight: 700; font-size: var(--fs-small); }
+.table th, .table td { padding: 6px 8px; border: var(--hair); text-align: right; white-space: nowrap; overflow-wrap: normal; }
+.table thead th { background: var(--band); text-align: center; font-weight: 400; }
+.table th[scope="row"] { text-align: left; font-weight: 400; white-space: normal; }
+.missing { margin: 0; color: var(--muted); }
+.try { margin: 0; font-weight: 700; }
+
+.guides { display: grid; gap: 12px; margin-top: clamp(28px, 5vw, 48px); padding-top: clamp(16px, 3vw, 24px); border-top: var(--hair); }
+.guides ul { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.guides p { margin: 0; }
+/* Phones (comp A): the guides open with a band label, like each example. */
+.guidesHeading { margin: 0; padding: 6px 12px; background: var(--band); font-family: var(--font-caps); font-weight: 700; font-size: var(--fs-label); }
+
+/* Keep this media query identical to LAPTOP_QUERY in ui/lib/selection.ts. */
+@media (min-width: 1100px) and (orientation: landscape) {
+  .page {
+    max-width: none;
+    --fs-wordmark: clamp(60px, 5vw, 77px);
+    --fs-body: clamp(15px, 1.2vw, 18px);
+    --fs-small: clamp(13px, 1vw, 16px);
+    --fs-label: clamp(16px, 1.3vw, 20px);
+    font-size: var(--fs-body);
+  }
+  .side { display: none; }
+  /* Comp B: the three people side by side in ruled columns, measured to the comp (headline cap 52px, lede cap 16px,
+     question cap 28px, steps cap 12.8px; no rule under the lede). */
+  .examples { grid-template-columns: minmax(0, 494fr) minmax(0, 474fr) minmax(0, 496fr); gap: 0; }
+  .example { gap: 8px; padding: 0 clamp(12px, 1vw, 16px); border-left: var(--hair); }
+  .example:first-child { padding-left: 0; border-left: 0; }
+  .example:last-child { padding-right: 0; }
+  .headline { margin: 8px 0 2px; font-size: clamp(56px, 4.75vw, 73px); }
+  .lede { margin-bottom: 14px; padding-bottom: 0; border-bottom: 0; font-size: clamp(18px, 1.5vw, 23px); }
+  .who { padding: 4px 12px; font-size: clamp(18px, 1.6vw, 24px); }
+  .question { font-size: clamp(28px, 2.6vw, 40px); }
+  .steps { padding-bottom: 8px; border-bottom: var(--hair); font-size: clamp(15px, 1.1vw, 17px); }
+  .steps li { grid-template-columns: 1.5em minmax(0, 1fr); padding: 1px 0; border-bottom: 0; }
+  .steps li::before { content: counter(step) "."; font-family: inherit; font-weight: 400; }
+  .steps, .excerpt { line-height: 1.25; }
+  /* Each excerpt box ends at its content, as comp B draws them; only the Try it row lines up. */
+  .excerpt { padding: 10px; font-size: var(--fs-small); }
+  .table th, .table td { padding: 4px 8px; }
+  .issue { padding: 4px 8px; }
+  .try { margin-top: auto; font-size: clamp(18px, 1.5vw, 24px); line-height: 1.2; }
+  /* Comp B underlines the whole link, arrow included, with one thick bar. */
+  .try a { padding-bottom: 0; border-bottom: 3px solid currentColor; text-decoration: none; }
+  /* Comp B: one guides row in four ruled columns, closed by a rule. */
+  .guides { grid-template-columns: 21fr 32fr 26fr 21fr; align-items: center; gap: 0; margin-top: 16px; padding: 12px 0 20px; border-bottom: var(--hair); }
+  .guides > :not(:first-child) { padding-left: clamp(24px, 3.1vw, 48px); border-left: var(--hair); }
+  .guides > :last-child { padding-left: clamp(24px, 3.9vw, 60px); }
+  .guides ul { gap: 2px; }
+  .guidesHeading { align-self: start; padding: 0; background: none; font-family: var(--font-wordmark); font-weight: 900; font-stretch: 62%; font-size: clamp(26px, 2.8vw, 43px); line-height: 1; text-transform: uppercase; }
+  .guides .try { font-size: clamp(16px, 1.3vw, 20px); white-space: nowrap; }
+  .guides .try a { border-bottom-width: 2px; }
+}

@@ -6,13 +6,38 @@ export function rowsUrl(featureServerUrl: string, limit = 10): string {
   return `${featureServerUrl}/query?${params}`;
 }
 
-export function valuesUrl(featureServerUrl: string, field: string): string {
-  const params = new URLSearchParams({ where: "1=1", outFields: field, returnGeometry: "false", resultRecordCount: "2000", f: "json" });
+export function valuesUrl(featureServerUrl: string, field: string, dateField?: string): string {
+  const outFields = dateField ? `${field},${dateField}` : field;
+  const params = new URLSearchParams({ where: "1=1", outFields, returnGeometry: "false", resultRecordCount: "2000", f: "json" });
   return `${featureServerUrl}/query?${params}`;
+}
+
+// Daily readings (V02) carry a column named Day; their chart runs January to December instead of by value.
+export function dateColumn(fields: string[]): string | null {
+  return fields.find((f) => /^(day|date)$/i.test(f)) ?? null;
+}
+
+// The Hub answers a date-only column as "YYYY-MM-DD".
+export function dayOfYear(value: unknown): number | null {
+  if (typeof value !== "string") return null;
+  const t = Date.parse(`${value.slice(0, 10)}T00:00:00Z`);
+  if (Number.isNaN(t)) return null;
+  return Math.floor((t - Date.UTC(new Date(t).getUTCFullYear(), 0, 1)) / 86_400_000) + 1;
+}
+
+// A square root keeps typical days readable when a few extreme days (2023's wildfire smoke) set the top of the scale.
+export function dayShade(v: number, scale: { min: number; max: number }): number {
+  const t = Math.min(1, Math.max(0, (v - scale.min) / (scale.max - scale.min)));
+  return 0.15 + 0.85 * Math.sqrt(t);
 }
 
 export function headlineColumn(fields: string[]): string | null {
   return fields.find((f) => HEADLINE.test(f)) ?? null;
+}
+
+// A chart needs a column to plot and at least one live feed; without both, say the data didn't load.
+export function canChart(fields: string[], members: { featureServerUrl: string | null }[]): boolean {
+  return headlineColumn(fields) !== null && members.some((m) => m.featureServerUrl);
 }
 
 // Layers for different years spell the same column differently (per_asthma vs Per_Asthma); ArcGIS accepts

@@ -1,10 +1,10 @@
 {
   "tool": "build-phase",
   "version": 2,
-  "startedAt": "2026-10-08T08:18:40.120Z",
-  "comp": ".impeccable/mocks/portraits-b-laptop-section.png",
+  "startedAt": "2026-10-08T14:26:09.399Z",
+  "comp": ".impeccable/mocks/start-b-laptop.webp",
   "direction": null,
-  "breakpoint": "788x752",
+  "breakpoint": "1536x1024",
   "artifact": null,
   "phase": "review",
   "phases": {
@@ -15,7 +15,7 @@
       "attempts": 0,
       "notes": [
         {
-          "at": "2026-10-08T08:18:40.120Z",
+          "at": "2026-10-08T14:26:09.399Z",
           "text": "started with an approved comp; the comp round happened before this state (surface round or manual)"
         }
       ],
@@ -24,295 +24,534 @@
     },
     "spec": {
       "status": "closed",
-      "openedAt": "2026-10-08T08:18:40.119Z",
-      "closedAt": "2026-10-08T08:20:55.329Z",
-      "attempts": 1,
+      "openedAt": "2026-10-08T14:26:09.399Z",
+      "closedAt": "2026-10-08T14:28:55.871Z",
+      "attempts": 5,
       "notes": [],
       "gate": {
         "ok": true,
         "reasons": [],
-        "summary": "11 regions, 1 plates, 6 text regions measured",
-        "at": "2026-10-08T08:20:55.329Z"
+        "summary": "29 regions, 0 plates, 14 text regions measured",
+        "at": "2026-10-08T14:28:55.871Z"
       },
       "forced": null
     },
     "plates": {
       "status": "closed",
-      "openedAt": "2026-10-08T08:20:55.329Z",
-      "closedAt": "2026-10-08T08:22:32.390Z",
+      "openedAt": "2026-10-08T14:28:55.871Z",
+      "closedAt": "2026-10-08T14:28:55.890Z",
       "attempts": 1,
       "notes": [],
       "gate": {
         "ok": true,
         "reasons": [],
-        "summary": "1/1 plates",
-        "at": "2026-10-08T08:22:32.389Z"
+        "summary": "no plates owed",
+        "at": "2026-10-08T14:28:55.890Z"
       },
       "forced": null
     },
     "hero": {
       "status": "closed",
-      "openedAt": "2026-10-08T08:22:32.390Z",
-      "closedAt": "2026-10-08T08:32:58.280Z",
-      "attempts": 5,
+      "openedAt": "2026-10-08T14:28:55.890Z",
+      "closedAt": "2026-10-08T14:41:46.706Z",
+      "attempts": 16,
       "notes": [],
       "gate": {
         "ok": false,
         "reasons": [
-          "hero overall 63.2% < 72% (structure 32%, color 96%, detail 52%)",
-          "region topic-arrow is missing (detail 0%, structure 75%): the comp shows material the build does not",
-          "region topics (control) is contradicted (structure 37%, detail added 8%): this control does not read as the comp's: rebuild its chrome from the crop (border, fill, radius, chevron or arrow, label size) rather than from a component default",
-          "region heading (text) is contradicted (structure 30%, detail added 20%): the composition of this text region differs from the comp; re-derive it from the spec box",
-          "region pick-neighborhood (control) is contradicted (structure 41%, detail added 47%): this control does not read as the comp's: rebuild its chrome from the crop (border, fill, radius, chevron or arrow, label size) rather than from a component default",
-          "region pick-year (control) is contradicted (structure 33%, detail added 48%): this control does not read as the comp's: rebuild its chrome from the crop (border, fill, radius, chevron or arrow, label size) rather than from a component default",
-          "region caption (text) is contradicted (structure 24%, detail added 35%): the composition of this text region differs from the comp; re-derive it from the spec box",
-          "region table-body (text) is contradicted (structure 35%, detail added 30%): the composition of this text region differs from the comp; re-derive it from the spec box"
+          "control nonprofit-try drifts to 64% (structure 57%, color 91%): its chrome differs from the comp's; open .impeccable/review/diff/hero/regions/nonprofit-try.png and match the border, fill, radius, chevron or arrow, and label size"
         ],
-        "summary": "hero 63% (drift)",
-        "score": 0.6322,
+        "summary": "hero 80% (drift)",
+        "score": 0.7997,
         "verdict": "drift",
         "report": ".impeccable/review/diff/hero/report.json",
         "sideBySide": "/Users/tarikmoody/Projects/dycu/inventory/.impeccable/review/diff/hero/side-by-side.png",
         "worst": [
-          "topic-arrow missing 35%",
-          "caption contradicted 42%",
-          "heading contradicted 44%"
+          "headline drift 48%",
+          "resident-excerpt contradicted 49%",
+          "reporter-divider drift 50%"
         ],
         "worstIds": [
-          "topic-arrow",
-          "caption",
-          "heading"
+          "headline",
+          "resident-excerpt",
+          "reporter-divider"
         ],
         "worstCrops": [
           {
-            "id": "topic-arrow",
-            "verdict": "missing",
+            "id": "headline",
+            "verdict": "drift",
             "score": {
-              "overall": 0.3528,
-              "structure": 0.7476,
-              "color": 0.7294,
-              "colorIntersection": 0.5787,
-              "paletteMatch": 0.8106,
-              "detail": 0,
-              "detailRaw": 0,
-              "detailAdded": 0,
-              "bands": 0.4
+              "overall": 0.4811,
+              "structure": 0.3395,
+              "color": 0.7666,
+              "colorIntersection": 0.5569,
+              "paletteMatch": 0.8794,
+              "detail": 0.5049,
+              "detailRaw": 0.5987,
+              "detailAdded": 0.1875,
+              "bands": 0.44
             },
-            "file": ".impeccable/review/diff/hero/regions/topic-arrow.png"
+            "file": ".impeccable/review/diff/hero/regions/headline.png"
           },
           {
-            "id": "caption",
+            "id": "resident-excerpt",
             "verdict": "contradicted",
             "score": {
-              "overall": 0.4237,
-              "structure": 0.2404,
-              "color": 0.9234,
-              "colorIntersection": 0.8644,
-              "paletteMatch": 0.9551,
-              "detail": 0.2507,
-              "detailRaw": 0.4278,
-              "detailAdded": 0.3542,
-              "bands": 0.35
+              "overall": 0.4927,
+              "structure": 0.4197,
+              "color": 0.9254,
+              "colorIntersection": 0.8496,
+              "paletteMatch": 0.9663,
+              "detail": 0.1179,
+              "detailRaw": 0.2482,
+              "detailAdded": 0.2604,
+              "bands": 0.5667
             },
-            "file": ".impeccable/review/diff/hero/regions/caption.png"
+            "file": ".impeccable/review/diff/hero/regions/resident-excerpt.png"
           },
           {
-            "id": "heading",
-            "verdict": "contradicted",
+            "id": "reporter-divider",
+            "verdict": "drift",
             "score": {
-              "overall": 0.4375,
-              "structure": 0.2963,
-              "color": 0.8668,
-              "colorIntersection": 0.7575,
-              "paletteMatch": 0.9257,
-              "detail": 0.2201,
-              "detailRaw": 0.319,
-              "detailAdded": 0.1979,
-              "bands": 0.3964
+              "overall": 0.4981,
+              "structure": 0.6661,
+              "color": 0.8431,
+              "colorIntersection": 0.7201,
+              "paletteMatch": 0.9093,
+              "detail": 0.0009,
+              "detailRaw": 0.204,
+              "detailAdded": 0.4063,
+              "bands": 0.36
             },
-            "file": ".impeccable/review/diff/hero/regions/heading.png"
+            "file": ".impeccable/review/diff/hero/regions/reporter-divider.png"
           }
         ],
         "advisories": [
-          "(advisory, unchanged for 3+ attempts) text lead: cap height 19.7px in the build, 13.3px in the comp (+48%); set font-size so the cap height renders at 13.3px",
-          "(advisory, unchanged for 3+ attempts) text lead: 1 line in the build, 2 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape",
-          "(advisory, unchanged for 3+ attempts) text caption: the face renders 48% lighter than the comp's (ink density 0.32 vs 0.63); raise a weight step or use the ranked face",
-          "(advisory, unchanged for 3+ attempts) text issue: ink is #191919 in the build, #b1b2b2 in the comp; use the comp's colour",
-          "(advisory, unchanged for 3+ attempts) control topics: its rule sits 12px into the box in the comp and 122px in the build (+110px), so the strip is taller than the comp's; match the height, not only the position",
-          "(advisory, unchanged for 3+ attempts) control pick-year: its rule sits 2px into the box in the comp and 15px in the build (+13px), so the strip is taller than the comp's; match the height, not only the position",
-          "(advisory, unchanged for 3+ attempts) chrome table-groups: its rule sits 1px into the box in the comp and 20px in the build (+19px), so the strip is taller than the comp's; match the height, not only the position"
+          "(advisory, unchanged for 3+ attempts) text nonprofit-excerpt: cap height 15px in the build, 11.4px in the comp (+32%); set font-size so the cap height renders at 11.4px",
+          "(advisory, unchanged for 3+ attempts) text nonprofit-steps: 5 lines in the build, 6 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape"
         ],
         "regionVerdicts": {
-          "topics": "contradicted",
-          "topic-arrow": "missing",
-          "heading": "contradicted",
-          "lead": "drift",
-          "pick-neighborhood": "contradicted",
-          "pick-year": "contradicted",
-          "issue": "drift",
-          "caption": "contradicted",
-          "table-groups": "drift",
-          "table-body": "contradicted",
-          "moe-note": "drift"
+          "wordmark": "match",
+          "site-nav": "drift",
+          "masthead-rule": "match",
+          "headline": "drift",
+          "lede": "drift",
+          "reporter-label": "drift",
+          "reporter-question": "drift",
+          "reporter-steps": "drift",
+          "reporter-excerpt": "drift",
+          "reporter-try": "drift",
+          "nonprofit-label": "drift",
+          "nonprofit-question": "drift",
+          "nonprofit-steps": "drift",
+          "nonprofit-excerpt": "drift",
+          "nonprofit-try": "drift",
+          "resident-label": "drift",
+          "resident-question": "drift",
+          "resident-steps": "drift",
+          "resident-excerpt": "contradicted",
+          "resident-try": "drift",
+          "column-rules": "drift",
+          "guides-rule": "drift",
+          "guides-heading": "drift",
+          "guides-links": "drift",
+          "guides-contact": "drift",
+          "how-link": "drift",
+          "reporter-divider": "drift",
+          "guides-dividers": "drift",
+          "bottom-rule": "drift"
         },
-        "at": "2026-10-08T08:32:58.277Z"
+        "at": "2026-10-08T14:41:46.704Z"
       },
       "forced": {
-        "at": "2026-10-08T08:32:58.279Z",
-        "reason": "The user confirmed comp B (portraits-b-laptop) is a layout reference, not the section order: Tarik (2026-10-08) chose 'One order, phone's (Recommended)', whose stated cost was 'the laptop doesn't match its mockup's order ... you accept the laptop design check below its 72% bar (63% now)'. Heading → pickers → topics → table on both screens; the comp's topic strip above the heading and DYCU's real second issue note shift every region below, while individual regions match (colour 96%).",
+        "at": "2026-10-08T14:41:46.706Z",
+        "reason": "The user confirmed comp B (start-b-laptop) is a layout reference, not a pixel target: Tarik (2026-10-08) chose 'Accept it (Recommended)', whose stated meaning was 'Record that the mockup's exact pixel positions are a reference, not a target'. Hero 80% overall, every region present; one control (nonprofit-try) at 64% from a ~6px vertical offset after 15 attempts, where each further nudge shifted other regions.",
         "reasons": [
-          "hero overall 63.2% < 72% (structure 32%, color 96%, detail 52%)",
-          "region topic-arrow is missing (detail 0%, structure 75%): the comp shows material the build does not",
-          "region topics (control) is contradicted (structure 37%, detail added 8%): this control does not read as the comp's: rebuild its chrome from the crop (border, fill, radius, chevron or arrow, label size) rather than from a component default",
-          "region heading (text) is contradicted (structure 30%, detail added 20%): the composition of this text region differs from the comp; re-derive it from the spec box",
-          "region pick-neighborhood (control) is contradicted (structure 41%, detail added 47%): this control does not read as the comp's: rebuild its chrome from the crop (border, fill, radius, chevron or arrow, label size) rather than from a component default",
-          "region pick-year (control) is contradicted (structure 33%, detail added 48%): this control does not read as the comp's: rebuild its chrome from the crop (border, fill, radius, chevron or arrow, label size) rather than from a component default",
-          "region caption (text) is contradicted (structure 24%, detail added 35%): the composition of this text region differs from the comp; re-derive it from the spec box",
-          "region table-body (text) is contradicted (structure 35%, detail added 30%): the composition of this text region differs from the comp; re-derive it from the spec box"
+          "control nonprofit-try drifts to 64% (structure 57%, color 91%): its chrome differs from the comp's; open .impeccable/review/diff/hero/regions/nonprofit-try.png and match the border, fill, radius, chevron or arrow, and label size"
         ]
       },
       "readingsSeen": {
-        "text lead: cap height 19.7px in the build, 13.3px in the comp (+48%); set font-size so the cap height renders at 13.3px": 6,
-        "text lead: 1 line in the build, 2 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 6,
-        "text caption: the face renders 48% lighter than the comp's (ink density 0.32 vs 0.63); raise a weight step or use the ranked face": 6,
-        "text issue: ink is #191919 in the build, #b1b2b2 in the comp; use the comp's colour": 6,
-        "control topics: its rule sits 12px into the box in the comp and 122px in the build (+110px), so the strip is taller than the comp's; match the height, not only the position": 6,
-        "control pick-year: its rule sits 2px into the box in the comp and 15px in the build (+13px), so the strip is taller than the comp's; match the height, not only the position": 6,
-        "chrome table-groups: its rule sits 1px into the box in the comp and 20px in the build (+19px), so the strip is taller than the comp's; match the height, not only the position": 6
+        "text lede: cap height 32.5px in the build, 16px in the comp (+103%); set font-size so the cap height renders at 16px": 1,
+        "text reporter-steps: letter-spacing is wider than the comp's (gap 0.146 vs 0.080 of the cap height); set letter-spacing to close it by about 1px": 1,
+        "text reporter-excerpt: letter-spacing is wider than the comp's (gap 0.169 vs 0.083 of the cap height); set letter-spacing to close it by about 1px": 1,
+        "text nonprofit-steps: cap height 26.8px in the build, 12.3px in the comp (+118%); set font-size so the cap height renders at 12.3px": 1,
+        "text nonprofit-excerpt: letter-spacing is wider than the comp's (gap 0.145 vs 0.061 of the cap height); set letter-spacing to close it by about 1px": 2,
+        "text resident-question: cap height 14.1px in the build, 30.1px in the comp (-53%); set font-size so the cap height renders at 30.1px": 1,
+        "text resident-steps: cap height 26.8px in the build, 13.4px in the comp (+100%); set font-size so the cap height renders at 13.4px": 1,
+        "text guides-heading: cap height 13.8px in the build, 30.5px in the comp (-55%); set font-size so the cap height renders at 30.5px": 1,
+        "text guides-contact: letter-spacing is wider than the comp's (gap 0.159 vs 0.079 of the cap height); set letter-spacing to close it by about 1px": 1,
+        "text reporter-question: 1 line in the build, 2 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 1,
+        "text reporter-steps: 3 lines in the build, 6 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 1,
+        "text reporter-excerpt: 6 lines in the build, 7 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 3,
+        "text nonprofit-question: 1 line in the build, 2 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 1,
+        "text nonprofit-steps: 1 line in the build, 6 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 1,
+        "text nonprofit-excerpt: 6 lines in the build, 3 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 1,
+        "text resident-question: 1 line in the build, 2 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 1,
+        "text resident-steps: 1 line in the build, 4 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 1,
+        "text reporter-excerpt: the face renders 27% heavier than the comp's (ink density 0.62 vs 0.49); drop a weight step or use the ranked face": 1,
+        "chrome guides-rule: its ink is 14px tall in the build and 3px in the comp (+11px); match the height, not only the position": 5,
+        "chrome bottom-rule: its ink is 14px tall in the build and 2px in the comp (+12px); match the height, not only the position": 1,
+        "text reporter-steps: letter-spacing is wider than the comp's (gap 0.142 vs 0.080 of the cap height); set letter-spacing to close it by about 1px": 4,
+        "text reporter-excerpt: cap height 7.7px in the build, 12.1px in the comp (-36%); set font-size so the cap height renders at 12.1px": 1,
+        "text nonprofit-excerpt: cap height 15.8px in the build, 11.4px in the comp (+39%); set font-size so the cap height renders at 11.4px": 1,
+        "text resident-question: letter-spacing is wider than the comp's (gap 0.102 vs 0.067 of the cap height); set letter-spacing to close it by about 1px": 2,
+        "text reporter-steps: 5 lines in the build, 6 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 2,
+        "text nonprofit-steps: 2 lines in the build, 6 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 2,
+        "text nonprofit-excerpt: 4 lines in the build, 3 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 5,
+        "text resident-question: its first line starts 15px lower than in the comp (23px vs 8px into the region box); the spacing above it is too large": 1,
+        "text reporter-excerpt: cap height 8px in the build, 12.1px in the comp (-34%); set font-size so the cap height renders at 12.1px": 1,
+        "text nonprofit-excerpt: letter-spacing is wider than the comp's (gap 0.127 vs 0.061 of the cap height); set letter-spacing to close it by about 1px": 1,
+        "text guides-heading: cap height 10.2px in the build, 30.5px in the comp (-67%); set font-size so the cap height renders at 30.5px": 1,
+        "text guides-contact: cap height 8.2px in the build, 12.8px in the comp (-36%); set font-size so the cap height renders at 12.8px": 1,
+        "text reporter-excerpt: 8 lines in the build, 7 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 11,
+        "text nonprofit-steps: 3 lines in the build, 6 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 1,
+        "text guides-contact: 1 line in the build, 2 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 2,
+        "text guides-contact: it starts 104px further right than in the comp": 1,
+        "text reporter-question: letter-spacing is wider than the comp's (gap 0.113 vs 0.072 of the cap height); set letter-spacing to close it by about 1px": 1,
+        "text nonprofit-excerpt: cap height 16px in the build, 11.4px in the comp (+40%); set font-size so the cap height renders at 11.4px": 2,
+        "text resident-question: letter-spacing is wider than the comp's (gap 0.112 vs 0.067 of the cap height); set letter-spacing to close it by about 1px": 1,
+        "text guides-heading: cap height 20.3px in the build, 30.5px in the comp (-33%); set font-size so the cap height renders at 30.5px": 1,
+        "text reporter-excerpt: 9 lines in the build, 7 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 1,
+        "text nonprofit-steps: 4 lines in the build, 6 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 1,
+        "text resident-steps: 3 lines in the build, 4 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 1,
+        "text reporter-question: the face renders 38% heavier than the comp's (ink density 0.87 vs 0.63); drop a weight step or use the ranked face": 1,
+        "control how-link: its rule sits 15px into the box in the comp and 1px in the build (-14px), so the strip is shorter than the comp's; match the height, not only the position": 1,
+        "text reporter-excerpt: letter-spacing is wider than the comp's (gap 0.129 vs 0.083 of the cap height); set letter-spacing to close it by about 1px": 9,
+        "text resident-question: letter-spacing is wider than the comp's (gap 0.101 vs 0.067 of the cap height); set letter-spacing to close it by about 1px": 1,
+        "text guides-contact: letter-spacing is wider than the comp's (gap 0.163 vs 0.079 of the cap height); set letter-spacing to close it by about 1px": 1,
+        "text nonprofit-steps: 5 lines in the build, 6 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 14,
+        "control how-link: its rule sits 15px into the box in the comp and 5px in the build (-10px), so the strip is shorter than the comp's; match the height, not only the position": 1,
+        "text nonprofit-excerpt: cap height 16.6px in the build, 11.4px in the comp (+46%); set font-size so the cap height renders at 11.4px": 8,
+        "text nonprofit-excerpt: 5 lines in the build, 3 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 8,
+        "control how-link: its rule sits 15px into the box in the comp and 21px in the build (+6px), so the strip is taller than the comp's; match the height, not only the position": 1,
+        "text guides-heading: cap height 23.3px in the build, 30.5px in the comp (-24%); set font-size so the cap height renders at 30.5px": 3,
+        "text guides-heading: its first line starts 17px lower than in the comp (27px vs 10px into the region box); the spacing above it is too large": 3,
+        "control how-link: its rule sits 15px into the box in the comp and 2px in the build (-13px), so the strip is shorter than the comp's; match the height, not only the position": 1,
+        "text nonprofit-excerpt: cap height 15px in the build, 11.4px in the comp (+32%); set font-size so the cap height renders at 11.4px": 5,
+        "text guides-heading: cap height 22.1px in the build, 30.5px in the comp (-28%); set font-size so the cap height renders at 30.5px": 1
       },
-      "records": 2,
       "history": [
         {
-          "at": "2026-10-08T08:25:34.550Z",
-          "score": 0.6303,
+          "at": "2026-10-08T14:37:30.422Z",
+          "score": 0.7964,
           "worstIds": [
-            "topic-arrow",
-            "caption",
-            "heading"
+            "headline",
+            "resident-excerpt",
+            "reporter-divider"
           ],
           "regionVerdicts": {
-            "topics": "contradicted",
-            "topic-arrow": "missing",
-            "heading": "contradicted",
-            "lead": "drift",
-            "pick-neighborhood": "contradicted",
-            "pick-year": "contradicted",
-            "issue": "drift",
-            "caption": "contradicted",
-            "table-groups": "drift",
-            "table-body": "contradicted",
-            "moe-note": "drift"
+            "wordmark": "match",
+            "site-nav": "drift",
+            "masthead-rule": "match",
+            "headline": "drift",
+            "lede": "drift",
+            "reporter-label": "drift",
+            "reporter-question": "drift",
+            "reporter-steps": "drift",
+            "reporter-excerpt": "drift",
+            "reporter-try": "drift",
+            "nonprofit-label": "drift",
+            "nonprofit-question": "drift",
+            "nonprofit-steps": "drift",
+            "nonprofit-excerpt": "drift",
+            "nonprofit-try": "drift",
+            "resident-label": "drift",
+            "resident-question": "drift",
+            "resident-steps": "drift",
+            "resident-excerpt": "contradicted",
+            "resident-try": "drift",
+            "column-rules": "drift",
+            "guides-rule": "drift",
+            "guides-heading": "drift",
+            "guides-links": "drift",
+            "guides-contact": "drift",
+            "how-link": "contradicted",
+            "reporter-divider": "drift",
+            "guides-dividers": "drift",
+            "bottom-rule": "drift"
           },
           "artifactHash": null
         },
         {
-          "at": "2026-10-08T08:32:58.279Z",
-          "score": 0.6322,
+          "at": "2026-10-08T14:37:53.472Z",
+          "score": 0.7958,
           "worstIds": [
-            "topic-arrow",
-            "caption",
-            "heading"
+            "headline",
+            "resident-excerpt",
+            "reporter-divider"
           ],
           "regionVerdicts": {
-            "topics": "contradicted",
-            "topic-arrow": "missing",
-            "heading": "contradicted",
-            "lead": "drift",
-            "pick-neighborhood": "contradicted",
-            "pick-year": "contradicted",
-            "issue": "drift",
-            "caption": "contradicted",
-            "table-groups": "drift",
-            "table-body": "contradicted",
-            "moe-note": "drift"
+            "wordmark": "match",
+            "site-nav": "drift",
+            "masthead-rule": "match",
+            "headline": "drift",
+            "lede": "drift",
+            "reporter-label": "drift",
+            "reporter-question": "drift",
+            "reporter-steps": "drift",
+            "reporter-excerpt": "drift",
+            "reporter-try": "drift",
+            "nonprofit-label": "drift",
+            "nonprofit-question": "drift",
+            "nonprofit-steps": "drift",
+            "nonprofit-excerpt": "drift",
+            "nonprofit-try": "drift",
+            "resident-label": "drift",
+            "resident-question": "drift",
+            "resident-steps": "drift",
+            "resident-excerpt": "contradicted",
+            "resident-try": "drift",
+            "column-rules": "drift",
+            "guides-rule": "drift",
+            "guides-heading": "drift",
+            "guides-links": "drift",
+            "guides-contact": "drift",
+            "how-link": "drift",
+            "reporter-divider": "drift",
+            "guides-dividers": "drift",
+            "bottom-rule": "drift"
+          },
+          "artifactHash": null
+        },
+        {
+          "at": "2026-10-08T14:38:24.132Z",
+          "score": 0.8018,
+          "worstIds": [
+            "headline",
+            "reporter-divider",
+            "resident-excerpt"
+          ],
+          "regionVerdicts": {
+            "wordmark": "match",
+            "site-nav": "drift",
+            "masthead-rule": "match",
+            "headline": "drift",
+            "lede": "drift",
+            "reporter-label": "drift",
+            "reporter-question": "drift",
+            "reporter-steps": "drift",
+            "reporter-excerpt": "drift",
+            "reporter-try": "drift",
+            "nonprofit-label": "drift",
+            "nonprofit-question": "drift",
+            "nonprofit-steps": "drift",
+            "nonprofit-excerpt": "drift",
+            "nonprofit-try": "drift",
+            "resident-label": "drift",
+            "resident-question": "drift",
+            "resident-steps": "drift",
+            "resident-excerpt": "contradicted",
+            "resident-try": "drift",
+            "column-rules": "drift",
+            "guides-rule": "drift",
+            "guides-heading": "drift",
+            "guides-links": "drift",
+            "guides-contact": "drift",
+            "how-link": "drift",
+            "reporter-divider": "drift",
+            "guides-dividers": "drift",
+            "bottom-rule": "drift"
+          },
+          "artifactHash": null
+        },
+        {
+          "at": "2026-10-08T14:38:53.663Z",
+          "score": 0.7997,
+          "worstIds": [
+            "headline",
+            "resident-excerpt",
+            "reporter-divider"
+          ],
+          "regionVerdicts": {
+            "wordmark": "match",
+            "site-nav": "drift",
+            "masthead-rule": "match",
+            "headline": "drift",
+            "lede": "drift",
+            "reporter-label": "drift",
+            "reporter-question": "drift",
+            "reporter-steps": "drift",
+            "reporter-excerpt": "drift",
+            "reporter-try": "drift",
+            "nonprofit-label": "drift",
+            "nonprofit-question": "drift",
+            "nonprofit-steps": "drift",
+            "nonprofit-excerpt": "drift",
+            "nonprofit-try": "drift",
+            "resident-label": "drift",
+            "resident-question": "drift",
+            "resident-steps": "drift",
+            "resident-excerpt": "contradicted",
+            "resident-try": "drift",
+            "column-rules": "drift",
+            "guides-rule": "drift",
+            "guides-heading": "drift",
+            "guides-links": "drift",
+            "guides-contact": "drift",
+            "how-link": "drift",
+            "reporter-divider": "drift",
+            "guides-dividers": "drift",
+            "bottom-rule": "drift"
+          },
+          "artifactHash": null
+        },
+        {
+          "at": "2026-10-08T14:39:16.488Z",
+          "score": 0.7923,
+          "worstIds": [
+            "guides-heading",
+            "guides-links",
+            "headline"
+          ],
+          "regionVerdicts": {
+            "wordmark": "match",
+            "site-nav": "drift",
+            "masthead-rule": "match",
+            "headline": "drift",
+            "lede": "drift",
+            "reporter-label": "drift",
+            "reporter-question": "drift",
+            "reporter-steps": "drift",
+            "reporter-excerpt": "drift",
+            "reporter-try": "drift",
+            "nonprofit-label": "drift",
+            "nonprofit-question": "drift",
+            "nonprofit-steps": "drift",
+            "nonprofit-excerpt": "drift",
+            "nonprofit-try": "drift",
+            "resident-label": "drift",
+            "resident-question": "drift",
+            "resident-steps": "drift",
+            "resident-excerpt": "contradicted",
+            "resident-try": "drift",
+            "column-rules": "drift",
+            "guides-rule": "drift",
+            "guides-heading": "contradicted",
+            "guides-links": "contradicted",
+            "guides-contact": "contradicted",
+            "how-link": "drift",
+            "reporter-divider": "drift",
+            "guides-dividers": "drift",
+            "bottom-rule": "missing"
+          },
+          "artifactHash": null
+        },
+        {
+          "at": "2026-10-08T14:41:46.706Z",
+          "score": 0.7997,
+          "worstIds": [
+            "headline",
+            "resident-excerpt",
+            "reporter-divider"
+          ],
+          "regionVerdicts": {
+            "wordmark": "match",
+            "site-nav": "drift",
+            "masthead-rule": "match",
+            "headline": "drift",
+            "lede": "drift",
+            "reporter-label": "drift",
+            "reporter-question": "drift",
+            "reporter-steps": "drift",
+            "reporter-excerpt": "drift",
+            "reporter-try": "drift",
+            "nonprofit-label": "drift",
+            "nonprofit-question": "drift",
+            "nonprofit-steps": "drift",
+            "nonprofit-excerpt": "drift",
+            "nonprofit-try": "drift",
+            "resident-label": "drift",
+            "resident-question": "drift",
+            "resident-steps": "drift",
+            "resident-excerpt": "contradicted",
+            "resident-try": "drift",
+            "column-rules": "drift",
+            "guides-rule": "drift",
+            "guides-heading": "drift",
+            "guides-links": "drift",
+            "guides-contact": "drift",
+            "how-link": "drift",
+            "reporter-divider": "drift",
+            "guides-dividers": "drift",
+            "bottom-rule": "drift"
           },
           "artifactHash": null
         }
-      ]
+      ],
+      "records": 3
     },
     "sections": {
       "status": "closed",
-      "openedAt": "2026-10-08T08:32:58.280Z",
-      "closedAt": "2026-10-08T08:38:27.882Z",
+      "openedAt": "2026-10-08T14:41:46.706Z",
+      "closedAt": "2026-10-08T14:41:46.726Z",
       "attempts": 1,
       "notes": [],
       "gate": {
         "ok": true,
         "reasons": [],
         "summary": "no mechanical gate",
-        "at": "2026-10-08T08:38:27.881Z"
+        "at": "2026-10-08T14:41:46.726Z"
       },
       "forced": null
     },
     "motion": {
       "status": "closed",
-      "openedAt": "2026-10-08T08:38:27.882Z",
-      "closedAt": "2026-10-08T08:38:27.901Z",
+      "openedAt": "2026-10-08T14:41:46.726Z",
+      "closedAt": "2026-10-08T14:41:46.742Z",
       "attempts": 1,
       "notes": [],
       "gate": {
         "ok": true,
         "reasons": [],
         "summary": "no mechanical gate",
-        "at": "2026-10-08T08:38:27.901Z"
+        "at": "2026-10-08T14:41:46.742Z"
       },
       "forced": null
     },
     "responsive": {
       "status": "closed",
-      "openedAt": "2026-10-08T08:38:27.901Z",
-      "closedAt": "2026-10-08T08:43:47.323Z",
+      "openedAt": "2026-10-08T14:41:46.742Z",
+      "closedAt": "2026-10-08T15:42:59.203Z",
       "attempts": 3,
       "notes": [],
       "gate": {
         "ok": false,
         "reasons": [
-          "the desktop capture (788x752; the top 788x752 rows scaled to the comp's width are compared, a full-page capture is fine) scores 63% against the comp, under 65%: the first viewport does not survive a common desktop width. The hero passed at 788x752; the layout must hold from ~1280 up, not only at the comp's exact width (grid columns in fr / minmax, not fixed px that overflow and wrap).",
-          "at desktop width, region topic-arrow is missing",
-          "at desktop width, region heading (text) is contradicted (structure 29%)",
-          "at desktop width, region caption (text) is contradicted (structure 35%)"
+          "at desktop width, region guides-contact is missing",
+          "at desktop width, region reporter-divider is missing",
+          "at desktop width, region bottom-rule is missing",
+          "at desktop width, region nonprofit-excerpt (text) is contradicted (structure 27%)"
         ],
-        "summary": "desktop 63% (drift)",
-        "score": 0.626,
+        "summary": "desktop 80% (drift)",
+        "score": 0.7995,
         "sideBySide": "/Users/tarikmoody/Projects/dycu/inventory/.impeccable/review/diff/desktop/side-by-side.png",
-        "at": "2026-10-08T08:43:47.321Z"
+        "at": "2026-10-08T15:42:59.194Z"
       },
       "forced": {
-        "at": "2026-10-08T08:43:47.323Z",
-        "reason": "The user confirmed comp B (portraits-b-laptop) is a layout reference, not the section order: Tarik (2026-10-08) chose 'One order, phone's (Recommended)', whose stated cost was 'the laptop doesn't match its mockup's order ... you accept the laptop design check below its 72% bar', and answered 'Yes, same decision' when asked whether that acceptance covers this 1440px check (63% vs 65%, same cause).",
+        "at": "2026-10-08T15:42:59.203Z",
+        "reason": "The user confirmed comp B (start-b-laptop) is a layout reference, not a pixel target: Tarik (2026-10-08) chose 'Accept it (Recommended)', whose stated meaning was 'Record that the mockup's exact pixel positions are a reference, not a target'. At 1440 the layout holds with the same structure (80% overall); the three missing regions (guides-contact, reporter-divider, bottom-rule) are position offsets from scaling to the shorter viewport.",
         "reasons": [
-          "the desktop capture (788x752; the top 788x752 rows scaled to the comp's width are compared, a full-page capture is fine) scores 63% against the comp, under 65%: the first viewport does not survive a common desktop width. The hero passed at 788x752; the layout must hold from ~1280 up, not only at the comp's exact width (grid columns in fr / minmax, not fixed px that overflow and wrap).",
-          "at desktop width, region topic-arrow is missing",
-          "at desktop width, region heading (text) is contradicted (structure 29%)",
-          "at desktop width, region caption (text) is contradicted (structure 35%)"
+          "at desktop width, region guides-contact is missing",
+          "at desktop width, region reporter-divider is missing",
+          "at desktop width, region bottom-rule is missing",
+          "at desktop width, region nonprofit-excerpt (text) is contradicted (structure 27%)"
         ]
       }
     },
     "review": {
       "status": "closed",
-      "openedAt": "2026-10-08T08:43:47.323Z",
-      "closedAt": "2026-10-08T09:02:57.721Z",
+      "openedAt": "2026-10-08T15:42:59.203Z",
+      "closedAt": "2026-10-08T19:28:52.704Z",
       "attempts": 0,
-      "notes": [
-        {
-          "at": "2026-10-08T09:02:57.705Z",
-          "text": "Finish review round 1: fix (8 material). One batch applied; verdict pass: 7 resolved, #5 precision partial (long computed decimals >= 10 display as whole numbers). Remaining item ruled to stand: all 685 such cells in both fixtures use Excel's General format (numFmtId 0), which carries no decimal places, so there is no file precision to take; stored values stay exact (portraitTables keeps 60.3407). Put in front of Tarik at the preview checkpoint."
-        }
-      ],
+      "notes": [],
       "gate": null,
       "forced": null
     }
   },
   "finish": {
-    "disposition": "fix",
-    "at": "2026-10-08T09:02:57.721Z",
+    "disposition": "ship",
+    "at": "2026-10-08T19:28:52.703Z",
     "phaseAtFinish": "review"
   },
-  "plates": {
-    "topic-arrow": {
-      "status": "ok",
-      "score": 0.9119,
-      "size": "52x104"
-    }
-  }
+  "plates": {}
 }
