@@ -214,6 +214,10 @@ async function storePortrait(ctx: ActionCtx, buildId: Id<"builds">, hubId: strin
   const res = await fetchOk(pdfUrl(hubId), `spreadsheet ${hubId}`);
   const tables = parsePortrait(new Uint8Array(await res.arrayBuffer()));
   if (tables.length === 0) return { outcome: "failed", note: `spreadsheet ${hubId}: no tabs found` };
+  // A file with no readable tab is a failure, not an update: last week's tables stay.
+  if (tables.every((t) => t.rows.length === 0)) {
+    return { outcome: "failed", note: portraitBuildNote(hubId, tables) ?? `spreadsheet ${hubId}: no readable tabs` };
+  }
   const passages = tables.map((t) => portraitPassage(data.member.place, data.member.year, t));
   const { vectors, tokens } = await embed(passages, data.settings.embedModel, gatewayKey());
   await ctx.runMutation(internal.buildStore.settleSpend, { buildId, usd: tokens * data.settings.embedUsdPerToken });

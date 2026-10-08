@@ -95,3 +95,10 @@ test("grouped heads and section headings carry their table markup", async ({ pag
   await expect(table.locator("th[scope=rowgroup]").first()).toBeVisible();
   expect(await table.evaluate((t) => [...t.querySelectorAll("th[scope=rowgroup]")].every((th) => th.parentElement === th.closest("tbody")!.rows[0]))).toBe(true);
 });
+
+test("changing the neighborhood keeps the year when the new one has it", async ({ page }, info) => {
+  await open(page, info.project.name, "place=walkers-point&year=2023&topic=race-and-ethnicity");
+  await expect(section(page).locator("caption")).toHaveText(/Walker's Point, 2023/i); // the address has been applied
+  await section(page).getByLabel("Neighborhood").selectOption("burnham-park-layton-park-silver-city");
+  await expect(section(page).locator("caption")).toHaveText(/, 2023: Race and Ethnicity$/i);
+});

@@ -1,8 +1,9 @@
 /// <reference types="vite/client" />
 import { convexTest, type TestConvex } from "convex-test";
+import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { installFakeFetch } from "../tests/helpers/fakeFetch";
-import { fixtureFamilies } from "../tests/helpers/fixtures";
+import { fixtureFamilies, portraitBytes } from "../tests/helpers/fixtures";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { toFamilyInput } from "./lib/families";
@@ -62,6 +63,30 @@ describe("processPortrait", () => {
     const before = fake.count("/content/items/");
     await t.action(internal.build.processPortrait, { buildId, hubId });
     expect(fake.count("/content/items/")).toBe(before);
+  });
+
+  it("keeps last week's tables when no tab in the new file can be read", async () => {
+    const t = convexTest(schema, modules);
+    installFakeFetch();
+    const { buildId, hubId } = await seed(t);
+    await t.action(internal.build.processPortrait, { buildId, hubId });
+    await t.run(async (ctx) => {
+      const m = (await ctx.db.query("members").withIndex("by_hubId", (q) => q.eq("hubId", hubId)).first())!;
+      await ctx.db.patch(m._id, { modified: "2099-01-01T00:00:00.000Z" });
+    });
+    // DYCU renames the Estimate columns: every tab loses the header the reader looks for.
+    const files = unzipSync(portraitBytes(2023));
+    const renamed = Object.fromEntries(
+      Object.entries(files).map(([name, bytes]) => [name, name.endsWith(".xml") ? strToU8(strFromU8(bytes).replace(/Estimate/g, "Count")) : bytes]),
+    );
+    installFakeFetch({ portraitBytes: zipSync(renamed) });
+    await t.action(internal.build.processPortrait, { buildId, hubId });
+    const tables = await tablesOf(t, hubId);
+    expect(tables).toHaveLength(16);
+    expect(tables.every((x) => x.rows.length > 0)).toBe(true);
+    const build = (await buildOf(t, buildId))!;
+    expect(build.failed).toBe(1);
+    expect(build.notes.join(" ")).toContain("no table header");
   });
 
   it("keeps last week's tables when a file fails, and names it in the build", async () => {

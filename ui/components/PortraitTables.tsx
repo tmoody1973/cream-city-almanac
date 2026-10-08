@@ -65,7 +65,9 @@ export function PortraitTables({ index, focus: requested }: { index: Index; focu
             value={place.key}
             onChange={(e) => {
               const n = index.neighborhoods.find((x) => x.key === e.target.value)!;
-              go({ place: n.key, hubId: n.files[0].hubId, topic: focus.topic });
+              // Keep the year being read when the new neighborhood has it.
+              const same = n.files.find((f) => f.year === file.year) ?? n.files[0];
+              go({ place: n.key, hubId: same.hubId, topic: focus.topic });
             }}
           >
             {index.neighborhoods.map((n) => (
