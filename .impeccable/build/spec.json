@@ -1,8 +1,8 @@
 {
   "tool": "comp-spec",
   "version": 1,
-  "createdAt": "2026-10-08T01:20:29.371Z",
-  "comp": ".impeccable/mocks/laptop-b.webp",
+  "createdAt": "2026-10-08T01:34:14.694Z",
+  "comp": ".impeccable/mocks/how-laptop.webp",
   "warnings": [],
   "uncoveredInkCells": [],
   "compSize": {
@@ -13,90 +13,94 @@
   "orientation": "landscape",
   "palette": [
     {
-      "hex": "#f6f6f5",
-      "coverage": 0.9249
+      "hex": "#f7f7f7",
+      "coverage": 0.9243
     },
     {
-      "hex": "#0b0b0b",
-      "coverage": 0.0452
+      "hex": "#0b0c0c",
+      "coverage": 0.0539
     },
     {
-      "hex": "#d0d0d0",
-      "coverage": 0.0108
+      "hex": "#b5b5b5",
+      "coverage": 0.0101
     },
     {
-      "hex": "#494949",
-      "coverage": 0.0104
+      "hex": "#6d6d6d",
+      "coverage": 0.0083
     },
     {
-      "hex": "#a9a9a9",
-      "coverage": 0.0085
+      "hex": "#3f3f3f",
+      "coverage": 0.0034
     }
   ],
   "bands": [
     {
       "y": 0.0235,
-      "strength": 0.8157
+      "strength": 0.7945
     },
     {
-      "y": 0.0824,
-      "strength": 0.7738
+      "y": 0.0706,
+      "strength": 0.5551
     },
     {
       "y": 0.1059,
-      "strength": 0.434
+      "strength": 0.4469
     },
     {
       "y": 0.1294,
-      "strength": 0.3846
+      "strength": 0.6469
     },
     {
-      "y": 0.1765,
-      "strength": 0.7132
+      "y": 0.1882,
+      "strength": 1
     },
     {
-      "y": 0.2,
-      "strength": 0.2984
+      "y": 0.2118,
+      "strength": 0.3608
     },
     {
-      "y": 0.2235,
-      "strength": 0.2202
+      "y": 0.2353,
+      "strength": 0.4824
     },
     {
-      "y": 0.2471,
-      "strength": 0.211
+      "y": 0.2824,
+      "strength": 0.2283
     },
     {
-      "y": 0.2941,
-      "strength": 0.3136
+      "y": 0.3294,
+      "strength": 0.2357
     },
     {
-      "y": 0.3529,
-      "strength": 0.2018
+      "y": 0.4,
+      "strength": 0.2473
     },
     {
-      "y": 0.3765,
-      "strength": 0.2268
+      "y": 0.5294,
+      "strength": 0.3969
     },
     {
-      "y": 0.5176,
-      "strength": 0.2446
+      "y": 0.6471,
+      "strength": 0.2528
     },
     {
-      "y": 0.5412,
-      "strength": 0.2824
+      "y": 0.7059,
+      "strength": 0.2123
     },
     {
-      "y": 0.7412,
-      "strength": 0.4071
+      "y": 0.8471,
+      "strength": 0.3719
     },
     {
-      "y": 0.7647,
-      "strength": 0.3328
+      "y": 0.8824,
+      "strength": 0.7826
     },
     {
-      "y": 0.8706,
-      "strength": 0.469
+      "y": 0.9176,
+      "strength": 0.7628
+    },
+    {
+      "y": 0.9412,
+      "strength": 0.3583
     }
   ],
   "regions": [
@@ -112,51 +116,73 @@
         "h": 0.1
       },
       "box": {
-        "x": 0.0117,
+        "x": 0.0195,
         "y": 0.0117,
-        "w": 0.388,
+        "w": 0.3802,
         "h": 0.0879
       },
       "px": {
-        "x": 18,
+        "x": 30,
         "y": 12,
-        "w": 596,
+        "w": 584,
         "h": 90
       },
-      "aspect": 6.6222,
+      "aspect": 6.4889,
       "palette": [
         {
           "hex": "#f8f8f8",
-          "coverage": 0.5341
+          "coverage": 0.6492
         },
         {
-          "hex": "#080808",
-          "coverage": 0.388
+          "hex": "#090909",
+          "coverage": 0.3221
         },
         {
-          "hex": "#393735",
-          "coverage": 0.0331
+          "hex": "#4d4c4d",
+          "coverage": 0.0158
         },
         {
-          "hex": "#6e6e6f",
-          "coverage": 0.0278
+          "hex": "#bbbbbb",
+          "coverage": 0.007
         },
         {
-          "hex": "#acacac",
-          "coverage": 0.017
+          "hex": "#868686",
+          "coverage": 0.0058
         }
       ],
       "detail": {
-        "energy": 89.8869
+        "energy": 70.4395
       },
       "medium": "semantic",
       "plate": null,
-      "text": null
+      "text": null,
+      "type": {
+        "comp": {
+          "lines": 1,
+          "glyphs": 20,
+          "capHeightPx": 53.6,
+          "inkIsDark": true,
+          "allCaps": true,
+          "advance": 0.3916,
+          "advTall": 0.3916,
+          "advX": null,
+          "gap": 0.0559,
+          "xRatio": null,
+          "stemW": 0.2151,
+          "contrast": 1.0751,
+          "serif": 1.0015,
+          "densTall": 0.7711,
+          "densX": null,
+          "weight": 0.7711
+        },
+        "widthClass": "compressed",
+        "weightClass": "black"
+      }
     },
     {
       "id": "masthead-nav",
       "kind": "control",
-      "note": "SEARCH (black, underlined active) ASK SAVED (gray), a vertical rule, HOW IT WORKS (black); one rule under the whole masthead",
+      "note": "SEARCH ASK SAVED in gray, HOW IT WORKS black and underlined (current page); rule under the masthead",
       "grid": "G0:J0",
       "snap": false,
       "box": {
@@ -175,488 +201,492 @@
       "palette": [
         {
           "hex": "#f8f8f8",
-          "coverage": 0.8951
+          "coverage": 0.9102
         },
         {
-          "hex": "#0e0e0f",
-          "coverage": 0.0707
+          "hex": "#5f5f5f",
+          "coverage": 0.0441
         },
         {
-          "hex": "#5f6163",
-          "coverage": 0.0262
+          "hex": "#0a0a0a",
+          "coverage": 0.0301
         },
         {
-          "hex": "#b7b7ba",
-          "coverage": 0.0042
+          "hex": "#cdcdcd",
+          "coverage": 0.0084
         },
         {
-          "hex": "#8b8b8e",
-          "coverage": 0.0038
+          "hex": "#969898",
+          "coverage": 0.0072
         }
       ],
       "detail": {
-        "energy": 32.1428
+        "energy": 28.4429
       },
       "medium": "semantic",
       "plate": null,
       "text": null
     },
     {
-      "id": "catalog-band",
+      "id": "headline",
       "kind": "text",
-      "note": "gray 'Catalog as of Oct 7 · 93 raw data · 282 reports · 7 visualizations', then black one-line band 'Milwaukee's public data, searchable in plain English.  How it works →' (link underlined)",
-      "grid": "A1:D1",
-      "snap": false,
-      "box": {
+      "note": "HOW TO READ A DATASET IN 60 SECONDS, huge condensed black capitals, indented ~130px",
+      "grid": "A1:G1",
+      "coverBox": {
         "x": 0,
         "y": 0.1,
-        "w": 0.4,
+        "w": 0.7,
         "h": 0.1
       },
-      "px": {
-        "x": 0,
-        "y": 102,
-        "w": 614,
-        "h": 102
+      "box": {
+        "x": 0.0781,
+        "y": 0.1289,
+        "w": 0.6055,
+        "h": 0.0703
       },
-      "aspect": 6.0196,
+      "px": {
+        "x": 120,
+        "y": 132,
+        "w": 930,
+        "h": 72
+      },
+      "aspect": 12.9167,
       "palette": [
         {
-          "hex": "#f8f8f8",
-          "coverage": 0.9252
+          "hex": "#f7f7f7",
+          "coverage": 0.5266
         },
         {
-          "hex": "#b8b9b9",
-          "coverage": 0.0232
+          "hex": "#090909",
+          "coverage": 0.4157
         },
         {
-          "hex": "#515151",
-          "coverage": 0.0228
+          "hex": "#60605f",
+          "coverage": 0.0249
         },
         {
-          "hex": "#111111",
-          "coverage": 0.0177
+          "hex": "#c2c1c2",
+          "coverage": 0.0187
         },
         {
-          "hex": "#878787",
-          "coverage": 0.0112
+          "hex": "#999999",
+          "coverage": 0.0141
         }
       ],
       "detail": {
-        "energy": 30.3002
+        "energy": 167.1253
       },
       "medium": "semantic",
       "plate": null,
-      "text": null
+      "text": null,
+      "type": {
+        "comp": {
+          "lines": 1,
+          "glyphs": 30,
+          "capHeightPx": 54.3,
+          "inkIsDark": true,
+          "allCaps": true,
+          "advance": 0.4786,
+          "advTall": 0.4786,
+          "advX": null,
+          "gap": 0.092,
+          "xRatio": null,
+          "stemW": 0.1889,
+          "contrast": 1.042,
+          "serif": 1.0064,
+          "densTall": 0.7701,
+          "densX": null,
+          "weight": 0.7701
+        },
+        "widthClass": "condensed",
+        "weightClass": "black",
+        "chosen": {
+          "family": "Saira Extra Condensed",
+          "weight": 700,
+          "fontSizePx": 78,
+          "source": "index",
+          "fp": {
+            "lines": 1,
+            "glyphs": 18,
+            "capHeightPx": 54.2,
+            "inkIsDark": true,
+            "allCaps": true,
+            "advance": 0.4979,
+            "advTall": 0.4979,
+            "advX": null,
+            "gap": 0.0922,
+            "xRatio": null,
+            "stemW": 0.184,
+            "contrast": 1.0869,
+            "serif": 1.0658,
+            "densTall": 0.7198,
+            "densX": null,
+            "weight": 0.7198
+          },
+          "stamp": "98f6a2372227"
+        }
+      }
     },
     {
-      "id": "slug-tags",
-      "kind": "control",
-      "note": "SLUG: label and a boxed input with gray placeholder, then three boxed suggestion tags",
-      "grid": "A2:D2",
+      "id": "lede",
+      "kind": "text",
+      "note": "one body line: Unofficial. Built on Data You Can Use's public data: 93 raw data · 282 reports · 7 visualizations.",
+      "grid": "A2:H2",
       "snap": false,
       "box": {
         "x": 0,
         "y": 0.2,
-        "w": 0.4,
+        "w": 0.8,
         "h": 0.1
       },
       "px": {
         "x": 0,
         "y": 205,
-        "w": 614,
+        "w": 1229,
         "h": 102
       },
-      "aspect": 6.0196,
+      "aspect": 12.049,
       "palette": [
         {
-          "hex": "#f7f7f7",
-          "coverage": 0.9214
+          "hex": "#f3f3f3",
+          "coverage": 0.9016
         },
         {
-          "hex": "#bbbcbd",
-          "coverage": 0.0352
+          "hex": "#0d0d0d",
+          "coverage": 0.0401
         },
         {
-          "hex": "#0e0e0e",
-          "coverage": 0.0296
+          "hex": "#4e4e4f",
+          "coverage": 0.0346
         },
         {
-          "hex": "#7e7f81",
-          "coverage": 0.0107
+          "hex": "#c2c2c2",
+          "coverage": 0.0161
         },
         {
-          "hex": "#5d6065",
-          "coverage": 0.0032
+          "hex": "#898989",
+          "coverage": 0.0076
         }
       ],
       "detail": {
-        "energy": 39.6412
+        "energy": 36.8722
       },
       "medium": "semantic",
       "plate": null,
-      "text": null
+      "text": null,
+      "type": {
+        "comp": {
+          "lines": 1,
+          "glyphs": 22,
+          "capHeightPx": 31.5,
+          "inkIsDark": true,
+          "allCaps": false,
+          "advance": 0.3492,
+          "advTall": 0.4127,
+          "advX": 0.3492,
+          "gap": 0.0635,
+          "xRatio": 0.4873,
+          "stemW": 0.1373,
+          "contrast": 1.2816,
+          "serif": 0.93,
+          "densTall": 0.7688,
+          "densX": 0.8009,
+          "weight": 0.7688
+        },
+        "widthClass": "compressed",
+        "weightClass": "black"
+      }
     },
     {
-      "id": "section-head",
-      "kind": "chrome",
-      "note": "UPDATED THIS SEASON heading over a rule; no CODE/SLUG/UPDATED column-header row",
-      "grid": "A3:D3",
+      "id": "note-grid",
+      "kind": "text",
+      "note": "red handwriting 'every year & place DYCU publishes' with a red arrow pointing right at the sheet",
+      "grid": "A3:B3",
       "snap": false,
       "box": {
         "x": 0,
         "y": 0.3,
-        "w": 0.4,
+        "w": 0.2,
         "h": 0.1
       },
       "px": {
         "x": 0,
         "y": 307,
-        "w": 614,
+        "w": 307,
         "h": 102
       },
-      "aspect": 6.0196,
+      "aspect": 3.0098,
       "palette": [
         {
           "hex": "#f8f8f8",
-          "coverage": 0.8958
+          "coverage": 0.9475
         },
         {
-          "hex": "#0b0b0b",
-          "coverage": 0.067
+          "hex": "#ef0f0e",
+          "coverage": 0.0245
         },
         {
-          "hex": "#313131",
-          "coverage": 0.0284
+          "hex": "#ea3835",
+          "coverage": 0.011
         },
         {
-          "hex": "#c0c0c0",
-          "coverage": 0.0064
+          "hex": "#f8c9c4",
+          "coverage": 0.0104
         },
         {
-          "hex": "#8c8c8c",
-          "coverage": 0.0025
+          "hex": "#f68585",
+          "coverage": 0.0066
         }
       ],
       "detail": {
-        "energy": 33.098
+        "energy": 19.1899
       },
       "medium": "semantic",
       "plate": null,
-      "text": null
+      "text": null,
+      "type": {
+        "comp": {
+          "lines": 1,
+          "glyphs": 15,
+          "capHeightPx": 30.6,
+          "inkIsDark": true,
+          "allCaps": true,
+          "advance": 0.1633,
+          "advTall": null,
+          "advX": null,
+          "gap": 0.0735,
+          "xRatio": null,
+          "stemW": 0.089,
+          "contrast": 0.9172,
+          "serif": null,
+          "densTall": null,
+          "densX": null,
+          "weight": null
+        },
+        "widthClass": "compressed",
+        "weightClass": "light",
+        "chosen": {
+          "family": "Rock Salt",
+          "weight": 400,
+          "fontSizePx": 26,
+          "source": "index",
+          "fp": {
+            "lines": 1,
+            "glyphs": 9,
+            "capHeightPx": 31.7,
+            "inkIsDark": true,
+            "allCaps": false,
+            "advance": null,
+            "advTall": null,
+            "advX": null,
+            "gap": 0.0789,
+            "xRatio": 0.8328,
+            "stemW": 0.0988,
+            "contrast": 0.9144,
+            "serif": 1.0691,
+            "densTall": null,
+            "densX": null,
+            "weight": null
+          },
+          "stamp": "8f3f9cc4c9eb"
+        }
+      }
     },
     {
-      "id": "code-v02",
-      "kind": "text",
-      "note": "red grease-pencil arrow pointing at the selected row's code V02",
-      "grid": "A4:A4",
-      "coverBox": {
-        "x": 0,
-        "y": 0.4,
+      "id": "pencil-arrow",
+      "kind": "plate",
+      "note": "hand-drawn red arrow pointing right, transparent ground",
+      "grid": "B3:B3",
+      "box": {
+        "x": 0.1,
+        "y": 0.3,
         "w": 0.1,
         "h": 0.1
-      },
-      "box": {
-        "x": 0.0117,
-        "y": 0.4121,
-        "w": 0.0586,
-        "h": 0.041
-      },
-      "px": {
-        "x": 18,
-        "y": 422,
-        "w": 90,
-        "h": 42
-      },
-      "aspect": 2.1429,
-      "palette": [
-        {
-          "hex": "#ededec",
-          "coverage": 0.8229
-        },
-        {
-          "hex": "#0b0a0a",
-          "coverage": 0.0848
-        },
-        {
-          "hex": "#df1b1a",
-          "coverage": 0.0474
-        },
-        {
-          "hex": "#abacab",
-          "coverage": 0.0299
-        },
-        {
-          "hex": "#d8433b",
-          "coverage": 0.015
-        }
-      ],
-      "detail": {
-        "energy": 17.3244
-      },
-      "medium": "semantic",
-      "plate": null,
-      "text": null
-    },
-    {
-      "id": "slug-v02",
-      "kind": "text",
-      "note": "selected row on gray band: 'Daily Air Quality' condensed bold, 'City · 2023-2025' under it",
-      "grid": "B4:C4",
-      "coverBox": {
-        "x": 0.1,
-        "y": 0.4,
-        "w": 0.2,
-        "h": 0.1
-      },
-      "box": {
-        "x": 0.1003,
-        "y": 0.418,
-        "w": 0.082,
-        "h": 0.0645
       },
       "px": {
         "x": 154,
-        "y": 428,
-        "w": 126,
-        "h": 66
-      },
-      "aspect": 1.9091,
-      "palette": [
-        {
-          "hex": "#eaeae9",
-          "coverage": 0.8022
-        },
-        {
-          "hex": "#0d0d0c",
-          "coverage": 0.1169
-        },
-        {
-          "hex": "#484848",
-          "coverage": 0.0361
-        },
-        {
-          "hex": "#797977",
-          "coverage": 0.023
-        },
-        {
-          "hex": "#aaaaaa",
-          "coverage": 0.0219
-        }
-      ],
-      "detail": {
-        "energy": 38.9366
-      },
-      "medium": "semantic",
-      "plate": null,
-      "text": null
-    },
-    {
-      "id": "pencil-mark",
-      "kind": "plate",
-      "note": "red grease-pencil circle around 'Jul 28' with 'new' written under it",
-      "grid": "D4:D4",
-      "box": {
-        "x": 0.3,
-        "y": 0.4,
-        "w": 0.1,
-        "h": 0.1
-      },
-      "px": {
-        "x": 461,
-        "y": 410,
+        "y": 307,
         "w": 154,
         "h": 102
       },
       "aspect": 1.5098,
       "palette": [
         {
-          "hex": "#ebeaea",
-          "coverage": 0.9404
+          "hex": "#f8f8f8",
+          "coverage": 0.9574
         },
         {
-          "hex": "#e01519",
-          "coverage": 0.0284
+          "hex": "#f10d0f",
+          "coverage": 0.0199
         },
         {
-          "hex": "#de4140",
-          "coverage": 0.0122
+          "hex": "#ec3536",
+          "coverage": 0.0102
         },
         {
-          "hex": "#df6f6a",
-          "coverage": 0.011
+          "hex": "#f7c3bf",
+          "coverage": 0.0074
         },
         {
-          "hex": "#0b0d0a",
-          "coverage": 0.0081
+          "hex": "#f67a78",
+          "coverage": 0.0051
         }
       ],
       "detail": {
-        "energy": 15.5942
+        "energy": 8.1596
       },
       "medium": "raster",
-      "plate": "assets/plates/pencil-mark.png",
+      "plate": "assets/plates/pencil-arrow.png",
       "text": null
     },
     {
-      "id": "rows-rest",
-      "kind": "control",
-      "note": "rundown rows S01 A04 N01 A03 alternating white and gray bands, code, title, sub line, date at right",
-      "grid": "A5:D8",
+      "id": "sheet-head",
+      "kind": "chrome",
+      "note": "gray band with rule above and below: W01 big condensed, 'Asthma Prevalence' condensed bold",
+      "grid": "C3:H3",
       "snap": false,
       "box": {
-        "x": 0,
-        "y": 0.5,
-        "w": 0.4,
-        "h": 0.4
-      },
-      "px": {
-        "x": 0,
-        "y": 512,
-        "w": 614,
-        "h": 410
-      },
-      "aspect": 1.4976,
-      "palette": [
-        {
-          "hex": "#f2f2f2",
-          "coverage": 0.9453
-        },
-        {
-          "hex": "#0e0e0e",
-          "coverage": 0.0322
-        },
-        {
-          "hex": "#b3b3b3",
-          "coverage": 0.0091
-        },
-        {
-          "hex": "#464646",
-          "coverage": 0.0071
-        },
-        {
-          "hex": "#777777",
-          "coverage": 0.0063
-        }
-      ],
-      "detail": {
-        "energy": 22.4148
-      },
-      "medium": "semantic",
-      "plate": null,
-      "text": null
-    },
-    {
-      "id": "sheet-header",
-      "kind": "text",
-      "note": "huge V02 code, a short vertical rule, 'Daily Air Quality' large condensed; rule under",
-      "grid": "E1:I1",
-      "snap": false,
-      "box": {
-        "x": 0.4,
-        "y": 0.1,
-        "w": 0.5,
+        "x": 0.2,
+        "y": 0.3,
+        "w": 0.6,
         "h": 0.1
       },
       "px": {
-        "x": 614,
-        "y": 102,
-        "w": 768,
+        "x": 307,
+        "y": 307,
+        "w": 922,
         "h": 102
       },
-      "aspect": 7.5294,
+      "aspect": 9.0392,
       "palette": [
         {
-          "hex": "#f8f8f8",
-          "coverage": 0.8485
+          "hex": "#f5f5f5",
+          "coverage": 0.9002
         },
         {
-          "hex": "#0a0a0a",
-          "coverage": 0.1228
+          "hex": "#0c0c0c",
+          "coverage": 0.0635
         },
         {
-          "hex": "#c7c7c7",
-          "coverage": 0.0144
+          "hex": "#c5c5c5",
+          "coverage": 0.0167
         },
         {
-          "hex": "#4f4f4f",
-          "coverage": 0.0111
+          "hex": "#505050",
+          "coverage": 0.0134
         },
         {
-          "hex": "#848484",
-          "coverage": 0.0032
+          "hex": "#858585",
+          "coverage": 0.0061
         }
       ],
       "detail": {
-        "energy": 52.3204
+        "energy": 40.9453
       },
       "medium": "semantic",
       "plate": null,
       "text": null
     },
     {
-      "id": "place-year-grid",
+      "id": "sheet-grid",
       "kind": "control",
-      "note": "PLACE BY YEAR heading over a ruled grid: years across, City row with black squares",
-      "grid": "E2:G3",
+      "note": "ruled grid: PLACE header, years 2021 2022 2023, City and County rows with black squares and dashes",
+      "grid": "C4:E4",
       "snap": false,
       "box": {
-        "x": 0.4,
-        "y": 0.2,
+        "x": 0.2,
+        "y": 0.4,
         "w": 0.3,
-        "h": 0.2
+        "h": 0.1
       },
       "px": {
-        "x": 614,
-        "y": 205,
+        "x": 307,
+        "y": 410,
         "w": 461,
-        "h": 205
+        "h": 102
       },
-      "aspect": 2.2488,
+      "aspect": 4.5196,
       "palette": [
         {
-          "hex": "#f7f7f7",
-          "coverage": 0.9126
+          "hex": "#f5f5f5",
+          "coverage": 0.9113
         },
         {
-          "hex": "#0a0a0a",
-          "coverage": 0.0475
+          "hex": "#b0b1b2",
+          "coverage": 0.0391
         },
         {
-          "hex": "#b2b3b3",
-          "coverage": 0.026
+          "hex": "#0a0909",
+          "coverage": 0.0276
         },
         {
-          "hex": "#4a4a4a",
-          "coverage": 0.0104
+          "hex": "#676767",
+          "coverage": 0.014
         },
         {
-          "hex": "#7e7b7e",
-          "coverage": 0.0035
+          "hex": "#383838",
+          "coverage": 0.008
         }
       ],
       "detail": {
-        "energy": 30.8138
+        "energy": 26.3266
       },
       "medium": "semantic",
       "plate": null,
       "text": null
     },
     {
-      "id": "what-it-measures",
+      "id": "sheet-explainer",
       "kind": "text",
-      "note": "vertical rule at left; WHAT IT MEASURES heading, one-sentence explainer, boxed AI tag",
-      "grid": "H2:I3",
+      "note": "vertical rule at left; two-line explainer 'Share of adults who report having asthma, by city and county.' and a boxed AI tag",
+      "grid": "F4:H4",
       "snap": false,
       "box": {
-        "x": 0.7,
-        "y": 0.2,
+        "x": 0.5,
+        "y": 0.4,
+        "w": 0.3,
+        "h": 0.1
+      },
+      "px": {
+        "x": 768,
+        "y": 410,
+        "w": 461,
+        "h": 102
+      },
+      "aspect": 4.5196,
+      "palette": [
+        {
+          "hex": "#f5f5f5",
+          "coverage": 1
+        }
+      ],
+      "detail": {
+        "energy": 1.6483
+      },
+      "medium": "semantic",
+      "plate": null,
+      "text": null,
+      "type": {
+        "comp": null,
+        "measuredAt": "2026-10-08T01:34:14.788Z",
+        "note": "no separable lettering in the crop; size by the region box"
+      }
+    },
+    {
+      "id": "note-source",
+      "kind": "text",
+      "note": "red handwriting 'who wrote this: DYCU, the Hub, the source, or AI' with a red arrow pointing left at the AI tag",
+      "grid": "I3:J4",
+      "snap": false,
+      "box": {
+        "x": 0.8,
+        "y": 0.3,
         "w": 0.2,
         "h": 0.2
       },
       "px": {
-        "x": 1075,
-        "y": 205,
+        "x": 1229,
+        "y": 307,
         "w": 307,
         "h": 205
       },
@@ -664,215 +694,406 @@
       "palette": [
         {
           "hex": "#f8f8f8",
-          "coverage": 0.9223
+          "coverage": 0.9547
         },
         {
-          "hex": "#090909",
-          "coverage": 0.0484
+          "hex": "#f20c0c",
+          "coverage": 0.0212
         },
         {
-          "hex": "#6d6d6d",
-          "coverage": 0.0112
+          "hex": "#ee2627",
+          "coverage": 0.0089
         },
         {
-          "hex": "#b3b3b3",
-          "coverage": 0.0109
+          "hex": "#f2514e",
+          "coverage": 0.0077
         },
         {
-          "hex": "#363636",
-          "coverage": 0.0072
+          "hex": "#f8d6ce",
+          "coverage": 0.0074
         }
       ],
       "detail": {
-        "energy": 28.1587
+        "energy": 19.8595
       },
       "medium": "semantic",
       "plate": null,
-      "text": null
+      "text": null,
+      "type": {
+        "comp": {
+          "lines": 1,
+          "glyphs": 9,
+          "capHeightPx": 91,
+          "inkIsDark": true,
+          "allCaps": true,
+          "advance": null,
+          "advTall": null,
+          "advX": null,
+          "gap": 0.0165,
+          "xRatio": null,
+          "stemW": 0.03,
+          "contrast": 0.7801,
+          "serif": null,
+          "densTall": null,
+          "densX": null,
+          "weight": null
+        },
+        "widthClass": "normal",
+        "weightClass": "light",
+        "chosen": {
+          "family": "Edu AU VIC WA NT Arrows",
+          "weight": 700,
+          "fontSizePx": 98,
+          "source": "index",
+          "fp": {
+            "lines": 1,
+            "glyphs": 14,
+            "capHeightPx": 91.3,
+            "inkIsDark": true,
+            "allCaps": false,
+            "advance": 0.5642,
+            "advTall": 0.5642,
+            "advX": null,
+            "gap": 0.1315,
+            "xRatio": 0.5996,
+            "stemW": 0.0291,
+            "contrast": 0.893,
+            "serif": null,
+            "densTall": 0.1825,
+            "densX": null,
+            "weight": 0.1825
+          },
+          "stamp": "1d77a791767a"
+        }
+      }
     },
     {
       "id": "column-guide",
       "kind": "control",
-      "note": "COLUMN GUIDE heading over a ruled table with a gray header row COLUMN DESCRIPTION TAG",
-      "grid": "E4:I5",
+      "note": "gray band COLUMN GUIDE heading; two ruled rows: field name bold condensed, meaning in body text",
+      "grid": "C5:H5",
       "snap": false,
       "box": {
-        "x": 0.4,
-        "y": 0.4,
-        "w": 0.5,
-        "h": 0.2
+        "x": 0.2,
+        "y": 0.5,
+        "w": 0.6,
+        "h": 0.1
       },
       "px": {
-        "x": 614,
-        "y": 410,
-        "w": 768,
-        "h": 205
+        "x": 307,
+        "y": 512,
+        "w": 922,
+        "h": 102
       },
-      "aspect": 3.7463,
+      "aspect": 9.0392,
       "palette": [
         {
           "hex": "#f5f5f5",
-          "coverage": 0.9039
+          "coverage": 0.8854
         },
         {
-          "hex": "#cccccc",
-          "coverage": 0.054
+          "hex": "#c9c9ca",
+          "coverage": 0.0719
         },
         {
-          "hex": "#0d0d0d",
-          "coverage": 0.0285
+          "hex": "#0f0f0f",
+          "coverage": 0.0242
         },
         {
-          "hex": "#808080",
-          "coverage": 0.0087
+          "hex": "#909090",
+          "coverage": 0.0124
         },
         {
-          "hex": "#454545",
-          "coverage": 0.0048
+          "hex": "#606060",
+          "coverage": 0.006
         }
       ],
       "detail": {
-        "energy": 24.2434
+        "energy": 31.1304
       },
       "medium": "semantic",
       "plate": null,
       "text": null
+    },
+    {
+      "id": "note-preview",
+      "kind": "text",
+      "note": "red handwriting 'live rows from DYCU's Hub' with a red arrow pointing right",
+      "grid": "A6:B6",
+      "snap": false,
+      "box": {
+        "x": 0,
+        "y": 0.6,
+        "w": 0.2,
+        "h": 0.1
+      },
+      "px": {
+        "x": 0,
+        "y": 614,
+        "w": 307,
+        "h": 102
+      },
+      "aspect": 3.0098,
+      "palette": [
+        {
+          "hex": "#f8f8f8",
+          "coverage": 0.9362
+        },
+        {
+          "hex": "#ef1212",
+          "coverage": 0.0352
+        },
+        {
+          "hex": "#f8cbc7",
+          "coverage": 0.0136
+        },
+        {
+          "hex": "#f89d9a",
+          "coverage": 0.0081
+        },
+        {
+          "hex": "#f3514b",
+          "coverage": 0.0069
+        }
+      ],
+      "detail": {
+        "energy": 22.6993
+      },
+      "medium": "semantic",
+      "plate": null,
+      "text": null,
+      "type": {
+        "comp": {
+          "lines": 1,
+          "glyphs": 7,
+          "capHeightPx": 26,
+          "inkIsDark": true,
+          "allCaps": false,
+          "advance": 0.8842,
+          "advTall": null,
+          "advX": null,
+          "gap": 0.1538,
+          "xRatio": 0.4718,
+          "stemW": 0.1015,
+          "contrast": 0.7981,
+          "serif": null,
+          "densTall": null,
+          "densX": null,
+          "weight": null
+        },
+        "widthClass": "wide",
+        "weightClass": "light"
+      }
     },
     {
       "id": "live-preview",
       "kind": "control",
-      "note": "LIVE PREVIEW heading over one ruled box: rows table at left, dot strip chart by year at right",
-      "grid": "E6:I8",
+      "note": "gray band LIVE PREVIEW heading; dot strip chart, one row per year, gray caption at right",
+      "grid": "C6:H7",
       "snap": false,
       "box": {
-        "x": 0.4,
+        "x": 0.2,
         "y": 0.6,
-        "w": 0.5,
-        "h": 0.3
+        "w": 0.6,
+        "h": 0.2
       },
       "px": {
-        "x": 614,
+        "x": 307,
         "y": 614,
-        "w": 768,
-        "h": 307
+        "w": 922,
+        "h": 205
       },
-      "aspect": 2.5016,
+      "aspect": 4.4976,
       "palette": [
         {
           "hex": "#f5f5f5",
-          "coverage": 0.9386
+          "coverage": 0.9594
         },
         {
-          "hex": "#c4c4c4",
-          "coverage": 0.038
+          "hex": "#0d0d0d",
+          "coverage": 0.0149
         },
         {
-          "hex": "#0b0b0b",
-          "coverage": 0.0136
+          "hex": "#818181",
+          "coverage": 0.012
         },
         {
-          "hex": "#5e5e5e",
+          "hex": "#b8b8b8",
           "coverage": 0.007
         },
         {
-          "hex": "#303030",
-          "coverage": 0.0029
+          "hex": "#484848",
+          "coverage": 0.0066
         }
       ],
       "detail": {
-        "energy": 24.6527
+        "energy": 20.7364
       },
       "medium": "semantic",
       "plate": null,
       "text": null
     },
     {
-      "id": "pane-downloads",
-      "kind": "control",
-      "note": "two outlined buttons 'Download CSV' and 'View on Hub'",
-      "grid": "E9:G9",
+      "id": "note-download",
+      "kind": "text",
+      "note": "red handwriting 'download the real data' with a red arrow pointing right at the buttons",
+      "grid": "A7:B8",
       "snap": false,
       "box": {
-        "x": 0.4,
-        "y": 0.9,
-        "w": 0.3,
+        "x": 0,
+        "y": 0.7,
+        "w": 0.2,
+        "h": 0.2
+      },
+      "px": {
+        "x": 0,
+        "y": 717,
+        "w": 307,
+        "h": 205
+      },
+      "aspect": 1.4976,
+      "palette": [
+        {
+          "hex": "#f8f8f8",
+          "coverage": 0.9375
+        },
+        {
+          "hex": "#09090e",
+          "coverage": 0.0369
+        },
+        {
+          "hex": "#f01010",
+          "coverage": 0.0168
+        },
+        {
+          "hex": "#f8d1ca",
+          "coverage": 0.0046
+        },
+        {
+          "hex": "#f44947",
+          "coverage": 0.0043
+        }
+      ],
+      "detail": {
+        "energy": 19.2252
+      },
+      "medium": "semantic",
+      "plate": null,
+      "text": null,
+      "type": {
+        "comp": {
+          "lines": 2,
+          "glyphs": 20,
+          "capHeightPx": 28.5,
+          "inkIsDark": true,
+          "allCaps": true,
+          "advance": 0.7472,
+          "advTall": 0.7472,
+          "advX": null,
+          "gap": 0.1196,
+          "xRatio": null,
+          "stemW": 0.0888,
+          "contrast": 1.0582,
+          "serif": 1.0131,
+          "densTall": 0.7752,
+          "densX": null,
+          "weight": 0.7752
+        },
+        "widthClass": "normal",
+        "weightClass": "black"
+      }
+    },
+    {
+      "id": "sheet-actions",
+      "kind": "control",
+      "note": "two outlined buttons CSV and OPEN SHEET, the sheet's closing rule, and the full-width rule above the sections",
+      "grid": "C8:I8",
+      "snap": false,
+      "box": {
+        "x": 0.2,
+        "y": 0.8,
+        "w": 0.7,
         "h": 0.1
       },
       "px": {
-        "x": 614,
-        "y": 922,
-        "w": 461,
+        "x": 307,
+        "y": 819,
+        "w": 1075,
         "h": 102
       },
-      "aspect": 4.5196,
+      "aspect": 10.5392,
       "palette": [
         {
           "hex": "#f8f8f8",
-          "coverage": 0.9461
+          "coverage": 0.9161
         },
         {
-          "hex": "#0b0b0b",
-          "coverage": 0.0372
+          "hex": "#0c0d0f",
+          "coverage": 0.0666
         },
         {
-          "hex": "#616161",
-          "coverage": 0.0106
+          "hex": "#2d2f34",
+          "coverage": 0.0142
         },
         {
-          "hex": "#aeaeae",
-          "coverage": 0.005
+          "hex": "#9f9f9f",
+          "coverage": 0.0025
         },
         {
-          "hex": "#383838",
-          "coverage": 0.0012
+          "hex": "#c8c8c8",
+          "coverage": 0.0007
         }
       ],
       "detail": {
-        "energy": 22.5365
+        "energy": 31.3011
       },
       "medium": "semantic",
       "plate": null,
       "text": null
     },
     {
-      "id": "ask-rail",
+      "id": "section-heads",
       "kind": "chrome",
-      "note": "thin outlined rail: ASK heading, gray 'coming soon'",
-      "grid": "J1:J9",
+      "note": "rule; three columns of big condensed headings EACH WEEK, WHAT THE AI DOES, HOW SEARCH WORKS, each with a rule under it",
+      "grid": "A9:J9",
       "snap": false,
       "box": {
-        "x": 0.9,
-        "y": 0.1,
-        "w": 0.1,
-        "h": 0.9
+        "x": 0,
+        "y": 0.9,
+        "w": 1,
+        "h": 0.1
       },
       "px": {
-        "x": 1382,
-        "y": 102,
-        "w": 154,
-        "h": 922
+        "x": 0,
+        "y": 922,
+        "w": 1536,
+        "h": 102
       },
-      "aspect": 0.167,
+      "aspect": 15.0588,
       "palette": [
         {
           "hex": "#f8f8f8",
-          "coverage": 0.9306
+          "coverage": 0.931
         },
         {
-          "hex": "#b5b5b5",
-          "coverage": 0.0443
+          "hex": "#0a0a0a",
+          "coverage": 0.0336
         },
         {
-          "hex": "#8f8e8f",
-          "coverage": 0.0224
+          "hex": "#999ea3",
+          "coverage": 0.0306
         },
         {
-          "hex": "#5b5b5b",
-          "coverage": 0.0027
+          "hex": "#363636",
+          "coverage": 0.0025
+        },
+        {
+          "hex": "#676767",
+          "coverage": 0.0024
         }
       ],
       "detail": {
-        "energy": 9.0465
+        "energy": 19.726
       },
       "medium": "semantic",
       "plate": null,
