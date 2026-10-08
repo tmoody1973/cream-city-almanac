@@ -1,5 +1,5 @@
 "use client";
-import { SignInButton, Show } from "@clerk/nextjs";
+import { Show, SignInButton, SignOutButton } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import styles from "./ask.module.css";
@@ -23,5 +23,13 @@ export function AskPanel() {
 function SignedInStatus() {
   const status = useQuery(api.ask.status);
   if (!status) return <p aria-busy="true">Checking your account…</p>;
-  return <p className={styles.note}>{status.left} of {status.limit} questions left today.</p>;
+  return (
+    <p className={styles.note}>
+      {status.left} of {status.limit} questions left today · Don&apos;t paste private source info ·{" "}
+      {/* Stay on this view after signing out (Clerk's default sends people home). */}
+      <SignOutButton redirectUrl={typeof window === "undefined" ? "/ask" : `${window.location.pathname}${window.location.search}`}>
+        <button type="button" className={styles.textButton}>Sign out</button>
+      </SignOutButton>
+    </p>
+  );
 }

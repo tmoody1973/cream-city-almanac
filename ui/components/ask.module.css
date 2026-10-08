@@ -3,3 +3,4 @@
 .intro { margin: 0; }
 .signIn { min-height: 44px; padding: 0 16px; border: 1px solid var(--ink); background: var(--paper); color: var(--ink); font: inherit; font-weight: 700; cursor: pointer; }
 .note { margin: 0; color: var(--muted); font-size: var(--fs-small); }
+.textButton { min-height: 44px; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-decoration: underline; cursor: pointer; }

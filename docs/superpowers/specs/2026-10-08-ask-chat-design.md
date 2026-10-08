@@ -76,7 +76,7 @@ New `settings` fields: `askModel`, `askInputUsdPerToken`, `askOutputUsdPerToken`
 
 **Laptop.** Choosing ASK swaps the list column (39%) for the chat; the sheet pane keeps its width; the rail becomes the close (✕) control and brings the list back. **Phone.** Ask is its own screen from the masthead's ASK; Open goes to the sheet page (`/d/CODE…`).
 
-**The chat:** messages; an input at the bottom with "Don't paste private source info"; "27 of 30 questions left today".
+**The chat:** messages; an input at the bottom; one graphite line under it: "27 of 30 questions left today · Don't paste private source info · Sign out" (Tarik, 2026-10-08: signing out returns to the same view, now signed out).
 
 **Margin notes** (Tarik's pick from the comp round, 2026-10-08). Each question sits in a gray band; the answer is a short numbered note in plain words, with no figures. Tool results land as follows:
 
