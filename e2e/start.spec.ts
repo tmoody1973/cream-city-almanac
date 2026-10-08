@@ -59,3 +59,10 @@ test("the resident's chart says each dot is a day", async ({ page }) => {
   await page.goto("/start-here");
   await expect(page.locator("[data-example=resident] figcaption")).toHaveText("Each dot is one day. Every row shares one scale.");
 });
+
+test("the reporter's search finds both datasets", async ({ page }) => {
+  await page.goto("/?q=" + encodeURIComponent("older housing and asthma rates"));
+  await expect(page.locator("li[data-code]").first()).toBeVisible();
+  const codes = await page.locator("li[data-code]").evaluateAll((els) => els.slice(0, 5).map((e) => e.getAttribute("data-code")));
+  expect(codes).toEqual(expect.arrayContaining(["W01", "H05"]));
+});
