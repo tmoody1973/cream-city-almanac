@@ -1,7 +1,7 @@
 "use client";
 import { useAction } from "convex/react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import type { ResultRow, SearchResponse } from "@/convex/lib/types";
 import { circledCodes, LAST_VISIT_KEY, OPENED_KEY, readOpened, safeStorage } from "@/ui/lib/marks";
@@ -27,6 +27,7 @@ export function SearchHome({ rundown, status }: { rundown: ResultRow[]; status: 
   const laptop = useLaptop();
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState<string | null>(null); // an explicit choice, from a click or the address
+  // One-shot: set by a keyboard choice, cleared by the pane once it has moved focus (or by a new search).
   const [focusPane, setFocusPane] = useState(false);
   const [response, setResponse] = useState<SearchResponse | null>(null);
   const [state, setState] = useState<SearchState>("idle");
@@ -84,17 +85,23 @@ export function SearchHome({ rundown, status }: { rundown: ResultRow[]; status: 
   const onQueryChange = (value: string) => {
     setQuery(value);
     setOpen(null);
+    setFocusPane(false);
     window.history.replaceState(null, "", `${window.location.pathname}${selectionSearch({ q: value, open: null })}`);
   };
 
-  const select = useCallback(
-    (code: string, viaKeyboard: boolean) => {
-      setOpen(code);
-      setFocusPane(viaKeyboard);
-      window.history.pushState(null, "", `${window.location.pathname}${selectionSearch({ q: query, open: code })}`);
-    },
-    [query],
-  );
+  const select = (code: string, viaKeyboard: boolean) => {
+    setOpen(code);
+    setFocusPane(viaKeyboard);
+    // Choosing the row that's already open doesn't add a Back step.
+    const url = `${window.location.pathname}${selectionSearch({ q: query, open: code })}`;
+    if (code === selected) window.history.replaceState(null, "", url);
+    else window.history.pushState(null, "", url);
+  };
+
+  const showNewest = () => {
+    setOpen(null);
+    window.history.replaceState(null, "", `${window.location.pathname}${selectionSearch({ q: query, open: null })}`);
+  };
 
   // Phones: a laptop link to an item that isn't in this list opens that item's full sheet page.
   useEffect(() => {
@@ -145,7 +152,16 @@ export function SearchHome({ rundown, status }: { rundown: ResultRow[]; status: 
             <RundownList title="UPDATED THIS SEASON" mode="rundown" rows={rundown} circled={marks.circled} opened={marks.opened} {...listProps} />
           )}
         </main>
-        {laptop && selected && <SheetPane code={selected} focusHeading={focusPane} onEscape={backToRow} />}
+        {laptop && selected && (
+          <SheetPane
+            code={selected}
+            focusHeading={focusPane}
+            onFocused={() => setFocusPane(false)}
+            explicit={open !== null}
+            onEscape={backToRow}
+            onShowNewest={showNewest}
+          />
+        )}
         <aside className={styles.askRail} aria-label="Ask: coming soon">
           <span className={styles.askRailLabel}>ASK</span>
           <span>coming soon</span>

@@ -1,0 +1,11 @@
+{
+  "source": ".impeccable/mocks/how-laptop.webp",
+  "crop": [
+    227,
+    637,
+    299,
+    663
+  ],
+  "method": "cut from the approved comp; alpha from redness over white paper; ink set to --pencil #d7261e",
+  "approved": true
+}

@@ -35,3 +35,15 @@ test.describe("without JavaScript", () => {
     await expect(page.getByRole("heading", { name: "EACH WEEK" })).toBeVisible();
   });
 });
+
+test("on a phone, What it is comes first", async ({ page }, info) => {
+  test.skip(info.project.name !== "phone");
+  await page.goto("/how-it-works");
+  await expect(page.locator("section h3").first()).toHaveText("WHAT IT IS");
+});
+
+test("the search-check count comes from the question list", async ({ page }) => {
+  const { QUESTIONS } = await import("../convex/lib/evalQuestions");
+  await page.goto("/how-it-works");
+  await expect(page.getByText(`grades search on ${QUESTIONS.length} reporter-style questions`)).toBeVisible();
+});

@@ -95,3 +95,59 @@ test("the pane's downloads are reachable even when the list is short", async ({ 
   const vh = page.viewportSize()!.height;
   expect(box!.y + box!.height).toBeLessThanOrEqual(vh);
 });
+
+test("after a keyboard selection, typing a new search stays in the search box", async ({ page }) => {
+  await page.goto("/?q=asthma");
+  await page.locator("li[data-code='W01'] button").focus();
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#sheet-heading")).toBeFocused();
+  const slug = page.getByLabel("SLUG:");
+  await slug.click();
+  await slug.selectText();
+  // Type, pause long enough for results (and a new top result in the pane) to arrive, then keep typing.
+  await page.keyboard.type("f");
+  await expect(page).toHaveURL(/q=f$/);
+  await page.waitForTimeout(2500);
+  await page.keyboard.type("ood");
+  await expect(slug).toHaveValue("food");
+  await expect(slug).toBeFocused();
+});
+
+test("Enter, Escape, Enter on the same row returns to the sheet each time", async ({ page }) => {
+  await page.goto("/?q=asthma");
+  const row = page.locator("li[data-code='W01'] button");
+  await row.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#sheet-heading")).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(row).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#sheet-heading")).toBeFocused();
+});
+
+test("an auto-opened item is not marked as opened", async ({ page }) => {
+  await page.goto("/");
+  const first = await page.locator("li[data-code]").first().getAttribute("data-code");
+  await expect(pane(page)).toContainText(first!);
+  await page.waitForTimeout(500);
+  expect((await page.evaluate(() => localStorage.getItem("cca:opened"))) ?? "").not.toContain(first!);
+});
+
+test("the not-found pane offers a way back", async ({ page }) => {
+  await page.goto("/?open=Z99");
+  await expect(pane(page)).toContainText("No dataset with that code");
+  const first = await page.locator("li[data-code]").first().getAttribute("data-code");
+  await pane(page).getByRole("button", { name: "Show the newest" }).click();
+  await expect(pane(page)).toContainText(first!);
+  await expect(page).not.toHaveURL(/open=/);
+});
+
+test.describe("before scripts run", () => {
+  test.use({ javaScriptEnabled: false });
+  test("the Ask rail sits in the right-hand strip", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/");
+    const rail = await page.getByRole("complementary", { name: /ask: coming soon/i }).boundingBox();
+    expect(rail!.x).toBeGreaterThan(1300);
+  });
+});

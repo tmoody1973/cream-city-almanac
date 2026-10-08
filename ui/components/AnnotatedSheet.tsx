@@ -24,16 +24,15 @@ export function AnnotatedSheet({ sheet }: { sheet: SheetData }) {
   return (
     <figure className={styles.annotated} aria-label={`Example: how to read ${family.code} ${family.name}`}>
       <div className={styles.part}>
-        <div className={styles.notesTop}>
-          <PencilNote side="left">every year &amp; place DYCU publishes</PencilNote>
-          <PencilNote side="right">who wrote this: DYCU, the Hub, the source, or AI</PencilNote>
-        </div>
+        <PencilNote side="left">every year &amp; place DYCU publishes</PencilNote>
         <div className={styles.sheetHead}>
           <span className={styles.code}>{family.code}</span>
           <span className={styles.name}>{family.name}</span>
         </div>
+        {/* Sits just above the explainer, so on phones its arrow lands on the AI tag. */}
+        <PencilNote side="right">who wrote this: DYCU, the Hub, the source, or AI</PencilNote>
         <div className={styles.gridRow}>
-          <PlaceYearGrid grid={grid} />
+          <PlaceYearGrid grid={grid} corner="PLACE" />
           <p className={styles.explainer}>
             {shortExplainer(card?.explainer ?? family.name)} {card && <ProvenanceTag source={card.explainerProvenance} />}
           </p>

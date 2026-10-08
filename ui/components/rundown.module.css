@@ -789,3 +789,65 @@
     container-type: inline-size;
   }
 }
+
+/* Finish review fixes (laptop). */
+@media (min-width: 1100px) and (orientation: landscape) {
+  /* HOW IT WORKS: the separator is drawn outside the link, so the current-page bar underlines only the words. */
+  .mastNav > :last-child {
+    position: relative;
+    margin-left: clamp(20px, 2.6vw, 40px);
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .mastNav > :last-child::before {
+    content: "";
+    position: absolute;
+    top: -6px;
+    bottom: 0;
+    left: calc(clamp(20px, 2.6vw, 40px) * -1);
+    border-left: var(--hair);
+  }
+
+  /* Dates hug the row's right edge, as in comp B; the title takes the freed width. */
+  .right {
+    justify-self: end;
+    text-align: right;
+  }
+
+  .sub {
+    margin-top: 4px;
+  }
+
+  /* The pencil ellipse clears the date on every side. */
+  .pencil {
+    --mark-w: 6.4em;
+    left: calc(var(--mark-w) * -0.2);
+  }
+
+  /* The Ask rail stays beside the sticky pane instead of stretching with the list. */
+  .askRail {
+    position: sticky;
+    top: 12px;
+    align-self: start;
+    height: calc(100vh - 24px);
+  }
+}
+
+@media (min-width: 1100px) and (orientation: landscape) {
+  /* Room at the row's edge for the pencil's trailing "new", so it never crosses into the pane. */
+  .right {
+    padding-right: 44px;
+  }
+}
+
+/* The pane and the Ask rail keep their own columns, even before scripts run or while a first search loads. */
+@media (min-width: 1100px) and (orientation: landscape) {
+  .sheetPane {
+    grid-column: 2;
+  }
+
+  .askRail {
+    grid-column: 3;
+  }
+}

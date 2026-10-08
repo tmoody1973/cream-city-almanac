@@ -11,7 +11,21 @@ import sheetStyles from "./sheet.module.css";
 
 export const SHEET_HEADING_ID = "sheet-heading";
 
-export function SheetPane({ code, focusHeading, onEscape }: { code: string; focusHeading: boolean; onEscape: () => void }) {
+export function SheetPane({
+  code,
+  focusHeading,
+  onFocused,
+  explicit,
+  onEscape,
+  onShowNewest,
+}: {
+  code: string;
+  focusHeading: boolean;
+  onFocused: () => void;
+  explicit: boolean; // the reader chose this item (an auto-opened item isn't "opened")
+  onEscape: () => void;
+  onShowNewest: () => void;
+}) {
   const sheet = useQuery(api.catalog.familySheet, { code });
   const [stalled, setStalled] = useState(false);
 
@@ -23,17 +37,24 @@ export function SheetPane({ code, focusHeading, onEscape }: { code: string; focu
   }, [sheet, code]);
 
   useEffect(() => {
-    if (focusHeading && sheet) document.getElementById(SHEET_HEADING_ID)?.focus();
-  }, [focusHeading, sheet]);
+    if (!focusHeading || !sheet) return;
+    document.getElementById(SHEET_HEADING_ID)?.focus();
+    onFocused();
+  }, [focusHeading, sheet, onFocused]);
 
   const body =
     sheet === undefined ? (
       <p role="status" aria-busy={!stalled}>{stalled ? "Can't reach the catalog. Check your connection and try again." : "Loading…"}</p>
     ) : sheet === null ? (
-      <p role="status">No dataset with that code. It may have left DYCU&apos;s Hub.</p>
+      <div role="status">
+        <p>No dataset with that code. It may have left DYCU&apos;s Hub.</p>
+        <button type="button" className={sheetStyles.button} onClick={onShowNewest}>
+          Show the newest
+        </button>
+      </div>
     ) : (
       <>
-        <OpenedMark code={sheet.family.code} />
+        {explicit && <OpenedMark code={sheet.family.code} />}
         {/* key: a new code remounts the sheet, so a slow preview from the previous row can never land here */}
         <SheetBody key={sheet.family.code} sheet={sheet} headingId={SHEET_HEADING_ID} />
         <div className={sheetStyles.paneDownloads}>

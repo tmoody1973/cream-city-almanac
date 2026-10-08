@@ -40,11 +40,23 @@ export function SheetBody({ sheet, headingId }: { sheet: SheetData; headingId?: 
         <section className={styles.section}>
           <h3 className={styles.heading}>COLUMN GUIDE</h3>
           <table className={styles.glossary} aria-label="Column guide">
+            {/* Laptops (comp B) get a header row and the tag in its own column; phones keep the tag inline. */}
+            <thead className={styles.guideHead}>
+              <tr>
+                <th scope="col">COLUMN</th>
+                <th scope="col">DESCRIPTION</th>
+                <th scope="col">TAG</th>
+              </tr>
+            </thead>
             <tbody>
               {card.glossary.map((g) => (
                 <tr key={g.field}>
                   <th scope="row"><code>{breakable(g.field)}</code></th>
-                  <td>{g.meaning} <ProvenanceTag source={g.provenance} /></td>
+                  <td>
+                    {g.meaning}
+                    <span className={styles.tagInline}> <ProvenanceTag source={g.provenance} /></span>
+                  </td>
+                  <td className={styles.tagCell}><ProvenanceTag source={g.provenance} /></td>
                 </tr>
               ))}
             </tbody>

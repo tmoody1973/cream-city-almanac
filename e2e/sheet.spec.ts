@@ -6,7 +6,7 @@ test("a dataset sheet explains, previews and offers downloads", async ({ page })
   await expect(page.getByRole("table", { name: /places and years/i })).toBeVisible();
   await expect(page.getByRole("heading", { name: "WHAT IT MEASURES" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "COLUMN GUIDE" })).toBeVisible();
-  await expect(page.getByRole("table", { name: "Column guide" }).getByText("DYCU").first()).toBeVisible();
+  await expect(page.getByRole("table", { name: "Column guide" }).getByText("DYCU").filter({ visible: true }).first()).toBeVisible();
   await expect(page.getByRole("heading", { name: "LIVE PREVIEW" })).toBeVisible();
   await expect(page.getByRole("table", { name: /first rows/i })).toBeVisible({ timeout: 15_000 });
   await expect(page.getByRole("link", { name: "CSV" }).first()).toHaveAttribute("href", /\/csv/);

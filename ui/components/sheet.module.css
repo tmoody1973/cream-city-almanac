@@ -66,3 +66,26 @@
   .lead > .section { border-bottom: 0; }
   .lead > section { padding-left: clamp(20px, 2.2vw, 34px); border-left: var(--hair); }
 }
+
+.guideHead, .tagCell { display: none; }
+
+@media (min-width: 1100px) and (orientation: landscape) {
+  .guideHead { display: table-header-group; }
+  .guideHead th { padding: 8px; background: var(--band); font-family: var(--font-caps); font-weight: 700; font-size: clamp(14px, 1.1vw, 17px); text-align: left; }
+  .tagCell { display: table-cell; width: 1%; white-space: nowrap; }
+  .tagInline { display: none; }
+}
+@media (min-width: 1100px) and (orientation: landscape) {
+  /* The tag column hugs its tag; descriptions take the width (comp B). */
+  .guideHead th:last-child { width: 1%; }
+  .glossary th[scope="row"] { width: 24%; }
+}
+@media (min-width: 1100px) and (orientation: landscape) {
+  .guideHead th:first-child { width: 24%; }
+}
+@media (min-width: 1100px) and (orientation: landscape) {
+  .guideHead th:nth-child(2) { width: auto; }
+}
+@media (min-width: 1100px) and (orientation: landscape) {
+  .guideHead th:last-child { white-space: nowrap; overflow-wrap: normal; }
+}

@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { fetchFeatures, fieldValue, headlineColumn, rowsUrl, sharedScale, valuesUrl, type FetchResult, type Features, isSystemColumn } from "@/ui/lib/preview";
+import { fetchFeatures, fieldValue, headlineColumn, rowsUrl, sharedScale, valuesUrl, type FetchResult, type Features, isSystemColumn, bySeriesYear, formatCell } from "@/ui/lib/preview";
 import { StripChart } from "./StripChart";
 import styles from "./sheet.module.css";
 
@@ -27,7 +27,7 @@ export function LivePreview({ members, fields, chartOnly = false }: { members: M
           return { label: [m.place, m.yearLabel].filter(Boolean).join(" "), values };
         }),
       )
-        .then((s) => live && setSeries(s))
+        .then((s) => live && setSeries([...s].sort((a, b) => bySeriesYear(a.label, b.label))))
         .catch(() => live && setSeries([]));
     }
     return () => {
@@ -65,7 +65,7 @@ export function LivePreview({ members, fields, chartOnly = false }: { members: M
             </thead>
             <tbody>
               {first.map((row, i) => (
-                <tr key={i}>{columns.map((c) => <td key={c}>{String(row[c] ?? "")}</td>)}</tr>
+                <tr key={i}>{columns.map((c) => <td key={c}>{formatCell(row[c])}</td>)}</tr>
               ))}
             </tbody>
           </table>

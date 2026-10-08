@@ -502,3 +502,81 @@
     margin-top: 0.6em;
   }
 }
+
+/* Finish review fixes. */
+.nowrap {
+  white-space: nowrap;
+}
+
+.noteArrow {
+  display: inline-block;
+  width: auto;
+  transform: none;
+}
+
+.noteArrow img {
+  display: block;
+  width: 1.3em;
+  height: auto;
+}
+
+/* The comp writes every note on a slightly rising line. */
+.note > span {
+  display: inline-block;
+  transform: rotate(-4deg);
+  transform-origin: 0 100%;
+}
+
+@media (min-width: 1100px) and (orientation: landscape) {
+  .noteArrow,
+  .note[data-side="left"] .noteArrow,
+  .note[data-side="right"] .noteArrow {
+    width: auto;
+    transform: none;
+  }
+
+  .noteArrow img {
+    width: 4.2vw;
+  }
+
+  .note[data-side="right"] .noteArrow img {
+    width: 5.2vw;
+  }
+
+  .note > span {
+    transform: rotate(-6deg);
+  }
+
+  /* The right note now sits after the sheet head in the markup; keep it level with the explainer. */
+  .note[data-side="right"] {
+    top: 80px;
+  }
+
+  /* No row holds a lone section: limits and credits run full width under the grid. */
+  .colophon {
+    grid-column: 1 / -1;
+    columns: 3;
+    column-gap: clamp(24px, 2.6vw, 40px);
+  }
+
+  .colophon > .heading {
+    column-span: all;
+  }
+}
+
+/* Phones: a little air between the header band and the tilted "who wrote this" note. */
+.note[data-side="right"] {
+  margin-top: 14px;
+}
+
+@media (min-width: 1100px) and (orientation: landscape) {
+  .note[data-side="right"] {
+    margin-top: 0;
+  }
+
+  /* Laptop reading order follows the comp: the three "how" sections first, then what it is, sources, build, credits. */
+  .whatItIs,
+  .later {
+    order: 1;
+  }
+}

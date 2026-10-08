@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { Fragment } from "react";
+import { QUESTIONS } from "@/convex/lib/evalQuestions";
 import { asOfPhrase, countsLine, pdfReportsPhrase } from "@/ui/lib/how";
 import { AnnotatedSheet } from "./AnnotatedSheet";
 import type { CatalogStatus } from "./CatalogLine";
@@ -20,11 +22,36 @@ export function HowItWorks({ status, example }: { status: CatalogStatus | null; 
     <div className={styles.page}>
       <Masthead side="HOW IT WORKS" showDate={false} sideClassName={styles.side} nav={<SiteNav placement="masthead" current="how" />} />
       <main className={styles.main}>
-        <h2 className={styles.headline}>How to read a dataset in 60 seconds</h2>
-        <p className={styles.lede}>Unofficial. Built on Data You Can Use&apos;s public data{counts ? `: ${counts}.` : "."}</p>
+        <h2 className={styles.headline}>How to read a dataset in&nbsp;60&nbsp;seconds</h2>
+        <p className={styles.lede}>
+          Unofficial. Built on Data You Can Use&apos;s public data
+          {counts ? (
+            <>
+              :{" "}
+              {counts.split(" · ").map((part, i) => (
+                <Fragment key={part}>
+                  {i > 0 && " · "}
+                  <span className={styles.nowrap}>{part}</span>
+                </Fragment>
+              ))}
+              .
+            </>
+          ) : (
+            "."
+          )}
+        </p>
         {example && <AnnotatedSheet sheet={example} />}
 
         <div className={styles.sections}>
+          {/* First on phones, so a first-time visitor reads what this is before anything else; laptops follow the comp's order. */}
+          <section className={`${styles.section} ${styles.whatItIs}`}>
+            <h3 className={styles.heading}>WHAT IT IS</h3>
+            <p>
+              An unofficial, phone-first way to find, understand and download Milwaukee&apos;s public data from Data You Can Use. Search
+              in your own words; every fact shows where it came from.
+            </p>
+          </section>
+
           <section className={styles.section}>
             <h3 className={styles.heading}>EACH WEEK</h3>
             <ol className={styles.steps}>
@@ -62,15 +89,7 @@ export function HowItWorks({ status, example }: { status: CatalogStatus | null; 
             <p>When nothing is close, it says so instead of listing unrelated data.</p>
           </section>
 
-          <section className={styles.section}>
-            <h3 className={styles.heading}>WHAT IT IS</h3>
-            <p>
-              An unofficial, phone-first way to find, understand and download Milwaukee&apos;s public data from Data You Can Use. Search
-              in your own words; every fact shows where it came from.
-            </p>
-          </section>
-
-          <section className={styles.section}>
+          <section className={`${styles.section} ${styles.later}`}>
             <h3 className={styles.heading}>WHERE THE DATA COMES FROM</h3>
             <p>
               DYCU&apos;s ArcGIS Hub, the public website where Data You Can Use publishes its data
@@ -79,16 +98,16 @@ export function HowItWorks({ status, example }: { status: CatalogStatus | null; 
             <p>Refreshed weekly and never altered. Downloads come straight from the Hub.</p>
           </section>
 
-          <section className={styles.section}>
+          <section className={`${styles.section} ${styles.later}`}>
             <h3 className={styles.heading}>HOW IT&apos;S BUILT</h3>
             <p>
               Next.js on Vercel; Convex for the database, search and the weekly job; Claude through the Vercel AI Gateway; Firecrawl to
-              read PDFs. A weekly automated check grades search on 26 reporter-style questions. Every trade-off is in{" "}
+              read PDFs. A weekly automated check grades search on {QUESTIONS.length} reporter-style questions. Every trade-off is in{" "}
               <a href={DECISION_LOG}>the decision log</a>.
             </p>
           </section>
 
-          <section className={styles.section}>
+          <section className={`${styles.section} ${styles.later} ${styles.colophon}`}>
             <h3 className={styles.heading}>LIMITS AND CREDITS</h3>
             <p>Unofficial; not affiliated with Data You Can Use.{asOf ? ` Data as of ${asOf}.` : ""}</p>
             <p>
