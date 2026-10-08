@@ -88,7 +88,9 @@ Comp-led, like Phase 2, but laptop is designed natively this time:
 - **Regression:** every existing phone and desktop test passes unchanged.
 - **Design:** Impeccable comp-diff per surface at the comp's own size; finish review disposition recorded.
 
-## 9. Open items for Tarik
+## 9. Decisions at comp review (2026-10-07)
 
-1. Byline link: GitHub profile (default) or another URL.
-2. Right pane before selection: a "how it works" summary, or the top result auto-opened (decided at comp review).
+- **How it works structure:** Annotated Sheet (surface roll `29e46a9e`, the dealt lead), chosen over Almanac Colophon and Before/After. Approved comps: `.impeccable/mocks/how-laptop.webp` (laptop) and `.impeccable/mocks/how-phone.webp` (phone: each grease-pencil note sits directly above the part it explains; no numbered keys, because a red number means "saved").
+- **Laptop right pane before selection:** the newest item auto-opens (Tarik chose comp B, `.impeccable/mocks/laptop-b.webp`, over the summary in `laptop-a.webp`). So the explainer band and masthead tab carry "how it works" on laptops.
+- **Mockup copy is not product truth:** the comps' invented column names, grid years and any wording that misstates the source tags are replaced by live data and accurate copy in the build.
+- **Byline link:** Tarik's GitHub profile (default; swap any time).

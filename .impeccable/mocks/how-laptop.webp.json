@@ -1,0 +1,12 @@
+{
+  "prompt": "STRUCTURE (lead with this): an annotated dataset sheet. Headline in bold condensed caps: HOW TO READ A DATASET IN 60 SECONDS, then one plain line: Unofficial. Built on Data You Can Use's public data: 93 raw data \u00b7 282 reports \u00b7 7 visualizations. Center column: a real dataset sheet for W01 Asthma Prevalence: code W01 in bold condensed, a place by year grid (rows City and County, columns 2021 2022 2023, black squares where data exists, dashes where not), a one-line explainer ending in a small boxed AI tag, a COLUMN GUIDE table with rows 'per_asthma - Estimated share of adults who report having asthma [DYCU]' and 'GEOID - Census tract identifier [DYCU]', a LIVE PREVIEW strip chart of small dots per year on one shared scale, and flat ruled CSV and Open sheet buttons. In the left and right margins, hand-written red grease-pencil notes with arrows pointing at each part: 'every year & place DYCU publishes', 'who wrote this: DYCU, the Hub, the source, or AI', 'live rows from DYCU's Hub', 'download the real data'. Below, ruled section heads EACH WEEK, WHAT THE AI DOES, HOW SEARCH WORKS begin to appear.\n\nDesktop web page at 1440x900, rendered flat as a real UI screenshot: no device frame, no hands, not a poster. Product: Cream City Almanac, an unofficial search tool for Milwaukee's public data from Data You Can Use. This is its HOW IT WORKS page. Visual system, taken from the reference image: white paper ground #FFFFFF, black #111111 type, bold condensed newsroom capitals for headings and codes, a plain sans-serif body, thin black horizontal rules, light gray #EDEDEA banding on alternate blocks, red #D7261E used ONLY as hand-drawn grease-pencil marks, flat ruled rectangular buttons. No shadows, no rounded corners, no gradients, no cards. Carry over the reference's palette, type, rules and component character; do NOT copy the reference's content (no search-results list, no UPDATED THIS SEASON table). Masthead across the top: CREAM CITY ALMANAC wordmark at left in heavy condensed capitals; at right, tabs SEARCH / ASK / SAVED with HOW IT WORKS underlined as the current page; a thin rule below.\n",
+  "createdAt": "2026-10-08T00:46:17.262Z",
+  "tool": "impeccable generate-image",
+  "model": "gpt-image-2.5-flare",
+  "refs": [
+    ".impeccable/review/results-repro.png"
+  ],
+  "approved": true,
+  "approvedRole": "how-it-works laptop first viewport (Annotated Sheet, surface roll 29e46a9e)",
+  "approvedAt": "2026-10-07"
+}

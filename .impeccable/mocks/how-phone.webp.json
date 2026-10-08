@@ -1,0 +1,12 @@
+{
+  "prompt": "STRUCTURE (lead with this): the phone version, portrait 390x844 viewport rendered at 1024x1536 as a flat UI screenshot (no device frame), of the Cream City Almanac HOW IT WORKS page whose desktop design is the reference image. Top: CREAM CITY ALMANAC wordmark in heavy condensed capitals with a small HOW IT WORKS label at right; thin rule. Headline in bold condensed caps: HOW TO READ A DATASET IN 60 SECONDS; one plain line: Unofficial. Built on Data You Can Use's public data: 93 raw data \u00b7 282 reports \u00b7 7 visualizations. Then the W01 Asthma Prevalence sheet stacked full width: code W01 in bold condensed, a small place by year grid (City, County by 2021 2022 2023, black squares and dashes), a one-line explainer with a small boxed AI tag, a COLUMN GUIDE with per_asthma and GEOID rows tagged [DYCU], a LIVE PREVIEW strip of dots, and flat ruled CSV and OPEN SHEET buttons. The grease-pencil teaching notes sit directly ABOVE each part they explain as short red hand-written lines with a small red arrow pointing down: 'every year & place DYCU publishes' above the grid, 'who wrote this: DYCU, the Hub, the source, or AI' above the explainer, 'live rows from DYCU's Hub' above the preview, 'download the real data' above the buttons. No numbered keys. Below the fold the section head EACH WEEK begins.\n\nVisual system, taken from the reference image: white paper ground #FFFFFF, black #111111 type, bold condensed newsroom capitals for headings and codes, a plain sans-serif body, thin black horizontal rules, light gray #EDEDEA banding, red #D7261E used ONLY as hand-drawn grease-pencil marks, flat ruled rectangular buttons. No shadows, no rounded corners, no gradients, no cards. Carry over the reference's palette, type, rules and component character; do not copy its exact content.\n",
+  "createdAt": "2026-10-08T00:49:24.094Z",
+  "tool": "impeccable generate-image",
+  "model": "gpt-image-2.5-flare",
+  "refs": [
+    ".impeccable/mocks/how-laptop.webp"
+  ],
+  "approved": true,
+  "approvedRole": "how-it-works phone first viewport (Annotated Sheet)",
+  "approvedAt": "2026-10-07"
+}
