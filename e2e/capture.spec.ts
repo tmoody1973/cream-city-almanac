@@ -1,4 +1,5 @@
-import { test, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
+import { test } from "./fixtures";
 
 // Marks appear after hydration reads storage and then load an image; capture only once all of that has landed.
 async function settle(page: Page) {

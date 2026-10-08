@@ -1,7 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const baseURL = process.env.BASE_URL ?? "http://localhost:3000";
-const bypass = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
 
 export default defineConfig({
   testDir: "e2e",
@@ -10,7 +9,6 @@ export default defineConfig({
   use: {
     baseURL,
     trace: "retain-on-failure",
-    extraHTTPHeaders: bypass ? { "x-vercel-protection-bypass": bypass, "x-vercel-set-bypass-cookie": "true" } : undefined,
   },
   projects: [
     { name: "phone", use: { ...devices["iPhone 13"] } },
