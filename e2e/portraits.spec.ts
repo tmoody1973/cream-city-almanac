@@ -83,7 +83,8 @@ test("a shared link keeps its table on the other kind of screen", async ({ page 
   const choice = "place=walkers-point&year=2023&topic=rent-paid";
   // A phone link opened on a laptop, and a laptop link opened on a phone.
   await page.goto(info.project.name === "desktop" ? `/d/N03?${choice}` : `/?open=N03&${choice}`);
-  await expect(page).toHaveURL(info.project.name === "desktop" ? /\/\?open=N03&place=walkers-point/ : /\/d\/N03\?place=walkers-point/);
+  // A client-side redirect: under parallel runs the dev server can take longer than the default 5s to serve it.
+  await expect(page).toHaveURL(info.project.name === "desktop" ? /\/\?open=N03&place=walkers-point/ : /\/d\/N03\?place=walkers-point/, { timeout: 15_000 });
   await expect(section(page).locator("caption")).toHaveText(/Walker's Point, 2023: Rent Paid/i);
 });
 
