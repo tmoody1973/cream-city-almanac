@@ -42,6 +42,7 @@ describe("weekly build", () => {
       expect(build.status).toBe("completed");
       expect(build.pending).toBe(49 + 180);
       expect(build.hubCounts).toEqual({ rawData: 93, reports: 282, visualizations: 7 });
+      expect(build.pdfReports).toBe(180);
       expect(await count(t, "families")).toBe(49);
       expect(await count(t, "cards")).toBe(49);
       expect(await count(t, "docChunks")).toBe(360);

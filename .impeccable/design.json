@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-07T22:48:47Z",
+  "generatedAt": "2026-10-08T02:18:41Z",
   "title": "Design System: Cream City Almanac",
   "extensions": {
     "colorMeta": {
@@ -19,7 +19,7 @@
           "oklch(84% 0.212 28.8)",
           "oklch(95% 0.212 28.8)"
         ],
-        "usage": "Raster grease-pencil plates only; never a CSS paint."
+        "usage": "Raster grease-pencil plates, plus the text color of the teaching notes on How it works (--pencil); never a border, fill, hover, focus ring, vector icon, or other text."
       },
       "paper": {
         "role": "neutral",
@@ -126,6 +126,14 @@
       "caption": {
         "displayName": "Caption",
         "purpose": "The credit footer."
+      },
+      "site-link": {
+        "displayName": "Site Link",
+        "purpose": "SEARCH / ASK / SAVED / HOW IT WORKS in the laptop masthead."
+      },
+      "note": {
+        "displayName": "Grease-Pencil Note",
+        "purpose": "Teaching notes on How it works only; Caveat 600 in red, tilted -4deg (phones) / -6deg (laptops); clamp(20px, 1.9vw, 29px) at line-height 1.15 on laptops."
       }
     },
     "shadows": [],
@@ -170,14 +178,19 @@
         "purpose": "From here the dataset sheet's download bar sits in flow instead of pinning to the bottom."
       },
       {
-        "name": "dock-static",
-        "value": "1100px and orientation: landscape",
-        "purpose": "From here the home screen's tab bar and credit return to the page end instead of pinning."
+        "name": "laptop",
+        "value": "(min-width: 1100px) and (orientation: landscape)",
+        "purpose": "The laptop two-pane layout: list | sheet pane | Ask rail, site links in the masthead, no tab bar, the laptop type scale. Identical to LAPTOP_QUERY in ui/lib/selection.ts."
+      },
+      {
+        "name": "pane-lead",
+        "value": "@container (min-width: 680px)",
+        "purpose": "Inside the laptop sheet pane: the place-by-year grid sits beside WHAT IT MEASURES."
       },
       {
         "name": "column-max",
         "value": "1280px",
-        "purpose": "Maximum width of the single centered column."
+        "purpose": "Maximum width of the single centered column below the laptop query; laptops drop the cap."
       }
     ],
     "plates": [
@@ -189,24 +202,61 @@
       {
         "name": "pencil-tick",
         "file": "public/plates/pencil-tick.png",
-        "meaning": "Opened before."
+        "meaning": "Opened before, by the reader's own choice; never on an auto-opened item."
       },
       {
         "name": "pencil-arrow",
         "file": "public/plates/pencil-arrow.png",
-        "meaning": "The row open now; sits before its code."
+        "meaning": "The row open (phone) or selected (laptop) now; sits before its code."
       },
       {
         "name": "pencil-underline",
         "file": "public/plates/pencil-underline.png",
-        "meaning": "The row open now; swash drawn below its title's descenders."
+        "meaning": "The row open or selected now; swash drawn below its title's descenders."
+      },
+      {
+        "name": "pencil-arrow-down",
+        "file": "public/plates/pencil-arrow-down.png",
+        "meaning": "Teaching-note arrow on phones: from a note down to the part below it. Cut from how-phone comp."
+      },
+      {
+        "name": "pencil-arrow-right",
+        "file": "public/plates/pencil-arrow-right.png",
+        "meaning": "Teaching-note arrow on laptops, from a left-margin note toward the sheet. Cut from how-laptop comp."
+      },
+      {
+        "name": "pencil-arrow-left",
+        "file": "public/plates/pencil-arrow-left.png",
+        "meaning": "Teaching-note arrow on laptops, from a right-margin note toward the sheet. Cut from how-laptop comp."
       },
       {
         "name": "saved-number",
         "file": null,
-        "meaning": "Reserved by the direction contract (number = saved) for the Saved phase; not drawn yet."
+        "meaning": "Reserved (a red number = saved) for the Saved phase; not drawn yet. Teaching notes are never numbered."
       }
-    ]
+    ],
+    "laptopScale": {
+      "query": "(min-width: 1100px) and (orientation: landscape)",
+      "source": "Approved laptop comp at 1536px; vw = px / 15.36.",
+      "page": {
+        "--fs-body": "clamp(15px, 1.2vw, 18px)",
+        "--fs-small": "clamp(13px, 1vw, 16px)",
+        "--fs-label": "clamp(14px, 1.1vw, 17px)",
+        "--fs-code": "clamp(24px, 2.15vw, 33px)",
+        "--fs-heading": "clamp(24px, 2.2vw, 34px)",
+        "--fs-wordmark": "clamp(64px, 6vw, 92px)",
+        "wordmark font-stretch": "54%",
+        "row title": "Saira Extra Condensed 700, clamp(19px, 1.65vw, 25px)",
+        "row min-height": "96px"
+      },
+      "sheetPane": {
+        "--fs-code": "clamp(52px, 4.8vw, 74px)",
+        "--fs-heading": "clamp(34px, 3.2vw, 50px)",
+        "--fs-label": "clamp(22px, 1.95vw, 30px)",
+        "links and buttons": "clamp(15px, 1.2vw, 18px)"
+      },
+      "columns": "39% list | minmax(0, 1fr) sheet pane | 6% Ask rail"
+    }
   },
   "components": [
     {
@@ -250,10 +300,10 @@
       "css": ".ds-explainer { margin: 0; font-family: var(--font-body, Vazirmatn, \"Helvetica Neue\", Arial, sans-serif); font-size: clamp(16px, 2.93vw, 30px); line-height: 1.3; color: var(--ink, #111111); } .ds-prov { display: inline-block; padding: 0 0.35em; border: 1px solid var(--ink, #111111); border-radius: 0; font-family: var(--font-caps, \"Saira Extra Condensed\", \"Arial Narrow\", sans-serif); font-weight: 700; font-size: 0.8em; text-decoration: none; vertical-align: 0.1em; }"
     },
     {
-      "name": "Tab Bar",
+      "name": "Tab Bar (phones)",
       "kind": "nav",
       "refersTo": "tab",
-      "description": "Three equal cells between hairlines; inactive and coming-soon tabs graphite, the active tab ink with a drawn 6px ink bar (no shadow).",
+      "description": "Phones only. Three equal cells between hairlines; inactive and coming-soon tabs graphite, the active tab ink with a drawn 6px ink bar (no shadow). Laptops move these links into the masthead.",
       "html": "<nav class=\"ds-tabbar\" aria-label=\"Sections\"><a class=\"ds-tab ds-tab-active\" href=\"#\" aria-current=\"page\">SEARCH</a><span class=\"ds-tab\" aria-disabled=\"true\" title=\"Coming soon\">ASK</span><span class=\"ds-tab\" aria-disabled=\"true\" title=\"Coming soon\">SAVED</span></nav>",
       "css": ".ds-tabbar { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--ink, #111111); border-bottom: 1px solid var(--ink, #111111); background: var(--paper, #ffffff); } .ds-tab { position: relative; display: flex; align-items: center; justify-content: center; min-height: clamp(56px, 9.8vw, 100px); font-family: var(--font-caps, \"Saira Extra Condensed\", \"Arial Narrow\", sans-serif); font-weight: 700; font-size: clamp(16px, 3.9vw, 40px); color: var(--muted, #5c5c5c); text-decoration: none; } .ds-tab-active { color: var(--ink, #111111); } .ds-tab-active::after { content: \"\"; position: absolute; left: 0; right: 0; bottom: clamp(4px, 1.7vw, 17px); height: 6px; background: var(--ink, #111111); } .ds-tab:focus-visible { outline: 3px solid var(--ink, #111111); outline-offset: 2px; }"
     },
@@ -279,23 +329,53 @@
       "description": "The wordmark (Saira 900 at 50% width, uppercase, one line) left; TODAY'S RUNDOWN and the date right; closed by a hairline.",
       "html": "<header class=\"ds-masthead\"><h1 class=\"ds-wordmark\">Cream City Almanac</h1><p class=\"ds-side\">TODAY'S RUNDOWN<span class=\"ds-side-date\">Wed Oct 7, 2026</span></p></header>",
       "css": ".ds-masthead { display: flex; justify-content: space-between; align-items: flex-start; gap: clamp(16px, 3.5vw, 36px); padding: clamp(14px, 2.9vw, 30px) 0 clamp(12px, 3vw, 31px); border-bottom: 1px solid var(--ink, #111111); color: var(--ink, #111111); } .ds-wordmark { margin: 0; font-family: var(--font-wordmark, Saira, \"Saira Extra Condensed\", \"Arial Narrow\", sans-serif); font-weight: 900; font-stretch: 50%; font-size: clamp(30px, 9.6vw, 98px); line-height: 0.9; text-transform: uppercase; white-space: nowrap; flex-shrink: 0; } .ds-side { margin: 0; text-align: right; font-family: var(--font-caps, \"Saira Extra Condensed\", \"Arial Narrow\", sans-serif); font-weight: 700; font-size: clamp(15px, 3.9vw, 40px); line-height: 1.1; text-transform: uppercase; } .ds-side-date { display: block; margin-top: 0.2em; font-family: var(--font-body, Vazirmatn, \"Helvetica Neue\", Arial, sans-serif); font-weight: 400; font-size: clamp(16px, 2.93vw, 30px); text-transform: none; font-variant-numeric: tabular-nums; }"
+    },
+    {
+      "name": "Masthead Site Links (laptop)",
+      "kind": "nav",
+      "refersTo": "site-link",
+      "description": "Laptop masthead nav: graphite inactive and coming-soon links, the current page in ink over a 4px ink bar; HOW IT WORKS always ink, set apart by a short hairline drawn outside the link.",
+      "html": "<nav class=\"ds-mastnav\" aria-label=\"Site\"><a class=\"ds-mast-link ds-mast-active\" href=\"#\" aria-current=\"page\">SEARCH</a><span class=\"ds-mast-link\" aria-disabled=\"true\" title=\"Coming soon\">ASK</span><span class=\"ds-mast-link\" aria-disabled=\"true\" title=\"Coming soon\">SAVED</span><a class=\"ds-mast-link ds-mast-how\" href=\"#\">HOW IT WORKS</a></nav>",
+      "css": ".ds-mastnav { display: flex; align-items: center; gap: clamp(20px, 2.6vw, 40px); } .ds-mast-link { padding-bottom: 6px; font-family: var(--font-caps, \"Saira Extra Condensed\", \"Arial Narrow\", sans-serif); font-weight: 700; font-size: clamp(22px, 2.1vw, 32px); line-height: 1; color: var(--muted, #5c5c5c); text-decoration: none; } .ds-mast-active { color: var(--ink, #111111); border-bottom: 4px solid var(--ink, #111111); } .ds-mast-how { position: relative; margin-left: clamp(20px, 2.6vw, 40px); color: var(--ink, #111111); } .ds-mast-how::before { content: \"\"; position: absolute; top: -6px; bottom: 0; left: calc(clamp(20px, 2.6vw, 40px) * -1); border-left: 1px solid var(--ink, #111111); } .ds-mast-link:focus-visible { outline: 3px solid var(--ink, #111111); outline-offset: 2px; }"
+    },
+    {
+      "name": "Ask Rail (laptop)",
+      "kind": "custom",
+      "refersTo": "ask-rail",
+      "description": "Narrow hairline-outlined placeholder at the laptop's right edge, holding the Phase 3 chat's place.",
+      "html": "<aside class=\"ds-askrail\" aria-label=\"Ask: coming soon\"><span class=\"ds-askrail-label\">ASK</span><span>coming soon</span></aside>",
+      "css": ".ds-askrail { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 96px; min-height: 320px; padding: 20px 8px; border: 1px solid var(--ink, #111111); border-radius: 0; color: var(--muted, #5c5c5c); font-family: var(--font-body, Vazirmatn, \"Helvetica Neue\", Arial, sans-serif); font-size: clamp(13px, 1vw, 16px); text-align: center; } .ds-askrail-label { font-family: var(--font-caps, \"Saira Extra Condensed\", \"Arial Narrow\", sans-serif); font-weight: 700; font-size: clamp(24px, 2.1vw, 32px); color: var(--ink, #111111); }"
+    },
+    {
+      "name": "Annotated Part with Teaching Note",
+      "kind": "custom",
+      "refersTo": "teaching-note",
+      "description": "How it works: a red hand-lettered note (Caveat 600, tilted) over a part heading on the gray band. The note's raster arrow plate is not reproduced here.",
+      "html": "<div class=\"ds-part\"><p class=\"ds-note\"><span>live rows from DYCU's Hub</span></p><p class=\"ds-parthead\">LIVE PREVIEW</p></div>",
+      "css": ".ds-part { padding-bottom: 12px; } .ds-note { display: flex; align-items: flex-end; gap: 4px; margin: 8px 0 4px; max-width: 16em; color: var(--pencil, #d7261e); font-family: var(--font-note, Caveat, \"Comic Sans MS\", cursive); font-weight: 600; font-size: clamp(15px, 3vw, 30px); line-height: 1.3; } .ds-note > span { display: inline-block; transform: rotate(-4deg); transform-origin: 0 100%; } .ds-parthead { margin: 0; padding: 6px 12px; background: var(--band, #ededea); font-family: var(--font-caps, \"Saira Extra Condensed\", \"Arial Narrow\", sans-serif); font-weight: 700; font-size: clamp(18px, 3vw, 28px); color: var(--ink, #111111); }"
     }
   ],
   "narrative": {
     "northStar": "The Marked-Up Rundown",
-    "overview": "The almanac is laid out like a radio newsroom's show rundown: one white sheet, a heavy condensed masthead, and every dataset family set as a single slugged row with a permanent code. Structure comes from ruled ink lines and alternating gray bands, never from boxes. The only color on the sheet is a producer's red grease pencil, drawn by hand onto the paper to say what changed since your last visit, what you have already opened, and which row you have open now.\n\nDensity is set for a reporter on a phone on deadline. Rows are tall enough to tap one-handed, codes are big enough to scan, and the first viewport carries the masthead, the slug entry, the newest rows, and the tab bar together. Desktop is deliberately compact: the same column, capped at 1280px, with type that stops growing at the approved comp's 1024px sizes, so more of the rundown shows above the fold instead of a phone layout blown up.\n\nThe world refuses the category default for data catalogs: card grids with rounded tag chips and dashboards of charts. It also refuses shadows, corner radii, gradients, and cards. Hierarchy is carried by rule weight, type voice, and banding alone.",
+    "overview": "The almanac is laid out like a radio newsroom's show rundown: one white sheet, a heavy condensed masthead, and every dataset family set as a single slugged row with a permanent code. Structure comes from ruled ink lines and alternating gray bands, never from boxes. The only color on the sheet is a producer's red grease pencil, drawn by hand onto the paper to say what changed since your last visit, what you have already opened, and which row you have open now; on How it works the same pencil writes the teaching notes in the margins of a real sheet.\n\nDensity is set for a reporter on a phone on deadline. Rows are tall enough to tap one-handed, codes are big enough to scan, and the first viewport carries the masthead, the slug entry, the newest rows, and the tab bar together. Between phone and laptop the layout stays deliberately compact: the same column, capped at 1280px, with type that stops growing at the approved comp's 1024px sizes. A laptop is its own layout, not a phone blown up: the rundown on the left, the selected dataset's full sheet beside it, and a narrow rail held for Ask, all measured from the approved laptop comp at 1536px.\n\nThe world refuses the category default for data catalogs: card grids with rounded tag chips and dashboards of charts. It also refuses shadows, corner radii, gradients, and cards. Hierarchy is carried by rule weight, type voice, and banding alone.",
     "keyCharacteristics": [
       "White rundown paper, ink text, ink rules; one hand-drawn red.",
       "Bold condensed newsroom capitals for codes, headings, labels, buttons, and tabs over a plain sans for the data itself.",
       "Permanent codes and dates in lining tabular figures, aligned down the column.",
       "Two rule weights: a 2px ink rule opens a block, a 1px hairline divides inside it.",
       "Flat, square-cornered, ruled buttons. No shadows, radii, gradients, or cards.",
-      "One motion: the grease-pencil circle draws itself on."
+      "One motion: the grease-pencil circle draws itself on.",
+      "On laptops, list and sheet side by side, with the selection kept in the address."
     ],
     "rules": [
       {
         "name": "The Grease Pencil Rule",
-        "body": "Red exists only as hand-drawn raster plates with a fixed meaning each; it is never a text color, border, fill, hover, focus ring, or vector icon.",
+        "body": "Red is the producer's hand only: the raster plates (circle = updated, tick = opened by the reader, arrow + swash = open or selected now) and the hand-lettered teaching notes on How it works. It is never a border, fill, hover, focus ring, vector icon, or any other text.",
+        "section": "colors"
+      },
+      {
+        "name": "The Red Number Rule",
+        "body": "A red number means saved. Teaching notes are never numbered, and no other red mark carries a figure.",
         "section": "colors"
       },
       {
@@ -305,7 +385,12 @@
       },
       {
         "name": "The Two Voices Rule",
-        "body": "Condensed capitals name things (codes, headings, labels, buttons, tabs); Vazirmatn carries the data (names, sublines, dates, explainers). A role never switches voice.",
+        "body": "Condensed capitals name things (codes, headings, labels, buttons, tabs, site links, and family titles wherever a list is scanned at a glance: search results, and every laptop row); Vazirmatn carries the data (phone rundown names, sublines, dates, explainers). A role never switches voice within a layout.",
+        "section": "typography"
+      },
+      {
+        "name": "The Teacher's Hand Rule",
+        "body": "Handwriting belongs to the grease pencil alone: Caveat 600 in red, tilted a few degrees, for the teaching notes on How it works. It is real text, never an image of words, and never names, labels, or data.",
         "section": "typography"
       },
       {
@@ -320,7 +405,17 @@
       },
       {
         "name": "The Compact Desk Rule",
-        "body": "Desktop is the phone sheet given room, not a new layout: a 1280px column, type capped at the comp's 1024px sizes, and nothing pinned that would hide rows on a wide landscape screen.",
+        "body": "Between phone and laptop, the screen is the phone sheet given room: a 1280px column, type capped at the comp's 1024px sizes.",
+        "section": "layout"
+      },
+      {
+        "name": "The Own Laptop Rule",
+        "body": "A laptop gets its own composition, measured from its own comp, never the phone layout stretched: list and sheet side by side, its own type scale, nothing pinned over the list, and site links in the masthead instead of a tab bar.",
+        "section": "layout"
+      },
+      {
+        "name": "The Address Rule",
+        "body": "What is searched and what is open live in the address, so every view can be linked, reloaded, and stepped back through.",
         "section": "layout"
       },
       {
@@ -341,14 +436,20 @@
       "**Do** keep every touch target at 44px or taller.",
       "**Do** tag every sourced or AI-written fact with the boxed provenance tag.",
       "**Do** draw icons as inline strokes in the current text color, like the 2px square-capped arrow.",
-      "**Do** cap the column at 1280px and let type stop at the comp's 1024px sizes on desktop."
+      "**Do** cap the column at 1280px and let type stop at the comp's 1024px sizes below the laptop query.",
+      "**Do** use the one laptop query, `(min-width: 1100px) and (orientation: landscape)`, everywhere a laptop rule is needed, and keep it identical to `LAPTOP_QUERY`.",
+      "**Do** keep the search and the open item in the address on laptops (`?q=…&open=CODE`).",
+      "**Do** write teaching notes as real text in Caveat 600 and red, tilted a few degrees, with a drawn arrow plate pointing at the part they explain.",
+      "**Do** tick only what the reader chose to open; an item opened for them is marked as selected, never as opened."
     ],
     "donts": [
-      "**Don't** use red for anything a stylesheet draws: text, borders, fills, hover, focus, or vector icons. Red is raster grease pencil only.",
+      "**Don't** use red for anything a stylesheet draws except the teaching notes' text: no red borders, fills, hover, focus, vector icons, or other text. Everywhere else red is a raster grease-pencil plate.",
+      "**Don't** number a teaching note or put a figure in any red mark but the saved number.",
+      "**Don't** show the bottom tab bar on laptops, or stretch the phone column across a laptop screen.",
       "**Don't** add shadows, corner radii, gradients, or cards.",
       "**Don't** present datasets as card grids with rounded tag chips or as dashboards of charts; a family is a ruled row or a ruled sheet.",
       "**Don't** animate anything besides the pencil circle drawing on.",
-      "**Don't** pin the tab bar on wide landscape screens, or pin both the tab bar and the download bar on a sheet.",
+      "**Don't** pin both the tab bar and the download bar on a sheet.",
       "**Don't** use Unicode glyphs in place of drawn icons.",
       "**Don't** use the display face for anything but the wordmark."
     ]

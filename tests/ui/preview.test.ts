@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { fetchFeatures, fetchJson, fieldValue, headlineColumn, rowsUrl, sharedScale, valuesUrl } from "../../ui/lib/preview";
+import { bySeriesYear, chartSeries, fetchFeatures, fetchJson, fieldValue, formatCell, formatScale, headlineColumn, isSystemColumn, rowsUrl, sharedScale, valuesUrl } from "../../ui/lib/preview";
 
 describe("live preview helpers", () => {
   it("builds ArcGIS query URLs", () => {
@@ -45,5 +45,44 @@ describe("live preview helpers", () => {
       ok: true,
       data: { features: [{ attributes: { per_asthma: 11 } }] },
     });
+  });
+});
+
+describe("isSystemColumn", () => {
+  it("flags the Hub's bookkeeping columns, not the data", () => {
+    expect(["OBJECTID", "object_id", "FID", "GlobalID", "Shape__Area"].every(isSystemColumn)).toBe(true);
+    expect(["GEOID", "per_asthma", "Year"].some(isSystemColumn)).toBe(false);
+  });
+});
+
+describe("chart ordering and labels", () => {
+  it("rounds the scale ends to one decimal", () => {
+    expect(formatScale(9.10000038)).toBe("9.1");
+    expect(formatScale(17.5)).toBe("17.5");
+    expect(formatScale(1234.56)).toBe("1,234.6");
+  });
+  it("orders rows by year, then place", () => {
+    expect(["County 2023", "City 2021", "City 2022", "County 2021"].sort(bySeriesYear)).toEqual(["City 2021", "County 2021", "City 2022", "County 2023"]);
+  });
+});
+
+describe("formatCell", () => {
+  it("shows Hub floats to two decimals and leaves text and whole numbers alone", () => {
+    expect(formatCell(93.94166666666668)).toBe("93.94");
+    expect(formatCell(42)).toBe("42");
+    expect(formatCell("2023-01-01")).toBe("2023-01-01");
+    expect(formatCell(55079130100)).toBe("55079130100");
+    expect(formatCell(null)).toBe("");
+  });
+});
+
+describe("chartSeries", () => {
+  const s = (label: string) => ({ label, values: [1] });
+  it("drops a multi-year layer when single years exist, so days aren't plotted twice", () => {
+    expect(chartSeries([s("City 2023"), s("City 2024"), s("City 2023–2025"), s("City 2025")]).map((x) => x.label)).toEqual(["City 2023", "City 2024", "City 2025"]);
+  });
+  it("keeps a multi-year layer when it is all there is, and orders by year", () => {
+    expect(chartSeries([s("City 2021–2023")]).map((x) => x.label)).toEqual(["City 2021–2023"]);
+    expect(chartSeries([s("County 2023"), s("City 2021")]).map((x) => x.label)).toEqual(["City 2021", "County 2023"]);
   });
 });

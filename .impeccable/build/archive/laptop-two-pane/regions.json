@@ -1,0 +1,20 @@
+{
+  "regions": [
+    { "id": "wordmark", "kind": "text", "grid": "A0:D0", "note": "CREAM CITY ALMANAC wordmark, heavy condensed black capitals" },
+    { "id": "masthead-nav", "kind": "control", "grid": "G0:J0", "snap": false, "note": "SEARCH (black, underlined active) ASK SAVED (gray), a vertical rule, HOW IT WORKS (black); one rule under the whole masthead" },
+    { "id": "catalog-band", "kind": "text", "grid": "A1:D1", "snap": false, "note": "gray 'Catalog as of Oct 7 · 93 raw data · 282 reports · 7 visualizations', then black one-line band 'Milwaukee's public data, searchable in plain English.  How it works →' (link underlined)" },
+    { "id": "slug-tags", "kind": "control", "grid": "A2:D2", "snap": false, "note": "SLUG: label and a boxed input with gray placeholder, then three boxed suggestion tags" },
+    { "id": "section-head", "kind": "chrome", "grid": "A3:D3", "snap": false, "note": "UPDATED THIS SEASON heading over a rule; no CODE/SLUG/UPDATED column-header row" },
+    { "id": "code-v02", "kind": "text", "grid": "A4:A4", "note": "red grease-pencil arrow pointing at the selected row's code V02" },
+    { "id": "slug-v02", "kind": "text", "grid": "B4:C4", "note": "selected row on gray band: 'Daily Air Quality' condensed bold, 'City · 2023-2025' under it" },
+    { "id": "pencil-mark", "kind": "plate", "grid": "D4:D4", "note": "red grease-pencil circle around 'Jul 28' with 'new' written under it" },
+    { "id": "rows-rest", "kind": "control", "grid": "A5:D8", "snap": false, "note": "rundown rows S01 A04 N01 A03 alternating white and gray bands, code, title, sub line, date at right" },
+    { "id": "sheet-header", "kind": "text", "grid": "E1:I1", "snap": false, "note": "huge V02 code, a short vertical rule, 'Daily Air Quality' large condensed; rule under" },
+    { "id": "place-year-grid", "kind": "control", "grid": "E2:G3", "snap": false, "note": "PLACE BY YEAR heading over a ruled grid: years across, City row with black squares" },
+    { "id": "what-it-measures", "kind": "text", "grid": "H2:I3", "snap": false, "note": "vertical rule at left; WHAT IT MEASURES heading, one-sentence explainer, boxed AI tag" },
+    { "id": "column-guide", "kind": "control", "grid": "E4:I5", "snap": false, "note": "COLUMN GUIDE heading over a ruled table with a gray header row COLUMN DESCRIPTION TAG" },
+    { "id": "live-preview", "kind": "control", "grid": "E6:I8", "snap": false, "note": "LIVE PREVIEW heading over one ruled box: rows table at left, dot strip chart by year at right" },
+    { "id": "pane-downloads", "kind": "control", "grid": "E9:G9", "snap": false, "note": "two outlined buttons 'Download CSV' and 'View on Hub'" },
+    { "id": "ask-rail", "kind": "chrome", "grid": "J1:J9", "snap": false, "note": "thin outlined rail: ASK heading, gray 'coming soon'" }
+  ]
+}

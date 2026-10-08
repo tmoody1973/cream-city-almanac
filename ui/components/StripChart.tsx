@@ -1,3 +1,4 @@
+import { formatScale } from "@/ui/lib/preview";
 import styles from "./sheet.module.css";
 
 const ROW = 30;
@@ -8,7 +9,7 @@ export function StripChart({ field, series, scale }: { field: string; series: { 
   const x = (v: number) => LABEL_W + ((v - scale.min) / (scale.max - scale.min)) * (WIDTH - LABEL_W - 10);
   return (
     <figure className={styles.chart}>
-      <svg viewBox={`0 0 ${WIDTH} ${series.length * ROW + 24}`} role="img" aria-label={`Each dot is one area's ${field}, by year, on one shared scale from ${scale.min} to ${scale.max}`}>
+      <svg viewBox={`0 0 ${WIDTH} ${series.length * ROW + 24}`} role="img" aria-label={`Each dot is one area's ${field}, by year, on one shared scale from ${formatScale(scale.min)} to ${formatScale(scale.max)}`}>
         {series.map((s, i) => (
           <g key={s.label} transform={`translate(0 ${i * ROW + 16})`}>
             <text x="0" y="5" className={styles.chartLabel}>{s.label}</text>
@@ -18,10 +19,10 @@ export function StripChart({ field, series, scale }: { field: string; series: { 
             ))}
           </g>
         ))}
-        <text x={LABEL_W} y={series.length * ROW + 20} className={styles.chartLabel}>{scale.min}</text>
-        <text x={WIDTH - 10} y={series.length * ROW + 20} textAnchor="end" className={styles.chartLabel}>{scale.max}</text>
+        <text x={LABEL_W} y={series.length * ROW + 20} className={styles.chartLabel}>{formatScale(scale.min)}</text>
+        <text x={WIDTH - 10} y={series.length * ROW + 20} textAnchor="end" className={styles.chartLabel}>{formatScale(scale.max)}</text>
       </svg>
-      <figcaption>{field}: every year on one shared scale</figcaption>
+      <figcaption>Each dot is one area. Every row shares one scale.</figcaption>
     </figure>
   );
 }

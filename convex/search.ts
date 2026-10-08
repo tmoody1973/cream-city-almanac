@@ -159,6 +159,7 @@ export const catalogStatus = query({
       lastRunFailed: latest?.status === "failed",
       running: latest?.status === "running" && Date.now() - latest.startedAt < STALE_BUILD_MS,
       counts: lastGood?.hubCounts ?? null,
+      pdfReports: lastGood?.pdfReports ?? null,
     };
   },
 });

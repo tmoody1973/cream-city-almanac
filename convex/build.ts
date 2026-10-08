@@ -272,6 +272,7 @@ async function runBuild(ctx: ActionCtx, buildId: Id<"builds">) {
     buildId,
     pending,
     hubCounts: hubCounts(families),
+    pdfReports: reports.length,
     notes,
     mismatch,
   });

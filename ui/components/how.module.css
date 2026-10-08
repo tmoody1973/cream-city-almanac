@@ -1,0 +1,589 @@
+/* How it works, measured from the approved comps: .impeccable/mocks/how-phone.webp (1024 wide, phone) and
+   .impeccable/mocks/how-laptop.webp (1536x1024). Red is grease pencil only: the teaching notes and their arrows. */
+.page {
+  max-width: min(1280px, 100%);
+  min-height: 100vh;
+  margin: 0 auto;
+  padding-inline: var(--gutter);
+  display: flex;
+  flex-direction: column;
+}
+
+/* The phone comp underlines the masthead's HOW IT WORKS as the current page. */
+.side {
+  text-decoration: underline;
+  text-decoration-thickness: 3px;
+  text-underline-offset: 0.2em;
+}
+
+.main {
+  flex: 1;
+  padding-bottom: 32px;
+}
+
+.headline {
+  margin: clamp(16px, 3vw, 32px) 0 8px;
+  font-family: var(--font-caps);
+  font-weight: 700;
+  font-size: clamp(38px, 9.6vw, 100px);
+  line-height: 0.95;
+  text-transform: uppercase;
+}
+
+.lede {
+  margin: 0 0 clamp(16px, 3vw, 32px);
+}
+
+.annotated {
+  margin: 0;
+}
+
+.part {
+  position: relative;
+  padding-bottom: 12px;
+}
+
+.notesTop {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.sheetHead {
+  display: flex;
+  gap: clamp(20px, 5vw, 56px);
+  align-items: center;
+  padding: clamp(8px, 1.6vw, 14px) 12px;
+  background: var(--band);
+  border-top: var(--hair);
+  border-bottom: var(--hair);
+}
+
+.code {
+  font-family: var(--font-caps);
+  font-weight: 700;
+  font-size: clamp(30px, 6.6vw, 56px);
+  line-height: 1;
+}
+
+.name {
+  font-family: var(--font-caps);
+  font-weight: 700;
+  font-size: clamp(20px, 3.6vw, 34px);
+  line-height: 1;
+}
+
+.gridRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  align-items: flex-start;
+  padding-top: clamp(12px, 2.4vw, 24px);
+}
+
+.explainer {
+  flex: 1 1 18ch;
+  margin: 0;
+  padding-left: clamp(0px, 2.4vw, 24px);
+  border-left: var(--hair);
+}
+
+.partHead {
+  margin: 0;
+  padding: 6px 12px;
+  background: var(--band);
+  font-family: var(--font-caps);
+  font-weight: 700;
+  font-size: clamp(18px, 3vw, 28px);
+  text-align: left;
+}
+
+.guide {
+  width: 100%;
+  margin: 16px 0;
+  border-collapse: collapse;
+}
+
+.guide th,
+.guide td {
+  padding: 8px 12px;
+  border-bottom: var(--hair);
+  text-align: left;
+  vertical-align: top;
+}
+
+.guide th {
+  width: 26%;
+  border-right: var(--hair);
+  font-family: var(--font-caps);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.actions {
+  display: flex;
+  gap: 16px;
+  padding: 12px 0;
+  border-top: var(--hair);
+  border-bottom: var(--hair);
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 8em;
+  padding: 0 clamp(14px, 3vw, 28px);
+  border: var(--rule);
+  font-family: var(--font-caps);
+  font-weight: 700;
+  font-size: var(--fs-label);
+  text-decoration: none;
+}
+
+.note {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  margin: 8px 0 4px;
+  max-width: 16em;
+  color: var(--pencil);
+  font-family: var(--font-note);
+  font-size: clamp(15px, 3vw, 30px);
+  line-height: 1.3;
+}
+
+.note[data-side="right"] {
+  text-align: right;
+}
+
+.noteArrow {
+  flex-shrink: 0;
+  width: 1.6em;
+  height: auto;
+  transform: rotate(90deg);
+}
+
+.sections {
+  margin-top: clamp(24px, 4vw, 48px);
+  border-top: var(--hair);
+}
+
+.section {
+  padding: clamp(16px, 3vw, 28px) 0;
+}
+
+.heading {
+  margin: 0 0 12px;
+  padding-bottom: 8px;
+  border-bottom: var(--hair);
+  font-family: var(--font-caps);
+  font-weight: 700;
+  font-size: clamp(26px, 6vw, 43px);
+  line-height: 1;
+}
+
+.steps {
+  margin: 0;
+  padding-left: 1.4em;
+}
+
+.tags {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Keep this media query identical to LAPTOP_QUERY in ui/lib/selection.ts. */
+@media (min-width: 1100px) and (orientation: landscape) {
+  .page {
+    max-width: none;
+    --fs-wordmark: clamp(60px, 5vw, 77px);
+    --fs-body: clamp(15px, 1.2vw, 18px);
+    --fs-small: clamp(13px, 1vw, 16px);
+    --fs-label: clamp(16px, 1.3vw, 20px);
+    font-size: var(--fs-body);
+  }
+
+  .side {
+    display: none;
+  }
+
+  .headline {
+    margin: clamp(16px, 2vw, 32px) 0 8px 6vw;
+    font-size: clamp(48px, 5.1vw, 78px);
+  }
+
+  .lede {
+    margin-left: 6vw;
+    font-size: clamp(17px, 1.45vw, 22px);
+  }
+
+  /* 260px of margin each side holds the notes, so they never fall off-screen between 1100 and 1300px. */
+  .annotated {
+    position: relative;
+    max-width: min(912px, calc(100% - 520px));
+    margin: 0 auto;
+  }
+
+  .notesTop {
+    display: contents;
+  }
+
+  .note {
+    position: absolute;
+    top: 0;
+    width: 240px;
+    max-width: none;
+    font-size: clamp(16px, 1.45vw, 22px);
+  }
+
+  .note[data-side="left"] {
+    right: calc(100% + 12px);
+    flex-direction: row;
+  }
+
+  .note[data-side="right"] {
+    left: calc(100% + 12px);
+    top: 40px;
+    flex-direction: row-reverse;
+  }
+
+  .note[data-side="left"] .noteArrow {
+    transform: none;
+  }
+
+  .note[data-side="right"] .noteArrow {
+    transform: scaleX(-1);
+  }
+
+  .sections {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: clamp(24px, 2.6vw, 40px);
+  }
+}
+
+/* Laptop: second pass against how-laptop.webp (band 63px, header row 36px, grid rows 48px, chart caption at the right). */
+@media (min-width: 1100px) and (orientation: landscape) {
+  .sheetHead {
+    padding: 6px 12px;
+  }
+
+  .code {
+    font-size: clamp(36px, 3.1vw, 48px);
+  }
+
+  .name {
+    font-size: clamp(22px, 1.9vw, 30px);
+  }
+
+  .gridRow {
+    padding-top: 12px;
+  }
+
+  .gridRow table th,
+  .gridRow table td {
+    height: 48px;
+    min-width: 95px;
+  }
+
+  .gridRow thead th,
+  .gridRow thead td {
+    height: 36px;
+    border: 0;
+  }
+
+  .partHead {
+    padding: 4px 12px;
+    font-size: clamp(18px, 1.5vw, 23px);
+  }
+
+  .guide {
+    margin: 0 0 16px;
+  }
+
+  .note {
+    align-items: center;
+  }
+
+  .part figure {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 200px;
+    gap: 24px;
+    align-items: start;
+    margin: 12px 0 0;
+  }
+
+  .part figure svg {
+    max-width: 600px;
+  }
+}
+
+/* Laptop: third pass (notes at the comp's size; the chart and the sections sit as high as the comp's). */
+@media (min-width: 1100px) and (orientation: landscape) {
+  .note {
+    width: 250px;
+    font-size: clamp(20px, 1.9vw, 29px);
+    line-height: 1.15;
+  }
+
+  .part figure {
+    margin-top: 4px;
+  }
+
+  .actions {
+    padding: 8px 0;
+  }
+
+  .sections {
+    margin-top: 20px;
+  }
+}
+
+/* Laptop: fourth pass (notes ride slightly above their part; the explainer's rule runs the grid's height; sections close up). */
+@media (min-width: 1100px) and (orientation: landscape) {
+  .note[data-side="left"] {
+    top: -20px;
+  }
+
+  .gridRow {
+    align-items: stretch;
+  }
+
+  .part:last-child {
+    padding-bottom: 0;
+  }
+
+  .sections {
+    margin-top: 0;
+  }
+}
+
+@media (min-width: 1100px) and (orientation: landscape) {
+  /* The first note sits level with the sheet's header band; the later ones ride just above their part. */
+  .part:first-child .note[data-side="left"] {
+    top: 8px;
+  }
+}
+
+@media (min-width: 1100px) and (orientation: landscape) {
+  /* Comp: a 427px grid (125px place column), the explainer from x≈776 at the lede's size. */
+  .gridRow table {
+    width: 427px;
+  }
+
+  .gridRow tbody th {
+    width: 125px;
+  }
+
+  .explainer {
+    padding-top: 10px;
+    font-size: clamp(17px, 1.4vw, 21px);
+  }
+}
+
+@media (min-width: 1100px) and (orientation: landscape) {
+  .guide th {
+    width: 170px;
+  }
+}
+
+@media (min-width: 1100px) and (orientation: landscape) {
+  /* Comp: ~20px condensed field names; DYCU's own (longer) definitions kept whole on one line. */
+  .guide th {
+    font-size: clamp(16px, 1.3vw, 20px);
+  }
+
+  .guide td {
+    font-size: clamp(14px, 1.02vw, 15.5px);
+  }
+
+  .guide th,
+  .guide td {
+    padding: 10px 12px;
+  }
+}
+
+@media (min-width: 1100px) and (orientation: landscape) {
+  .guide {
+    margin-bottom: 0;
+  }
+}
+
+/* Laptop: measured offsets vs the comp (preview band 628px, guide closing rule above 614px, sections rule at 873px). */
+@media (min-width: 1100px) and (orientation: landscape) {
+  .guide {
+    margin-bottom: 14px;
+  }
+
+  .guide caption {
+    border-bottom: var(--hair);
+  }
+
+  .guide th,
+  .guide td {
+    padding: 8px 12px;
+  }
+
+  .sections {
+    margin-top: 24px;
+  }
+}
+
+@media (min-width: 1100px) and (orientation: landscape) {
+  .part:first-child {
+    padding-bottom: 18px;
+  }
+}
+
+/* Laptop: scale the measured px with the window (px / 15.36 = vw at the comp's 1536px), so 1280–1600 keep the comp's shape. */
+@media (min-width: 1100px) and (orientation: landscape) {
+  .annotated {
+    max-width: min(59.4vw, calc(100% - 33.85vw));
+  }
+
+  .note {
+    width: 16.3vw;
+  }
+
+  .gridRow table {
+    width: 27.8vw;
+  }
+
+  .gridRow tbody th {
+    width: 8.14vw;
+  }
+
+  .gridRow table th,
+  .gridRow table td {
+    height: 3.125vw;
+    min-width: 0;
+  }
+
+  .gridRow thead th,
+  .gridRow thead td {
+    height: 2.34vw;
+  }
+
+  .guide th {
+    width: 11.07vw;
+  }
+}
+
+@media (min-width: 1100px) and (orientation: landscape) {
+  /* The real chart carries a scale row the comp lacks; take that height back from the gap above the sections. */
+  .sections {
+    margin-top: 6px;
+  }
+}
+
+@media (min-width: 1100px) and (orientation: landscape) {
+  /* Comp: the margin arrows run ~60px to the sheet's edge. */
+  .noteArrow {
+    width: 3.9vw;
+  }
+}
+
+@media (min-width: 1100px) and (orientation: landscape) {
+  .noteArrow {
+    width: 3vw;
+  }
+
+  .part:first-child .note[data-side="left"] {
+    top: -4px;
+  }
+
+  .note[data-side="left"] .noteArrow {
+    align-self: flex-start;
+    margin-top: 0.6em;
+  }
+}
+
+/* Finish review fixes. */
+.nowrap {
+  white-space: nowrap;
+}
+
+.noteArrow {
+  display: inline-block;
+  width: auto;
+  transform: none;
+}
+
+.noteArrow img {
+  display: block;
+  width: 1.3em;
+  height: auto;
+}
+
+/* The comp writes every note on a slightly rising line. */
+.note > span {
+  display: inline-block;
+  transform: rotate(-4deg);
+  transform-origin: 0 100%;
+}
+
+@media (min-width: 1100px) and (orientation: landscape) {
+  .noteArrow,
+  .note[data-side="left"] .noteArrow,
+  .note[data-side="right"] .noteArrow {
+    width: auto;
+    transform: none;
+  }
+
+  .noteArrow img {
+    width: 4.2vw;
+  }
+
+  .note[data-side="right"] .noteArrow img {
+    width: 5.2vw;
+  }
+
+  .note > span {
+    transform: rotate(-6deg);
+  }
+
+  /* The right note now sits after the sheet head in the markup; keep it level with the explainer. */
+  .note[data-side="right"] {
+    top: 80px;
+  }
+
+  /* No row holds a lone section: limits and credits run full width under the grid. */
+  .colophon {
+    grid-column: 1 / -1;
+    columns: 3;
+    column-gap: clamp(24px, 2.6vw, 40px);
+  }
+
+  .colophon > .heading {
+    column-span: all;
+  }
+}
+
+/* Phones: a little air between the header band and the tilted "who wrote this" note. */
+.note[data-side="right"] {
+  margin-top: 14px;
+}
+
+@media (min-width: 1100px) and (orientation: landscape) {
+  .note[data-side="right"] {
+    margin-top: 0;
+  }
+
+}
+
+/* The credits' three columns start level. */
+.colophon p {
+  margin: 0 0 1em;
+}
+
+@media (min-width: 1100px) and (orientation: landscape) {
+  /* The tilt lifts the note's right end; drop the first note so its arrow meets the band as on the comp. */
+  .part:first-child .note[data-side="left"] {
+    top: 10px;
+  }
+}

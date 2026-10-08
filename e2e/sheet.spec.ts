@@ -6,7 +6,7 @@ test("a dataset sheet explains, previews and offers downloads", async ({ page })
   await expect(page.getByRole("table", { name: /places and years/i })).toBeVisible();
   await expect(page.getByRole("heading", { name: "WHAT IT MEASURES" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "COLUMN GUIDE" })).toBeVisible();
-  await expect(page.getByRole("table", { name: "Column guide" }).getByText("DYCU").first()).toBeVisible();
+  await expect(page.getByRole("table", { name: "Column guide" }).getByText("DYCU").filter({ visible: true }).first()).toBeVisible();
   await expect(page.getByRole("heading", { name: "LIVE PREVIEW" })).toBeVisible();
   await expect(page.getByRole("table", { name: /first rows/i })).toBeVisible({ timeout: 15_000 });
   await expect(page.getByRole("link", { name: "CSV" }).first()).toHaveAttribute("href", /\/csv/);
@@ -46,4 +46,10 @@ test("the live chart plots every year, even when layers spell the column differe
   const series = page.locator("figure svg > g");
   await expect(series).toHaveCount(3, { timeout: 20_000 });
   for (const g of await series.all()) await expect(g.locator("circle").first()).toBeAttached({ timeout: 20_000 });
+});
+
+test("a dataset sheet doesn't claim SEARCH as the current page", async ({ page }, info) => {
+  test.skip(info.project.name !== "phone", "laptops open sheets in the two-pane view (Task 4)");
+  await page.goto("/d/W01");
+  await expect(page.getByRole("link", { name: "SEARCH" })).not.toHaveAttribute("aria-current", "page");
 });

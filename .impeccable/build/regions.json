@@ -1,18 +1,20 @@
 {
   "regions": [
-    { "id": "wordmark", "kind": "text", "grid": "A0:F0", "note": "CREAM CITY ALMANAC wordmark, bold condensed black capitals" },
-    { "id": "rundown-date", "kind": "text", "grid": "H0:J0", "note": "TODAY'S RUNDOWN label over the date 'Wed Oct 7, 2026', right aligned" },
-    { "id": "catalog-and-slug", "kind": "control", "grid": "A1:J1", "snap": false, "note": "rule, gray catalog-as-of line, rule, then SLUG: label with gray placeholder 'What are you reporting on?'" },
-    { "id": "suggestion-tags", "kind": "control", "grid": "A2:J2", "snap": false, "note": "rule, three suggestion tags 'food insecurity' 'rent burden' 'air quality' split by vertical rules, rule" },
-    { "id": "section-head", "kind": "chrome", "grid": "A3:J3", "snap": false, "note": "rule, UPDATED THIS SEASON heading, rule, column headers CODE SLUG UPDATED, rule" },
-    { "id": "code-v02", "kind": "text", "grid": "A4:A4", "note": "row code V02, bold condensed" },
-    { "id": "slug-v02", "kind": "text", "grid": "C4:G4", "note": "Daily Air Quality over 'City · 2023–2025'" },
-    { "id": "date-v02", "kind": "text", "grid": "H4:I4", "note": "date Jul 28 inside the grease-pencil circle" },
-    { "id": "pencil-mark", "kind": "plate", "grid": "H3:J4", "note": "hand-drawn red grease-pencil ellipse around the date and the scrawled word 'new', transparent ground" },
-    { "id": "row-s01", "kind": "chrome", "grid": "A5:J5", "snap": false, "note": "gray banded row: S01, Bachelor's Degree or Higher, County · 2024, Jul 16" },
-    { "id": "row-a04", "kind": "text", "grid": "A6:J6", "snap": false, "note": "row: A04, MKE FreshAir Dashboard, map app, Jun 25" },
-    { "id": "row-n01", "kind": "chrome", "grid": "A7:J7", "snap": false, "note": "gray banded row: N01, Neighborhood Change Over Time Report, 29 neighborhoods · 2022–2024, Jun 1" },
-    { "id": "row-a03", "kind": "text", "grid": "A8:J8", "snap": false, "note": "row: A03, CDA Property Reference Map, map app, May 22, then the rule above the tab bar" },
-    { "id": "tabbar-footer", "kind": "control", "grid": "A9:J9", "snap": false, "note": "SEARCH ASK SAVED tabs, thick underline under SEARCH, rule, credit line 'Built on Data You Can Use's public data'" }
+    { "id": "wordmark", "kind": "text", "grid": "A0:D0", "note": "CREAM CITY ALMANAC wordmark, heavy condensed black capitals" },
+    { "id": "masthead-nav", "kind": "control", "grid": "G0:J0", "snap": false, "note": "SEARCH ASK SAVED in gray, HOW IT WORKS black and underlined (current page); rule under the masthead" },
+    { "id": "headline", "kind": "text", "grid": "A1:G1", "note": "HOW TO READ A DATASET IN 60 SECONDS, huge condensed black capitals, indented ~130px" },
+    { "id": "lede", "kind": "text", "grid": "A2:H2", "snap": false, "note": "one body line: Unofficial. Built on Data You Can Use's public data: 93 raw data · 282 reports · 7 visualizations." },
+    { "id": "note-grid", "kind": "text", "grid": "A3:B3", "snap": false, "note": "red handwriting 'every year & place DYCU publishes' with a red arrow pointing right at the sheet" },
+    { "id": "pencil-arrow", "kind": "plate", "grid": "B3:B3", "note": "hand-drawn red arrow pointing right, transparent ground" },
+    { "id": "sheet-head", "kind": "chrome", "grid": "C3:H3", "snap": false, "note": "gray band with rule above and below: W01 big condensed, 'Asthma Prevalence' condensed bold" },
+    { "id": "sheet-grid", "kind": "control", "grid": "C4:E4", "snap": false, "note": "ruled grid: PLACE header, years 2021 2022 2023, City and County rows with black squares and dashes" },
+    { "id": "sheet-explainer", "kind": "text", "grid": "F3:H3", "snap": false, "note": "vertical rule at left; two-line explainer 'Share of adults who report having asthma, by city and county.' and a boxed AI tag" },
+    { "id": "note-source", "kind": "text", "grid": "I3:J4", "snap": false, "note": "red handwriting 'who wrote this: DYCU, the Hub, the source, or AI' with a red arrow pointing left at the AI tag" },
+    { "id": "column-guide", "kind": "control", "grid": "C5:H5", "snap": false, "note": "gray band COLUMN GUIDE heading; two ruled rows: field name bold condensed, meaning in body text" },
+    { "id": "note-preview", "kind": "text", "grid": "A6:B6", "snap": false, "note": "red handwriting 'live rows from DYCU's Hub' with a red arrow pointing right" },
+    { "id": "live-preview", "kind": "control", "grid": "C6:H7", "snap": false, "note": "gray band LIVE PREVIEW heading; dot strip chart, one row per year, gray caption at right" },
+    { "id": "note-download", "kind": "text", "grid": "A7:B8", "snap": false, "note": "red handwriting 'download the real data' with a red arrow pointing right at the buttons" },
+    { "id": "sheet-actions", "kind": "control", "grid": "C8:I8", "snap": false, "note": "two outlined buttons CSV and OPEN SHEET, the sheet's closing rule, and the full-width rule above the sections" },
+    { "id": "section-heads", "kind": "chrome", "grid": "A9:J9", "snap": false, "note": "rule; three columns of big condensed headings EACH WEEK, WHAT THE AI DOES, HOW SEARCH WORKS, each with a rule under it" }
   ]
 }

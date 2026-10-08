@@ -11,6 +11,7 @@
   --font-caps: var(--font-saira), "Arial Narrow", sans-serif;
   --font-wordmark: var(--font-saira-var), var(--font-caps);
   --font-body: var(--font-vazirmatn), "Helvetica Neue", Arial, sans-serif;
+  --font-note: var(--font-caveat), "Comic Sans MS", cursive;
   /* Measured from the approved comp at 1024px wide (.impeccable/build/spec.json), floored for phones. */
   /* Sized to the comp's wordmark width (538px at 1024) in Saira 900 at normal spacing. */
   --fs-wordmark: clamp(30px, 9.6vw, 98px);

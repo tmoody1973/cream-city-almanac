@@ -44,4 +44,25 @@ test.describe("@capture", () => {
       await page.screenshot({ path: `.impeccable/review/${file}`, fullPage: true });
     }
   });
+  test("laptop two-pane at the comp's size", async ({ page }) => {
+    await page.clock.setFixedTime(FIXED);
+    await page.setViewportSize({ width: 1536, height: 1024 });
+    await page.goto("/");
+    await page.locator("#sheet-pane h2").waitFor();
+    await settle(page);
+    await page.screenshot({ path: ".impeccable/review/laptop-repro.png" });
+  });
+  test("how it works at the comp sizes", async ({ page }) => {
+    await page.clock.setFixedTime(FIXED);
+    for (const [width, height, file] of [
+      [1536, 1024, "how-laptop-repro.png"],
+      [1024, 1536, "how-phone-repro.png"],
+    ] as const) {
+      await page.setViewportSize({ width, height });
+      await page.goto("/how-it-works");
+      await page.locator("figure svg").first().waitFor({ timeout: 20_000 });
+      await settle(page);
+      await page.screenshot({ path: `.impeccable/review/${file}` });
+    }
+  });
 });

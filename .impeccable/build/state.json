@@ -1,190 +1,329 @@
 {
   "tool": "build-phase",
   "version": 2,
-  "startedAt": "2026-10-07T18:42:26.790Z",
-  "comp": ".impeccable/mocks/home-b.webp",
-  "direction": "b5397139",
-  "breakpoint": "1024x1536",
+  "startedAt": "2026-10-08T01:33:03.110Z",
+  "comp": ".impeccable/mocks/how-laptop.webp",
+  "direction": null,
+  "breakpoint": "1536x1024",
   "artifact": null,
   "phase": "review",
   "phases": {
     "comps": {
-      "status": "closed",
-      "openedAt": "2026-10-07T18:42:26.789Z",
-      "closedAt": "2026-10-07T18:46:53.248Z",
-      "attempts": 1,
-      "notes": [],
-      "gate": {
-        "ok": true,
-        "reasons": [],
-        "summary": "3 comps, 1 approved",
-        "approved": ".impeccable/mocks/home-b.webp",
-        "at": "2026-10-07T18:46:53.245Z"
-      },
+      "status": "skipped",
+      "openedAt": null,
+      "closedAt": null,
+      "attempts": 0,
+      "notes": [
+        {
+          "at": "2026-10-08T01:33:03.109Z",
+          "text": "started with an approved comp; the comp round happened before this state (surface round or manual)"
+        }
+      ],
+      "gate": null,
       "forced": null
     },
     "spec": {
       "status": "closed",
-      "openedAt": "2026-10-07T18:46:53.285Z",
-      "closedAt": "2026-10-07T18:53:54.375Z",
+      "openedAt": "2026-10-08T01:33:03.109Z",
+      "closedAt": "2026-10-08T01:35:37.834Z",
       "attempts": 3,
       "notes": [],
       "gate": {
         "ok": true,
         "reasons": [],
-        "summary": "14 regions, 1 plates, 7 text regions measured",
-        "at": "2026-10-07T18:53:54.375Z"
+        "summary": "16 regions, 1 plates, 8 text regions measured",
+        "at": "2026-10-08T01:35:37.834Z"
       },
       "forced": null
     },
     "plates": {
       "status": "closed",
-      "openedAt": "2026-10-07T18:53:54.375Z",
-      "closedAt": "2026-10-07T18:55:20.193Z",
+      "openedAt": "2026-10-08T01:35:37.834Z",
+      "closedAt": "2026-10-08T01:35:45.843Z",
       "attempts": 1,
       "notes": [],
       "gate": {
         "ok": true,
         "reasons": [],
         "summary": "1/1 plates",
-        "at": "2026-10-07T18:55:20.193Z"
+        "at": "2026-10-08T01:35:45.843Z"
       },
       "forced": null
     },
     "hero": {
       "status": "closed",
-      "openedAt": "2026-10-07T18:55:20.193Z",
-      "closedAt": "2026-10-07T19:43:32.697Z",
-      "attempts": 1,
+      "openedAt": "2026-10-08T01:35:45.843Z",
+      "closedAt": "2026-10-08T01:45:45.588Z",
+      "attempts": 3,
       "notes": [],
       "gate": {
         "ok": true,
         "reasons": [],
-        "summary": "hero 89% (match)",
-        "score": 0.8854,
+        "summary": "hero 84% (match)",
+        "score": 0.8447,
         "verdict": "match",
         "report": ".impeccable/review/diff/hero/report.json",
         "sideBySide": "/Users/tarikmoody/Projects/dycu/inventory/.impeccable/review/diff/hero/side-by-side.png",
         "worst": [
-          "wordmark drift 55%",
-          "row-s01 drift 60%",
-          "rundown-date drift 62%"
+          "wordmark drift 52%",
+          "sheet-explainer drift 64%",
+          "live-preview drift 65%"
         ],
         "worstIds": [
           "wordmark",
-          "row-s01",
-          "rundown-date"
+          "sheet-explainer",
+          "live-preview"
         ],
         "worstCrops": [
           {
             "id": "wordmark",
             "verdict": "drift",
             "score": {
-              "overall": 0.5453,
-              "structure": 0.3682,
-              "color": 0.7556,
-              "colorIntersection": 0.5332,
-              "paletteMatch": 0.8754,
-              "detail": 0.775,
-              "detailRaw": 0.8219,
-              "detailAdded": 0.0938,
-              "bands": 0.56
+              "overall": 0.5215,
+              "structure": 0.3468,
+              "color": 0.8317,
+              "colorIntersection": 0.6805,
+              "paletteMatch": 0.9131,
+              "detail": 0.6203,
+              "detailRaw": 0.7349,
+              "detailAdded": 0.2292,
+              "bands": 0.4714
             },
             "file": ".impeccable/review/diff/hero/regions/wordmark.png"
           },
           {
-            "id": "row-s01",
+            "id": "sheet-explainer",
             "verdict": "drift",
             "score": {
-              "overall": 0.6006,
-              "structure": 0.7586,
-              "color": 0.9485,
-              "colorIntersection": 0.8967,
-              "paletteMatch": 0.9764,
-              "detail": 0.24,
-              "detailRaw": 0.3182,
-              "detailAdded": 0.1563,
-              "bands": 0.2533
+              "overall": 0.6398,
+              "structure": 0.4708,
+              "color": 0.944,
+              "colorIntersection": 0.8999,
+              "paletteMatch": 0.9678,
+              "detail": 0.4857,
+              "detailRaw": 0.5742,
+              "detailAdded": 0.1771,
+              "bands": 0.9556
             },
-            "file": ".impeccable/review/diff/hero/regions/row-s01.png"
+            "file": ".impeccable/review/diff/hero/regions/sheet-explainer.png"
           },
           {
-            "id": "rundown-date",
+            "id": "live-preview",
             "verdict": "drift",
             "score": {
-              "overall": 0.6243,
-              "structure": 0.6149,
-              "color": 0.8344,
-              "colorIntersection": 0.6996,
-              "paletteMatch": 0.907,
-              "detail": 0.6202,
-              "detailRaw": 0.6827,
-              "detailAdded": 0.125,
-              "bands": 0.1524
+              "overall": 0.6509,
+              "structure": 0.5282,
+              "color": 0.9686,
+              "colorIntersection": 0.9432,
+              "paletteMatch": 0.9823,
+              "detail": 0.3712,
+              "detailRaw": 0.5222,
+              "detailAdded": 0.3021,
+              "bands": 0.9238
             },
-            "file": ".impeccable/review/diff/hero/regions/rundown-date.png"
+            "file": ".impeccable/review/diff/hero/regions/live-preview.png"
           }
         ],
         "advisories": [
-          "(advisory, above the 72% bar; fix in the polish pass before responsive) 1 reading:",
-          "  text row-a04: the face renders 27% lighter than the comp's (ink density 0.43 vs 0.58); raise a weight step or use the ranked face",
-          "(advisory, unchanged for 3+ attempts) text row-a03: ink is #181818 in the build, #676875 in the comp; use the comp's colour"
+          "(advisory, above the 72% bar) region masthead-nav: its ink sits in a 484x33px box in the comp and 578x74px in the build (padding, row height, or size); match the box, not only the position",
+          "(advisory, above the 72% bar; fix in the polish pass before responsive) 6 readings:",
+          "  text note-grid: cap height 22.2px in the build, 30.6px in the comp (-27%); set font-size so the cap height renders at 30.6px",
+          "  text note-source: cap height 24.5px in the build, 91px in the comp (-73%); set font-size so the cap height renders at 91px",
+          "  text note-preview: cap height 45px in the build, 26px in the comp (+73%); set font-size so the cap height renders at 26px",
+          "  text note-download: cap height 20.9px in the build, 28.5px in the comp (-27%); set font-size so the cap height renders at 28.5px",
+          "  text note-source: its first line starts 34px lower than in the comp (34px vs 0px into the region box); the spacing above it is too large",
+          "  control masthead-nav: its ink is 74px tall in the build and 33px in the comp (+41px); match the height, not only the position",
+          "(advisory, unchanged for 3+ attempts) text lede: cap height 15.9px in the build, 31.5px in the comp (-50%); set font-size so the cap height renders at 31.5px",
+          "(advisory, unchanged for 3+ attempts) text sheet-explainer: letter-spacing is wider than the comp's (gap 0.156 vs 0.091 of the cap height); set letter-spacing to close it by about 1px",
+          "(advisory, unchanged for 3+ attempts) control live-preview: its rule sits 159px into the box in the comp and 1px in the build (-158px), so the strip is shorter than the comp's; match the height, not only the position",
+          "(advisory, unchanged for 3+ attempts) control sheet-actions: its rule sits 27px into the box in the comp and 39px in the build (+12px), so the strip is taller than the comp's; match the height, not only the position",
+          "(advisory, unchanged for 3+ attempts) chrome section-heads: its rule sits 34px into the box in the comp and 23px in the build (-11px), so the strip is shorter than the comp's; match the height, not only the position"
         ],
         "regionVerdicts": {
           "wordmark": "drift",
-          "rundown-date": "drift",
-          "catalog-and-slug": "match",
-          "suggestion-tags": "match",
-          "section-head": "match",
-          "code-v02": "drift",
-          "slug-v02": "drift",
-          "date-v02": "drift",
-          "pencil-mark": "match",
-          "row-s01": "drift",
-          "row-a04": "match",
-          "row-n01": "drift",
-          "row-a03": "drift",
-          "tabbar-footer": "match"
+          "masthead-nav": "drift",
+          "headline": "drift",
+          "lede": "drift",
+          "note-grid": "drift",
+          "pencil-arrow": "drift",
+          "sheet-head": "drift",
+          "sheet-grid": "drift",
+          "sheet-explainer": "drift",
+          "note-source": "drift",
+          "column-guide": "drift",
+          "note-preview": "drift",
+          "live-preview": "drift",
+          "note-download": "drift",
+          "sheet-actions": "drift",
+          "section-heads": "drift"
         },
-        "at": "2026-10-07T19:43:32.697Z"
+        "at": "2026-10-08T02:18:23.675Z"
       },
       "forced": null,
       "readingsSeen": {
-        "text row-a04: 1 line in the build, 2 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 1,
-        "text row-a04: the face renders 33% lighter than the comp's (ink density 0.39 vs 0.58); raise a weight step or use the ranked face": 1,
-        "text row-a03: ink is #181818 in the build, #676875 in the comp; use the comp's colour": 4,
-        "control catalog-and-slug: its rule sits 76px into the box in the comp and 44px in the build (-32px), so the strip is shorter than the comp's; match the height, not only the position": 1,
-        "control suggestion-tags: its rule sits 17px into the box in the comp and 1px in the build (-16px), so the strip is shorter than the comp's; match the height, not only the position": 1,
-        "chrome section-head: its rule sits 4px into the box in the comp and 80px in the build (+76px), so the strip is taller than the comp's; match the height, not only the position": 1,
-        "control tabbar-footer: its rule sits 61px into the box in the comp and 13px in the build (-48px), so the strip is shorter than the comp's; match the height, not only the position": 1,
-        "text row-a04: the face renders 26% lighter than the comp's (ink density 0.43 vs 0.58); raise a weight step or use the ranked face": 1,
-        "text row-a04: the face renders 27% lighter than the comp's (ink density 0.43 vs 0.58); raise a weight step or use the ranked face": 2
+        "text lede: cap height 15.9px in the build, 31.5px in the comp (-50%); set font-size so the cap height renders at 31.5px": 24,
+        "text note-grid: cap height 21.9px in the build, 30.6px in the comp (-28%); set font-size so the cap height renders at 30.6px (font-match ranked Rock Salt 400 at 26px)": 2,
+        "text note-source: cap height 22.4px in the build, 91px in the comp (-75%); set font-size so the cap height renders at 91px (font-match ranked Edu AU VIC WA NT Arrows 700 at 98px)": 2,
+        "text note-download: cap height 21.6px in the build, 28.5px in the comp (-24%); set font-size so the cap height renders at 28.5px": 2,
+        "text note-download: 1 line in the build, 2 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 19,
+        "text note-download: ink is #dc281f in the build, #09090e in the comp; use the comp's colour": 2,
+        "control masthead-nav: its ink is 68px tall in the build and 33px in the comp (+35px); match the height, not only the position": 21,
+        "chrome sheet-head: its rule sits 16px into the box in the comp and 45px in the build (+29px), so the strip is taller than the comp's; match the height, not only the position": 2,
+        "control sheet-grid: its rule sits 15px into the box in the comp and 33px in the build (+18px), so the strip is taller than the comp's; match the height, not only the position": 2,
+        "control live-preview: its rule sits 159px into the box in the comp and 79px in the build (-80px), so the strip is shorter than the comp's; match the height, not only the position": 2,
+        "control sheet-actions: its rule sits 27px into the box in the comp and 41px in the build (+14px), so the strip is taller than the comp's; match the height, not only the position": 2,
+        "chrome section-heads: its ink is 74px tall in the build and 37px in the comp (+37px); match the height, not only the position": 2,
+        "text wordmark: cap height 70px in the build, 53.6px in the comp (+31%); set font-size so the cap height renders at 53.6px": 2,
+        "text lede: letter-spacing is wider than the comp's (gap 0.139 vs 0.064 of the cap height); set letter-spacing to close it by about 2px": 2,
+        "text note-grid: letter-spacing is wider than the comp's (gap 0.138 vs 0.073 of the cap height); set letter-spacing to close it by about 2px": 2,
+        "text note-preview: cap height 16.3px in the build, 26px in the comp (-37%); set font-size so the cap height renders at 26px": 2,
+        "text note-download: cap height 61.8px in the build, 28.5px in the comp (+117%); set font-size so the cap height renders at 28.5px": 2,
+        "text lede: the face renders 42% lighter than the comp's (ink density 0.44 vs 0.77); raise a weight step or use the ranked face": 2,
+        "text headline: ink is #a8a8a8 in the build, #090909 in the comp; use the comp's colour": 2,
+        "text lede: ink is #b0b0b0 in the build, #0d0d0d in the comp; use the comp's colour": 2,
+        "text note-grid: ink is #8b8b8b in the build, #ef0f0e in the comp; use the comp's colour": 2,
+        "text note-preview: ink is #3d3d3d in the build, #ef1212 in the comp; use the comp's colour": 2,
+        "control masthead-nav: its ink is 77px tall in the build and 33px in the comp (+44px); match the height, not only the position": 2,
+        "chrome sheet-head: its rule sits 16px into the box in the comp and 2px in the build (-14px), so the strip is shorter than the comp's; match the height, not only the position": 2,
+        "control sheet-grid: its rule sits 15px into the box in the comp and 73px in the build (+58px), so the strip is taller than the comp's; match the height, not only the position": 2,
+        "control column-guide: its rule sits 13px into the box in the comp and 34px in the build (+21px), so the strip is taller than the comp's; match the height, not only the position": 2,
+        "control live-preview: its rule sits 159px into the box in the comp and 71px in the build (-88px), so the strip is shorter than the comp's; match the height, not only the position": 2,
+        "control sheet-actions: its rule sits 27px into the box in the comp and 58px in the build (+31px), so the strip is taller than the comp's; match the height, not only the position": 2,
+        "chrome section-heads: its rule sits 34px into the box in the comp and 56px in the build (+22px), so the strip is taller than the comp's; match the height, not only the position": 2,
+        "text note-source: cap height 13.7px in the build, 91px in the comp (-85%); set font-size so the cap height renders at 91px (font-match ranked Edu AU VIC WA NT Arrows 700 at 98px)": 1,
+        "text note-download: cap height 20.7px in the build, 28.5px in the comp (-27%); set font-size so the cap height renders at 28.5px": 2,
+        "text note-download: ink is #dc231c in the build, #09090e in the comp; use the comp's colour": 1,
+        "text note-preview: its first line starts 41px lower than in the comp (41px vs 0px into the region box); the spacing above it is too large": 1,
+        "text note-download: its first line starts 68px lower than in the comp (114px vs 46px into the region box); the spacing above it is too large": 1,
+        "control column-guide: its rule sits 13px into the box in the comp and 51px in the build (+38px), so the strip is taller than the comp's; match the height, not only the position": 7,
+        "control live-preview: its rule sits 159px into the box in the comp and 15px in the build (-144px), so the strip is shorter than the comp's; match the height, not only the position": 8,
+        "control sheet-actions: its rule sits 27px into the box in the comp and 2px in the build (-25px), so the strip is shorter than the comp's; match the height, not only the position": 1,
+        "text note-download: cap height 17.4px in the build, 28.5px in the comp (-39%); set font-size so the cap height renders at 28.5px": 4,
+        "text note-download: ink is #dc241a in the build, #09090e in the comp; use the comp's colour": 5,
+        "text note-preview: its first line starts 48px lower than in the comp (48px vs 0px into the region box); the spacing above it is too large": 1,
+        "text note-download: its first line starts 66px lower than in the comp (112px vs 46px into the region box); the spacing above it is too large": 1,
+        "control sheet-actions: its rule sits 27px into the box in the comp and 55px in the build (+28px), so the strip is taller than the comp's; match the height, not only the position": 7,
+        "chrome section-heads: its rule sits 34px into the box in the comp and 65px in the build (+31px), so the strip is taller than the comp's; match the height, not only the position": 1,
+        "text note-grid: cap height 7.2px in the build, 30.6px in the comp (-76%); set font-size so the cap height renders at 30.6px (font-match ranked Rock Salt 400 at 26px)": 1,
+        "text note-download: cap height 17.7px in the build, 28.5px in the comp (-38%); set font-size so the cap height renders at 28.5px": 7,
+        "text note-preview: its first line starts 28px lower than in the comp (28px vs 0px into the region box); the spacing above it is too large": 6,
+        "text note-download: its first line starts 46px lower than in the comp (92px vs 46px into the region box); the spacing above it is too large": 6,
+        "text note-grid: cap height 18.8px in the build, 30.6px in the comp (-39%); set font-size so the cap height renders at 30.6px (font-match ranked Rock Salt 400 at 26px)": 1,
+        "text note-grid: cap height 18.8px in the build, 30.6px in the comp (-39%); set font-size so the cap height renders at 30.6px": 13,
+        "text sheet-explainer: cap height 30px in the build, 18.7px in the comp (+60%); set font-size so the cap height renders at 18.7px": 1,
+        "text sheet-explainer: 1 line in the build, 2 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 1,
+        "text sheet-explainer: ink is #898989 in the build, #0d0d0d in the comp; use the comp's colour": 1,
+        "text sheet-explainer: letter-spacing is wider than the comp's (gap 0.140 vs 0.091 of the cap height); set letter-spacing to close it by about 1px": 9,
+        "control column-guide: its rule sits 13px into the box in the comp and 26px in the build (+13px), so the strip is taller than the comp's; match the height, not only the position": 1,
+        "text note-download: its first line starts 33px lower than in the comp (79px vs 46px into the region box); the spacing above it is too large": 1,
+        "control column-guide: its rule sits 13px into the box in the comp and 56px in the build (+43px), so the strip is taller than the comp's; match the height, not only the position": 3,
+        "control live-preview: its rule sits 159px into the box in the comp and 1px in the build (-158px), so the strip is shorter than the comp's; match the height, not only the position": 13,
+        "control sheet-actions: its rule sits 27px into the box in the comp and 42px in the build (+15px), so the strip is taller than the comp's; match the height, not only the position": 1,
+        "chrome section-heads: its rule sits 34px into the box in the comp and 20px in the build (-14px), so the strip is shorter than the comp's; match the height, not only the position": 1,
+        "chrome section-heads: its rule sits 34px into the box in the comp and 4px in the build (-30px), so the strip is shorter than the comp's; match the height, not only the position": 2,
+        "control live-preview: its rule sits 159px into the box in the comp and 65px in the build (-94px), so the strip is shorter than the comp's; match the height, not only the position": 1,
+        "control sheet-actions: its rule sits 27px into the box in the comp and 39px in the build (+12px), so the strip is taller than the comp's; match the height, not only the position": 10,
+        "chrome section-heads: its rule sits 34px into the box in the comp and 41px in the build (+7px), so the strip is taller than the comp's; match the height, not only the position": 4,
+        "text sheet-explainer: letter-spacing is wider than the comp's (gap 0.156 vs 0.091 of the cap height); set letter-spacing to close it by about 1px": 7,
+        "text note-download: cap height 17.6px in the build, 28.5px in the comp (-38%); set font-size so the cap height renders at 28.5px": 1,
+        "text note-download: ink is #dd2318 in the build, #09090e in the comp; use the comp's colour": 1,
+        "text note-download: cap height 19.2px in the build, 28.5px in the comp (-33%); set font-size so the cap height renders at 28.5px": 2,
+        "chrome section-heads: its rule sits 34px into the box in the comp and 23px in the build (-11px), so the strip is shorter than the comp's; match the height, not only the position": 6,
+        "text note-grid: cap height 19.6px in the build, 30.6px in the comp (-36%); set font-size so the cap height renders at 30.6px": 1,
+        "text note-source: cap height 19.6px in the build, 91px in the comp (-78%); set font-size so the cap height renders at 91px": 1,
+        "text note-grid: cap height 23.6px in the build, 30.6px in the comp (-23%); set font-size so the cap height renders at 30.6px": 1,
+        "text note-download: cap height 19.1px in the build, 28.5px in the comp (-33%); set font-size so the cap height renders at 28.5px": 1,
+        "text note-grid: cap height 8.1px in the build, 30.6px in the comp (-74%); set font-size so the cap height renders at 30.6px": 2,
+        "text note-source: cap height 24.5px in the build, 91px in the comp (-73%); set font-size so the cap height renders at 91px": 3,
+        "text note-preview: cap height 45px in the build, 26px in the comp (+73%); set font-size so the cap height renders at 26px": 3,
+        "text note-download: cap height 20.9px in the build, 28.5px in the comp (-27%); set font-size so the cap height renders at 28.5px": 3,
+        "text note-source: its first line starts 34px lower than in the comp (34px vs 0px into the region box); the spacing above it is too large": 3,
+        "control masthead-nav: its ink is 74px tall in the build and 33px in the comp (+41px); match the height, not only the position": 3,
+        "text note-grid: cap height 22.2px in the build, 30.6px in the comp (-27%); set font-size so the cap height renders at 30.6px": 1
       },
-      "records": 3,
+      "records": 23,
       "history": [
         {
-          "at": "2026-10-07T19:43:32.697Z",
-          "score": 0.8854,
+          "at": "2026-10-08T01:40:04.772Z",
+          "score": 0.5999,
+          "worstIds": [
+            "headline",
+            "wordmark",
+            "pencil-arrow"
+          ],
+          "regionVerdicts": {
+            "wordmark": "contradicted",
+            "masthead-nav": "drift",
+            "headline": "missing",
+            "lede": "drift",
+            "note-grid": "drift",
+            "pencil-arrow": "missing",
+            "sheet-head": "drift",
+            "sheet-grid": "contradicted",
+            "sheet-explainer": "missing",
+            "note-source": "drift",
+            "column-guide": "drift",
+            "note-preview": "missing",
+            "live-preview": "contradicted",
+            "note-download": "drift",
+            "sheet-actions": "drift",
+            "section-heads": "missing"
+          },
+          "artifactHash": null
+        },
+        {
+          "at": "2026-10-08T01:42:18.540Z",
+          "score": 0.5999,
+          "worstIds": [
+            "headline",
+            "wordmark",
+            "pencil-arrow"
+          ],
+          "regionVerdicts": {
+            "wordmark": "contradicted",
+            "masthead-nav": "drift",
+            "headline": "missing",
+            "lede": "drift",
+            "note-grid": "drift",
+            "pencil-arrow": "missing",
+            "sheet-head": "drift",
+            "sheet-grid": "contradicted",
+            "sheet-explainer": "missing",
+            "note-source": "drift",
+            "column-guide": "drift",
+            "note-preview": "missing",
+            "live-preview": "contradicted",
+            "note-download": "drift",
+            "sheet-actions": "drift",
+            "section-heads": "missing"
+          },
+          "artifactHash": null
+        },
+        {
+          "at": "2026-10-08T01:45:45.588Z",
+          "score": 0.8323,
           "worstIds": [
             "wordmark",
-            "row-s01",
-            "rundown-date"
+            "pencil-arrow",
+            "section-heads"
           ],
           "regionVerdicts": {
             "wordmark": "drift",
-            "rundown-date": "drift",
-            "catalog-and-slug": "match",
-            "suggestion-tags": "match",
-            "section-head": "match",
-            "code-v02": "drift",
-            "slug-v02": "drift",
-            "date-v02": "drift",
-            "pencil-mark": "match",
-            "row-s01": "drift",
-            "row-a04": "match",
-            "row-n01": "drift",
-            "row-a03": "drift",
-            "tabbar-footer": "match"
+            "masthead-nav": "drift",
+            "headline": "drift",
+            "lede": "drift",
+            "note-grid": "drift",
+            "pencil-arrow": "drift",
+            "sheet-head": "drift",
+            "sheet-grid": "drift",
+            "sheet-explainer": "drift",
+            "note-source": "drift",
+            "column-guide": "drift",
+            "note-preview": "drift",
+            "live-preview": "drift",
+            "note-download": "drift",
+            "sheet-actions": "drift",
+            "section-heads": "drift"
           },
           "artifactHash": null
         }
@@ -192,76 +331,52 @@
     },
     "sections": {
       "status": "closed",
-      "openedAt": "2026-10-07T19:43:32.697Z",
-      "closedAt": "2026-10-07T19:58:05.562Z",
+      "openedAt": "2026-10-08T01:45:45.588Z",
+      "closedAt": "2026-10-08T01:46:35.407Z",
       "attempts": 1,
       "notes": [],
       "gate": {
         "ok": true,
         "reasons": [],
         "summary": "no mechanical gate",
-        "at": "2026-10-07T19:58:05.562Z"
+        "at": "2026-10-08T01:46:35.407Z"
       },
       "forced": null
     },
     "motion": {
       "status": "closed",
-      "openedAt": "2026-10-07T19:58:05.562Z",
-      "closedAt": "2026-10-07T21:30:19.014Z",
+      "openedAt": "2026-10-08T01:46:35.407Z",
+      "closedAt": "2026-10-08T01:46:35.425Z",
       "attempts": 1,
       "notes": [],
       "gate": {
         "ok": true,
         "reasons": [],
         "summary": "no mechanical gate",
-        "at": "2026-10-07T21:30:19.013Z"
+        "at": "2026-10-08T01:46:35.425Z"
       },
       "forced": null
     },
     "responsive": {
       "status": "closed",
-      "openedAt": "2026-10-07T21:30:19.014Z",
-      "closedAt": "2026-10-07T21:52:09.627Z",
+      "openedAt": "2026-10-08T01:46:35.425Z",
+      "closedAt": "2026-10-08T01:48:34.018Z",
       "attempts": 6,
       "notes": [],
       "gate": {
-        "ok": false,
-        "reasons": [
-          "the desktop capture (1440x2212; the top 1024x1536 rows scaled to the comp's width are compared, a full-page capture is fine) scores 65% against the comp, under 65%: the first viewport does not survive a common desktop width. The hero passed at 1024x1536; the layout must hold from ~1280 up, not only at the comp's exact width (grid columns in fr / minmax, not fixed px that overflow and wrap).",
-          "at desktop width, region code-v02 is missing",
-          "at desktop width, region slug-v02 is missing",
-          "at desktop width, region date-v02 is missing",
-          "at desktop width, region pencil-mark is missing",
-          "at desktop width, region row-a03 is missing",
-          "at desktop width, region tabbar-footer is missing",
-          "at desktop width, region wordmark (text) is contradicted (structure 11%)",
-          "at desktop width, region rundown-date (text) is contradicted (structure 26%)"
-        ],
-        "summary": "desktop 65% (drift)",
-        "score": 0.6465,
+        "ok": true,
+        "reasons": [],
+        "summary": "desktop 80% (match)",
+        "score": 0.8022,
         "sideBySide": "/Users/tarikmoody/Projects/dycu/inventory/.impeccable/review/diff/desktop/side-by-side.png",
-        "at": "2026-10-07T21:52:09.621Z"
+        "at": "2026-10-08T01:48:34.018Z"
       },
-      "forced": {
-        "at": "2026-10-07T21:52:09.627Z",
-        "reason": "The user confirmed the comp is downgraded for desktop widths. Tarik (2026-10-07), quote: \"Desktop doesn't need to match the phone comp's proportions. Keep it compact so the rundown rows show above the fold.\"",
-        "reasons": [
-          "the desktop capture (1440x2212; the top 1024x1536 rows scaled to the comp's width are compared, a full-page capture is fine) scores 65% against the comp, under 65%: the first viewport does not survive a common desktop width. The hero passed at 1024x1536; the layout must hold from ~1280 up, not only at the comp's exact width (grid columns in fr / minmax, not fixed px that overflow and wrap).",
-          "at desktop width, region code-v02 is missing",
-          "at desktop width, region slug-v02 is missing",
-          "at desktop width, region date-v02 is missing",
-          "at desktop width, region pencil-mark is missing",
-          "at desktop width, region row-a03 is missing",
-          "at desktop width, region tabbar-footer is missing",
-          "at desktop width, region wordmark (text) is contradicted (structure 11%)",
-          "at desktop width, region rundown-date (text) is contradicted (structure 26%)"
-        ]
-      }
+      "forced": null
     },
     "review": {
       "status": "closed",
-      "openedAt": "2026-10-07T21:52:09.627Z",
-      "closedAt": "2026-10-07T22:42:17.044Z",
+      "openedAt": "2026-10-08T01:48:34.018Z",
+      "closedAt": "2026-10-08T02:19:24.137Z",
       "attempts": 0,
       "notes": [],
       "gate": null,
@@ -270,13 +385,13 @@
   },
   "finish": {
     "disposition": "ship",
-    "at": "2026-10-07T22:42:17.044Z",
+    "at": "2026-10-08T02:19:24.137Z",
     "phaseAtFinish": "review"
   },
   "plates": {
-    "pencil-mark": {
+    "pencil-arrow": {
       "status": "ok",
-      "score": 0.4035,
+      "score": 0.8873,
       "size": "1024x1024"
     }
   }

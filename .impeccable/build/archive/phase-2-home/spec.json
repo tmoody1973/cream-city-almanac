@@ -1,0 +1,1032 @@
+{
+  "tool": "comp-spec",
+  "version": 1,
+  "createdAt": "2026-10-07T18:53:17.479Z",
+  "comp": ".impeccable/mocks/home-b.webp",
+  "warnings": [],
+  "uncoveredInkCells": [],
+  "compSize": {
+    "width": 1024,
+    "height": 1536
+  },
+  "aspect": 0.6667,
+  "orientation": "portrait",
+  "palette": [
+    {
+      "hex": "#f5f5f5",
+      "coverage": 0.9252
+    },
+    {
+      "hex": "#0a0a0a",
+      "coverage": 0.0459
+    },
+    {
+      "hex": "#c9c9c9",
+      "coverage": 0.0101
+    },
+    {
+      "hex": "#636468",
+      "coverage": 0.0097
+    },
+    {
+      "hex": "#959698",
+      "coverage": 0.0091
+    }
+  ],
+  "bands": [
+    {
+      "y": 0.026,
+      "strength": 1
+    },
+    {
+      "y": 0.0469,
+      "strength": 0.4733
+    },
+    {
+      "y": 0.0729,
+      "strength": 1
+    },
+    {
+      "y": 0.1042,
+      "strength": 0.8882
+    },
+    {
+      "y": 0.1302,
+      "strength": 0.4494
+    },
+    {
+      "y": 0.1563,
+      "strength": 0.5681
+    },
+    {
+      "y": 0.2083,
+      "strength": 0.9429
+    },
+    {
+      "y": 0.25,
+      "strength": 0.5039
+    },
+    {
+      "y": 0.276,
+      "strength": 0.8845
+    },
+    {
+      "y": 0.3021,
+      "strength": 0.9176
+    },
+    {
+      "y": 0.3594,
+      "strength": 0.7539
+    },
+    {
+      "y": 0.3958,
+      "strength": 0.7212
+    },
+    {
+      "y": 0.4271,
+      "strength": 0.2832
+    },
+    {
+      "y": 0.5104,
+      "strength": 0.438
+    },
+    {
+      "y": 0.5729,
+      "strength": 0.2201
+    },
+    {
+      "y": 0.599,
+      "strength": 0.4032
+    },
+    {
+      "y": 0.6875,
+      "strength": 0.5249
+    },
+    {
+      "y": 0.7292,
+      "strength": 0.2176
+    },
+    {
+      "y": 0.7813,
+      "strength": 0.4514
+    },
+    {
+      "y": 0.8698,
+      "strength": 0.2563
+    },
+    {
+      "y": 0.9323,
+      "strength": 0.8168
+    }
+  ],
+  "regions": [
+    {
+      "id": "wordmark",
+      "kind": "text",
+      "note": "CREAM CITY ALMANAC wordmark, bold condensed black capitals",
+      "grid": "A0:F0",
+      "coverBox": {
+        "x": 0,
+        "y": 0,
+        "w": 0.6,
+        "h": 0.1
+      },
+      "box": {
+        "x": 0.0293,
+        "y": 0.0195,
+        "w": 0.5449,
+        "h": 0.0586
+      },
+      "px": {
+        "x": 30,
+        "y": 30,
+        "w": 558,
+        "h": 90
+      },
+      "aspect": 6.2,
+      "palette": [
+        {
+          "hex": "#f7f7f7",
+          "coverage": 0.4938
+        },
+        {
+          "hex": "#090909",
+          "coverage": 0.4498
+        },
+        {
+          "hex": "#5d5d5e",
+          "coverage": 0.0281
+        },
+        {
+          "hex": "#b0afb0",
+          "coverage": 0.0237
+        },
+        {
+          "hex": "#87878c",
+          "coverage": 0.0047
+        }
+      ],
+      "detail": {
+        "energy": 98.9156
+      },
+      "medium": "semantic",
+      "plate": null,
+      "text": null,
+      "type": {
+        "comp": {
+          "lines": 1,
+          "glyphs": 16,
+          "capHeightPx": 71.5,
+          "inkIsDark": true,
+          "allCaps": true,
+          "advance": 0.3916,
+          "advTall": 0.3916,
+          "advX": null,
+          "gap": 0.0559,
+          "xRatio": null,
+          "stemW": 0.1588,
+          "contrast": 0.9919,
+          "serif": 1.7588,
+          "densTall": 0.7316,
+          "densX": null,
+          "weight": 0.7316
+        },
+        "widthClass": "compressed",
+        "weightClass": "black",
+        "chosen": {
+          "family": "Karantina",
+          "weight": 400,
+          "fontSizePx": 102,
+          "source": "index",
+          "fp": {
+            "lines": 1,
+            "glyphs": 20,
+            "capHeightPx": 70.9,
+            "inkIsDark": true,
+            "allCaps": true,
+            "advance": 0.3666,
+            "advTall": 0.3666,
+            "advX": null,
+            "gap": 0.0423,
+            "xRatio": null,
+            "stemW": 0.1446,
+            "contrast": 1.0188,
+            "serif": 1,
+            "densTall": 0.7434,
+            "densX": null,
+            "weight": 0.7434
+          },
+          "stamp": "bd61949d5d8d"
+        }
+      }
+    },
+    {
+      "id": "rundown-date",
+      "kind": "text",
+      "note": "TODAY'S RUNDOWN label over the date 'Wed Oct 7, 2026', right aligned",
+      "grid": "H0:J0",
+      "coverBox": {
+        "x": 0.7,
+        "y": 0,
+        "w": 0.3,
+        "h": 0.1
+      },
+      "box": {
+        "x": 0.7236,
+        "y": 0.0234,
+        "w": 0.252,
+        "h": 0.0273
+      },
+      "px": {
+        "x": 741,
+        "y": 36,
+        "w": 258,
+        "h": 42
+      },
+      "aspect": 6.1429,
+      "palette": [
+        {
+          "hex": "#f7f7f7",
+          "coverage": 0.5866
+        },
+        {
+          "hex": "#090909",
+          "coverage": 0.2996
+        },
+        {
+          "hex": "#afafb1",
+          "coverage": 0.0502
+        },
+        {
+          "hex": "#404141",
+          "coverage": 0.0452
+        },
+        {
+          "hex": "#7b797c",
+          "coverage": 0.0184
+        }
+      ],
+      "detail": {
+        "energy": 83.1899
+      },
+      "medium": "semantic",
+      "plate": null,
+      "text": null,
+      "type": {
+        "comp": {
+          "lines": 1,
+          "glyphs": 13,
+          "capHeightPx": 28.8,
+          "inkIsDark": true,
+          "allCaps": true,
+          "advance": 0.4861,
+          "advTall": 0.4861,
+          "advX": null,
+          "gap": 0.1215,
+          "xRatio": null,
+          "stemW": 0.181,
+          "contrast": 1.0173,
+          "serif": null,
+          "densTall": 0.7578,
+          "densX": null,
+          "weight": 0.7578
+        },
+        "widthClass": "condensed",
+        "weightClass": "black"
+      }
+    },
+    {
+      "id": "catalog-and-slug",
+      "kind": "control",
+      "note": "rule, gray catalog-as-of line, rule, then SLUG: label with gray placeholder 'What are you reporting on?'",
+      "grid": "A1:J1",
+      "snap": false,
+      "box": {
+        "x": 0,
+        "y": 0.1,
+        "w": 1,
+        "h": 0.1
+      },
+      "px": {
+        "x": 0,
+        "y": 154,
+        "w": 1024,
+        "h": 154
+      },
+      "aspect": 6.6494,
+      "palette": [
+        {
+          "hex": "#f8f8f8",
+          "coverage": 0.9156
+        },
+        {
+          "hex": "#a8abb1",
+          "coverage": 0.0309
+        },
+        {
+          "hex": "#080808",
+          "coverage": 0.0296
+        },
+        {
+          "hex": "#6f717c",
+          "coverage": 0.0177
+        },
+        {
+          "hex": "#454545",
+          "coverage": 0.0063
+        }
+      ],
+      "detail": {
+        "energy": 26.6458
+      },
+      "medium": "semantic",
+      "plate": null,
+      "text": null
+    },
+    {
+      "id": "suggestion-tags",
+      "kind": "control",
+      "note": "rule, three suggestion tags 'food insecurity' 'rent burden' 'air quality' split by vertical rules, rule",
+      "grid": "A2:J2",
+      "snap": false,
+      "box": {
+        "x": 0,
+        "y": 0.2,
+        "w": 1,
+        "h": 0.1
+      },
+      "px": {
+        "x": 0,
+        "y": 307,
+        "w": 1024,
+        "h": 154
+      },
+      "aspect": 6.6494,
+      "palette": [
+        {
+          "hex": "#f8f8f8",
+          "coverage": 0.9423
+        },
+        {
+          "hex": "#0f1010",
+          "coverage": 0.0505
+        },
+        {
+          "hex": "#b0b0b0",
+          "coverage": 0.0033
+        },
+        {
+          "hex": "#787878",
+          "coverage": 0.002
+        },
+        {
+          "hex": "#3e3e3e",
+          "coverage": 0.0019
+        }
+      ],
+      "detail": {
+        "energy": 24.9647
+      },
+      "medium": "semantic",
+      "plate": null,
+      "text": null
+    },
+    {
+      "id": "section-head",
+      "kind": "chrome",
+      "note": "rule, UPDATED THIS SEASON heading, rule, column headers CODE SLUG UPDATED, rule",
+      "grid": "A3:J3",
+      "snap": false,
+      "box": {
+        "x": 0,
+        "y": 0.3,
+        "w": 1,
+        "h": 0.1
+      },
+      "px": {
+        "x": 0,
+        "y": 461,
+        "w": 1024,
+        "h": 154
+      },
+      "aspect": 6.6494,
+      "palette": [
+        {
+          "hex": "#f8f8f8",
+          "coverage": 0.862
+        },
+        {
+          "hex": "#0d0d0d",
+          "coverage": 0.0902
+        },
+        {
+          "hex": "#878888",
+          "coverage": 0.03
+        },
+        {
+          "hex": "#454545",
+          "coverage": 0.0134
+        },
+        {
+          "hex": "#c2c2c2",
+          "coverage": 0.0044
+        }
+      ],
+      "detail": {
+        "energy": 46.5854
+      },
+      "medium": "semantic",
+      "plate": null,
+      "text": null
+    },
+    {
+      "id": "code-v02",
+      "kind": "text",
+      "note": "row code V02, bold condensed",
+      "grid": "A4:A4",
+      "coverBox": {
+        "x": 0,
+        "y": 0.4,
+        "w": 0.1,
+        "h": 0.1
+      },
+      "box": {
+        "x": 0.0293,
+        "y": 0.4193,
+        "w": 0.0703,
+        "h": 0.0391
+      },
+      "px": {
+        "x": 30,
+        "y": 644,
+        "w": 72,
+        "h": 60
+      },
+      "aspect": 1.2,
+      "palette": [
+        {
+          "hex": "#f7f7f7",
+          "coverage": 0.6352
+        },
+        {
+          "hex": "#09090a",
+          "coverage": 0.3061
+        },
+        {
+          "hex": "#c1c1c1",
+          "coverage": 0.0273
+        },
+        {
+          "hex": "#7a7f81",
+          "coverage": 0.0189
+        },
+        {
+          "hex": "#35303b",
+          "coverage": 0.0126
+        }
+      ],
+      "detail": {
+        "energy": 16.6922
+      },
+      "medium": "semantic",
+      "plate": null,
+      "text": null,
+      "type": {
+        "comp": {
+          "lines": 1,
+          "glyphs": 3,
+          "capHeightPx": 40.5,
+          "inkIsDark": true,
+          "allCaps": true,
+          "advance": 0.4448,
+          "advTall": 0.4448,
+          "advX": null,
+          "gap": 0.1112,
+          "xRatio": null,
+          "stemW": 0.1916,
+          "contrast": 1.0629,
+          "serif": 1.9756,
+          "densTall": 0.7051,
+          "densX": null,
+          "weight": 0.7051
+        },
+        "widthClass": "compressed",
+        "weightClass": "black",
+        "chosen": {
+          "family": "Road Rage",
+          "weight": 400,
+          "fontSizePx": 65,
+          "source": "index",
+          "fp": {
+            "lines": 1,
+            "glyphs": 3,
+            "capHeightPx": 40,
+            "inkIsDark": true,
+            "allCaps": true,
+            "advance": 0.475,
+            "advTall": 0.475,
+            "advX": null,
+            "gap": 0.075,
+            "xRatio": null,
+            "stemW": 0.1955,
+            "contrast": 1.0853,
+            "serif": 1.623,
+            "densTall": 0.7215,
+            "densX": null,
+            "weight": 0.7215
+          },
+          "stamp": "528c077bcb24"
+        }
+      }
+    },
+    {
+      "id": "slug-v02",
+      "kind": "text",
+      "note": "Daily Air Quality over 'City · 2023–2025'",
+      "grid": "C4:G4",
+      "coverBox": {
+        "x": 0.2,
+        "y": 0.4,
+        "w": 0.5,
+        "h": 0.1
+      },
+      "box": {
+        "x": 0.2002,
+        "y": 0.4154,
+        "w": 0.2461,
+        "h": 0.0586
+      },
+      "px": {
+        "x": 205,
+        "y": 638,
+        "w": 252,
+        "h": 90
+      },
+      "aspect": 2.8,
+      "palette": [
+        {
+          "hex": "#f7f7f7",
+          "coverage": 0.8491
+        },
+        {
+          "hex": "#0b0c0c",
+          "coverage": 0.0949
+        },
+        {
+          "hex": "#49484b",
+          "coverage": 0.02
+        },
+        {
+          "hex": "#777879",
+          "coverage": 0.0192
+        },
+        {
+          "hex": "#b0b0b2",
+          "coverage": 0.0168
+        }
+      ],
+      "detail": {
+        "energy": 51.3297
+      },
+      "medium": "semantic",
+      "plate": null,
+      "text": null,
+      "type": {
+        "comp": {
+          "lines": 2,
+          "glyphs": 29,
+          "capHeightPx": 21.8,
+          "inkIsDark": true,
+          "allCaps": false,
+          "advance": 0.5574,
+          "advTall": 0.5574,
+          "advX": 0.5469,
+          "gap": 0.1262,
+          "xRatio": 0.5881,
+          "stemW": 0.1443,
+          "contrast": 1.0473,
+          "serif": 0.9525,
+          "densTall": 0.4914,
+          "densX": 0.5915,
+          "weight": 0.4914
+        },
+        "widthClass": "condensed",
+        "weightClass": "medium",
+        "chosen": {
+          "family": "Vazirmatn",
+          "weight": 300,
+          "fontSizePx": 30,
+          "source": "index",
+          "fp": {
+            "lines": 1,
+            "glyphs": 11,
+            "capHeightPx": 22.2,
+            "inkIsDark": true,
+            "allCaps": false,
+            "advance": 0.5737,
+            "advTall": 0.54,
+            "advX": 0.5737,
+            "gap": 0.1575,
+            "xRatio": 0.7329,
+            "stemW": 0.1305,
+            "contrast": 1.0377,
+            "serif": 0.995,
+            "densTall": 0.4429,
+            "densX": 0.5316,
+            "weight": 0.4429
+          },
+          "stamp": "f5355bd58d1f"
+        }
+      }
+    },
+    {
+      "id": "date-v02",
+      "kind": "text",
+      "note": "date Jul 28 inside the grease-pencil circle",
+      "grid": "H4:I4",
+      "coverBox": {
+        "x": 0.7,
+        "y": 0.4,
+        "w": 0.2,
+        "h": 0.1
+      },
+      "box": {
+        "x": 0.7002,
+        "y": 0.3997,
+        "w": 0.2002,
+        "h": 0.0742
+      },
+      "px": {
+        "x": 717,
+        "y": 614,
+        "w": 205,
+        "h": 114
+      },
+      "aspect": 1.7982,
+      "palette": [
+        {
+          "hex": "#f8f8f8",
+          "coverage": 0.8733
+        },
+        {
+          "hex": "#f0332a",
+          "coverage": 0.0622
+        },
+        {
+          "hex": "#1c1f1f",
+          "coverage": 0.0486
+        },
+        {
+          "hex": "#ef675a",
+          "coverage": 0.0105
+        },
+        {
+          "hex": "#f89589",
+          "coverage": 0.0054
+        }
+      ],
+      "detail": {
+        "energy": 21.3399
+      },
+      "medium": "semantic",
+      "plate": null,
+      "text": null,
+      "type": {
+        "comp": null,
+        "measuredAt": "2026-10-07T18:53:54.146Z",
+        "note": "no separable lettering in the crop; size by the region box"
+      }
+    },
+    {
+      "id": "pencil-mark",
+      "kind": "plate",
+      "note": "hand-drawn red grease-pencil ellipse around the date and the scrawled word 'new', transparent ground",
+      "grid": "H3:J4",
+      "box": {
+        "x": 0.7,
+        "y": 0.3,
+        "w": 0.3,
+        "h": 0.2
+      },
+      "px": {
+        "x": 717,
+        "y": 461,
+        "w": 307,
+        "h": 307
+      },
+      "aspect": 1,
+      "palette": [
+        {
+          "hex": "#f7f7f7",
+          "coverage": 0.9294
+        },
+        {
+          "hex": "#121314",
+          "coverage": 0.0324
+        },
+        {
+          "hex": "#f0332a",
+          "coverage": 0.0241
+        },
+        {
+          "hex": "#808282",
+          "coverage": 0.0104
+        },
+        {
+          "hex": "#dad1d1",
+          "coverage": 0.0036
+        }
+      ],
+      "detail": {
+        "energy": 21.9817
+      },
+      "medium": "raster",
+      "plate": "assets/plates/pencil-mark.png",
+      "text": null
+    },
+    {
+      "id": "row-s01",
+      "kind": "chrome",
+      "note": "gray banded row: S01, Bachelor's Degree or Higher, County · 2024, Jul 16",
+      "grid": "A5:J5",
+      "snap": false,
+      "box": {
+        "x": 0,
+        "y": 0.5,
+        "w": 1,
+        "h": 0.1
+      },
+      "px": {
+        "x": 0,
+        "y": 768,
+        "w": 1024,
+        "h": 154
+      },
+      "aspect": 6.6494,
+      "palette": [
+        {
+          "hex": "#eeeeee",
+          "coverage": 0.9598
+        },
+        {
+          "hex": "#0d0d0d",
+          "coverage": 0.0264
+        },
+        {
+          "hex": "#818181",
+          "coverage": 0.006
+        },
+        {
+          "hex": "#434343",
+          "coverage": 0.0045
+        },
+        {
+          "hex": "#b2b2b2",
+          "coverage": 0.0033
+        }
+      ],
+      "detail": {
+        "energy": 20.4559
+      },
+      "medium": "semantic",
+      "plate": null,
+      "text": null
+    },
+    {
+      "id": "row-a04",
+      "kind": "text",
+      "note": "row: A04, MKE FreshAir Dashboard, map app, Jun 25",
+      "grid": "A6:J6",
+      "snap": false,
+      "box": {
+        "x": 0,
+        "y": 0.6,
+        "w": 1,
+        "h": 0.1
+      },
+      "px": {
+        "x": 0,
+        "y": 922,
+        "w": 1024,
+        "h": 154
+      },
+      "aspect": 6.6494,
+      "palette": [
+        {
+          "hex": "#f3f3f3",
+          "coverage": 0.9309
+        },
+        {
+          "hex": "#0b0b0c",
+          "coverage": 0.0483
+        },
+        {
+          "hex": "#505050",
+          "coverage": 0.0084
+        },
+        {
+          "hex": "#b9b9b9",
+          "coverage": 0.0078
+        },
+        {
+          "hex": "#878787",
+          "coverage": 0.0046
+        }
+      ],
+      "detail": {
+        "energy": 26.3394
+      },
+      "medium": "semantic",
+      "plate": null,
+      "text": null,
+      "type": {
+        "comp": {
+          "lines": 2,
+          "glyphs": 68,
+          "capHeightPx": 20.3,
+          "inkIsDark": true,
+          "allCaps": false,
+          "advance": 0.5383,
+          "advTall": 0.5383,
+          "advX": 0.5383,
+          "gap": 0.1362,
+          "xRatio": 0.6306,
+          "stemW": 0.1525,
+          "contrast": 1.0722,
+          "serif": 1.0313,
+          "densTall": 0.5821,
+          "densX": 0.6138,
+          "weight": 0.5821
+        },
+        "widthClass": "condensed",
+        "weightClass": "bold"
+      }
+    },
+    {
+      "id": "row-n01",
+      "kind": "chrome",
+      "note": "gray banded row: N01, Neighborhood Change Over Time Report, 29 neighborhoods · 2022–2024, Jun 1",
+      "grid": "A7:J7",
+      "snap": false,
+      "box": {
+        "x": 0,
+        "y": 0.7,
+        "w": 1,
+        "h": 0.1
+      },
+      "px": {
+        "x": 0,
+        "y": 1075,
+        "w": 1024,
+        "h": 154
+      },
+      "aspect": 6.6494,
+      "palette": [
+        {
+          "hex": "#f0f0f0",
+          "coverage": 0.9399
+        },
+        {
+          "hex": "#0c0c0d",
+          "coverage": 0.0431
+        },
+        {
+          "hex": "#58585a",
+          "coverage": 0.006
+        },
+        {
+          "hex": "#888888",
+          "coverage": 0.0056
+        },
+        {
+          "hex": "#b8b8b8",
+          "coverage": 0.0054
+        }
+      ],
+      "detail": {
+        "energy": 28.916
+      },
+      "medium": "semantic",
+      "plate": null,
+      "text": null
+    },
+    {
+      "id": "row-a03",
+      "kind": "text",
+      "note": "row: A03, CDA Property Reference Map, map app, May 22, then the rule above the tab bar",
+      "grid": "A8:J8",
+      "snap": false,
+      "box": {
+        "x": 0,
+        "y": 0.8,
+        "w": 1,
+        "h": 0.1
+      },
+      "px": {
+        "x": 0,
+        "y": 1229,
+        "w": 1024,
+        "h": 154
+      },
+      "aspect": 6.6494,
+      "palette": [
+        {
+          "hex": "#f8f8f8",
+          "coverage": 0.9647
+        },
+        {
+          "hex": "#676875",
+          "coverage": 0.0205
+        },
+        {
+          "hex": "#090909",
+          "coverage": 0.0115
+        },
+        {
+          "hex": "#a7a7a7",
+          "coverage": 0.0021
+        },
+        {
+          "hex": "#404040",
+          "coverage": 0.0011
+        }
+      ],
+      "detail": {
+        "energy": 11.535
+      },
+      "medium": "semantic",
+      "plate": null,
+      "text": null,
+      "type": {
+        "comp": {
+          "lines": 2,
+          "glyphs": 28,
+          "capHeightPx": 9.6,
+          "inkIsDark": true,
+          "allCaps": false,
+          "advance": 0.932,
+          "advTall": 1.1725,
+          "advX": 0.6764,
+          "gap": 0.3908,
+          "xRatio": 0.5068,
+          "stemW": 0.3589,
+          "contrast": 1.2957,
+          "serif": 0.8964,
+          "densTall": 0.7738,
+          "densX": 0.5851,
+          "weight": 0.7738
+        },
+        "widthClass": "normal",
+        "weightClass": "black"
+      }
+    },
+    {
+      "id": "tabbar-footer",
+      "kind": "control",
+      "note": "SEARCH ASK SAVED tabs, thick underline under SEARCH, rule, credit line 'Built on Data You Can Use's public data'",
+      "grid": "A9:J9",
+      "snap": false,
+      "box": {
+        "x": 0,
+        "y": 0.9,
+        "w": 1,
+        "h": 0.1
+      },
+      "px": {
+        "x": 0,
+        "y": 1382,
+        "w": 1024,
+        "h": 154
+      },
+      "aspect": 6.6494,
+      "palette": [
+        {
+          "hex": "#f8f8f8",
+          "coverage": 0.9444
+        },
+        {
+          "hex": "#535b5f",
+          "coverage": 0.0256
+        },
+        {
+          "hex": "#090909",
+          "coverage": 0.0177
+        },
+        {
+          "hex": "#b0b0b4",
+          "coverage": 0.0064
+        },
+        {
+          "hex": "#82858e",
+          "coverage": 0.006
+        }
+      ],
+      "detail": {
+        "energy": 17.0298
+      },
+      "medium": "semantic",
+      "plate": null,
+      "text": null
+    }
+  ]
+}

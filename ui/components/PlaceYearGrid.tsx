@@ -3,7 +3,8 @@ import styles from "./rundown.module.css";
 
 const COMPACT_MAX_PLACES = 6;
 
-export function PlaceYearGrid({ grid, compact = false }: { grid: Grid; compact?: boolean }) {
+// corner: an optional label for the top-left cell (the How it works comp labels it PLACE; the sheets leave it empty).
+export function PlaceYearGrid({ grid, compact = false, corner }: { grid: Grid; compact?: boolean; corner?: string }) {
   if (grid.years.length === 0) return null;
   if (compact && grid.places.length > COMPACT_MAX_PLACES) {
     return <p className={styles.gridSummary}>{`${grid.places.length} neighborhoods × ${grid.years.length} years — full grid on the sheet`}</p>;
@@ -15,7 +16,7 @@ export function PlaceYearGrid({ grid, compact = false }: { grid: Grid; compact?:
       <table className={styles.grid} aria-label="Places and years available">
         <thead>
           <tr>
-            <td />
+            {corner ? <th scope="col">{corner}</th> : <td />}
             {grid.years.map((y) => (
               <th key={y} scope="col">{y}</th>
             ))}

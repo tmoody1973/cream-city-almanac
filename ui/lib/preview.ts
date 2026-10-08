@@ -64,3 +64,31 @@ export async function fetchFeatures(url: string, ms = PREVIEW_TIMEOUT_MS, fetchI
   );
   return { ok: true, data: { features } };
 }
+
+// The Hub's bookkeeping columns: never shown as data, never taught.
+const SYSTEM = /^(objectid|object_id|fid|globalid|shape(__area|__length)?)$/i;
+export const isSystemColumn = (field: string): boolean => SYSTEM.test(field);
+
+const SCALE = new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 });
+// The Hub stores floats (9.10000038); the chart's scale ends read as people write them.
+export const formatScale = (n: number): string => SCALE.format(n);
+
+const lastYear = (label: string) => label.match(/(\d{4})(?!.*\d{4})/)?.[1] ?? "";
+// Chart rows run oldest to newest, places alphabetical within a year ("City 2021", "County 2021", "City 2022").
+export const bySeriesYear = (a: string, b: string): number => lastYear(a).localeCompare(lastYear(b)) || a.localeCompare(b);
+
+// Preview cells: Hub floats (93.94166666666668) shown to two decimals; integers (GEOIDs) and text untouched.
+// No thousands separators: many integer columns are identifiers. Downloads keep the exact values.
+export function formatCell(v: unknown): string {
+  if (v === null || v === undefined) return "";
+  if (typeof v === "number" && !Number.isInteger(v)) return String(Math.round(v * 100) / 100);
+  return String(v);
+}
+
+const RANGE = /\d{4}\s*[–-]\s*\d{4}/;
+// The strip chart's rows: oldest year first, and a multi-year layer ("City 2023–2025") left out when single-year
+// layers exist, because it holds the same days and would plot them twice.
+export function chartSeries<T extends { label: string }>(series: T[]): T[] {
+  const singles = series.filter((s) => !RANGE.test(s.label));
+  return [...(singles.length ? singles : series)].sort((a, b) => bySeriesYear(a.label, b.label));
+}

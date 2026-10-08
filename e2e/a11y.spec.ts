@@ -2,7 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { type Page } from "@playwright/test";
 import { expect, test } from "./fixtures";
 
-const PAGES = ["/", "/?q=asthma", "/d/W01", "/d/N02"];
+const PAGES = ["/", "/?q=asthma", "/d/W01", "/d/N02", "/how-it-works", "/?q=asthma&open=W01"];
 
 // networkidle doesn't wait for Convex's WebSocket search, so wait for real result rows on search pages.
 async function settle(page: Page, path: string) {
@@ -28,15 +28,21 @@ for (const path of PAGES) {
   });
 }
 
-test("the search works from the keyboard alone", async ({ page }) => {
+test("the search works from the keyboard alone", async ({ page }, info) => {
   await page.goto("/");
-  // The search box is the first stop in the tab order.
+  // The search box comes right after the links above it in reading order (laptop site links, the How it works band).
+  // Some browsers skip links when tabbing, so allow up to four stops before it.
   await page.keyboard.press("Tab");
+  for (let i = 0; i < 4 && !(await page.getByLabel("SLUG:").evaluate((el) => el === document.activeElement)); i++) await page.keyboard.press("Tab");
   await expect(page.getByLabel("SLUG:")).toBeFocused();
   await page.keyboard.type("asthma");
   await expect(page.locator("[data-code='W01']")).toBeVisible();
   await page.locator("[data-code='W01'] button").focus();
   await page.keyboard.press("Enter");
+  if (info.project.name === "desktop") {
+    await expect(page.locator("#sheet-heading")).toBeFocused();
+    return;
+  }
   await expect(page.locator("[data-code='W01'] button")).toHaveAttribute("aria-expanded", "true");
 });
 
@@ -44,7 +50,9 @@ test("an opened result has no serious accessibility issues and no sideways scrol
   await page.goto("/?q=asthma");
   await settle(page, "/?q=asthma");
   await page.locator("li[data-code] button").first().click();
-  await page.locator("[id^='preview-'] a", { hasText: "Open sheet" }).waitFor();
+  // Laptops open the result in the right pane; phones expand it in place.
+  if (info.project.name === "desktop") await page.locator("#sheet-pane h2").waitFor();
+  else await page.locator("[id^='preview-'] a", { hasText: "Open sheet" }).waitFor();
   const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze();
   expect(results.violations.filter((v) => v.impact === "serious" || v.impact === "critical").map((v) => v.id)).toEqual([]);
   if (info.project.name === "phone") {
@@ -69,3 +77,15 @@ test("a year grid with many years scrolls inside its own box on a phone", async 
   });
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
 });
+
+for (const width of [1024, 1440]) {
+  test(`no sideways scroll at ${width}px on the new pages`, async ({ page }, info) => {
+    test.skip(info.project.name !== "desktop");
+    await page.setViewportSize({ width, height: 900 });
+    for (const path of ["/", "/how-it-works", "/?q=asthma&open=W01"]) {
+      await page.goto(path);
+      await page.waitForLoadState("networkidle");
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth), path).toBeLessThanOrEqual(0);
+    }
+  });
+}
