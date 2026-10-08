@@ -142,3 +142,53 @@ describe("neighborhood spreadsheets", () => {
     expect((await t.query(api.catalog.portraitTables, { hubId: "h1" })).map((x) => x.slug)).toEqual(["race-and-ethnicity", "sex-and-age"]);
   });
 });
+
+describe("startHere", () => {
+  const card = (familyKey: string, extra: { caveats?: string[]; storyAngles?: string[]; glossary?: { field: string; meaning: string; provenance: "AI" }[] }) => ({
+    familyKey, inputHash: "h", explainer: "x", explainerProvenance: "AI" as const, hubSummary: "", glossary: extra.glossary ?? [],
+    caveats: extra.caveats ?? [], storyAngles: extra.storyAngles ?? [], basic: false, embedding: [],
+  });
+  const poverty = (hubId: string) => ({
+    hubId, modified: "m", slug: "poverty-status-by-age", topic: "Poverty Status by Age", tab: "Poverty Status by Age", order: 2,
+    tableIds: ["B17001"], tableIdText: "B17001", vintage: null, groups: [""],
+    rows: [{ label: "Total", heading: false, values: [{ estimate: "100", moe: "5" }] }], issues: [],
+  });
+  const harambee = (year: number) =>
+    fixtureFamilies().find((f) => f.key === "document:neighborhood-portrait-spreadsheet")!.members.find((m) => m.place === "Harambee" && m.years[0] === year)!;
+
+  it("gathers each example's real data", async () => {
+    const t = convexTest(schema, modules);
+    await seed(t);
+    await t.run(async (ctx) => {
+      await ctx.db.insert("cards", card("dataset:housing-built-before-1950", { storyAngles: ["Angle one?", "Angle two?", "Angle three?"] }));
+      await ctx.db.insert("cards", card("dataset:asthma-prevalence", { caveats: ["Modeled estimates."] }));
+      await ctx.db.insert("cards", card("dataset:daily-air-quality", { caveats: ["Citywide average."], glossary: [{ field: "AQI", meaning: "m", provenance: "AI" }] }));
+      await ctx.db.insert("portraitTables", poverty(harambee(2024).hubId));
+    });
+    const d = await t.query(api.catalog.startHere, {});
+    expect(d.reporter.housing).toMatchObject({ code: expect.any(String), angles: ["Angle one?", "Angle two?"] });
+    expect(d.reporter.asthma!.caveat).toBe("Modeled estimates.");
+    expect(d.nonprofit).toMatchObject({ year: 2024, table: { slug: "poverty-status-by-age" } });
+    expect(d.resident!.fields).toEqual(["AQI"]);
+    expect(d.resident!.members.some((m) => m.featureServerUrl)).toBe(true);
+    expect(d.guides.map((g) => g.name)).toEqual(["About the Data", "Getting Started", "Questions and Feedback"]);
+    expect(d.guides.every((g) => g.url?.startsWith("https://"))).toBe(true);
+  });
+
+  it("uses the newest Harambee year that has the poverty table", async () => {
+    const t = convexTest(schema, modules);
+    await seed(t);
+    await t.run((ctx) => ctx.db.insert("portraitTables", poverty(harambee(2022).hubId)));
+    expect((await t.query(api.catalog.startHere, {})).nonprofit!.year).toBe(2022);
+  });
+
+  it("returns nulls instead of failing when data is missing", async () => {
+    const t = convexTest(schema, modules);
+    await seed(t);
+    const d = await t.query(api.catalog.startHere, {});
+    expect(d.reporter.housing).toMatchObject({ angles: [] });
+    expect(d.reporter.asthma!.caveat).toBeNull();
+    expect(d.nonprofit).toBeNull();
+    expect(d.resident!.caveat).toBeNull();
+  });
+});
