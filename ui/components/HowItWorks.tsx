@@ -14,6 +14,7 @@ import styles from "./how.module.css";
 const DECISION_LOG = "https://github.com/tmoody1973/cream-city-almanac/tree/main/docs/decisions";
 const AUTHOR = "https://github.com/tmoody1973";
 const EXAMPLE_QUERY = "kids who can't afford food";
+const NEIGHBORHOOD_QUERY = "Lincoln Park employment status by sex";
 
 export function HowItWorks({ status, example }: { status: CatalogStatus | null; example: SheetData | null }) {
   const counts = countsLine(status);
@@ -51,6 +52,10 @@ export function HowItWorks({ status, example }: { status: CatalogStatus | null; 
               <li>Group the yearly and geographic versions of each measure into one family with a permanent code, like F02.</li>
               <li>Read {pdfReportsPhrase(status)} so search can match the text inside them.</li>
               <li>
+                Open the Neighborhood Portrait spreadsheets, one per neighborhood and year, and store their tables, so the{" "}
+                <Link href="/d/N03">N03 sheet</Link> shows any neighborhood&apos;s numbers without a download.
+              </li>
+              <li>
                 Ask AI (Claude) to write each family&apos;s plain-English explainer, column guide, caveats and story angles. DYCU&apos;s own
                 definitions always win.
               </li>
@@ -69,6 +74,10 @@ export function HowItWorks({ status, example }: { status: CatalogStatus | null; 
               <li><ProvenanceTag source="AI" /> Written by AI from the facts above, and always labeled.</li>
             </ul>
             <p>Numbers on a sheet come from the Hub&apos;s data, never from the AI.</p>
+            <p>
+              Spreadsheet numbers appear as DYCU wrote them, Estimate ± margin of error, with any problems in DYCU&apos;s file noted
+              above the table. No AI touches them.
+            </p>
           </section>
 
           <section className={styles.section}>
@@ -76,7 +85,8 @@ export function HowItWorks({ status, example }: { status: CatalogStatus | null; 
             <p>
               Type what you&apos;re reporting on, in your own words. Search matches meaning (text that means something similar) and exact
               words, then ranks what agrees. Try <Link href={`/?q=${encodeURIComponent(EXAMPLE_QUERY)}`}>{EXAMPLE_QUERY}</Link>: it finds
-              Food Insecurity Prevalence.
+              Food Insecurity Prevalence. Try <Link href={`/?q=${encodeURIComponent(NEIGHBORHOOD_QUERY)}`}>{NEIGHBORHOOD_QUERY}</Link>
+              : it opens that neighborhood&apos;s table.
             </p>
             <p>When nothing is close, it says so instead of listing unrelated data.</p>
           </section>
