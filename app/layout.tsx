@@ -1,3 +1,4 @@
+import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata, Viewport } from "next";
 import { Caveat, Saira, Saira_Extra_Condensed, Vazirmatn } from "next/font/google";
 import type { ReactNode } from "react";
@@ -21,7 +22,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className={`${wordmark.variable} ${caps.variable} ${body.variable} ${note.variable}`}>
       <body>
-        <ConvexClientProvider>{children}</ConvexClientProvider>
+        <ClerkProvider>
+          <ConvexClientProvider>{children}</ConvexClientProvider>
+        </ClerkProvider>
       </body>
     </html>
   );
