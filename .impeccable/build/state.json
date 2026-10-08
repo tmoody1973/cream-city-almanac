@@ -59,20 +59,20 @@
       "gate": {
         "ok": true,
         "reasons": [],
-        "summary": "hero 85% (match)",
-        "score": 0.8463,
+        "summary": "hero 84% (match)",
+        "score": 0.8447,
         "verdict": "match",
         "report": ".impeccable/review/diff/hero/report.json",
         "sideBySide": "/Users/tarikmoody/Projects/dycu/inventory/.impeccable/review/diff/hero/side-by-side.png",
         "worst": [
           "wordmark drift 52%",
           "sheet-explainer drift 64%",
-          "note-preview drift 65%"
+          "live-preview drift 65%"
         ],
         "worstIds": [
           "wordmark",
           "sheet-explainer",
-          "note-preview"
+          "live-preview"
         ],
         "worstCrops": [
           {
@@ -108,33 +108,36 @@
             "file": ".impeccable/review/diff/hero/regions/sheet-explainer.png"
           },
           {
-            "id": "note-preview",
+            "id": "live-preview",
             "verdict": "drift",
             "score": {
-              "overall": 0.6504,
-              "structure": 0.6226,
-              "color": 0.9669,
-              "colorIntersection": 0.9472,
-              "paletteMatch": 0.9775,
-              "detail": 0.2493,
-              "detailRaw": 0.343,
-              "detailAdded": 0.1875,
-              "bands": 0.6
+              "overall": 0.6509,
+              "structure": 0.5282,
+              "color": 0.9686,
+              "colorIntersection": 0.9432,
+              "paletteMatch": 0.9823,
+              "detail": 0.3712,
+              "detailRaw": 0.5222,
+              "detailAdded": 0.3021,
+              "bands": 0.9238
             },
-            "file": ".impeccable/review/diff/hero/regions/note-preview.png"
+            "file": ".impeccable/review/diff/hero/regions/live-preview.png"
           }
         ],
         "advisories": [
-          "(advisory, above the 72% bar) region masthead-nav: its ink sits in a 484x33px box in the comp and 578x68px in the build (padding, row height, or size); match the box, not only the position",
-          "(advisory, above the 72% bar; fix in the polish pass before responsive) 3 readings:",
-          "  text note-grid: cap height 23.6px in the build, 30.6px in the comp (-23%); set font-size so the cap height renders at 30.6px",
-          "  text note-download: cap height 19.1px in the build, 28.5px in the comp (-33%); set font-size so the cap height renders at 28.5px",
-          "  chrome section-heads: its rule sits 34px into the box in the comp and 23px in the build (-11px), so the strip is shorter than the comp's; match the height, not only the position",
+          "(advisory, above the 72% bar) region masthead-nav: its ink sits in a 484x33px box in the comp and 578x74px in the build (padding, row height, or size); match the box, not only the position",
+          "(advisory, above the 72% bar; fix in the polish pass before responsive) 6 readings:",
+          "  text note-grid: cap height 22.2px in the build, 30.6px in the comp (-27%); set font-size so the cap height renders at 30.6px",
+          "  text note-source: cap height 24.5px in the build, 91px in the comp (-73%); set font-size so the cap height renders at 91px",
+          "  text note-preview: cap height 45px in the build, 26px in the comp (+73%); set font-size so the cap height renders at 26px",
+          "  text note-download: cap height 20.9px in the build, 28.5px in the comp (-27%); set font-size so the cap height renders at 28.5px",
+          "  text note-source: its first line starts 34px lower than in the comp (34px vs 0px into the region box); the spacing above it is too large",
+          "  control masthead-nav: its ink is 74px tall in the build and 33px in the comp (+41px); match the height, not only the position",
           "(advisory, unchanged for 3+ attempts) text lede: cap height 15.9px in the build, 31.5px in the comp (-50%); set font-size so the cap height renders at 31.5px",
           "(advisory, unchanged for 3+ attempts) text sheet-explainer: letter-spacing is wider than the comp's (gap 0.156 vs 0.091 of the cap height); set letter-spacing to close it by about 1px",
-          "(advisory, unchanged for 3+ attempts) control masthead-nav: its ink is 68px tall in the build and 33px in the comp (+35px); match the height, not only the position",
           "(advisory, unchanged for 3+ attempts) control live-preview: its rule sits 159px into the box in the comp and 1px in the build (-158px), so the strip is shorter than the comp's; match the height, not only the position",
-          "(advisory, unchanged for 3+ attempts) control sheet-actions: its rule sits 27px into the box in the comp and 39px in the build (+12px), so the strip is taller than the comp's; match the height, not only the position"
+          "(advisory, unchanged for 3+ attempts) control sheet-actions: its rule sits 27px into the box in the comp and 39px in the build (+12px), so the strip is taller than the comp's; match the height, not only the position",
+          "(advisory, unchanged for 3+ attempts) chrome section-heads: its rule sits 34px into the box in the comp and 23px in the build (-11px), so the strip is shorter than the comp's; match the height, not only the position"
         ],
         "regionVerdicts": {
           "wordmark": "drift",
@@ -154,11 +157,11 @@
           "sheet-actions": "drift",
           "section-heads": "drift"
         },
-        "at": "2026-10-08T01:48:33.551Z"
+        "at": "2026-10-08T02:18:23.675Z"
       },
       "forced": null,
       "readingsSeen": {
-        "text lede: cap height 15.9px in the build, 31.5px in the comp (-50%); set font-size so the cap height renders at 31.5px": 21,
+        "text lede: cap height 15.9px in the build, 31.5px in the comp (-50%); set font-size so the cap height renders at 31.5px": 24,
         "text note-grid: cap height 21.9px in the build, 30.6px in the comp (-28%); set font-size so the cap height renders at 30.6px (font-match ranked Rock Salt 400 at 26px)": 2,
         "text note-source: cap height 22.4px in the build, 91px in the comp (-75%); set font-size so the cap height renders at 91px (font-match ranked Edu AU VIC WA NT Arrows 700 at 98px)": 2,
         "text note-download: cap height 21.6px in the build, 28.5px in the comp (-24%); set font-size so the cap height renders at 28.5px": 2,
@@ -214,24 +217,31 @@
         "control column-guide: its rule sits 13px into the box in the comp and 26px in the build (+13px), so the strip is taller than the comp's; match the height, not only the position": 1,
         "text note-download: its first line starts 33px lower than in the comp (79px vs 46px into the region box); the spacing above it is too large": 1,
         "control column-guide: its rule sits 13px into the box in the comp and 56px in the build (+43px), so the strip is taller than the comp's; match the height, not only the position": 3,
-        "control live-preview: its rule sits 159px into the box in the comp and 1px in the build (-158px), so the strip is shorter than the comp's; match the height, not only the position": 10,
+        "control live-preview: its rule sits 159px into the box in the comp and 1px in the build (-158px), so the strip is shorter than the comp's; match the height, not only the position": 13,
         "control sheet-actions: its rule sits 27px into the box in the comp and 42px in the build (+15px), so the strip is taller than the comp's; match the height, not only the position": 1,
         "chrome section-heads: its rule sits 34px into the box in the comp and 20px in the build (-14px), so the strip is shorter than the comp's; match the height, not only the position": 1,
         "chrome section-heads: its rule sits 34px into the box in the comp and 4px in the build (-30px), so the strip is shorter than the comp's; match the height, not only the position": 2,
         "control live-preview: its rule sits 159px into the box in the comp and 65px in the build (-94px), so the strip is shorter than the comp's; match the height, not only the position": 1,
-        "control sheet-actions: its rule sits 27px into the box in the comp and 39px in the build (+12px), so the strip is taller than the comp's; match the height, not only the position": 7,
+        "control sheet-actions: its rule sits 27px into the box in the comp and 39px in the build (+12px), so the strip is taller than the comp's; match the height, not only the position": 10,
         "chrome section-heads: its rule sits 34px into the box in the comp and 41px in the build (+7px), so the strip is taller than the comp's; match the height, not only the position": 4,
-        "text sheet-explainer: letter-spacing is wider than the comp's (gap 0.156 vs 0.091 of the cap height); set letter-spacing to close it by about 1px": 4,
+        "text sheet-explainer: letter-spacing is wider than the comp's (gap 0.156 vs 0.091 of the cap height); set letter-spacing to close it by about 1px": 7,
         "text note-download: cap height 17.6px in the build, 28.5px in the comp (-38%); set font-size so the cap height renders at 28.5px": 1,
         "text note-download: ink is #dd2318 in the build, #09090e in the comp; use the comp's colour": 1,
         "text note-download: cap height 19.2px in the build, 28.5px in the comp (-33%); set font-size so the cap height renders at 28.5px": 2,
-        "chrome section-heads: its rule sits 34px into the box in the comp and 23px in the build (-11px), so the strip is shorter than the comp's; match the height, not only the position": 3,
+        "chrome section-heads: its rule sits 34px into the box in the comp and 23px in the build (-11px), so the strip is shorter than the comp's; match the height, not only the position": 6,
         "text note-grid: cap height 19.6px in the build, 30.6px in the comp (-36%); set font-size so the cap height renders at 30.6px": 1,
         "text note-source: cap height 19.6px in the build, 91px in the comp (-78%); set font-size so the cap height renders at 91px": 1,
         "text note-grid: cap height 23.6px in the build, 30.6px in the comp (-23%); set font-size so the cap height renders at 30.6px": 1,
-        "text note-download: cap height 19.1px in the build, 28.5px in the comp (-33%); set font-size so the cap height renders at 28.5px": 1
+        "text note-download: cap height 19.1px in the build, 28.5px in the comp (-33%); set font-size so the cap height renders at 28.5px": 1,
+        "text note-grid: cap height 8.1px in the build, 30.6px in the comp (-74%); set font-size so the cap height renders at 30.6px": 2,
+        "text note-source: cap height 24.5px in the build, 91px in the comp (-73%); set font-size so the cap height renders at 91px": 3,
+        "text note-preview: cap height 45px in the build, 26px in the comp (+73%); set font-size so the cap height renders at 26px": 3,
+        "text note-download: cap height 20.9px in the build, 28.5px in the comp (-27%); set font-size so the cap height renders at 28.5px": 3,
+        "text note-source: its first line starts 34px lower than in the comp (34px vs 0px into the region box); the spacing above it is too large": 3,
+        "control masthead-nav: its ink is 74px tall in the build and 33px in the comp (+41px); match the height, not only the position": 3,
+        "text note-grid: cap height 22.2px in the build, 30.6px in the comp (-27%); set font-size so the cap height renders at 30.6px": 1
       },
-      "records": 20,
+      "records": 23,
       "history": [
         {
           "at": "2026-10-08T01:40:04.772Z",
@@ -364,16 +374,20 @@
       "forced": null
     },
     "review": {
-      "status": "open",
+      "status": "closed",
       "openedAt": "2026-10-08T01:48:34.018Z",
-      "closedAt": null,
+      "closedAt": "2026-10-08T02:19:24.137Z",
       "attempts": 0,
       "notes": [],
       "gate": null,
       "forced": null
     }
   },
-  "finish": null,
+  "finish": {
+    "disposition": "ship",
+    "at": "2026-10-08T02:19:24.137Z",
+    "phaseAtFinish": "review"
+  },
   "plates": {
     "pencil-arrow": {
       "status": "ok",

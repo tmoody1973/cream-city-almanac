@@ -59,6 +59,16 @@ typography:
     fontSize: "clamp(13px, 1.76vw, 18px)"
     fontWeight: 400
     lineHeight: 1.3
+  site-link:
+    fontFamily: "'Saira Extra Condensed', 'Arial Narrow', sans-serif"
+    fontSize: "clamp(22px, 2.1vw, 32px)"
+    fontWeight: 700
+    lineHeight: 1
+  note:
+    fontFamily: "Caveat, 'Comic Sans MS', cursive"
+    fontSize: "clamp(15px, 3vw, 30px)"
+    fontWeight: 600
+    lineHeight: 1.3
 rounded:
   none: "0px"
 spacing:
@@ -132,6 +142,26 @@ components:
   download-bar:
     backgroundColor: "{colors.paper}"
     padding: "12px 0"
+  site-link:
+    textColor: "{colors.muted}"
+    typography: "{typography.site-link}"
+  site-link-active:
+    textColor: "{colors.ink}"
+  sheet-pane:
+    backgroundColor: "{colors.paper}"
+    padding: "0 clamp(16px, 3.5vw, 36px)"
+  ask-rail:
+    textColor: "{colors.muted}"
+    typography: "{typography.body-small}"
+    rounded: "{rounded.none}"
+    padding: "20px 8px"
+  part-head:
+    backgroundColor: "{colors.band}"
+    textColor: "{colors.ink}"
+    padding: "6px 12px"
+  teaching-note:
+    textColor: "{colors.pencil}"
+    typography: "{typography.note}"
 ---
 
 # Design System: Cream City Almanac
@@ -140,9 +170,9 @@ components:
 
 **Creative North Star: "The Marked-Up Rundown"**
 
-The almanac is laid out like a radio newsroom's show rundown: one white sheet, a heavy condensed masthead, and every dataset family set as a single slugged row with a permanent code. Structure comes from ruled ink lines and alternating gray bands, never from boxes. The only color on the sheet is a producer's red grease pencil, drawn by hand onto the paper to say what changed since your last visit, what you have already opened, and which row you have open now.
+The almanac is laid out like a radio newsroom's show rundown: one white sheet, a heavy condensed masthead, and every dataset family set as a single slugged row with a permanent code. Structure comes from ruled ink lines and alternating gray bands, never from boxes. The only color on the sheet is a producer's red grease pencil, drawn by hand onto the paper to say what changed since your last visit, what you have already opened, and which row you have open now; on How it works the same pencil writes the teaching notes in the margins of a real sheet.
 
-Density is set for a reporter on a phone on deadline. Rows are tall enough to tap one-handed, codes are big enough to scan, and the first viewport carries the masthead, the slug entry, the newest rows, and the tab bar together. Desktop is deliberately compact: the same column, capped at 1280px, with type that stops growing at the approved comp's 1024px sizes, so more of the rundown shows above the fold instead of a phone layout blown up.
+Density is set for a reporter on a phone on deadline. Rows are tall enough to tap one-handed, codes are big enough to scan, and the first viewport carries the masthead, the slug entry, the newest rows, and the tab bar together. Between phone and laptop the layout stays deliberately compact: the same column, capped at 1280px, with type that stops growing at the approved comp's 1024px sizes. A laptop is its own layout, not a phone blown up: the rundown on the left, the selected dataset's full sheet beside it, and a narrow rail held for Ask, all measured from the approved laptop comp at 1536px.
 
 The world refuses the category default for data catalogs: card grids with rounded tag chips and dashboards of charts. It also refuses shadows, corner radii, gradients, and cards. Hierarchy is carried by rule weight, type voice, and banding alone.
 
@@ -153,22 +183,25 @@ The world refuses the category default for data catalogs: card grids with rounde
 - Two rule weights: a 2px ink rule opens a block, a 1px hairline divides inside it.
 - Flat, square-cornered, ruled buttons. No shadows, radii, gradients, or cards.
 - One motion: the grease-pencil circle draws itself on.
+- On laptops, list and sheet side by side, with the selection kept in the address.
 
 ## Colors
 
 Monochrome ink on white paper, with one hand-drawn red that never enters the stylesheet as a fill.
 
 ### Primary
-- **Grease-Pencil Red** (#d7261e): the ink of the four raster grease-pencil plates and nothing else. The circle with "new" marks a date updated since the reader's last visit; the tick marks a family opened before; the arrow at the code plus the swash under the title mark the row open right now. A fourth meaning from the direction contract, a circled number for saved, is reserved for the Saved phase and has no plate yet. The token records the plates' ink so they can be redrawn in the same red; no CSS rule paints with it.
+- **Grease-Pencil Red** (#d7261e): the producer's grease pencil and nothing else. On the rundown it is raster plates with fixed meanings: the circle with "new" marks a date updated since the reader's last visit; the tick marks a family the reader opened before (only one they chose; an item opened for them automatically, like the laptop's newest-item sheet, is never ticked); the arrow at the code plus the swash under the title mark the row open, or selected, right now. On How it works it is the hand-lettered teaching notes and their drawn arrows; those notes are the one place a stylesheet uses the red, as their text color (`--pencil`). A circled number for saved is reserved for the Saved phase and has no plate yet.
 
 ### Neutral
 - **Rundown Paper** (#ffffff): the page ground, and the solid ground under anything pinned (the tab-bar dock, the sheet's download bar) so rows scroll cleanly beneath it. Also the selection text color.
 - **Press Ink** (#111111): all primary text, every rule and hairline, ruled-button borders, the active tab's bar, filled place-by-year cells, the focus outline, the caret, and the selection background.
-- **Rundown Band** (#ededea): the alternate-row band on the rundown, the search results, and the sheet's live-preview table; the guide lines of the sheet's strip chart. Never a panel or card ground.
-- **Graphite** (#5c5c5c): secondary text only. The catalog line, the slug placeholder, inactive and coming-soon tabs, sheet sublines and "updated" dates, the credit line, and unavailable grid cells. It holds 6.7:1 on paper and 5.7:1 on the band (WCAG AA).
+- **Rundown Band** (#ededea): the alternate-row band on the rundown, the search results, and the sheet's live-preview table; the guide lines of the sheet's strip chart; heading bands, meaning the laptop column guide's header row and, on How it works, the annotated sheet's header and its part headings. Never a panel or card ground.
+- **Graphite** (#5c5c5c): secondary text only. The catalog line, the slug placeholder, inactive and coming-soon tabs and site links, the Ask rail's "coming soon", sheet sublines and "updated" dates, the credit line, and unavailable grid cells. It holds 6.7:1 on paper and 5.7:1 on the band (WCAG AA).
 
 ### Named Rules
-**The Grease Pencil Rule.** Red exists only as hand-drawn raster plates with a fixed meaning each; it is never a text color, border, fill, hover, focus ring, or vector icon.
+**The Grease Pencil Rule.** Red is the producer's hand only: the raster plates (circle = updated, tick = opened by the reader, arrow + swash = open or selected now) and the hand-lettered teaching notes on How it works. It is never a border, fill, hover, focus ring, vector icon, or any other text.
+
+**The Red Number Rule.** A red number means saved. Teaching notes are never numbered, and no other red mark carries a figure.
 
 **The Ink-and-Paper Rule.** Everything structural and interactive is ink on white: text, rules, buttons, the active tab, filled cells, focus. Gray is for banding, chart guides, and secondary text, never for rules or borders.
 
@@ -177,8 +210,9 @@ Monochrome ink on white paper, with one hand-drawn red that never enters the sty
 **Display Font:** Saira, variable, at its 50% width (with Saira Extra Condensed, Arial Narrow)
 **Body Font:** Vazirmatn (with Helvetica Neue, Arial)
 **Label/Mono Font:** Saira Extra Condensed (with Arial Narrow)
+**Note Font:** Caveat 600 (with Comic Sans MS, cursive), for teaching notes only
 
-**Character:** Bold condensed newsroom capitals stamped over a plain, open sans. The capitals speak for the system, the sans speaks for the data, and the two never trade jobs. Karantina was tried during the build and removed; the pairing is settled.
+**Character:** Bold condensed newsroom capitals stamped over a plain, open sans. The capitals speak for the system, the sans speaks for the data, and the two never trade jobs. Karantina was tried during the build and removed; the pairing is settled. A third hand, Caveat, appears only as the grease pencil's writing on How it works.
 
 ### Hierarchy
 - **Display** (Saira 900, width 50%, clamp(30px, 9.6vw, 98px), line-height 0.9, uppercase): the "Cream City Almanac" wordmark only, set on one line.
@@ -191,9 +225,15 @@ Monochrome ink on white paper, with one hand-drawn red that never enters the sty
 - **Body** (Vazirmatn 400, clamp(16px, 2.93vw, 30px), line-height 1.3): row names and sublines, dates, the slug input, suggestion tags, explainers. Vazirmatn 500 sets the place-by-year grid and the column guide's field names; 700 marks the name of the open rundown row.
 - **Body small** (Vazirmatn 400, clamp(14px, 2.54vw, 26px), line-height 1.3): the catalog line, search notices, grid cells, sheet sublines, glossary and preview tables.
 - **Caption** (Vazirmatn 400, clamp(13px, 1.76vw, 18px)): the credit footer.
+- **Site link** (Saira Extra Condensed 700, clamp(22px, 2.1vw, 32px), line-height 1): SEARCH / ASK / SAVED / HOW IT WORKS in the laptop masthead.
+- **Note** (Caveat 600, clamp(15px, 3vw, 30px), line-height 1.3; clamp(20px, 1.9vw, 29px) at line-height 1.15 on laptops; red): the teaching notes on How it works, set on a line rising a few degrees (-4° on phones, -6° on laptops).
+
+On laptops the page redefines the type scale from the 1536px comp (px ÷ 15.36 = vw): body clamp(15px, 1.2vw, 18px), small clamp(13px, 1vw, 16px), label clamp(14px, 1.1vw, 17px), code clamp(24px, 2.15vw, 33px), heading clamp(24px, 2.2vw, 34px), and the wordmark clamp(64px, 6vw, 92px) at 54% width. Every row title in the laptop list, rundown or results, takes the condensed capitals at clamp(19px, 1.65vw, 25px). Inside the sheet pane the code grows to clamp(52px, 4.8vw, 74px), the family name to clamp(34px, 3.2vw, 50px), and section headings to clamp(22px, 1.95vw, 30px), while its download links and buttons stay at a reading size, clamp(15px, 1.2vw, 18px).
 
 ### Named Rules
-**The Two Voices Rule.** Condensed capitals name things (codes, headings, labels, buttons, tabs); Vazirmatn carries the data (names, sublines, dates, explainers). A role never switches voice.
+**The Two Voices Rule.** Condensed capitals name things (codes, headings, labels, buttons, tabs, site links, and family titles wherever a list is scanned at a glance: search results, and every laptop row); Vazirmatn carries the data (phone rundown names, sublines, dates, explainers). A role never switches voice within a layout.
+
+**The Teacher's Hand Rule.** Handwriting belongs to the grease pencil alone: Caveat 600 in red, tilted a few degrees, for the teaching notes on How it works. It is real text, never an image of words, and never names, labels, or data.
 
 **The Tabular Figures Rule.** Codes, dates, years, and counts use tabular figures, and codes also lining figures, so every column of numbers aligns.
 
@@ -201,29 +241,47 @@ Monochrome ink on white paper, with one hand-drawn red that never enters the sty
 
 ## Layout
 
-One centered column, capped at 1280px, with a fluid side gutter (clamp(16px, 3.5vw, 36px)). Every size was measured from the approved comp at 1024px wide and expressed as a vw value with a phone floor and a cap at the comp's own 1024px value, so above 1024px the type and row heights stop growing and only the column widens to its cap.
+Below the laptop query, one centered column, capped at 1280px, with a fluid side gutter (clamp(16px, 3.5vw, 36px)). Every size was measured from the approved comp at 1024px wide and expressed as a vw value with a phone floor and a cap at the comp's own 1024px value, so above 1024px the type and row heights stop growing and only the column widens to its cap.
 
 The rundown is a three-column table: the code column (18%, at least 3.5ch), the slug column (the remainder), and a right column (20%, at least 6ch) for the updated date. Search results widen the right column to 30% (at least 9ch) so place sits over years on two short lines. A row opened in place drops a preview panel indented to the slug column, so the place-by-year grid and the one-line explainer sit directly under the row's title, with the action buttons below.
 
 The masthead puts the wordmark left and the side label right, top-aligned, closed by a hairline. The suggestion tags split the width into three equal cells. Rundown rows hold a tall minimum (clamp(64px, 13.2vw, 135px)); result rows and tabs share the compact height (clamp(56px, 9.8vw, 100px)).
 
-Pinned elements follow the device. On phones, and on any screen that is not wide landscape, the tab bar and credit line stay docked at the bottom of the home screen, as in the comp's first viewport. On wide landscape screens (1100px and up) the dock returns to the end of the page so it never covers the rundown. On a dataset sheet the download bar is the pinned element below 900px and sits in flow from 900px up; the sheet's tab bar is never pinned.
+Pinned elements follow the device. On phones, and on any screen that is not a laptop, the tab bar and credit line stay docked at the bottom of the home screen, as in the comp's first viewport. On a dataset sheet the download bar is the pinned element below 900px and sits in flow from 900px up; the sheet's tab bar is never pinned.
+
+On the home screen, the one-line explainer band ("Milwaukee data in plain English. How it works", with the drawn arrow) sits between the catalog line and the slug entry, and disappears while a search runs.
 
 Vertical rhythm comes from the comp's measured paddings, not a stepped scale. Two fixed values recur: 12px between grouped actions, notices, and the back link, and a 44px floor on every touch target.
 
+### Laptop two-pane
+A laptop is a screen at least 1100px wide in landscape (`(min-width: 1100px) and (orientation: landscape)`). That one query is shared, character for character, by every stylesheet and by the script that decides click behavior; it is never retuned per component. There the page drops its 1280px cap and splits into three columns: the list (39%), the selected dataset's full sheet (the remainder), and a narrow Ask rail (6%).
+
+- **List:** the same rundown and results, re-measured from the laptop comp. Rows hold at least 96px, banding starts on the first row, the CODE / SLUG / UPDATED heads and the tab bar are gone, and the date hugs the row's right edge with 44px kept clear for the pencil's "new". The slug entry and each suggestion tag become hairline boxes; the 2px rules under the slug line and over the section title drop away.
+- **Sheet pane:** sticky at the top of the window, at most the window's height, scrolling on its own, divided from the list by a hairline. The download bar pins to the pane's bottom edge.
+- **Ask rail:** a hairline-outlined strip that stays beside the pane (sticky 12px from the top, the window's height less 24px), holding the place for the Phase 3 chat.
+- **Selection:** the newest item in the list opens in the pane on arrival. Choosing a row replaces it and records the choice in the address (`?q=…&open=CODE`), so a link, a reload, or Back and Forward restore the same view; choosing the already-open row adds no Back step. On a phone, a laptop link to an item that is not in the list opens that item's own sheet page.
+- **Site links** move into the masthead; the bottom tab bar is phone-only and the dock holds only the credit line, in flow at the page end.
+
+### How it works
+One column on phones: a page headline, a one-line lede, the annotated sheet with each teaching note above the part it explains, then the explanatory sections stacked. On laptops the headline and lede are inset 6vw, the annotated sheet is centered at about 59vw with roughly 17vw of margin on each side for the notes, and the sections run in three columns, with LIMITS AND CREDITS spanning all three as three text columns.
+
 ### Named Rules
-**The Compact Desk Rule.** Desktop is the phone sheet given room, not a new layout: a 1280px column, type capped at the comp's 1024px sizes, and nothing pinned that would hide rows on a wide landscape screen.
+**The Compact Desk Rule.** Between phone and laptop, the screen is the phone sheet given room: a 1280px column, type capped at the comp's 1024px sizes.
+
+**The Own Laptop Rule.** A laptop gets its own composition, measured from its own comp, never the phone layout stretched: list and sheet side by side, its own type scale, nothing pinned over the list, and site links in the masthead instead of a tab bar.
+
+**The Address Rule.** What is searched and what is open live in the address, so every view can be linked, reloaded, and stepped back through.
 
 ## Elevation & Depth
 
-The system is flat. There are no shadows anywhere, no tonal surfaces, and no layering beyond the pinned dock and download bar, which sit on solid paper over the rows they cover. Depth is replaced by rule weight: a 2px ink rule opens a block (section title, slug entry, sheet header, download bar, ruled buttons), and a 1px ink hairline divides inside it (masthead, catalog line, column heads, tag dividers, panels, tables, tab bar). The gray band separates alternate rows without any line at all.
+The system is flat. There are no shadows anywhere, no tonal surfaces, and no layering beyond the pinned dock, the download bars, and the laptop's sticky sheet pane and Ask rail, which sit on solid paper and are divided from what they cover by a rule or hairline. Depth is replaced by rule weight: a 2px ink rule opens a block (section title, slug entry, sheet header, download bar, ruled buttons), and a 1px ink hairline divides inside it (masthead, catalog line, column heads, tag dividers, panels, tables, tab bar). The gray band separates alternate rows without any line at all.
 
 ### Named Rules
 **The Ruled-Not-Raised Rule.** Nothing lifts off the page. Emphasis is a heavier rule, a heavier voice, or a red pencil mark, never a shadow; even the active tab is marked by a drawn 6px ink bar, not a glow or an underlay.
 
 ## Shapes
 
-Corners are square everywhere (0px). Borders are full ink at one of the two rule weights; there are no tinted or partial-opacity borders. The only curves on the page are the hand-drawn grease-pencil plates, whose waxy, uneven stroke is the deliberate contrast to the ruled geometry. Vector marks are drawn, not typed: the arrow is a short 2px square-capped stroke in the current text color (mirrored for "back"), and an available place-year is a solid ink square (0.9em). An unavailable cell shows a graphite dash with a hidden text equivalent.
+Corners are square everywhere (0px). Borders are full ink at one of the two rule weights; there are no tinted or partial-opacity borders. The only curves on the page are the hand-drawn grease-pencil plates and the pencil's handwriting, whose waxy, uneven stroke is the deliberate contrast to the ruled geometry. Vector marks are drawn, not typed: the arrow is a short 2px square-capped stroke in the current text color (mirrored for "back"), and an available place-year is a solid ink square (0.9em). An unavailable cell shows a graphite dash with a hidden text equivalent.
 
 ## Components
 
@@ -246,15 +304,17 @@ There are none. An opened row's preview is an indented region closed by a hairli
 - **Focus:** the system focus ring (3px ink outline, 2px offset).
 
 ### Navigation
-- **Tab bar:** three equal cells between two hairlines, tab-voice capitals, compact row height. Inactive and coming-soon tabs are graphite; the active tab is ink with a 6px ink bar drawn across its cell near the bottom edge (inset clamp(4px, 1.7vw, 17px)). ASK and SAVED are non-link placeholders titled "Coming soon" until their phases ship.
+- **Tab bar (phones only):** three equal cells between two hairlines, tab-voice capitals, compact row height. Inactive and coming-soon tabs are graphite; the active tab is ink with a 6px ink bar drawn across its cell near the bottom edge (inset clamp(4px, 1.7vw, 17px)). ASK and SAVED are non-link placeholders titled "Coming soon" until their phases ship. On How it works no tab is active. Laptops never show it.
+- **Masthead site links (laptops):** SEARCH / ASK / SAVED, then HOW IT WORKS, in site-link capitals to the right of the wordmark, clamp(20px, 2.6vw, 40px) apart. Inactive and coming-soon links are graphite; the current page is ink, underlined by a 4px ink bar 6px below the words. HOW IT WORKS is always ink and set apart by a short hairline drawn outside the link, so the current-page bar underlines only its words. On phones, How it works marks itself instead by underlining the masthead's side label (3px, 0.2em offset).
 - **Back link (sheet):** the mirrored drawn arrow and "Rundown" in small body type, above a hairline.
-- **Credit footer:** centered caption-size graphite link, "Built on Data You Can Use's public data", padded for the safe-area inset on phones.
+- **Explainer band (home):** one line, "Milwaukee data in plain English." then a "How it works" link with the drawn arrow, kept on one line. On phones it is small body type closed by a hairline; on laptops it sits at body size with no rule. Hidden while searching.
+- **Credit footer:** centered caption-size graphite links, "Built on Data You Can Use's public data · How it works", padded for the safe-area inset on phones.
 
 ### Rundown Row (signature)
 The heart of the system: one dataset family per row, coded like an item on a show rundown.
 - **Columns:** the code in code-voice capitals with lining tabular figures, lifted 0.19em so its cap top lines up with the slug's first line; the slug as the family name, a dash, and a subline whose segments ("29 neighborhoods", "2022–2024") never split across lines; and the updated date, right column, tabular.
 - **Banding:** even rows take the band; there are no row dividers.
-- **Marks:** circle-and-"new" around the date (updated since last visit), a tick after the right column (opened before). Opening a row adds the arrow plate before its code and the swash under its title, and sets the rundown title in Vazirmatn 700. Every plate is hidden from assistive tech and paired with visually hidden text that states its meaning.
+- **Marks:** circle-and-"new" around the date (updated since last visit), a tick after the right column (opened before, by the reader's own choice). Opening a row on a phone, or selecting it on a laptop, adds the arrow plate before its code and the swash under its title; on phones it also sets the rundown title in Vazirmatn 700. The laptop's auto-opened newest row gets the arrow and swash but is never recorded as opened. Every plate is hidden from assistive tech and paired with visually hidden text that states its meaning.
 - **Results variant:** compact row height, smaller code, the title in title-voice capitals, and place over years in the right column.
 - **Loading:** empty ruled rows at full row height; no spinners or skeleton shimmer.
 
@@ -262,10 +322,27 @@ The heart of the system: one dataset family per row, coded like an item on a sho
 A hairline table of places down and years across, every cell at least 44px. A solid ink square means the year exists for that place; a graphite dash means it does not. Inside an opened row, a family with more than six places collapses to one summary line pointing to the full grid on the sheet.
 
 ### Masthead
-The wordmark left, the side label right in masthead-side capitals, with today's date beneath it or the result count beside it in body type; closed by a hairline.
+The wordmark left, the side label right in masthead-side capitals, with today's date beneath it or the result count beside it in body type; closed by a hairline. On laptops the masthead centers vertically, the TODAY'S RUNDOWN label and date step aside for the site links (the result count still shows while searching), and the wordmark widens to 54%.
+
+### Sheet Pane (laptop)
+The selected dataset's full sheet, the same content as its own page, re-set for a column beside the list.
+- **Header:** the code and the family name on one line, divided by a hairline; the subline drops, since place and years sit in the grid right below. Closed by the 2px rule.
+- **Lead:** when the pane itself is at least 680px wide (a container query on the pane, so it tracks the pane, not the window), the place-by-year grid, headed PLACE BY YEAR, sits beside WHAT IT MEASURES with a hairline between them; narrower, they stack.
+- **Column guide:** one hairline box with a header row (COLUMN / DESCRIPTION / TAG) in condensed capitals on the band; field names in the body face; the provenance tag in its own hugging TAG column instead of inline.
+- **Downloads:** ruled buttons under the 2px rule, pinned to the pane's bottom edge.
+- **States:** "Loading…" while the sheet arrives, a plain can't-reach-the-catalog line if it stalls, and for an unknown code a note with a "Show the newest" ruled button. Escape returns focus to the selected row.
+
+### Ask Rail (laptop placeholder)
+A narrow hairline-outlined strip at the right edge: ASK in ink condensed capitals (clamp(24px, 2.1vw, 32px)) over "coming soon" in graphite small body type, centered. It reserves the Phase 3 chat's place and does nothing yet.
+
+### Annotated Sheet (signature, How it works)
+A real dataset sheet, cut to its four teaching parts and marked up by the grease pencil like a page from the producer's desk.
+- **Header band:** the code and the family name in condensed capitals on the band, between hairlines.
+- **Parts:** the place-by-year grid beside the explainer (hairline between, with its provenance tag); the column guide (first two real columns, field names in condensed capitals, hairline rows and a hairline after the name column); the live preview's chart; then CSV and OPEN SHEET ruled buttons between hairlines. Part headings (COLUMN GUIDE, LIVE PREVIEW) sit on gray bands in condensed capitals (clamp(18px, 3vw, 28px)).
+- **Teaching notes:** short hand-lettered phrases in the note voice and red, each with a thin drawn arrow plate. On phones a note sits above its part with a downward arrow (1.3em); on laptops it moves into the margin, its arrow pointing toward the sheet (about 4 to 5vw long). The notes are a paragraph of real text; the arrow is hidden from assistive tech.
 
 ### Grease-Pencil Plates (signature)
-Four transparent raster PNGs of red grease-pencil ink (circle-with-"new", tick, arrow, underline swash), trimmed to their ink and sized in em so they track the text they mark. Originals and their generation provenance live with the source assets; the shipped copies are served as static plates.
+Transparent raster PNGs of red grease-pencil ink, trimmed to their ink and sized in em so they track the text they mark: the circle-with-"new", tick, arrow, and underline swash on the rundown, and three thin arrows (down, pointing right, pointing left) for the teaching notes, cut from the approved How it works comps. Originals and their generation provenance live with the source assets; the shipped copies are served as static plates.
 - **Motion:** the circle draws itself on once when the rundown loads, revealed left to right by a clip-path in 12 stepped frames over 600ms after a 250ms delay, like a pencil stroke filmed frame by frame. Under reduced-motion preferences it appears already drawn.
 
 **The One Motion Rule.** The pencil circle drawing on is the only animation in the system; nothing else fades, slides, or transitions, and reduced motion removes even that.
@@ -279,13 +356,19 @@ Four transparent raster PNGs of red grease-pencil ink (circle-with-"new", tick, 
 - **Do** keep every touch target at 44px or taller.
 - **Do** tag every sourced or AI-written fact with the boxed provenance tag.
 - **Do** draw icons as inline strokes in the current text color, like the 2px square-capped arrow.
-- **Do** cap the column at 1280px and let type stop at the comp's 1024px sizes on desktop.
+- **Do** cap the column at 1280px and let type stop at the comp's 1024px sizes below the laptop query.
+- **Do** use the one laptop query, `(min-width: 1100px) and (orientation: landscape)`, everywhere a laptop rule is needed, and keep it identical to `LAPTOP_QUERY`.
+- **Do** keep the search and the open item in the address on laptops (`?q=…&open=CODE`).
+- **Do** write teaching notes as real text in Caveat 600 and red, tilted a few degrees, with a drawn arrow plate pointing at the part they explain.
+- **Do** tick only what the reader chose to open; an item opened for them is marked as selected, never as opened.
 
 ### Don't:
-- **Don't** use red for anything a stylesheet draws: text, borders, fills, hover, focus, or vector icons. Red is raster grease pencil only.
+- **Don't** use red for anything a stylesheet draws except the teaching notes' text: no red borders, fills, hover, focus, vector icons, or other text. Everywhere else red is a raster grease-pencil plate.
+- **Don't** number a teaching note or put a figure in any red mark but the saved number.
+- **Don't** show the bottom tab bar on laptops, or stretch the phone column across a laptop screen.
 - **Don't** add shadows, corner radii, gradients, or cards.
 - **Don't** present datasets as card grids with rounded tag chips or as dashboards of charts; a family is a ruled row or a ruled sheet.
 - **Don't** animate anything besides the pencil circle drawing on.
-- **Don't** pin the tab bar on wide landscape screens, or pin both the tab bar and the download bar on a sheet.
+- **Don't** pin both the tab bar and the download bar on a sheet.
 - **Don't** use Unicode glyphs in place of drawn icons.
 - **Don't** use the display face for anything but the wordmark.
