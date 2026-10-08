@@ -783,3 +783,9 @@
     --mark-w: 5.6em;
   }
 }
+
+@media (min-width: 1100px) and (orientation: landscape) {
+  .sheetPane {
+    container-type: inline-size;
+  }
+}

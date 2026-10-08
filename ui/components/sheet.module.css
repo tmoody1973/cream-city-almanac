@@ -36,7 +36,8 @@
 
 .laptopOnly { display: none; }
 
-/* Laptop pane (comp B): code and name on one line, grid beside its explainer, preview rows beside the chart.
+/* Laptop pane (comp B): code and name on one line, grid beside its explainer. The chart stays under the rows table:
+   beside it, its labels shrink to ~8px.
    Keep this media query identical to LAPTOP_QUERY in ui/lib/selection.ts. */
 @media (min-width: 1100px) and (orientation: landscape) {
   .laptopOnly { display: block; }
@@ -44,12 +45,6 @@
   .header .code { line-height: 1; }
   .header .name { margin: 0; padding-left: clamp(16px, 1.8vw, 28px); border-left: var(--hair); }
   .sub { flex-basis: 100%; }
-  .lead { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: clamp(20px, 2.2vw, 34px); border-bottom: var(--hair); }
-  .lead > .section { border-bottom: 0; }
-  .lead > section { padding-left: clamp(20px, 2.2vw, 34px); border-left: var(--hair); }
-  .preview { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 0 16px; align-items: start; }
-  .preview > .heading { grid-column: 1 / -1; }
-  .preview .chart { margin: 0; }
 }
 @media (min-width: 1100px) and (orientation: landscape) {
   /* Comp B's pane header is code and name only; place and years are in the grid right below. */
@@ -59,4 +54,15 @@
   /* Comp B: the column guide is one ruled box, field names in the body face. */
   .glossary { border: var(--hair); }
   .glossary code { font-family: inherit; }
+}
+@media (min-width: 1100px) and (orientation: landscape) {
+  /* The pane's headings are large (--fs-label); links and buttons keep a reading size. */
+  .dl, .button { font-size: clamp(15px, 1.2vw, 18px); }
+}
+/* Grid beside its explainer only when the pane itself has room; on an 1100px laptop the explainer would be ~140px wide.
+   The laptop pane (.sheetPane) is the size container; phones have none, so this never applies there. */
+@container (min-width: 680px) {
+  .lead { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: clamp(20px, 2.2vw, 34px); border-bottom: var(--hair); }
+  .lead > .section { border-bottom: 0; }
+  .lead > section { padding-left: clamp(20px, 2.2vw, 34px); border-left: var(--hair); }
 }

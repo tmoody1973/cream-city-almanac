@@ -60,7 +60,7 @@ export function SheetBody({ sheet, headingId }: { sheet: SheetData; headingId?: 
       )}
 
       {members.some((m) => m.featureServerUrl) && (
-        <section className={`${styles.section} ${styles.preview}`}>
+        <section className={styles.section}>
           <h3 className={styles.heading}>LIVE PREVIEW</h3>
           <LivePreview members={members} fields={card?.glossary.map((g) => g.field) ?? []} />
         </section>

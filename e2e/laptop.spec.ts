@@ -84,3 +84,14 @@ test("narrowing the window keeps the chosen row open", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.locator("li[data-code='W01'] button")).toHaveAttribute("aria-expanded", "true");
 });
+
+test("the pane's downloads are reachable even when the list is short", async ({ page }) => {
+  // A nonsense query lists no rows, so the page itself is no taller than the window.
+  await page.goto("/?q=zzqxv&open=W01");
+  await expect(pane(page).getByRole("heading", { level: 2, name: /Asthma/ })).toBeVisible();
+  const hub = pane(page).getByRole("link", { name: "View on Hub" });
+  await hub.scrollIntoViewIfNeeded();
+  const box = await hub.boundingBox();
+  const vh = page.viewportSize()!.height;
+  expect(box!.y + box!.height).toBeLessThanOrEqual(vh);
+});
