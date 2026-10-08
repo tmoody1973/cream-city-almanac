@@ -289,16 +289,25 @@
       }
     },
     "review": {
-      "status": "open",
+      "status": "closed",
       "openedAt": "2026-10-08T08:43:47.323Z",
-      "closedAt": null,
+      "closedAt": "2026-10-08T09:02:57.721Z",
       "attempts": 0,
-      "notes": [],
+      "notes": [
+        {
+          "at": "2026-10-08T09:02:57.705Z",
+          "text": "Finish review round 1: fix (8 material). One batch applied; verdict pass: 7 resolved, #5 precision partial (long computed decimals >= 10 display as whole numbers). Remaining item ruled to stand: all 685 such cells in both fixtures use Excel's General format (numFmtId 0), which carries no decimal places, so there is no file precision to take; stored values stay exact (portraitTables keeps 60.3407). Put in front of Tarik at the preview checkpoint."
+        }
+      ],
       "gate": null,
       "forced": null
     }
   },
-  "finish": null,
+  "finish": {
+    "disposition": "fix",
+    "at": "2026-10-08T09:02:57.721Z",
+    "phaseAtFinish": "review"
+  },
   "plates": {
     "topic-arrow": {
       "status": "ok",
