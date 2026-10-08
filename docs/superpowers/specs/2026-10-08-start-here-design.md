@@ -33,7 +33,7 @@ Both are orientation. How it works explains how the almanac is built and how to 
 2. **Three worked examples**, each: who it is and their question in their own words; 3–4 plain numbered steps naming exactly what's on screen; a **live excerpt** of the real data; a **Try it** link to that exact view. Laptops set the excerpt beside the steps; phones below.
    - **A reporter.** "Do the neighborhoods with the most old housing also have the most asthma?" Steps: search "older housing and asthma rates"; open Asthma Prevalence (W01) and Housing Built Before 1950 (H05); read each sheet's caveats first; use the story angles as starting questions; download both CSVs and match them by census tract. Excerpt: H05's story angles (first two, AI tag) and W01's first caveat, with the tags they carry on their sheets. Try it: `/?q=older%20housing%20and%20asthma%20rates`.
    - **A nonprofit.** "Our grant application needs Harambee's poverty numbers, by age." Steps: open the Neighborhood Portrait Spreadsheet (N03); pick Harambee and the newest year, then Poverty Status by Age; quote each estimate with its margin of error and cite the Census table (B17001, linked on the sheet); for the story behind the numbers, read the Harambee Neighborhood Portrait report (N02). Excerpt: the first three rows of Harambee's newest Poverty Status by Age table with ± margins, its DYCU tag and its problem notes, captioned "Harambee, {year}: Poverty Status by Age". Try it: `/d/N03?place=harambee&year={year}&topic=poverty-status-by-age`.
-   - **A resident.** "What has the air been like in Milwaukee lately?" Steps: search "air quality"; open Daily Air Quality (V02); the live preview shows recent days from DYCU's Hub, no download needed; read the caveat: a citywide daily average from community sensors, and the number of sensors changed over time. Excerpt: the latest daily readings through the existing live preview. Try it: `/?q=air%20quality&open=V02` on laptops (the sheet on phones, via the existing redirect).
+   - **A resident.** "What has the air been like in Milwaukee lately?" Steps: search "air quality"; open Daily Air Quality (V02); the live preview charts every day's reading from DYCU's Hub, no download needed; read the caveat: a citywide daily average from community sensors, and the number of sensors changed over time. Excerpt: the live preview's chart of daily readings per year (its chart-only mode; the preview's rows are the feed's first rows, not the latest days). Try it: `/d/V02` (the sheet on phones, the two-pane view on laptops via the existing redirect; a `?q=…&open=V02` link only expands the row on phones).
 3. **DYCU'S OWN GUIDES:** Getting Started, About the Data, Questions and Feedback, each linking straight to its Hub landing page from the catalog, with the HUB tag; no descriptions (DYCU's are empty templates). Then "Questions about the data itself: hub@datayoucanuse.org".
 4. **A closing link:** "How the almanac works →" to `/how-it-works`.
 
@@ -45,7 +45,7 @@ Both are orientation. How it works explains how the almanac is built and how to 
 
 - **"Updated this season" lists data only:** `rundownRows` skips kind `page` and still returns 10 rows.
 - **Search keeps them:** a search for "getting started" or "contact" still finds them.
-- **Their sheet** (`/d/X0n` and the laptop pane) shows one block in place of the AI sheet: "A guide page on DYCU's Hub, not a dataset." with an "Open it on the Hub" link to the landing page (HUB tag) and a link to Start here. The AI explainer, grid, column guide and story angles are not shown for kind `page`.
+- **Their sheet** (`/d/X0n`, the laptop pane, and the phone's inline preview) shows one block in place of the AI sheet: "A guide page on DYCU's Hub, not a dataset." with an "Open it on the Hub" link to the landing page (HUB tag) and a link to Start here. The AI explainer, grid, column guide and story angles are not shown for kind `page`.
 
 ## 6. Data
 
@@ -77,4 +77,4 @@ One Impeccable comp round for the page, phone and laptop (two directions, about 
 
 1. Read How it works' server rendering and revalidation, and the live-preview component's inputs, before writing `catalog.startHere`.
 2. Decide whether the laptop masthead fits a fifth link at 1100px without wrapping; if not, the comp round settles the order and spacing.
-3. Confirm the existing phone redirect sends `/?q=air%20quality&open=V02` to the V02 sheet.
+3. Resolved in planning: the phone redirect does not fire for `/?q=air%20quality&open=V02` (V02 is in that search's rows), so the resident's Try it is `/d/V02`.
