@@ -4,6 +4,8 @@
 
 Built on [Data You Can Use](https://datayoucanuse.org)'s public data; not affiliated with DYCU. Built by Tarik Moody.
 
+**Live:** https://cream-city-almanac.vercel.app · **Start here:** [How it works](https://cream-city-almanac.vercel.app/how-it-works), a real dataset sheet annotated in plain English.
+
 ## Overview
 
 Data You Can Use (DYCU) publishes Milwaukee's neighborhood data on an [ArcGIS Hub](https://getdata-dycu.hub.arcgis.com): 382 items with thin descriptions and cryptic column names. Cream City Almanac makes that catalog usable for a reporter on deadline, on a phone:
@@ -13,7 +15,7 @@ Data You Can Use (DYCU) publishes Milwaukee's neighborhood data on an [ArcGIS Hu
 - **Plain-English dataset sheets.** What a dataset measures, a column guide, caveats, and story angles. Every fact carries its source: **DYCU** (DYCU's own definitions), **HUB** (the Hub listing), **SOURCE** (the source agency's website), or **AI** (written by AI from the facts above).
 - **Live preview and downloads** straight from DYCU's Hub: the first rows, and a chart with every year on one shared scale.
 
-**Status:** Phase 2 (search, results, dataset sheets) is complete. Next up: a laptop layout and a how-it-works page, then sign-in and an Ask chat (CopilotKit), then saved items. See [`docs/decisions/`](docs/decisions/).
+**Status:** Phase 2.5 is live: search, results and dataset sheets on phones; a two-pane layout on laptops (list beside the selected sheet, choice kept in the address); and the How it works page. Next up: sign-in and an Ask chat (CopilotKit), then saved items. See [`docs/decisions/`](docs/decisions/).
 
 ## How it works
 
