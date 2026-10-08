@@ -1,5 +1,5 @@
 "use client";
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import type { ResultRow as Row } from "@/convex/lib/types";
 import { placeSummary, shortDate, subline, yearShort } from "@/ui/lib/format";
 import { FamilyPreview } from "./FamilyPreview";
@@ -17,22 +17,47 @@ function Parts({ text }: { text: string }) {
   ));
 }
 
-export function ResultRow({ row, mode, circled, opened }: { row: Row; mode: "rundown" | "results"; circled: boolean; opened: boolean }) {
-  const [open, setOpen] = useState(false);
+export function ResultRow({
+  row,
+  mode,
+  circled,
+  opened,
+  selected = false,
+  onSelect,
+  defaultOpen = false,
+}: {
+  row: Row;
+  mode: "rundown" | "results";
+  circled: boolean;
+  opened: boolean;
+  selected?: boolean;
+  onSelect?: (code: string, viaKeyboard: boolean) => void;
+  defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  useEffect(() => {
+    if (defaultOpen) setOpen(true);
+  }, [defaultOpen]);
   const panelId = `preview-${row.code}`;
+  const marked = onSelect ? selected : open;
   const sub = subline(row);
   const place = placeSummary(row.kind, row.places);
   return (
     <li className={styles.row} data-code={row.code}>
-      <button type="button" className={styles.rowHead} aria-expanded={open} aria-controls={panelId} onClick={() => setOpen((o) => !o)}>
+      <button
+        type="button"
+        className={styles.rowHead}
+        aria-expanded={onSelect ? undefined : open}
+        aria-controls={onSelect ? "sheet-pane" : panelId}
+        aria-current={onSelect && selected ? "true" : undefined}
+        onClick={(e) => (onSelect ? onSelect(row.code, e.detail === 0) : setOpen((o) => !o))}
+      >
         <span className={styles.code}>
-          {/* Comp C: the open row gets a grease-pencil arrow at its code and a swash under its title. */}
-          {open && <img className={styles.openArrow} src="/plates/pencil-arrow.png" alt="" aria-hidden="true" width={216} height={197} />}
+          {marked && <img className={styles.openArrow} src="/plates/pencil-arrow.png" alt="" aria-hidden="true" width={216} height={197} />}
           {row.code}
         </span>
         {mode === "results" ? (
           <>
-            {/* Comp C: a single-line title, with place and years together on the right. */}
             <span className={styles.slug}>
               <span className={styles.name}>{row.name}</span>
             </span>
@@ -62,7 +87,7 @@ export function ResultRow({ row, mode, circled, opened }: { row: Row; mode: "run
           </>
         )}
       </button>
-      {open && <FamilyPreview id={panelId} familyKey={row.key} />}
+      {!onSelect && open && <FamilyPreview id={panelId} familyKey={row.key} />}
     </li>
   );
 }

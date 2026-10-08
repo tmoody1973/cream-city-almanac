@@ -26,3 +26,10 @@
 .downloadBar { position: sticky; bottom: 0; display: flex; gap: 12px; padding: 12px 0; border-top: var(--rule); background: var(--paper); }
 .button { display: inline-flex; align-items: center; min-height: 44px; padding: 0 clamp(14px, 3vw, 28px); border: var(--rule); font-family: var(--font-caps); font-weight: 700; font-size: var(--fs-label); text-decoration: none; }
 @media (min-width: 900px) { .downloadBar { position: static; } }
+
+.paneDownloads {
+  display: flex;
+  gap: 12px;
+  padding: 16px 0;
+  border-top: var(--rule);
+}

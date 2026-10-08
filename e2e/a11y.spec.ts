@@ -28,15 +28,22 @@ for (const path of PAGES) {
   });
 }
 
-test("the search works from the keyboard alone", async ({ page }) => {
+test("the search works from the keyboard alone", async ({ page }, info) => {
   await page.goto("/");
-  // The search box is the first stop in the tab order.
+  // Phones: the search box is the first stop in the tab order. Laptops: it comes right after the masthead's site links.
   await page.keyboard.press("Tab");
+  if (info.project.name === "desktop") {
+    for (let i = 0; i < 4 && !(await page.getByLabel("SLUG:").evaluate((el) => el === document.activeElement)); i++) await page.keyboard.press("Tab");
+  }
   await expect(page.getByLabel("SLUG:")).toBeFocused();
   await page.keyboard.type("asthma");
   await expect(page.locator("[data-code='W01']")).toBeVisible();
   await page.locator("[data-code='W01'] button").focus();
   await page.keyboard.press("Enter");
+  if (info.project.name === "desktop") {
+    await expect(page.locator("#sheet-heading")).toBeFocused();
+    return;
+  }
   await expect(page.locator("[data-code='W01'] button")).toHaveAttribute("aria-expanded", "true");
 });
 
@@ -44,7 +51,9 @@ test("an opened result has no serious accessibility issues and no sideways scrol
   await page.goto("/?q=asthma");
   await settle(page, "/?q=asthma");
   await page.locator("li[data-code] button").first().click();
-  await page.locator("[id^='preview-'] a", { hasText: "Open sheet" }).waitFor();
+  // Laptops open the result in the right pane; phones expand it in place.
+  if (info.project.name === "desktop") await page.locator("#sheet-pane h2").waitFor();
+  else await page.locator("[id^='preview-'] a", { hasText: "Open sheet" }).waitFor();
   const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze();
   expect(results.violations.filter((v) => v.impact === "serious" || v.impact === "critical").map((v) => v.id)).toEqual([]);
   if (info.project.name === "phone") {

@@ -1,9 +1,11 @@
 import { expect, test } from "./fixtures";
 
-test("home shows today's rundown with live codes and the catalog line", async ({ page }) => {
+test("home shows today's rundown with live codes and the catalog line", async ({ page }, info) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1, name: /cream city almanac/i })).toBeVisible();
-  await expect(page.getByText("TODAY'S RUNDOWN")).toBeVisible();
+  // Laptops (comp B) trade the masthead's "TODAY'S RUNDOWN" for the site links.
+  if (info.project.name === "desktop") await expect(page.getByRole("navigation", { name: "Site" })).toBeVisible();
+  else await expect(page.getByText("TODAY'S RUNDOWN")).toBeVisible();
   await expect(page.getByText(/Catalog as of \w{3} \d{1,2} · \d+ raw data · \d+ reports · \d+ visualizations/)).toBeVisible();
   await expect(page.getByLabel("SLUG:")).toHaveAttribute("placeholder", "What are you reporting on?");
   await expect(page.getByRole("heading", { name: "UPDATED THIS SEASON" })).toBeVisible();
@@ -15,7 +17,7 @@ test("home shows today's rundown with live codes and the catalog line", async ({
   await expect(page.getByText("Built on Data You Can Use's public data")).toBeVisible();
 });
 
-test("searching by meaning finds a dataset and opens it in place", async ({ page }) => {
+test("searching by meaning finds a dataset and opens it in place", async ({ page }, info) => {
   await page.goto("/");
   await page.getByLabel("SLUG:").fill("asthma");
   await expect(page).toHaveURL(/\?q=asthma/);
@@ -23,6 +25,11 @@ test("searching by meaning finds a dataset and opens it in place", async ({ page
   await expect(row).toBeVisible();
   await expect(page.getByText(/RUNDOWN · \d+ results/)).toBeVisible();
   await row.getByRole("button").click();
+  if (info.project.name === "desktop") {
+    await expect(page.locator("#sheet-pane")).toContainText("W01");
+    await expect(page).toHaveURL(/open=W01/);
+    return;
+  }
   await expect(row.getByRole("button")).toHaveAttribute("aria-expanded", "true");
   await expect(row.getByRole("table", { name: /places and years/i })).toBeVisible();
   await expect(row.getByText("AI", { exact: true })).toBeVisible();
@@ -53,4 +60,20 @@ test("a dropped connection ends in the failure notice, not endless loading", asy
   await page.getByLabel("SLUG:").fill("asthma");
   await expect(page.getByRole("status")).toContainText("Search failed", { timeout: 20_000 });
   await context.setOffline(false);
+});
+
+test("a shared laptop link opens the full sheet on a phone", async ({ page }, info) => {
+  test.skip(info.project.name !== "phone");
+  // Pick a code that isn't in today's rundown, so the phone has no row to expand.
+  await page.goto("/");
+  const listed = await page.locator("li[data-code]").evaluateAll((els) => els.map((e) => e.getAttribute("data-code")));
+  const code = ["W01", "F02", "H08", "N02", "A04"].find((c) => !listed.includes(c))!;
+  await page.goto(`/?open=${code}`);
+  await expect(page).toHaveURL(new RegExp(`/d/${code}$`));
+});
+
+test("a shared search link with a selection expands that row on a phone", async ({ page }, info) => {
+  test.skip(info.project.name !== "phone");
+  await page.goto("/?q=asthma&open=W01");
+  await expect(page.locator("li[data-code='W01'] button")).toHaveAttribute("aria-expanded", "true");
 });
