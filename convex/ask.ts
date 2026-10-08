@@ -1,6 +1,11 @@
 import { v } from "convex/values";
-import { mutation, query, type QueryCtx } from "./_generated/server";
-import { chicagoDay, costUsd, dailyLimit } from "./lib/ask";
+import { internal } from "./_generated/api";
+import { action, internalQuery, mutation, query, type QueryCtx } from "./_generated/server";
+import { chicagoDay, costUsd, dailyLimit, matchTopic, pickRow } from "./lib/ask";
+import { embed, gatewayKey } from "./lib/gateway";
+import { placeKey, TOPICS } from "./lib/portrait";
+import { MIN_VECTOR_SCORE } from "./lib/rank";
+import { rateLimiter } from "./limits";
 import { readSettings } from "./settings";
 
 async function today(ctx: QueryCtx, user: string) {
@@ -53,5 +58,84 @@ export const recordUsage = mutation({
     if (spend) await ctx.db.patch(spend._id, { usd: spend.usd + usd });
     else await ctx.db.insert("askSpend", { day, usd });
     return null;
+  },
+});
+
+const N03_KEY = "document:neighborhood-portrait-spreadsheet";
+
+// One row of one DYCU neighborhood table, exactly as written. Never combines rows, tables, places or years.
+export const getNumber = query({
+  args: { neighborhood: v.string(), topic: v.string(), year: v.optional(v.number()), row: v.string() },
+  handler: async (ctx, args) => {
+    const family = await ctx.db.query("families").withIndex("by_key", (q) => q.eq("key", N03_KEY)).first();
+    const members = family ? await ctx.db.query("members").withIndex("by_family", (q) => q.eq("familyKey", N03_KEY)).collect() : [];
+    const label = (m: (typeof members)[number]) => m.place ?? m.title;
+    const here = members.filter((m) => placeKey(label(m)) === placeKey(args.neighborhood));
+    if (!family || here.length === 0) {
+      return { status: "no-neighborhood" as const, neighborhoods: [...new Set(members.map(label))].sort() };
+    }
+    const topic = matchTopic(args.topic);
+    if (!topic) return { status: "no-topic" as const, topics: TOPICS.map((t) => t.topic) };
+    const newestFirst = [...here].sort((a, b) => (b.years[0] ?? 0) - (a.years[0] ?? 0));
+    const ordered = [...newestFirst.filter((m) => m.years[0] === args.year), ...newestFirst];
+    for (const m of ordered) {
+      const table = (await ctx.db.query("portraitTables").withIndex("by_hubId", (q) => q.eq("hubId", m.hubId)).collect()).find((x) => x.slug === topic.slug);
+      if (!table) continue;
+      const picked = pickRow(table.rows, args.row);
+      if ("choose" in picked) return { status: "choose-row" as const, rows: picked.choose };
+      return {
+        status: "ok" as const,
+        code: family.code,
+        neighborhood: label(m),
+        place: placeKey(label(m)),
+        year: m.years[0] ?? null,
+        topic: topic.topic,
+        slug: topic.slug,
+        tableIdText: table.tableIdText,
+        vintage: table.vintage,
+        groups: table.groups,
+        label: picked.row.label,
+        values: picked.row.values,
+        issues: table.issues,
+      };
+    }
+    return { status: "no-table" as const, neighborhood: label(here[0]), topic: topic.topic };
+  },
+});
+
+type Passage = { quote: string; section: string; report: string; code: string; name: string };
+type ReportResult = { status: "ok" | "busy"; passages: Passage[] };
+
+export const chunkDetails = internalQuery({
+  args: { ids: v.array(v.id("docChunks")) },
+  handler: async (ctx, { ids }): Promise<Passage[]> => {
+    const out: Passage[] = [];
+    for (const id of ids) {
+      const chunk = await ctx.db.get(id);
+      if (!chunk) continue;
+      const member = await ctx.db.query("members").withIndex("by_hubId", (q) => q.eq("hubId", chunk.hubId)).first();
+      const family = member ? await ctx.db.query("families").withIndex("by_key", (q) => q.eq("key", member.familyKey)).first() : null;
+      if (!member || !family) continue;
+      out.push({ quote: chunk.text, section: chunk.section, report: member.title, code: family.code, name: family.name });
+    }
+    return out;
+  },
+});
+
+// Report passages for a question, by meaning. Signed-in only: each call spends an embedding.
+export const readReport = action({
+  args: { question: v.string(), familyCode: v.optional(v.string()) },
+  // Typed explicitly: this action calls a query in its own module, which TypeScript can't infer through.
+  handler: async (ctx, { question, familyCode }): Promise<ReportResult> => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Sign in to ask");
+    const allowed = await rateLimiter.limit(ctx, "askEmbeds", { key: identity.tokenIdentifier });
+    if (!allowed.ok) return { status: "busy", passages: [] };
+    const settings = await ctx.runQuery(internal.settings.get, {});
+    const { vectors } = await embed([question.slice(0, 500)], settings.embedModel, gatewayKey());
+    const hits = (await ctx.vectorSearch("docChunks", "by_embedding", { vector: vectors[0], limit: 16 })).filter((h) => h._score >= MIN_VECTOR_SCORE);
+    const passages: Passage[] = await ctx.runQuery(internal.ask.chunkDetails, { ids: hits.map((h) => h._id) });
+    const wanted = familyCode?.trim().toUpperCase();
+    return { status: "ok", passages: passages.filter((p) => !wanted || p.code === wanted).slice(0, 3) };
   },
 });

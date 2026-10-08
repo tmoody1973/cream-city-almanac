@@ -5,6 +5,13 @@ import { api } from "./_generated/api";
 import { chicagoDay, costUsd, dailyLimit } from "./lib/ask";
 import { DEFAULT_SETTINGS } from "./settings";
 import schema from "./schema";
+import { fixtureFamilies } from "../tests/helpers/fixtures";
+import { fakeEmbedding, installFakeFetch } from "../tests/helpers/fakeFetch";
+import rateLimiterTest from "@convex-dev/rate-limiter/test";
+import { internal } from "./_generated/api";
+import { toFamilyInput } from "./lib/families";
+import { matchTopic, pickRow } from "./lib/ask";
+import type { TestConvex } from "convex-test";
 
 const modules = import.meta.glob("./**/*.*s");
 const reader = { email: "pat@example.com", emailVerified: true };
@@ -68,5 +75,115 @@ describe("gatekeeper", () => {
     expect(await me.mutation(api.ask.begin, {})).toEqual({ ok: false, reason: "limit" });
     vi.setSystemTime(Date.UTC(2026, 9, 9, 5, 1));
     expect(await me.mutation(api.ask.begin, {})).toEqual({ ok: true });
+  });
+});
+
+async function seed(t: TestConvex<typeof schema>) {
+  const buildId = await t.mutation(internal.buildStore.beginBuild, {});
+  await t.mutation(internal.buildStore.swapCatalog, { buildId, families: fixtureFamilies().map((f) => toFamilyInput(f, null)), dictionaries: [] });
+}
+const harambee = (year: number) =>
+  fixtureFamilies().find((f) => f.key === "document:neighborhood-portrait-spreadsheet")!.members.find((m) => m.place === "Harambee" && m.years[0] === year)!;
+const poverty = (hubId: string) => ({
+  hubId, modified: "m", slug: "poverty-status-by-age", topic: "Poverty Status by Age", tab: "Poverty Status by Age", order: 2,
+  tableIds: ["B17001"], tableIdText: "B17001", vintage: "2019-2023", groups: [""],
+  rows: [
+    { label: "Total", heading: false, values: [{ estimate: "18894", moe: "1504" }] },
+    { label: "Income in the past 12 months below poverty level", heading: true, values: [{ estimate: "6520", moe: "790" }] },
+    { label: "Under 5 years", heading: false, values: [{ estimate: "608", moe: "252" }] },
+    { label: "5 years", heading: false, values: [{ estimate: "120", moe: "60" }] },
+  ],
+  issues: ["Percentages and precision columns have formula errors in DYCU's file, so they aren't shown."],
+});
+
+describe("matching helpers", () => {
+  it("matches topics by name, slug or alias, any case", () => {
+    expect(matchTopic("poverty status by age")!.slug).toBe("poverty-status-by-age");
+    expect(matchTopic("rent-paid")!.slug).toBe("rent-paid");
+    expect(matchTopic("Bedroom and Year")!.slug).toBe("bedrooms-and-year");
+    expect(matchTopic("weather")).toBeNull();
+  });
+  it("asks which row when a label matches several", () => {
+    const rows = poverty("h").rows;
+    expect(pickRow(rows, "under 5 years")).toEqual({ row: rows[2] });
+    expect(pickRow(rows, "5 years")).toEqual({ row: rows[3] }); // an exact label wins over a partial one
+    expect(pickRow(rows, "years")).toEqual({ choose: ["Under 5 years", "5 years"] });
+    expect(pickRow(rows, "income")).toEqual({ row: rows[1] });
+  });
+});
+
+describe("getNumber", () => {
+  it("reads one row of the newest Harambee table", async () => {
+    const t = convexTest(schema, modules);
+    await seed(t);
+    await t.run((ctx) => ctx.db.insert("portraitTables", poverty(harambee(2024).hubId)));
+    const r = await t.query(api.ask.getNumber, { neighborhood: "harambee", topic: "Poverty Status by Age", row: "Under 5 years" });
+    expect(r).toMatchObject({ status: "ok", neighborhood: "Harambee", year: 2024, slug: "poverty-status-by-age", tableIdText: "B17001", label: "Under 5 years", values: [{ estimate: "608", moe: "252" }] });
+    expect(r.status === "ok" && r.issues.length).toBe(1);
+  });
+  it("uses the asked-for year when it has the table, else the newest that does", async () => {
+    const t = convexTest(schema, modules);
+    await seed(t);
+    await t.run(async (ctx) => {
+      await ctx.db.insert("portraitTables", poverty(harambee(2022).hubId));
+      await ctx.db.insert("portraitTables", poverty(harambee(2024).hubId));
+    });
+    expect(await t.query(api.ask.getNumber, { neighborhood: "Harambee", topic: "poverty status by age", year: 2022, row: "Total" })).toMatchObject({ year: 2022 });
+    expect(await t.query(api.ask.getNumber, { neighborhood: "Harambee", topic: "poverty status by age", year: 1999, row: "Total" })).toMatchObject({ year: 2024 });
+  });
+  it("offers neighborhoods when the name is unknown", async () => {
+    const t = convexTest(schema, modules);
+    await seed(t);
+    const r = await t.query(api.ask.getNumber, { neighborhood: "Narnia", topic: "Rent Paid", row: "Total" });
+    expect(r.status).toBe("no-neighborhood");
+    expect(r.status === "no-neighborhood" && r.neighborhoods).toContain("Harambee");
+  });
+  it("offers topics and rows instead of guessing", async () => {
+    const t = convexTest(schema, modules);
+    await seed(t);
+    await t.run((ctx) => ctx.db.insert("portraitTables", poverty(harambee(2024).hubId)));
+    expect((await t.query(api.ask.getNumber, { neighborhood: "Harambee", topic: "weather", row: "Total" })).status).toBe("no-topic");
+    expect(await t.query(api.ask.getNumber, { neighborhood: "Harambee", topic: "Poverty Status by Age", row: "years" })).toEqual({ status: "choose-row", rows: ["Under 5 years", "5 years"] });
+    expect((await t.query(api.ask.getNumber, { neighborhood: "Harambee", topic: "Rent Paid", row: "Total" })).status).toBe("no-table");
+  });
+});
+
+describe("readReport", () => {
+  afterEach(() => vi.unstubAllGlobals());
+  it("needs a signed-in account", async () => {
+    const t = convexTest(schema, modules);
+    rateLimiterTest.register(t);
+    await expect(t.action(api.ask.readReport, { question: "Harambee housing" })).rejects.toThrow(/Sign in/);
+  });
+  it("returns up to three passages with report, section and code", async () => {
+    vi.stubEnv("AI_GATEWAY_API_KEY", "test-key");
+    installFakeFetch();
+    const t = convexTest(schema, modules);
+    rateLimiterTest.register(t);
+    await seed(t);
+    const hubId = harambee(2024).hubId;
+    // fakeEmbedding is one-hot on the first word, so passages starting "Harambee" match the question "Harambee …".
+    await t.run(async (ctx) => {
+      for (let i = 0; i < 5; i++) {
+        await ctx.db.insert("docChunks", { hubId, modified: "m", section: `Housing ${i}`, text: `Harambee homes ${i}`, embedding: fakeEmbedding("Harambee") });
+      }
+    });
+    const r = await t.withIdentity(reader).action(api.ask.readReport, { question: "Harambee housing" });
+    expect(r.status).toBe("ok");
+    expect(r.passages).toHaveLength(3);
+    expect(r.passages[0]).toMatchObject({ section: expect.stringMatching(/^Housing/), code: expect.any(String), report: expect.any(String) });
+    const filtered = await t.withIdentity(reader).action(api.ask.readReport, { question: "Harambee housing", familyCode: "ZZ9" });
+    expect(filtered.passages).toEqual([]);
+  });
+  it("rate-limits report reads per account", async () => {
+    vi.stubEnv("AI_GATEWAY_API_KEY", "test-key");
+    installFakeFetch();
+    const t = convexTest(schema, modules);
+    rateLimiterTest.register(t);
+    const me = t.withIdentity(reader);
+    const results = [];
+    for (let i = 0; i < 21; i++) results.push((await me.action(api.ask.readReport, { question: "Harambee" })).status);
+    expect(results.slice(0, 20).every((s) => s === "ok")).toBe(true);
+    expect(results[20]).toBe("busy");
   });
 });
