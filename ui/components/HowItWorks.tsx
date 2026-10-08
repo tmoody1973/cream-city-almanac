@@ -43,14 +43,6 @@ export function HowItWorks({ status, example }: { status: CatalogStatus | null; 
         {example && <AnnotatedSheet sheet={example} />}
 
         <div className={styles.sections}>
-          {/* First on phones, so a first-time visitor reads what this is before anything else; laptops follow the comp's order. */}
-          <section className={`${styles.section} ${styles.whatItIs}`}>
-            <h3 className={styles.heading}>WHAT IT IS</h3>
-            <p>
-              An unofficial, phone-first way to find, understand and download Milwaukee&apos;s public data from Data You Can Use. Search
-              in your own words; every fact shows where it came from.
-            </p>
-          </section>
 
           <section className={styles.section}>
             <h3 className={styles.heading}>EACH WEEK</h3>
@@ -89,7 +81,15 @@ export function HowItWorks({ status, example }: { status: CatalogStatus | null; 
             <p>When nothing is close, it says so instead of listing unrelated data.</p>
           </section>
 
-          <section className={`${styles.section} ${styles.later}`}>
+          <section className={styles.section}>
+            <h3 className={styles.heading}>WHAT IT IS</h3>
+            <p>
+              An unofficial, phone-first way to find, understand and download Milwaukee&apos;s public data from Data You Can Use. Search
+              in your own words; every fact shows where it came from.
+            </p>
+          </section>
+
+          <section className={styles.section}>
             <h3 className={styles.heading}>WHERE THE DATA COMES FROM</h3>
             <p>
               DYCU&apos;s ArcGIS Hub, the public website where Data You Can Use publishes its data
@@ -98,7 +98,7 @@ export function HowItWorks({ status, example }: { status: CatalogStatus | null; 
             <p>Refreshed weekly and never altered. Downloads come straight from the Hub.</p>
           </section>
 
-          <section className={`${styles.section} ${styles.later}`}>
+          <section className={styles.section}>
             <h3 className={styles.heading}>HOW IT&apos;S BUILT</h3>
             <p>
               Next.js on Vercel; Convex for the database, search and the weekly job; Claude through the Vercel AI Gateway; Firecrawl to
@@ -107,7 +107,7 @@ export function HowItWorks({ status, example }: { status: CatalogStatus | null; 
             </p>
           </section>
 
-          <section className={`${styles.section} ${styles.later} ${styles.colophon}`}>
+          <section className={`${styles.section} ${styles.colophon}`}>
             <h3 className={styles.heading}>LIMITS AND CREDITS</h3>
             <p>Unofficial; not affiliated with Data You Can Use.{asOf ? ` Data as of ${asOf}.` : ""}</p>
             <p>

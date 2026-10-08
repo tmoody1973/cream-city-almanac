@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { fetchFeatures, fieldValue, headlineColumn, rowsUrl, sharedScale, valuesUrl, type FetchResult, type Features, isSystemColumn, bySeriesYear, formatCell } from "@/ui/lib/preview";
+import { fetchFeatures, fieldValue, headlineColumn, rowsUrl, sharedScale, valuesUrl, type FetchResult, type Features, isSystemColumn, chartSeries, formatCell } from "@/ui/lib/preview";
 import { StripChart } from "./StripChart";
 import styles from "./sheet.module.css";
 
@@ -27,7 +27,7 @@ export function LivePreview({ members, fields, chartOnly = false }: { members: M
           return { label: [m.place, m.yearLabel].filter(Boolean).join(" "), values };
         }),
       )
-        .then((s) => live && setSeries([...s].sort((a, b) => bySeriesYear(a.label, b.label))))
+        .then((s) => live && setSeries(chartSeries(s)))
         .catch(() => live && setSeries([]));
     }
     return () => {

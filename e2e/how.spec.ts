@@ -36,10 +36,17 @@ test.describe("without JavaScript", () => {
   });
 });
 
-test("on a phone, What it is comes first", async ({ page }, info) => {
-  test.skip(info.project.name !== "phone");
+test("sections follow the approved comps' order, the same on every screen", async ({ page }) => {
   await page.goto("/how-it-works");
-  await expect(page.locator("section h3").first()).toHaveText("WHAT IT IS");
+  await expect(page.locator("section h3")).toHaveText([
+    "EACH WEEK",
+    "WHAT THE AI DOES",
+    "HOW SEARCH WORKS",
+    "WHAT IT IS",
+    "WHERE THE DATA COMES FROM",
+    "HOW IT'S BUILT",
+    "LIMITS AND CREDITS",
+  ]);
 });
 
 test("the search-check count comes from the question list", async ({ page }) => {

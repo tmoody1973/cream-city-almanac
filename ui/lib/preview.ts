@@ -84,3 +84,11 @@ export function formatCell(v: unknown): string {
   if (typeof v === "number" && !Number.isInteger(v)) return String(Math.round(v * 100) / 100);
   return String(v);
 }
+
+const RANGE = /\d{4}\s*[–-]\s*\d{4}/;
+// The strip chart's rows: oldest year first, and a multi-year layer ("City 2023–2025") left out when single-year
+// layers exist, because it holds the same days and would plot them twice.
+export function chartSeries<T extends { label: string }>(series: T[]): T[] {
+  const singles = series.filter((s) => !RANGE.test(s.label));
+  return [...(singles.length ? singles : series)].sort((a, b) => bySeriesYear(a.label, b.label));
+}

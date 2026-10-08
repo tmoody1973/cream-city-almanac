@@ -574,9 +574,16 @@
     margin-top: 0;
   }
 
-  /* Laptop reading order follows the comp: the three "how" sections first, then what it is, sources, build, credits. */
-  .whatItIs,
-  .later {
-    order: 1;
+}
+
+/* The credits' three columns start level. */
+.colophon p {
+  margin: 0 0 1em;
+}
+
+@media (min-width: 1100px) and (orientation: landscape) {
+  /* The tilt lifts the note's right end; drop the first note so its arrow meets the band as on the comp. */
+  .part:first-child .note[data-side="left"] {
+    top: 10px;
   }
 }
