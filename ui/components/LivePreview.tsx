@@ -7,7 +7,7 @@ import styles from "./sheet.module.css";
 type Member = { place: string | null; yearLabel: string | null; featureServerUrl: string | null };
 const MAX_SERIES = 6;
 
-export function LivePreview({ members, fields, chartOnly = false }: { members: Member[]; fields: string[]; chartOnly?: boolean }) {
+export function LivePreview({ members, fields, chartOnly = false, unit }: { members: Member[]; fields: string[]; chartOnly?: boolean; unit?: string }) {
   const sources = members.filter((m) => m.featureServerUrl).slice(0, MAX_SERIES);
   const latestUrl = sources[0]?.featureServerUrl ?? null;
   const headline = headlineColumn(fields);
@@ -71,7 +71,7 @@ export function LivePreview({ members, fields, chartOnly = false }: { members: M
           </table>
         </div>
       )}
-      {headline && series && scale && <StripChart field={headline} series={series} scale={scale} />}
+      {headline && series && scale && <StripChart field={headline} series={series} scale={scale} unit={unit} />}
     </>
   );
 }

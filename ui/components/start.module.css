@@ -1,0 +1,68 @@
+/* Start here, from the approved comps: .impeccable/mocks/start-b-laptop.webp (three ruled columns, 1536x1024) and
+   .impeccable/mocks/start-a-phone.webp (one column, 1024 wide). Red is grease pencil only. */
+.page {
+  max-width: min(1280px, 100%);
+  min-height: 100vh;
+  margin: 0 auto;
+  padding-inline: var(--gutter);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Phones mark the current page by underlining the masthead's side label. */
+.side {
+  text-decoration: underline;
+  text-decoration-thickness: 3px;
+  text-underline-offset: 0.2em;
+}
+
+.main { flex: 1; padding-bottom: 32px; }
+.headline { margin: clamp(16px, 3vw, 32px) 0 8px; font-family: var(--font-caps); font-weight: 700; font-size: clamp(38px, 9.6vw, 100px); line-height: 0.95; }
+.lede { margin: 0 0 clamp(16px, 3vw, 32px); padding-bottom: clamp(12px, 2vw, 20px); border-bottom: var(--hair); }
+
+.examples { display: grid; gap: clamp(28px, 5vw, 48px); }
+.example { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.who { margin: 0; padding: 6px 12px; background: var(--band); font-family: var(--font-caps); font-weight: 700; font-size: var(--fs-label); }
+.question { margin: 0; font-family: var(--font-caps); font-weight: 700; font-size: clamp(24px, 5vw, 40px); line-height: 1.05; }
+.steps { margin: 0; padding: 0; list-style: none; counter-reset: step; }
+.steps li { counter-increment: step; display: grid; grid-template-columns: 1.8em minmax(0, 1fr); padding: 8px 0; border-bottom: var(--hair); }
+.steps li::before { content: counter(step); font-family: var(--font-caps); font-weight: 700; }
+.excerpt { padding: 12px; border: var(--hair); overflow-wrap: anywhere; }
+.excerpt ul { margin: 0 0 10px; padding-left: 1.2em; }
+.excerpt p { margin: 0 0 8px; }
+.excerptLabel { padding: 4px 8px; background: var(--band); font-weight: 700; font-size: var(--fs-small); }
+.issue { padding: 6px 10px; border: var(--hair); font-size: var(--fs-small); }
+.table { width: 100%; margin-bottom: 8px; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: var(--fs-small); }
+.table caption { caption-side: top; padding: 0 0 6px; text-align: left; font-family: var(--font-caps); font-weight: 700; font-size: var(--fs-label); }
+.table th, .table td { padding: 6px 8px; border: var(--hair); text-align: right; white-space: nowrap; overflow-wrap: normal; }
+.table thead th { background: var(--band); text-align: center; font-weight: 400; }
+.table th[scope="row"] { text-align: left; font-weight: 400; white-space: normal; }
+.missing { margin: 0; color: var(--muted); }
+.try { margin: 0; font-weight: 700; }
+
+.guides { display: grid; gap: 12px; margin-top: clamp(28px, 5vw, 48px); padding-top: clamp(16px, 3vw, 24px); border-top: var(--hair); }
+.guides ul { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.guides p { margin: 0; }
+.guidesHeading { margin: 0; font-family: var(--font-caps); font-weight: 700; font-size: clamp(26px, 6vw, 43px); line-height: 1; }
+
+/* Keep this media query identical to LAPTOP_QUERY in ui/lib/selection.ts. */
+@media (min-width: 1100px) and (orientation: landscape) {
+  .page {
+    max-width: none;
+    --fs-wordmark: clamp(60px, 5vw, 77px);
+    --fs-body: clamp(15px, 1.2vw, 18px);
+    --fs-small: clamp(13px, 1vw, 16px);
+    --fs-label: clamp(16px, 1.3vw, 20px);
+    font-size: var(--fs-body);
+  }
+  .side { display: none; }
+  .main { padding-right: var(--gutter); }
+  /* Comp B: the three people side by side in ruled columns. */
+  .examples { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; }
+  .example { padding: 0 clamp(16px, 1.6vw, 24px); border-left: var(--hair); }
+  .example:first-child { padding-left: 0; border-left: 0; }
+  .example:last-child { padding-right: 0; }
+  .question { font-size: clamp(26px, 2.4vw, 38px); }
+  .try { margin-top: auto; }
+  .guides { grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr) auto; align-items: start; gap: clamp(16px, 2vw, 32px); }
+}

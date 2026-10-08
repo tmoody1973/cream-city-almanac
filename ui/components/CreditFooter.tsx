@@ -6,6 +6,8 @@ export function CreditFooter() {
     <footer className={styles.footer}>
       <a href="https://datayoucanuse.org">Built on Data You Can Use&apos;s public data</a>
       {" · "}
+      <Link href="/start-here">Start here</Link>
+      {" · "}
       <Link href="/how-it-works">How it works</Link>
     </footer>
   );

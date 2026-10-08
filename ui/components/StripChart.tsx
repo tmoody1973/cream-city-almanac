@@ -5,11 +5,12 @@ const ROW = 30;
 const LABEL_W = 120;
 const WIDTH = 600;
 
-export function StripChart({ field, series, scale }: { field: string; series: { label: string; values: number[] }[]; scale: { min: number; max: number } }) {
+// `unit` names what one dot is: one area for tract and neighborhood data, one day for daily readings.
+export function StripChart({ field, series, scale, unit = "area" }: { field: string; series: { label: string; values: number[] }[]; scale: { min: number; max: number }; unit?: string }) {
   const x = (v: number) => LABEL_W + ((v - scale.min) / (scale.max - scale.min)) * (WIDTH - LABEL_W - 10);
   return (
     <figure className={styles.chart}>
-      <svg viewBox={`0 0 ${WIDTH} ${series.length * ROW + 24}`} role="img" aria-label={`Each dot is one area's ${field}, by year, on one shared scale from ${formatScale(scale.min)} to ${formatScale(scale.max)}`}>
+      <svg viewBox={`0 0 ${WIDTH} ${series.length * ROW + 24}`} role="img" aria-label={`Each dot is one ${unit}'s ${field}, by year, on one shared scale from ${formatScale(scale.min)} to ${formatScale(scale.max)}`}>
         {series.map((s, i) => (
           <g key={s.label} transform={`translate(0 ${i * ROW + 16})`}>
             <text x="0" y="5" className={styles.chartLabel}>{s.label}</text>
@@ -22,7 +23,7 @@ export function StripChart({ field, series, scale }: { field: string; series: { 
         <text x={LABEL_W} y={series.length * ROW + 20} className={styles.chartLabel}>{formatScale(scale.min)}</text>
         <text x={WIDTH - 10} y={series.length * ROW + 20} textAnchor="end" className={styles.chartLabel}>{formatScale(scale.max)}</text>
       </svg>
-      <figcaption>Each dot is one area. Every row shares one scale.</figcaption>
+      <figcaption>Each dot is one {unit}. Every row shares one scale.</figcaption>
     </figure>
   );
 }
