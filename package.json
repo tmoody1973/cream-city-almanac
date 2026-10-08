@@ -14,7 +14,8 @@
     "build": "next build",
     "start": "next start",
     "e2e": "playwright test --grep-invert @capture",
-    "capture": "playwright test --grep @capture --project=desktop"
+    "capture": "playwright test --grep @capture --project=desktop",
+    "ask:card": "tsx scripts/ask-report-card.ts"
   },
   "keywords": [],
   "author": "",

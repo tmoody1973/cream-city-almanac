@@ -16,6 +16,19 @@ describe("proseSegments", () => {
   it("flags years outside 1900–2099 and numbers glued to codes", () => {
     expect(flagged("In 1850 there were 3 mills.")).toEqual(["1850", "3"]);
   });
+  it("reads a year followed by a comma as a year", () => {
+    expect(flagged("It covers 2023, 2024 and 2025.")).toEqual([]);
+    expect(flagged("About 6,520 people.")).toEqual(["6,520"]);
+  });
+  it("allows numbers inside a quoted row label, not a quoted figure", () => {
+    expect(flagged('Harambee\'s "Under 5 years" row is below.')).toEqual([]);
+    expect(flagged("The \u201cIncome in the past 12 months\u201d row.")).toEqual([]);
+    expect(flagged('The estimate is "608".')).toEqual(["608"]);
+  });
+  it("treats digits glued to letters as identifiers, not figures", () => {
+    expect(flagged("Census tables B17001, S1501 and DP04 cover it, with PM2.5 readings.")).toEqual([]);
+    expect(flagged("Adults 18 and older.")).toEqual(["18"]);
+  });
   it("keeps the text intact", () => {
     const t = "Between 2021 and 2023 it rose by 4 points.";
     expect(proseSegments(t).map((s) => s.text).join("")).toBe(t);
