@@ -26,6 +26,28 @@ describe("catalog queries", () => {
     expect(rows.map((r) => r.latestModified)).toEqual([...rows.map((r) => r.latestModified)].sort().reverse());
   });
 
+  it("the rundown lists data only, still ten rows", async () => {
+    const t = convexTest(schema, modules);
+    await seed(t);
+    await t.run(async (ctx) => {
+      const x02 = (await ctx.db.query("families").withIndex("by_key", (q) => q.eq("key", "page:getting-started")).first())!;
+      await ctx.db.patch(x02._id, { latestModified: "2099-01-01T00:00:00.000Z" });
+    });
+    const rows = await t.query(api.catalog.rundown, {});
+    expect(rows).toHaveLength(10);
+    expect(rows.some((r) => r.kind === "page")).toBe(false);
+  });
+
+  it("a guide page's preview points at its Hub page", async () => {
+    const t = convexTest(schema, modules);
+    await seed(t);
+    const preview = (await t.query(api.catalog.familyPreview, { key: "page:getting-started" }))!;
+    expect(preview.kind).toBe("page");
+    expect(preview.guideUrl).toMatch(/^https:\/\/getdata-dycu\.hub\.arcgis\.com\/pages\//);
+    const data = (await t.query(api.catalog.familyPreview, { key: "dataset:asthma-prevalence" }))!;
+    expect(data.guideUrl).toBeNull();
+  });
+
   it("familySheet accepts lowercase and returns null for unknown codes", async () => {
     const t = convexTest(schema, modules);
     await seed(t);

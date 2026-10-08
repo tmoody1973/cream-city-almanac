@@ -117,6 +117,9 @@ export const familyPreview = query({
       explainerProvenance: card ? card.explainerProvenance : ("HUB" as const),
       grid: placeYearGrid(members),
       csvUrl: members.find((m) => m.downloads.CSV)?.downloads.CSV ?? null,
+      kind: family.kind,
+      // DYCU's guide pages explain the Hub; their preview links out instead of describing data.
+      guideUrl: family.kind === "page" ? (members[0]?.landingPage ?? null) : null,
     };
   },
 });

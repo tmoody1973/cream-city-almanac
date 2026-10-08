@@ -25,6 +25,18 @@ export function FamilyPreview({ id, familyKey, focus }: { id: string; familyKey:
   }
   if (preview === undefined) return <div id={id} className={styles.panel} aria-busy="true">Loading…</div>;
   if (preview === null) return <div id={id} className={styles.panel}>This dataset is no longer in the catalog.</div>;
+  if (preview.guideUrl) {
+    return (
+      <div id={id} className={styles.panel}>
+        <p className={styles.explainer}>
+          A guide page on DYCU&apos;s Hub, not a dataset.{" "}
+          <a href={preview.guideUrl}>
+            Open it on the Hub <ProvenanceTag source="HUB" />
+          </a>
+        </p>
+      </div>
+    );
+  }
   return (
     <div id={id} className={styles.panel}>
       <div className={styles.panelBody}>

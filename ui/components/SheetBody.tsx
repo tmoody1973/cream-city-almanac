@@ -1,4 +1,5 @@
 import type { FunctionReturnType } from "convex/server";
+import Link from "next/link";
 import type { api } from "@/convex/_generated/api";
 import { shortDate, subline, yearSpan } from "@/ui/lib/format";
 import { LivePreview } from "./LivePreview";
@@ -26,95 +27,113 @@ export function SheetBody({ sheet, headingId, focus }: { sheet: SheetData; headi
         </h2>
         <p className={styles.sub}>{subline(family)}</p>
       </header>
-      <div className={styles.lead}>
-        <div className={styles.section}>
-          <h3 className={`${styles.heading} ${styles.laptopOnly}`}>PLACE BY YEAR</h3>
-          <PlaceYearGrid grid={grid} />
-        </div>
-
+      {family.kind === "page" ? (
         <section className={styles.section}>
-          <h3 className={styles.heading}>WHAT IT MEASURES</h3>
-          <p>{card?.explainer ?? latest?.title} {card && <ProvenanceTag source={card.explainerProvenance} />}</p>
+          <p>
+            A guide page on DYCU&apos;s Hub, not a dataset.{" "}
+            {latest?.landingPage && (
+              <a href={latest.landingPage}>
+                Open it on the Hub <ProvenanceTag source="HUB" />
+              </a>
+            )}
+          </p>
+          <p>
+            New here? <Link href="/start-here">Start here</Link>.
+          </p>
         </section>
-      </div>
+      ) : (
+        <>
+          <div className={styles.lead}>
+            <div className={styles.section}>
+              <h3 className={`${styles.heading} ${styles.laptopOnly}`}>PLACE BY YEAR</h3>
+              <PlaceYearGrid grid={grid} />
+            </div>
 
-      {sheet.portraits && <PortraitTables index={sheet.portraits} focus={focus} />}
+            <section className={styles.section}>
+              <h3 className={styles.heading}>WHAT IT MEASURES</h3>
+              <p>{card?.explainer ?? latest?.title} {card && <ProvenanceTag source={card.explainerProvenance} />}</p>
+            </section>
+          </div>
 
-      {card && card.glossary.length > 0 && (
-        <section className={styles.section}>
-          <h3 className={styles.heading}>COLUMN GUIDE</h3>
-          <table className={styles.glossary} aria-label="Column guide">
-            {/* Laptops (comp B) get a header row and the tag in its own column; phones keep the tag inline. */}
-            <thead className={styles.guideHead}>
-              <tr>
-                <th scope="col">COLUMN</th>
-                <th scope="col">DESCRIPTION</th>
-                <th scope="col">TAG</th>
-              </tr>
-            </thead>
-            <tbody>
-              {card.glossary.map((g) => (
-                <tr key={g.field}>
-                  <th scope="row"><code>{breakable(g.field)}</code></th>
-                  <td>
-                    {g.meaning}
-                    <span className={styles.tagInline}> <ProvenanceTag source={g.provenance} /></span>
-                  </td>
-                  <td className={styles.tagCell}><ProvenanceTag source={g.provenance} /></td>
-                </tr>
+          {sheet.portraits && <PortraitTables index={sheet.portraits} focus={focus} />}
+
+          {card && card.glossary.length > 0 && (
+            <section className={styles.section}>
+              <h3 className={styles.heading}>COLUMN GUIDE</h3>
+              <table className={styles.glossary} aria-label="Column guide">
+                {/* Laptops (comp B) get a header row and the tag in its own column; phones keep the tag inline. */}
+                <thead className={styles.guideHead}>
+                  <tr>
+                    <th scope="col">COLUMN</th>
+                    <th scope="col">DESCRIPTION</th>
+                    <th scope="col">TAG</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {card.glossary.map((g) => (
+                    <tr key={g.field}>
+                      <th scope="row"><code>{breakable(g.field)}</code></th>
+                      <td>
+                        {g.meaning}
+                        <span className={styles.tagInline}> <ProvenanceTag source={g.provenance} /></span>
+                      </td>
+                      <td className={styles.tagCell}><ProvenanceTag source={g.provenance} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </section>
+          )}
+
+          {card && card.caveats.length > 0 && (
+            <section className={styles.section}>
+              <h3 className={styles.heading}>CAVEATS</h3>
+              <ul>{card.caveats.map((c) => <li key={c}>{c} <ProvenanceTag source="AI" /></li>)}</ul>
+            </section>
+          )}
+
+          {members.some((m) => m.featureServerUrl) && (
+            <section className={styles.section}>
+              <h3 className={styles.heading}>LIVE PREVIEW</h3>
+              <LivePreview members={members} fields={card?.glossary.map((g) => g.field) ?? []} />
+            </section>
+          )}
+
+          {card && card.storyAngles.length > 0 && (
+            <section className={styles.section}>
+              <h3 className={styles.heading}>STORY ANGLES</h3>
+              <ul>{card.storyAngles.map((s) => <li key={s}>{s} <ProvenanceTag source="AI" /></li>)}</ul>
+            </section>
+          )}
+
+          {sources.length > 0 && (
+            <section className={styles.section}>
+              <h3 className={styles.heading}>SOURCES</h3>
+              {sources.map((s) => (
+                <p key={s.name}>
+                  <a href={s.url}>{s.name}</a>: {s.summary} {s.limits} <ProvenanceTag source="SOURCE_SITE" />
+                </p>
               ))}
-            </tbody>
-          </table>
-        </section>
-      )}
+            </section>
+          )}
 
-      {card && card.caveats.length > 0 && (
-        <section className={styles.section}>
-          <h3 className={styles.heading}>CAVEATS</h3>
-          <ul>{card.caveats.map((c) => <li key={c}>{c} <ProvenanceTag source="AI" /></li>)}</ul>
-        </section>
-      )}
-
-      {members.some((m) => m.featureServerUrl) && (
-        <section className={styles.section}>
-          <h3 className={styles.heading}>LIVE PREVIEW</h3>
-          <LivePreview members={members} fields={card?.glossary.map((g) => g.field) ?? []} />
-        </section>
-      )}
-
-      {card && card.storyAngles.length > 0 && (
-        <section className={styles.section}>
-          <h3 className={styles.heading}>STORY ANGLES</h3>
-          <ul>{card.storyAngles.map((s) => <li key={s}>{s} <ProvenanceTag source="AI" /></li>)}</ul>
-        </section>
-      )}
-
-      {sources.length > 0 && (
-        <section className={styles.section}>
-          <h3 className={styles.heading}>SOURCES</h3>
-          {sources.map((s) => (
-            <p key={s.name}>
-              <a href={s.url}>{s.name}</a>: {s.summary} {s.limits} <ProvenanceTag source="SOURCE_SITE" />
-            </p>
-          ))}
-        </section>
-      )}
-
-      <section className={styles.section}>
-        <h3 className={styles.heading}>ALL VERSIONS</h3>
-        <ol className={styles.versions}>
-          {members.map((m) => (
-            <li key={m.hubId}>
-              <a href={m.landingPage}>{[m.place, m.yearLabel ?? yearSpan(m.years)].filter(Boolean).join(" · ") || m.title}</a>
-              <span className={styles.updated}>updated {shortDate(m.modified)}</span>
-              {DOWNLOAD_ORDER.filter((f) => m.downloads[f]).map((f) => (
-                <a key={f} className={styles.dl} href={m.downloads[f]}>{f === "App" ? "Open app" : f}</a>
+          <section className={styles.section}>
+            <h3 className={styles.heading}>ALL VERSIONS</h3>
+            <ol className={styles.versions}>
+              {members.map((m) => (
+                <li key={m.hubId}>
+                  <a href={m.landingPage}>{[m.place, m.yearLabel ?? yearSpan(m.years)].filter(Boolean).join(" · ") || m.title}</a>
+                  <span className={styles.updated}>updated {shortDate(m.modified)}</span>
+                  {DOWNLOAD_ORDER.filter((f) => m.downloads[f]).map((f) => (
+                    <a key={f} className={styles.dl} href={m.downloads[f]}>{f === "App" ? "Open app" : f}</a>
+                  ))}
+                  {m.fileUrl && fileLabel && <a className={styles.dl} href={m.fileUrl}>{fileLabel}</a>}
+                </li>
               ))}
-              {m.fileUrl && fileLabel && <a className={styles.dl} href={m.fileUrl}>{fileLabel}</a>}
-            </li>
-          ))}
-        </ol>
-      </section>
+            </ol>
+          </section>
+        </>
+      )}
     </>
   );
 }

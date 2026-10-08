@@ -140,8 +140,16 @@ export const summaries = internalQuery({
   },
 });
 
+const RUNDOWN_SIZE = 10;
+
+// "Updated this season" is for data; DYCU's guide pages (kind "page") are left out.
 export async function rundownRows(ctx: QueryCtx): Promise<ResultRow[]> {
-  return (await ctx.db.query("families").withIndex("by_latestModified").order("desc").take(10)).map(toRow);
+  const rows: ResultRow[] = [];
+  for await (const f of ctx.db.query("families").withIndex("by_latestModified").order("desc")) {
+    if (f.kind !== "page") rows.push(toRow(f));
+    if (rows.length === RUNDOWN_SIZE) break;
+  }
+  return rows;
 }
 
 export const rundown = internalQuery({
