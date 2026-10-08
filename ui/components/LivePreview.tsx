@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { fetchFeatures, fieldValue, headlineColumn, rowsUrl, sharedScale, valuesUrl, type FetchResult, type Features, isSystemColumn, chartSeries, formatCell } from "@/ui/lib/preview";
+import { fetchFeatures, fieldValue, headlineColumn, rowsUrl, sharedScale, valuesUrl, type FetchResult, type Features, isSystemColumn, chartSeries, formatCell, dateColumn, dayOfYear } from "@/ui/lib/preview";
 import { StripChart } from "./StripChart";
 import styles from "./sheet.module.css";
 
@@ -11,8 +11,9 @@ export function LivePreview({ members, fields, chartOnly = false, unit }: { memb
   const sources = members.filter((m) => m.featureServerUrl).slice(0, MAX_SERIES);
   const latestUrl = sources[0]?.featureServerUrl ?? null;
   const headline = headlineColumn(fields);
+  const day = dateColumn(fields);
   const [rows, setRows] = useState<FetchResult<Features> | null>(null);
-  const [series, setSeries] = useState<{ label: string; values: number[] }[] | null>(null);
+  const [series, setSeries] = useState<{ label: string; values: number[]; days?: number[] }[] | null>(null);
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
@@ -22,9 +23,12 @@ export function LivePreview({ members, fields, chartOnly = false, unit }: { memb
     if (headline) {
       Promise.all(
         sources.map(async (m) => {
-          const r = await fetchFeatures(valuesUrl(m.featureServerUrl!, headline));
-          const values = r.ok ? r.data.features.map((f) => Number(fieldValue(f.attributes, headline))).filter(Number.isFinite) : [];
-          return { label: [m.place, m.yearLabel].filter(Boolean).join(" "), values };
+          const r = await fetchFeatures(valuesUrl(m.featureServerUrl!, headline, day ?? undefined));
+          const points = (r.ok ? r.data.features : [])
+            .map((f) => ({ v: Number(fieldValue(f.attributes, headline)), d: day ? dayOfYear(fieldValue(f.attributes, day)) : null }))
+            .filter((p) => Number.isFinite(p.v) && (!day || p.d !== null));
+          const label = [m.place, m.yearLabel].filter(Boolean).join(" ");
+          return { label, values: points.map((p) => p.v), ...(day && { days: points.map((p) => p.d!) }) };
         }),
       )
         .then((s) => live && setSeries(chartSeries(s)))
@@ -33,9 +37,9 @@ export function LivePreview({ members, fields, chartOnly = false, unit }: { memb
     return () => {
       live = false;
     };
-    // sources is derived from members; latestUrl and headline capture what changes.
+    // sources is derived from members; latestUrl, headline and day capture what changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [latestUrl, headline, attempt]);
+  }, [latestUrl, headline, day, attempt]);
 
   if (!latestUrl) return null;
   if (rows === null) return <p aria-busy="true">Loading preview from the Hub…</p>;

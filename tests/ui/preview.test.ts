@@ -1,4 +1,4 @@
-import { canChart } from "../../ui/lib/preview";
+import { canChart, dateColumn, dayOfYear, dayShade } from "../../ui/lib/preview";
 import { describe, expect, it, vi } from "vitest";
 import { bySeriesYear, chartSeries, fetchFeatures, fetchJson, fieldValue, formatCell, formatScale, headlineColumn, isSystemColumn, rowsUrl, sharedScale, valuesUrl } from "../../ui/lib/preview";
 
@@ -94,5 +94,31 @@ describe("canChart", () => {
     expect(canChart(["Day", "AvgAQI"], feed)).toBe(true);
     expect(canChart([], feed)).toBe(false);
     expect(canChart(["Day", "AvgAQI"], [{ featureServerUrl: null }])).toBe(false);
+  });
+});
+
+describe("daily readings", () => {
+  it("finds a date column only when one is named Day or Date", () => {
+    expect(dateColumn(["Day", "AvgAQI"])).toBe("Day");
+    expect(dateColumn(["GEOID", "date"])).toBe("date");
+    expect(dateColumn(["GEOID", "per_asthma", "Updated_Date"])).toBeNull();
+  });
+  it("asks the Hub for the date alongside the reading", () => {
+    expect(valuesUrl("https://s.test/FeatureServer/0", "AvgAQI", "Day")).toContain("outFields=AvgAQI%2CDay");
+  });
+  it("turns a Hub date into its day of the year", () => {
+    expect(dayOfYear("2024-01-01")).toBe(1);
+    expect(dayOfYear("2024-06-08")).toBe(160);
+    expect(dayOfYear("2024-12-31")).toBe(366);
+    expect(dayOfYear("not a date")).toBeNull();
+    expect(dayOfYear(null)).toBeNull();
+  });
+  it("shades a reading darker the higher it is, never invisible", () => {
+    const scale = { min: 0, max: 100 };
+    expect(dayShade(0, scale)).toBeCloseTo(0.15);
+    expect(dayShade(100, scale)).toBeCloseTo(1);
+    expect(dayShade(25, scale)).toBeGreaterThan(dayShade(10, scale));
+    // A typical day (a quarter of the way up) still reads clearly, not as a near-blank mark.
+    expect(dayShade(25, scale)).toBeGreaterThan(0.5);
   });
 });

@@ -74,8 +74,8 @@
   .steps li { grid-template-columns: 1.5em minmax(0, 1fr); padding: 1px 0; border-bottom: 0; }
   .steps li::before { content: counter(step) "."; font-family: inherit; font-weight: 400; }
   .steps, .excerpt { line-height: 1.25; }
-  /* The three excerpt boxes end on one line. */
-  .excerpt { flex: 1; padding: 10px; font-size: var(--fs-small); }
+  /* Each excerpt box ends at its content, as comp B draws them; only the Try it row lines up. */
+  .excerpt { padding: 10px; font-size: var(--fs-small); }
   .table th, .table td { padding: 4px 8px; }
   .issue { padding: 4px 8px; }
   .try { margin-top: auto; font-size: clamp(18px, 1.5vw, 24px); line-height: 1.2; }
