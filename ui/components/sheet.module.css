@@ -116,7 +116,7 @@
 .portraitTable th[scope="row"], .portraitTable th[scope="rowgroup"] { min-width: 8em; text-align: left; white-space: normal; font-weight: 400; }
 .portraitTable th[scope="rowgroup"] { background: var(--band); font-family: var(--font-caps); font-weight: 700; }
 .portraitTable tbody tr:nth-child(even) { background: var(--band); }
-.portraitTable tbody tr:first-child > * { font-weight: 700; }
+.portraitTable tbody:first-of-type > tr:first-child > * { font-weight: 700; }
 .portraitNote { color: var(--muted); font-size: var(--fs-small); }
 
 /* Narrow phones: a select holds its widest option, so each label sits above a full-width select. */
@@ -138,6 +138,6 @@
   .portraitCaption { font-size: calc(var(--fs-label) * 0.8); text-transform: none; }
   .portraitTable thead th { background: none; }
   .portraitTable tbody tr:nth-child(even) { background: none; }
-  .portraitTable tbody tr:first-child { background: var(--band); }
-  .portraitTable tbody tr:first-child > * { font-weight: 400; }
+  .portraitTable tbody:first-of-type > tr:first-child { background: var(--band); }
+  .portraitTable tbody:first-of-type > tr:first-child > * { font-weight: 400; }
 }

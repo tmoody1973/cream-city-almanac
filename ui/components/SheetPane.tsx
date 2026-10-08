@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { SEARCH_TIMEOUT_MS } from "@/ui/lib/search";
 import { OpenedMark } from "./OpenedMark";
+import type { PortraitFocus } from "@/ui/lib/portrait";
 import { SheetBody } from "./SheetBody";
 import { SheetDownloads } from "./SheetDownloads";
 import styles from "./rundown.module.css";
@@ -13,6 +14,7 @@ export const SHEET_HEADING_ID = "sheet-heading";
 
 export function SheetPane({
   code,
+  focus,
   focusHeading,
   onFocused,
   explicit,
@@ -20,6 +22,7 @@ export function SheetPane({
   onShowNewest,
 }: {
   code: string;
+  focus?: PortraitFocus | null; // a neighborhood table a search result asked for
   focusHeading: boolean;
   onFocused: () => void;
   explicit: boolean; // the reader chose this item (an auto-opened item isn't "opened")
@@ -56,7 +59,7 @@ export function SheetPane({
       <>
         {explicit && <OpenedMark code={sheet.family.code} />}
         {/* key: a new code remounts the sheet, so a slow preview from the previous row can never land here */}
-        <SheetBody key={sheet.family.code} sheet={sheet} headingId={SHEET_HEADING_ID} />
+        <SheetBody key={sheet.family.code} sheet={sheet} headingId={SHEET_HEADING_ID} focus={focus} />
         <div className={sheetStyles.paneDownloads}>
           <SheetDownloads sheet={sheet} />
         </div>

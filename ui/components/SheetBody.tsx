@@ -3,6 +3,7 @@ import type { api } from "@/convex/_generated/api";
 import { shortDate, subline, yearSpan } from "@/ui/lib/format";
 import { LivePreview } from "./LivePreview";
 import { PlaceYearGrid } from "./PlaceYearGrid";
+import type { PortraitFocus } from "@/ui/lib/portrait";
 import { PortraitTables } from "./PortraitTables";
 import { ProvenanceTag } from "./ProvenanceTag";
 import styles from "./sheet.module.css";
@@ -13,7 +14,7 @@ const breakable = (field: string) => field.split("_").flatMap((part, i, all) => 
 export type SheetData = NonNullable<FunctionReturnType<typeof api.catalog.familySheet>>;
 const DOWNLOAD_ORDER = ["CSV", "GeoJSON", "XLSX", "KML", "ZIP", "App"];
 
-export function SheetBody({ sheet, headingId }: { sheet: SheetData; headingId?: string }) {
+export function SheetBody({ sheet, headingId, focus }: { sheet: SheetData; headingId?: string; focus?: PortraitFocus | null }) {
   const { family, card, members, grid, sources, fileLabel } = sheet;
   const latest = members[0];
   return (
@@ -37,7 +38,7 @@ export function SheetBody({ sheet, headingId }: { sheet: SheetData; headingId?: 
         </section>
       </div>
 
-      {sheet.portraits && <PortraitTables index={sheet.portraits} />}
+      {sheet.portraits && <PortraitTables index={sheet.portraits} focus={focus} />}
 
       {card && card.glossary.length > 0 && (
         <section className={styles.section}>

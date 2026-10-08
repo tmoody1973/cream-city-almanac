@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { censusTableUrl, formatPortraitMargin, formatPortraitNumber, portraitFocusQuery, resolvePortraitFocus } from "../../ui/lib/portrait";
+import { censusTableUrl, formatPortraitMargin, formatPortraitNumber, portraitFocusQuery, portraitParams, portraitTopics, resolvePortraitFocus } from "../../ui/lib/portrait";
 
 const index = {
   neighborhoods: [
@@ -60,5 +60,28 @@ describe("links", () => {
     expect(portraitFocusQuery({ place: "walkers-point", year: 2023, topic: "rent-paid" })).toBe("?place=walkers-point&year=2023&topic=rent-paid");
     expect(portraitFocusQuery(null)).toBe("");
     expect(censusTableUrl("B25063")).toBe("https://data.census.gov/table?q=B25063");
+  });
+});
+
+describe("portraitTopics", () => {
+  const t = (slug: string, topic = slug, tableIds: string[] = []) => ({ slug, topic, tableIds });
+  it("lists every topic while the file is loading", () => {
+    expect(portraitTopics(undefined).every((x) => x.state === "present")).toBe(true);
+  });
+  it("claims nothing is missing from a file with no tables read", () => {
+    expect(portraitTopics([])).toEqual([]);
+  });
+  it("marks topics the file lacks, and lists a tab it doesn't recognize", () => {
+    const list = portraitTopics([t("race-and-ethnicity", "Race and Ethnicity", ["B03002"]), t("new-tab", "New Tab")]);
+    expect(list.find((x) => x.slug === "race-and-ethnicity")).toMatchObject({ state: "present", ids: "B03002" });
+    expect(list.find((x) => x.slug === "rent-paid")?.state).toBe("missing");
+    expect(list.at(-1)).toMatchObject({ slug: "new-tab", topic: "New Tab", state: "present" });
+  });
+});
+
+describe("portraitParams", () => {
+  it("carries a table choice through a redirect", () => {
+    expect(portraitParams("?open=N03&place=walkers-point&year=2023&topic=rent-paid&q=x")).toBe("place=walkers-point&year=2023&topic=rent-paid");
+    expect(portraitParams("?open=N03")).toBe("");
   });
 });

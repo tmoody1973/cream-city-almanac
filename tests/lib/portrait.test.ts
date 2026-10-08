@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parsePortrait, placeKey, portraitPassage, readPortraitSheet, tableIdsOf, topicFor } from "../../convex/lib/portrait";
+import { parsePortrait, placeKey, portraitBuildNote, portraitPassage, readPortraitSheet, tableIdsOf, topicFor } from "../../convex/lib/portrait";
 import { portraitBytes } from "../helpers/fixtures";
 
 const bySlug = (tables: ReturnType<typeof parsePortrait>, slug: string) => tables.find((t) => t.slug === slug)!;
@@ -94,5 +94,19 @@ describe("cells and names", () => {
     // The topic line and rounded numbers keep gibberish searches from matching digit-heavy passages (measured 2026-10-08).
     expect(text).toContain("How many residents identify with each race");
     expect(text).toContain("Total:: 7,668 ± 790");
+  });
+});
+
+describe("portraitBuildNote", () => {
+  const sheet = (name: string, rows: string[][]) => readPortraitSheet({ name, rows, links: [] }, 0);
+  it("names tabs with no readable header and tabs it doesn't recognize", () => {
+    const good = sheet("Rent Paid", [["TABLE ID:", "DP04"], ["Variable", "Estimate", "MOE"], ["Units", "12", "4"]]);
+    const noHeader = sheet("Sex and Age", [["TABLE ID:", "B01001"], ["Variable", "Count", "MOE"], ["Total", "5", "1"]]);
+    const unknown = sheet("Something New", [["Variable", "Estimate"], ["A", "1"]]);
+    expect(portraitBuildNote("h1", [good])).toBeUndefined();
+    const note = portraitBuildNote("h1", [good, noHeader, unknown])!;
+    expect(note).toContain("spreadsheet h1");
+    expect(note).toContain("no table header in Sex and Age");
+    expect(note).toContain("unrecognized tabs Something New");
   });
 });

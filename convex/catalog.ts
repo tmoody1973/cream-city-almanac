@@ -31,8 +31,11 @@ async function tablesFor(ctx: QueryCtx, hubId: string) {
     .map(tableView);
 }
 
-// Neighborhoods for the spreadsheet pickers; members arrive newest first.
-async function portraitIndex(ctx: QueryCtx, members: MemberDoc[]) {
+const newestYearFirst = (a: MemberDoc, b: MemberDoc) => (b.years[0] ?? 0) - (a.years[0] ?? 0) || newestFirst(a, b);
+
+// Neighborhoods for the spreadsheet pickers, each file list newest year first (a re-uploaded old file stays in place).
+async function portraitIndex(ctx: QueryCtx, unordered: MemberDoc[]) {
+  const members = [...unordered].sort(newestYearFirst);
   const byKey = new Map<string, { key: string; label: string; files: { hubId: string; year: number | null }[] }>();
   for (const m of members) {
     const place = m.place ?? m.title;
@@ -42,8 +45,12 @@ async function portraitIndex(ctx: QueryCtx, members: MemberDoc[]) {
     byKey.set(key, entry);
   }
   const neighborhoods = [...byKey.values()].sort((a, b) => a.label.localeCompare(b.label));
-  const newest = members[0];
-  return { neighborhoods, initial: newest ? { hubId: newest.hubId, tables: await tablesFor(ctx, newest.hubId) } : null };
+  // Open on the newest year that has been read, so a new or failing file never becomes everyone's first view.
+  for (const m of members) {
+    const tables = await tablesFor(ctx, m.hubId);
+    if (tables.length) return { neighborhoods, initial: { hubId: m.hubId, tables } };
+  }
+  return { neighborhoods, initial: members[0] ? { hubId: members[0].hubId, tables: [] } : null };
 }
 
 export const portraitTables = query({

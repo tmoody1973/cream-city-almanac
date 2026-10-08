@@ -43,6 +43,8 @@ export const TOPICS: { slug: string; topic: string; about: string; aliases?: str
   { slug: "household-income", topic: "Household Income", about: "Households by yearly income range." },
 ];
 
+const UNKNOWN_TAB = "This tab isn't one we've seen before, so it's shown as found.";
+const NO_HEADER = "No table header was found in DYCU's file.";
 const ESTIMATE = /Estimate$/;
 const MOE = /(^|[\s.])MOE$/;
 const DERIVED = /(%|Percent|(^|[\s.])SE$|(^|[\s.])CV)/;
@@ -79,11 +81,11 @@ export function parsePortrait(bytes: Uint8Array): PortraitTable[] {
 
 export function readPortraitSheet(sheet: Sheet, order: number): PortraitTable {
   const { slug, topic, known } = topicFor(sheet.name);
-  const issues: string[] = known ? [] : ["This tab isn't one we've seen before, so it's shown as found."];
+  const issues: string[] = known ? [] : [UNKNOWN_TAB];
   const cells = sheet.rows.map((r) => r.map((c) => (c ?? "").trim()));
   const h = cells.findIndex((r) => r.slice(1).some((c) => ESTIMATE.test(c)));
   const base = { slug, topic, tab: sheet.name, order, tableIds: [] as string[], tableIdText: "", vintage: null as string | null };
-  if (h < 0) return { ...base, groups: [], rows: [], issues: [...issues, "No table header was found in DYCU's file."] };
+  if (h < 0) return { ...base, groups: [], rows: [], issues: [...issues, NO_HEADER] };
 
   const meta = new Map(
     cells.slice(0, h).filter((r) => r[0]).map((r) => [r[0].replace(/:\s*$/, "").toUpperCase(), r[1] ?? ""] as const),
@@ -143,6 +145,18 @@ export function formatPortraitNumber(s: string): string {
   const n = Number(t);
   const places = Math.abs(n) < 1 ? 3 : Math.abs(n) < 10 ? 2 : 0;
   return n.toLocaleString("en-US", { minimumFractionDigits: places, maximumFractionDigits: places });
+}
+
+// The build report names what the reader couldn't use, so a changed DYCU layout is never dropped silently.
+export function portraitBuildNote(hubId: string, tables: PortraitTable[]): string | undefined {
+  const tabsWith = (issue: string) => tables.filter((t) => t.issues.includes(issue)).map((t) => t.tab);
+  const noHeader = tabsWith(NO_HEADER);
+  const unknown = tabsWith(UNKNOWN_TAB);
+  const parts = [
+    ...(noHeader.length ? [`no table header in ${noHeader.join(", ")}`] : []),
+    ...(unknown.length ? [`unrecognized tabs ${unknown.join(", ")}`] : []),
+  ];
+  return parts.length ? `spreadsheet ${hubId}: ${parts.join("; ")}` : undefined;
 }
 
 const MAX_PASSAGE_CHARS = 1500;

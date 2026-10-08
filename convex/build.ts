@@ -21,7 +21,7 @@ import { chunkMarkdown } from "./lib/chunk";
 import { HUB_FEED_URL, parseDcat } from "./lib/dcat";
 import { INVENTORY_XLSX_URL, isSuspectLink, mapDictionaries, readInventory, unlinkedTabs, type Inventory } from "./lib/dictionary";
 import { groupItems, hubCounts, isPdfFamily, isSpreadsheetFamily, reportDelays, toFamilyInput } from "./lib/families";
-import { parsePortrait, portraitPassage } from "./lib/portrait";
+import { parsePortrait, portraitBuildNote, portraitPassage } from "./lib/portrait";
 import { firecrawlKey, scrapeMarkdown } from "./lib/firecrawl";
 import { chatJson, costUsd, embed, estimateTokens, gatewayKey } from "./lib/gateway";
 import { hashInputs } from "./lib/hash";
@@ -223,10 +223,8 @@ async function storePortrait(ctx: ActionCtx, buildId: Id<"builds">, hubId: strin
     tables,
     chunks: tables.map((t, i) => ({ section: t.topic, text: passages[i], embedding: vectors[i] })),
   });
-  const unknown = tables.filter((t) => t.issues.some((x) => x.startsWith("This tab isn't one we've seen")));
-  return unknown.length
-    ? { outcome: "done", note: `spreadsheet ${hubId}: unrecognized tabs ${unknown.map((t) => t.tab).join(", ")}` }
-    : { outcome: "done" };
+  const note = portraitBuildNote(hubId, tables);
+  return note ? { outcome: "done", note } : { outcome: "done" };
 }
 
 export const finish = internalAction({

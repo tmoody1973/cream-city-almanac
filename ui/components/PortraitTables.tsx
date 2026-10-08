@@ -3,7 +3,8 @@ import { useQuery } from "convex/react";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { TOPICS } from "@/convex/lib/portrait";
-import { censusTableUrl, formatPortraitMargin, formatPortraitNumber, resolvePortraitFocus } from "@/ui/lib/portrait";
+import { censusTableUrl, formatPortraitMargin, formatPortraitNumber, portraitFocusQuery, portraitTopics, resolvePortraitFocus, type PortraitFocus } from "@/ui/lib/portrait";
+import type { PortraitRow } from "@/convex/lib/portrait";
 import { LAPTOP_QUERY } from "@/ui/lib/selection";
 import { ProvenanceTag } from "./ProvenanceTag";
 import type { SheetData } from "./SheetBody";
@@ -15,9 +16,18 @@ const SLUGS = TOPICS.map((t) => t.slug);
 const ABOUT = new Map(TOPICS.map((t) => [t.slug, t.about]));
 
 // One neighborhood's Census tables, exactly as DYCU published them (approved comps: portraits-b-laptop, portraits-a-phone).
-export function PortraitTables({ index }: { index: Index }) {
+// Rows split at each section heading, so every heading heads only its own block.
+const sectionsOf = (rows: PortraitRow[]) =>
+  rows.reduce<PortraitRow[][]>((acc, r) => (r.heading || !acc.length ? [...acc, [r]] : [...acc.slice(0, -1), [...acc[acc.length - 1], r]]), []);
+
+export function PortraitTables({ index, focus: requested }: { index: Index; focus?: PortraitFocus | null }) {
   const [focus, setFocus] = useState<Focus>(() => resolvePortraitFocus(index, new URLSearchParams(), SLUGS));
-  useEffect(() => setFocus(resolvePortraitFocus(index, new URLSearchParams(window.location.search), SLUGS)), [index]);
+  // The address picks the table, unless a search result in the laptop pane asks for one; the pickers change it after.
+  const requestedQuery = portraitFocusQuery(requested);
+  useEffect(
+    () => setFocus(resolvePortraitFocus(index, new URLSearchParams(requestedQuery || window.location.search), SLUGS)),
+    [index, requestedQuery],
+  );
 
   const place = index.neighborhoods.find((n) => n.key === focus.place) ?? index.neighborhoods[0];
   const file = place.files.find((f) => f.hubId === focus.hubId) ?? place.files[0];
@@ -26,7 +36,7 @@ export function PortraitTables({ index }: { index: Index }) {
   const tables = isInitial ? index.initial!.tables : loaded;
   const table = useMemo(() => tables?.find((t) => t.slug === focus.topic) ?? tables?.[0], [tables, focus.topic]);
   const shown = useRef<HTMLDivElement>(null);
-  const idsBySlug = new Map((tables ?? []).map((t) => [t.slug, t.tableIds.join(", ")]));
+  const topics = portraitTopics(tables);
 
   const go = (next: Focus) => {
     setFocus(next);
@@ -77,8 +87,8 @@ export function PortraitTables({ index }: { index: Index }) {
         </label>
       </div>
       <ol className={styles.portraitTopics}>
-        {TOPICS.map((t) =>
-          !tables || idsBySlug.has(t.slug) ? (
+        {topics.map((t) =>
+          t.state === "present" ? (
             <li key={t.slug}>
               <button
                 type="button"
@@ -90,7 +100,7 @@ export function PortraitTables({ index }: { index: Index }) {
                 }}
               >
                 <span>{t.topic}</span>
-                {idsBySlug.get(t.slug) && <span className={styles.portraitIds}>{idsBySlug.get(t.slug)}</span>}
+                {t.ids && <span className={styles.portraitIds}>{t.ids}</span>}
               </button>
             </li>
           ) : (
@@ -105,7 +115,7 @@ export function PortraitTables({ index }: { index: Index }) {
           Loading…
         </p>
       ) : !table ? (
-        <p role="status">No tables were read from this file.</p>
+        <p role="status">DYCU&apos;s file for this year hasn&apos;t been read yet. Try another year, or download the file.</p>
       ) : (
         <div ref={shown}>
           {table.issues.map((issue) => (
@@ -118,6 +128,14 @@ export function PortraitTables({ index }: { index: Index }) {
               <caption className={styles.portraitCaption}>
                 {place.label}, {file.year ?? "undated"}: {table.topic}
               </caption>
+              {table.groups.length > 1 && (
+                <>
+                  <colgroup span={1} />
+                  {table.groups.map((g) => (
+                    <colgroup key={g} span={2} />
+                  ))}
+                </>
+              )}
               <thead>
                 {table.groups.length > 1 && (
                   <tr>
@@ -145,27 +163,29 @@ export function PortraitTables({ index }: { index: Index }) {
                   ))}
                 </tr>
               </thead>
-              <tbody>
-                {table.rows.map((r, i) =>
-                  r.heading ? (
-                    <tr key={i}>
-                      <th scope="rowgroup" colSpan={1 + table.groups.length * 2}>
-                        {r.label}
-                      </th>
-                    </tr>
-                  ) : (
-                    <tr key={i}>
-                      <th scope="row">{r.label}</th>
-                      {r.values.map((v, j) => (
-                        <Fragment key={j}>
-                          <td>{v ? formatPortraitNumber(v.estimate) : ""}</td>
-                          <td>{v?.moe ? formatPortraitMargin(v.moe) : ""}</td>
-                        </Fragment>
-                      ))}
-                    </tr>
-                  ),
-                )}
-              </tbody>
+              {sectionsOf(table.rows).map((rows, si) => (
+                <tbody key={si}>
+                  {rows.map((r, i) =>
+                    r.heading ? (
+                      <tr key={i}>
+                        <th scope="rowgroup" colSpan={1 + table.groups.length * 2}>
+                          {r.label}
+                        </th>
+                      </tr>
+                    ) : (
+                      <tr key={i}>
+                        <th scope="row">{r.label}</th>
+                        {r.values.map((v, j) => (
+                          <Fragment key={j}>
+                            <td>{v ? formatPortraitNumber(v.estimate) : ""}</td>
+                            <td>{v?.moe ? formatPortraitMargin(v.moe) : ""}</td>
+                          </Fragment>
+                        ))}
+                      </tr>
+                    ),
+                  )}
+                </tbody>
+              ))}
             </table>
           </div>
           <p>

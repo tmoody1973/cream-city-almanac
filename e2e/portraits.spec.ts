@@ -70,3 +70,28 @@ test("on a phone, choosing a topic brings its table into view", async ({ page },
   const half = page.viewportSize()!.height / 2;
   await expect.poll(() => s.locator("caption").evaluate((c) => c.getBoundingClientRect().top)).toBeLessThan(half);
 });
+
+test("a search result opens its table even when N03 is already in the pane", async ({ page }, info) => {
+  test.skip(info.project.name !== "desktop", "laptop pane");
+  await page.goto("/?q=" + encodeURIComponent("Lincoln Park employment status by sex"));
+  await expect(page.locator("li[data-code]").first()).toHaveAttribute("data-code", "N03");
+  await page.locator("li[data-code='N03'] button").click();
+  await expect(section(page).locator("caption")).toHaveText("Lincoln Park, 2021: Employment Status by Sex");
+});
+
+test("a shared link keeps its table on the other kind of screen", async ({ page }, info) => {
+  const choice = "place=walkers-point&year=2023&topic=rent-paid";
+  // A phone link opened on a laptop, and a laptop link opened on a phone.
+  await page.goto(info.project.name === "desktop" ? `/d/N03?${choice}` : `/?open=N03&${choice}`);
+  await expect(page).toHaveURL(info.project.name === "desktop" ? /\/\?open=N03&place=walkers-point/ : /\/d\/N03\?place=walkers-point/);
+  await expect(section(page).locator("caption")).toHaveText(/Walker's Point, 2023: Rent Paid/i);
+});
+
+test("grouped heads and section headings carry their table markup", async ({ page }, info) => {
+  await open(page, info.project.name, "place=walkers-point&year=2023&topic=sex-and-age");
+  await expect(section(page).locator("table colgroup")).toHaveCount(4);
+  await open(page, info.project.name, "place=burnham-park-layton-park-silver-city&year=2021&topic=rent-paid");
+  const table = section(page).locator("table");
+  await expect(table.locator("th[scope=rowgroup]").first()).toBeVisible();
+  expect(await table.evaluate((t) => [...t.querySelectorAll("th[scope=rowgroup]")].every((th) => th.parentElement === th.closest("tbody")!.rows[0]))).toBe(true);
+});
