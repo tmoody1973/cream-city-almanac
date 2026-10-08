@@ -29,6 +29,8 @@ export const QUESTIONS: { question: string; expect: string[] }[] = [
   { question: "what has changed in Harambee", expect: ["document:neighborhood-change-over-time-report", "document:neighborhood-portrait"] },
   { question: "rent paid in Walker's Point", expect: ["document:neighborhood-portrait-spreadsheet", "document:neighborhood-portrait"] },
   { question: "how many people in Harambee live in poverty", expect: ["document:neighborhood-portrait-spreadsheet", "document:neighborhood-portrait"] },
+  // How it works uses this as its neighborhood example; it must keep landing on the spreadsheets.
+  { question: "Lincoln Park employment status by sex", expect: ["document:neighborhood-portrait-spreadsheet"] },
 ];
 
 export function passesTop3(expected: string[], resultKeys: string[]): boolean {

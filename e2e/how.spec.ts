@@ -54,3 +54,15 @@ test("the search-check count comes from the question list", async ({ page }) => 
   await page.goto("/how-it-works");
   await expect(page.getByText(`grades search on ${QUESTIONS.length} reporter-style questions`)).toBeVisible();
 });
+
+test("it explains the neighborhood spreadsheets, and its example lands on one", async ({ page }, info) => {
+  await page.goto("/how-it-works");
+  await expect(page.getByText(/Open the Neighborhood Portrait spreadsheets/)).toBeVisible();
+  await expect(page.getByRole("link", { name: "N03 sheet" })).toHaveAttribute("href", "/d/N03");
+  await expect(page.getByText(/Spreadsheet numbers appear as DYCU wrote them/)).toBeVisible();
+  await page.getByRole("link", { name: "Lincoln Park employment status by sex" }).click();
+  await expect(page.locator("li[data-code]").first()).toHaveAttribute("data-code", "N03");
+  if (info.project.name === "desktop") {
+    await expect(page.locator("section[aria-labelledby=portrait-heading] caption")).toHaveText("Lincoln Park, 2021: Employment Status by Sex");
+  }
+});
