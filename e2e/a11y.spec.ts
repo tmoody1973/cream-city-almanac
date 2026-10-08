@@ -2,7 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { type Page } from "@playwright/test";
 import { expect, test } from "./fixtures";
 
-const PAGES = ["/", "/?q=asthma", "/d/W01", "/d/N02"];
+const PAGES = ["/", "/?q=asthma", "/d/W01", "/d/N02", "/how-it-works", "/?q=asthma&open=W01"];
 
 // networkidle doesn't wait for Convex's WebSocket search, so wait for real result rows on search pages.
 async function settle(page: Page, path: string) {
@@ -78,3 +78,15 @@ test("a year grid with many years scrolls inside its own box on a phone", async 
   });
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
 });
+
+for (const width of [1024, 1440]) {
+  test(`no sideways scroll at ${width}px on the new pages`, async ({ page }, info) => {
+    test.skip(info.project.name !== "desktop");
+    await page.setViewportSize({ width, height: 900 });
+    for (const path of ["/", "/how-it-works", "/?q=asthma&open=W01"]) {
+      await page.goto(path);
+      await page.waitForLoadState("networkidle");
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth), path).toBeLessThanOrEqual(0);
+    }
+  });
+}
