@@ -237,7 +237,7 @@ On laptops the page redefines the type scale from the 1536px comp (px ÷ 15.36 =
 
 **The Tabular Figures Rule.** Codes, dates, years, and counts use tabular figures, and codes also lining figures, so every column of numbers aligns.
 
-**The One Wordmark Rule.** Saira at 50% width and weight 900 is reserved for the wordmark. Nothing else uses the display face.
+**The One Wordmark Rule.** Saira at 50% width and weight 900 is reserved for the wordmark. The only other use of the display face is Start here's two page headings (START HERE and DYCU'S OWN GUIDES), at weight 900 and 62% width, as both approved comps draw them.
 
 ## Layout
 
@@ -306,7 +306,7 @@ There are none. An opened row's preview is an indented region closed by a hairli
 
 ### Navigation
 - **Tab bar (phones only):** three equal cells between two hairlines, tab-voice capitals, compact row height. Inactive and coming-soon tabs are graphite; the active tab is ink with a 6px ink bar drawn across its cell near the bottom edge (inset clamp(4px, 1.7vw, 17px)). ASK and SAVED are non-link placeholders titled "Coming soon" until their phases ship. On How it works no tab is active. Laptops never show it.
-- **Masthead site links (laptops):** SEARCH / ASK / SAVED, then HOW IT WORKS, in site-link capitals to the right of the wordmark, clamp(20px, 2.6vw, 40px) apart. Inactive and coming-soon links are graphite; the current page is ink, underlined by a 4px ink bar 6px below the words. HOW IT WORKS is always ink and set apart by a short hairline drawn outside the link, so the current-page bar underlines only its words. On phones, How it works marks itself instead by underlining the masthead's side label (3px, 0.2em offset).
+- **Masthead site links (laptops):** SEARCH / ASK / SAVED, then START HERE and HOW IT WORKS, in site-link capitals to the right of the wordmark, clamp(20px, 2.6vw, 40px) apart. Inactive and coming-soon links are graphite; the current page is ink, underlined by a 4px ink bar 6px below the words. START HERE and HOW IT WORKS are always ink, each set apart by a short hairline drawn outside the link, so the current-page bar underlines only its words. On phones, How it works marks itself instead by underlining the masthead's side label (3px, 0.2em offset).
 - **Back link (sheet):** the mirrored drawn arrow and "Rundown" in small body type, above a hairline.
 - **Explainer band (home):** one line, "Milwaukee data in plain English." then a "How it works" link with the drawn arrow, kept on one line. On phones it is small body type closed by a hairline; on laptops it sits at body size with no rule. Hidden while searching.
 - **Credit footer:** centered caption-size graphite links, "Built on Data You Can Use's public data · How it works", padded for the safe-area inset on phones.
@@ -352,6 +352,15 @@ One neighborhood's Census tables, exactly as DYCU published them, on the phone p
 - **Numbers:** DYCU's Estimate and margin, never computed or filled: whole numbers with commas, decimals DYCU wrote to three places or fewer as written, longer computed decimals rounded by size (under 1 to three places, under 10 to two, otherwise whole). A margin reads ±n; a zero margin prints 0; text and error cells appear as written.
 - **Caption scale:** on phones the caption is label size in capitals, never above the section heading; on laptops it is 0.8 of label size in title case.
 - **Behavior:** the choice lives in the address (`place`, `year`, `topic`); on screens below the laptop query, choosing a topic brings its notes and table into view.
+
+### Start Here (orientation page)
+Three people, three real questions, and DYCU's own guides, at `/start-here`. One order on every screen: the page headline and a one-line lede; then a reporter, a nonprofit and a resident, each with a band label (A REPORTER), the question in large condensed capitals, numbered steps whose links go to the exact view they name, a live excerpt in a hairline box, and a "Try it" link; then DYCU'S OWN GUIDES and "How the almanac works".
+- **Laptops:** the three people sit side by side in ruled columns (494 : 474 : 496), the excerpt boxes end on one line, a rule closes each column's steps, and every "Try it" sits on the same baseline with one thick bar under the words and the arrow. The guides row is four ruled columns (heading, the three Hub links with HUB tags, the contact line, How the almanac works), closed by a rule.
+- **Phones:** one column; steps are ruled rows with condensed numerals; the guides open with a band label.
+- **Excerpts are live, never typed:** story angles and caveats appear exactly as on their sheets with their AI tags; the neighborhood table shows its first rows with the DYCU tag and its problem notes; the air readings come through the live preview's strip chart. Excerpt labels and the table caption are gray-band labels in bold body type. When data doesn't load, the example keeps its steps and link and says so.
+
+### Guide Pages (DYCU's Hub pages)
+Families of kind `page` are DYCU's guides to its Hub, not data: they stay out of "Updated this season", stay findable in search, and their sheet and phone preview show one line, "A guide page on DYCU's Hub, not a dataset.", with an "Open it on the Hub" link and its HUB tag (plus "New here? Start here." on the sheet).
 
 ### Grease-Pencil Plates (signature)
 Transparent raster PNGs of red grease-pencil ink, trimmed to their ink and sized in em so they track the text they mark: the circle-with-"new", tick, arrow, and underline swash on the rundown, three thin arrows (down, pointing right, pointing left) for the teaching notes, cut from the approved How it works comps, and the topic arrow, the selected-now arrow turned to come in from the upper right onto a topic chip's corner. Originals and their generation provenance live with the source assets; the shipped copies are served as static plates.

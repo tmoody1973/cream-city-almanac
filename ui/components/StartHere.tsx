@@ -119,6 +119,7 @@ export function StartHere({ data }: { data: Data | null }) {
           excerpt={
             air ? (
               <>
+                <p className={styles.excerptLabel}>{air.code} daily readings</p>
                 <LivePreview members={air.members} fields={air.fields} chartOnly unit="day" />
                 {air.caveat && <p>{air.caveat} <ProvenanceTag source="AI" /></p>}
               </>

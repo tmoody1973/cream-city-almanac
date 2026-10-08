@@ -18,7 +18,7 @@
 .chart { margin: 16px 0 0; }
 .chart svg { width: 100%; height: auto; }
 .chart figcaption { font-size: var(--fs-small); color: var(--muted); }
-.chartLabel { font-size: 12px; fill: var(--ink); }
+.chartLabel { font-size: var(--fs-small); fill: var(--ink); }
 .versions { list-style: none; margin: 0; padding: 0; }
 .versions li { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; padding: 10px 0; border-top: var(--hair); }
 .updated { color: var(--muted); font-size: var(--fs-small); }

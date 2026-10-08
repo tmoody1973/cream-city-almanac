@@ -106,4 +106,23 @@ test.describe("@capture", () => {
     await settle(page);
     await section.screenshot({ path: ".impeccable/review/mobile.png" });
   });
+  test("Start here at the comp sizes", async ({ page }) => {
+    await page.clock.setFixedTime(FIXED);
+    for (const [width, height, file] of [
+      [1536, 1024, "hero-repro.png"],
+      [1024, 1536, "start-phone-repro.png"],
+      [1440, 900, "desktop.png"],
+    ] as const) {
+      await page.setViewportSize({ width, height });
+      await page.goto("/start-here");
+      await page.locator("[data-example=resident] figcaption").waitFor();
+      await settle(page);
+      // desktop.png is full page: the responsive gate scales it to the comp's width and reads the top.
+      await page.screenshot({ path: `.impeccable/review/${file}`, fullPage: file === "desktop.png" });
+    }
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/start-here");
+    await settle(page);
+    await page.screenshot({ path: ".impeccable/review/mobile.png", fullPage: true });
+  });
 });

@@ -31,10 +31,12 @@ test("the nonprofit excerpt matches the stored table", async ({ page }) => {
 test("each Try it link lands where its steps say", async ({ page }, info) => {
   await page.goto("/start-here");
   await page.locator("[data-example=nonprofit]").getByRole("link", { name: /Try it/ }).click();
-  await expect(page.locator("section[aria-labelledby=portrait-heading] caption")).toHaveText(/Harambee, \d{4}: Poverty Status by Age/i);
+  // Laptops redirect into the two-pane view, which loads the sheet live: allow for a slow connection.
+  await expect(page.locator("section[aria-labelledby=portrait-heading] caption")).toHaveText(/Harambee, \d{4}: Poverty Status by Age/i, { timeout: 15_000 });
   await page.goto("/start-here");
   await page.locator("[data-example=resident]").getByRole("link", { name: /Try it/ }).click();
-  await expect(page).toHaveURL(info.project.name === "desktop" ? /open=V02/ : /\/d\/V02/);
+  // A client-side redirect on laptops (/d/V02 → the two-pane view).
+  await expect(page).toHaveURL(info.project.name === "desktop" ? /open=V02/ : /\/d\/V02/, { timeout: 15_000 });
 });
 
 test("the masthead, home band and footer lead to Start here", async ({ page }, info) => {
@@ -65,4 +67,11 @@ test("the reporter's search finds both datasets", async ({ page }) => {
   await expect(page.locator("li[data-code]").first()).toBeVisible();
   const codes = await page.locator("li[data-code]").evaluateAll((els) => els.slice(0, 5).map((e) => e.getAttribute("data-code")));
   expect(codes).toEqual(expect.arrayContaining(["W01", "H05"]));
+});
+
+test("the resident chart's labels stay readable", async ({ page }) => {
+  await page.goto("/start-here");
+  const label = page.locator("[data-example=resident] figure text").first();
+  await expect(label).toBeVisible();
+  expect((await label.boundingBox())!.height).toBeGreaterThanOrEqual(11);
 });
