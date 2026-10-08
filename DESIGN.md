@@ -170,7 +170,7 @@ components:
 
 **Creative North Star: "The Marked-Up Rundown"**
 
-The almanac is laid out like a radio newsroom's show rundown: one white sheet, a heavy condensed masthead, and every dataset family set as a single slugged row with a permanent code. Structure comes from ruled ink lines and alternating gray bands, never from boxes. The only color on the sheet is a producer's red grease pencil, drawn by hand onto the paper to say what changed since your last visit, what you have already opened, and which row you have open now; on How it works the same pencil writes the teaching notes in the margins of a real sheet.
+The almanac is laid out like a radio newsroom's show rundown: one white sheet, a heavy condensed masthead, and every dataset family set as a single slugged row with a permanent code. Structure comes from ruled ink lines and alternating gray bands, never from cards; the only boxes are 1px hairline ones around things you enter or pick (the slug entry, tags, the spreadsheet section's selects and topic chips), its problem notes, and the ruled data table. The only color on the sheet is a producer's red grease pencil, drawn by hand onto the paper to say what changed since your last visit, what you have already opened, and which row you have open now; on How it works the same pencil writes the teaching notes in the margins of a real sheet.
 
 Density is set for a reporter on a phone on deadline. Rows are tall enough to tap one-handed, codes are big enough to scan, and the first viewport carries the masthead, the slug entry, the newest rows, and the tab bar together. Between phone and laptop the layout stays deliberately compact: the same column, capped at 1280px, with type that stops growing at the approved comp's 1024px sizes. A laptop is its own layout, not a phone blown up: the rundown on the left, the selected dataset's full sheet beside it, and a narrow rail held for Ask, all measured from the approved laptop comp at 1536px.
 
@@ -301,6 +301,7 @@ There are none. An opened row's preview is an indented region closed by a hairli
 
 ### Inputs / Fields
 - **Slug entry:** the SLUG: label in code-voice capitals, then a borderless, transparent input on the same baseline, in body type, 44px minimum height, with a graphite placeholder ("What are you reporting on?") and an ink caret. The line is closed below by the 2px rule.
+- **Neighborhood / Year selects:** native selects in a square 1px ink hairline box, 44px tall, body type on paper, with the chevron drawn as a 2px ink stroke; the label sits inline before it in bold body type with a colon. A select is capped at 17.5em; at 480px and narrower each label sits above a full-width select.
 - **Focus:** the system focus ring (3px ink outline, 2px offset).
 
 ### Navigation
@@ -341,8 +342,19 @@ A real dataset sheet, cut to its four teaching parts and marked up by the grease
 - **Parts:** the place-by-year grid beside the explainer (hairline between, with its provenance tag); the column guide (first two real columns, field names in condensed capitals, hairline rows and a hairline after the name column); the live preview's chart; then CSV and OPEN SHEET ruled buttons between hairlines. Part headings (COLUMN GUIDE, LIVE PREVIEW) sit on gray bands in condensed capitals (clamp(18px, 3vw, 28px)).
 - **Teaching notes:** short hand-lettered phrases in the note voice and red, each with a thin drawn arrow plate. On phones a note sits above its part with a downward arrow (1.3em); on laptops it moves into the margin, its arrow pointing toward the sheet (about 4 to 5vw long). The notes are a paragraph of real text; the arrow is hidden from assistive tech.
 
+### Neighborhood Spreadsheet Section (N03 sheet)
+One neighborhood's Census tables, exactly as DYCU published them, on the phone page and in the laptop pane. One order on every screen: the label-voice heading; a lead with the DYCU tag; the Neighborhood and Year selects; the topics; the problem notes; the table's caption and ruled table; the topic's one-line explanation with its Census table links (SOURCE tag); the margin-of-error line in small graphite.
+- **Topics (phones):** a ruled list in a hairline box, two columns when each can hold 14em and one otherwise, reading down each column in DYCU's tab order; each row is the topic name and its Census table IDs in graphite tabular figures. The topic in view takes the band and bold.
+- **Topics (laptops):** a wrapped strip of hairline-boxed chips, 44px tall, 12px apart (14px between rows). The chip in view takes the band and condensed bold capitals, and the grease-pencil topic arrow lands on its top-right corner.
+- **A topic missing from the year's file** is listed in graphite as "Topic: not in this year's file", never hidden.
+- **Problem notes:** one hairline-boxed line of small body type per issue in DYCU's file, above the table, in plain words.
+- **Table:** a full 1px ink hairline grid with the caption above it, column-group heads in condensed capitals, Estimate and ± Margin heads in body type, row labels left (at least 8em), figures right-aligned in tabular figures. Phones band both head rows and every second body row and set the Total row in bold; laptops band only the Total row. Wide tables scroll sideways inside their own box; words break only between words.
+- **Numbers:** DYCU's Estimate and margin, never computed or filled: whole numbers with commas, decimals DYCU wrote to three places or fewer as written, longer computed decimals rounded by size (under 1 to three places, under 10 to two, otherwise whole). A margin reads ±n; a zero margin prints 0; text and error cells appear as written.
+- **Caption scale:** on phones the caption is label size in capitals, never above the section heading; on laptops it is 0.8 of label size in title case.
+- **Behavior:** the choice lives in the address (`place`, `year`, `topic`); on screens below the laptop query, choosing a topic brings its notes and table into view.
+
 ### Grease-Pencil Plates (signature)
-Transparent raster PNGs of red grease-pencil ink, trimmed to their ink and sized in em so they track the text they mark: the circle-with-"new", tick, arrow, and underline swash on the rundown, and three thin arrows (down, pointing right, pointing left) for the teaching notes, cut from the approved How it works comps. Originals and their generation provenance live with the source assets; the shipped copies are served as static plates.
+Transparent raster PNGs of red grease-pencil ink, trimmed to their ink and sized in em so they track the text they mark: the circle-with-"new", tick, arrow, and underline swash on the rundown, three thin arrows (down, pointing right, pointing left) for the teaching notes, cut from the approved How it works comps, and the topic arrow, the selected-now arrow turned to come in from the upper right onto a topic chip's corner. Originals and their generation provenance live with the source assets; the shipped copies are served as static plates.
 - **Motion:** the circle draws itself on once when the rundown loads, revealed left to right by a clip-path in 12 stepped frames over 600ms after a 250ms delay, like a pencil stroke filmed frame by frame. Under reduced-motion preferences it appears already drawn.
 
 **The One Motion Rule.** The pencil circle drawing on is the only animation in the system; nothing else fades, slides, or transitions, and reduced motion removes even that.

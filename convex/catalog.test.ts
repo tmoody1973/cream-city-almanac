@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { fixtureFamilies } from "../tests/helpers/fixtures";
 import { api, internal } from "./_generated/api";
 import { toFamilyInput } from "./lib/families";
+import { placeKey } from "./lib/portrait";
 import schema from "./schema";
 
 const modules = import.meta.glob("./**/*.*s");
@@ -70,5 +71,52 @@ describe("catalog queries", () => {
       pdfReports: 180,
       lastRunFailed: false,
     });
+  });
+});
+
+describe("neighborhood spreadsheets", () => {
+  it("groups files into neighborhoods whatever their name order, newest first", async () => {
+    const t = convexTest(schema, modules);
+    await seed(t);
+    const code = await codeOf(t, "document:neighborhood-portrait-spreadsheet");
+    const sheet = (await t.query(api.catalog.familySheet, { code }))!;
+    const silver = sheet.portraits!.neighborhoods.find((n) => n.key === "burnham-park-layton-park-silver-city")!;
+    expect(silver.files.map((f) => f.year)).toEqual([2024, 2023, 2022, 2021]);
+    expect(sheet.portraits!.neighborhoods.length).toBeGreaterThan(20);
+    const other = (await t.query(api.catalog.familySheet, { code: await codeOf(t, "dataset:food-insecurity-prevalence") }))!;
+    expect(other.portraits).toBeNull();
+  });
+
+  it("orders a neighborhood's files by year and opens the newest year that has tables", async () => {
+    const t = convexTest(schema, modules);
+    await seed(t);
+    const code = await codeOf(t, "document:neighborhood-portrait-spreadsheet");
+    const members = fixtureFamilies().find((f) => f.key === "document:neighborhood-portrait-spreadsheet")!.members;
+    const silver = (year: number) => members.find((m) => placeKey(m.place ?? m.title) === "burnham-park-layton-park-silver-city" && m.years[0] === year)!;
+    await t.run(async (ctx) => {
+      // DYCU re-uploads the 2021 file (now the most recently modified, not yet read); only the 2024 file has tables.
+      const m = (await ctx.db.query("members").withIndex("by_hubId", (q) => q.eq("hubId", silver(2021).hubId)).first())!;
+      await ctx.db.patch(m._id, { modified: "2099-01-01T00:00:00.000Z" });
+      await ctx.db.insert("portraitTables", {
+        hubId: silver(2024).hubId, modified: "m", slug: "race-and-ethnicity", topic: "Race and Ethnicity", tab: "Race and Ethnicity",
+        order: 0, tableIds: [], tableIdText: "", vintage: null, groups: [""], rows: [], issues: [],
+      });
+    });
+    const sheet = (await t.query(api.catalog.familySheet, { code }))!;
+    expect(sheet.portraits!.neighborhoods.find((n) => n.key === "burnham-park-layton-park-silver-city")!.files.map((f) => f.year)).toEqual([2024, 2023, 2022, 2021]);
+    expect(sheet.portraits!.initial!.hubId).toBe(silver(2024).hubId);
+  });
+
+  it("returns a file's tables in tab order", async () => {
+    const t = convexTest(schema, modules);
+    await seed(t);
+    await t.run(async (ctx) => {
+      for (const [order, slug] of [[1, "sex-and-age"], [0, "race-and-ethnicity"]] as const) {
+        await ctx.db.insert("portraitTables", {
+          hubId: "h1", modified: "m", slug, topic: slug, tab: slug, order, tableIds: [], tableIdText: "", vintage: null, groups: [""], rows: [], issues: [],
+        });
+      }
+    });
+    expect((await t.query(api.catalog.portraitTables, { hubId: "h1" })).map((x) => x.slug)).toEqual(["race-and-ethnicity", "sex-and-age"]);
   });
 });

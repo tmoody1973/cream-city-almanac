@@ -90,7 +90,7 @@ export function ResultRow({
           </>
         )}
       </button>
-      {!onSelect && open && <FamilyPreview id={panelId} familyKey={row.key} />}
+      {!onSelect && open && <FamilyPreview id={panelId} familyKey={row.key} focus={row.snippet?.focus} />}
     </li>
   );
 }

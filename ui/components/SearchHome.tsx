@@ -6,6 +6,7 @@ import { api } from "@/convex/_generated/api";
 import type { ResultRow, SearchResponse } from "@/convex/lib/types";
 import { circledCodes, LAST_VISIT_KEY, OPENED_KEY, readOpened, safeStorage } from "@/ui/lib/marks";
 import { SEARCH_TIMEOUT_MS, searchNotice, withTimeout, type SearchState } from "@/ui/lib/search";
+import { portraitFocusQuery, portraitParams, type PortraitFocus } from "@/ui/lib/portrait";
 import { LAPTOP_QUERY, parseSelection, selectionSearch } from "@/ui/lib/selection";
 import { useLaptop } from "@/ui/lib/useLaptop";
 import { CatalogLine, type CatalogStatus } from "./CatalogLine";
@@ -82,18 +83,29 @@ export function SearchHome({ rundown, status }: { rundown: ResultRow[]; status: 
   const rows = searching ? response?.results ?? [] : rundown;
   const selected = open ?? (laptop ? rows[0]?.code ?? null : null);
 
+  // A neighborhood table a search result asked for; the auto-shown top row asks for its own.
+  const [picked, setPicked] = useState<PortraitFocus | null>(null);
+  const paneFocus = open ? picked : rows[0]?.snippet?.focus ?? null;
+
   const onQueryChange = (value: string) => {
     setQuery(value);
     setOpen(null);
+    setPicked(null);
     setFocusPane(false);
     window.history.replaceState(null, "", `${window.location.pathname}${selectionSearch({ q: value, open: null })}`);
   };
 
   const select = (code: string, viaKeyboard: boolean) => {
+    const already = code === open;
     setOpen(code);
     setFocusPane(viaKeyboard);
-    // Choosing the row that's already open doesn't add a Back step.
-    const url = `${window.location.pathname}${selectionSearch({ q: query, open: code })}`;
+    // The address already names this row, with any neighborhood picks made in its sheet; keep them.
+    if (already) return;
+    // A spreadsheet passage match opens the table it came from.
+    const focus = rows.find((r) => r.code === code)?.snippet?.focus;
+    setPicked(focus ?? null);
+    const url = `${window.location.pathname}${selectionSearch({ q: query, open: code })}${focus ? `&${portraitFocusQuery(focus).slice(1)}` : ""}`;
+    // Choosing the row that's already shown doesn't add a Back step.
     if (code === selected) window.history.replaceState(null, "", url);
     else window.history.pushState(null, "", url);
   };
@@ -103,11 +115,12 @@ export function SearchHome({ rundown, status }: { rundown: ResultRow[]; status: 
     window.history.replaceState(null, "", `${window.location.pathname}${selectionSearch({ q: query, open: null })}`);
   };
 
-  // Phones: a laptop link to an item that isn't in this list opens that item's full sheet page.
+  // Phones: a laptop link to an item that isn't in this list, or to a neighborhood table, opens that item's sheet page.
   useEffect(() => {
     if (!open || window.matchMedia(LAPTOP_QUERY).matches) return;
     if (searching && !response) return;
-    if (!rows.some((r) => r.code === open)) router.replace(`/d/${open}`);
+    const choice = portraitParams(window.location.search);
+    if (choice || !rows.some((r) => r.code === open)) router.replace(`/d/${open}${choice ? `?${choice}` : ""}`);
   }, [open, rows, searching, response, router]);
 
   const backToRow = () => document.querySelector<HTMLButtonElement>(`li[data-code="${selected}"] button`)?.focus();
@@ -155,6 +168,7 @@ export function SearchHome({ rundown, status }: { rundown: ResultRow[]; status: 
         {laptop && selected && (
           <SheetPane
             code={selected}
+            focus={paneFocus}
             focusHeading={focusPane}
             onFocused={() => setFocusPane(false)}
             explicit={open !== null}

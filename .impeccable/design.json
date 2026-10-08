@@ -353,6 +353,30 @@
       "description": "How it works: a red hand-lettered note (Caveat 600, tilted) over a part heading on the gray band. The note's raster arrow plate is not reproduced here.",
       "html": "<div class=\"ds-part\"><p class=\"ds-note\"><span>live rows from DYCU's Hub</span></p><p class=\"ds-parthead\">LIVE PREVIEW</p></div>",
       "css": ".ds-part { padding-bottom: 12px; } .ds-note { display: flex; align-items: flex-end; gap: 4px; margin: 8px 0 4px; max-width: 16em; color: var(--pencil, #d7261e); font-family: var(--font-note, Caveat, \"Comic Sans MS\", cursive); font-weight: 600; font-size: clamp(15px, 3vw, 30px); line-height: 1.3; } .ds-note > span { display: inline-block; transform: rotate(-4deg); transform-origin: 0 100%; } .ds-parthead { margin: 0; padding: 6px 12px; background: var(--band, #ededea); font-family: var(--font-caps, \"Saira Extra Condensed\", \"Arial Narrow\", sans-serif); font-weight: 700; font-size: clamp(18px, 3vw, 28px); color: var(--ink, #111111); }"
+    },
+    {
+      "name": "Neighborhood / Year Select",
+      "kind": "custom",
+      "refersTo": "portrait-select",
+      "description": "Native select in a square 1px ink hairline box, 44px, ink chevron drawn as a stroke; bold body label inline with a colon.",
+      "html": "<label class=\"ds-pick\">Neighborhood: <select><option>Walker's Point</option></select></label>",
+      "css": ".ds-pick { display: flex; align-items: center; gap: 12px; font-weight: 700; } .ds-pick select { min-height: 44px; max-width: 17.5em; padding: 0 36px 0 10px; border: 1px solid var(--ink, #111); border-radius: 0; appearance: none; background: #fff url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23111' stroke-width='2'/%3E%3C/svg%3E\") right 12px center / 12px 8px no-repeat; font: inherit; font-weight: 400; }"
+    },
+    {
+      "name": "Topic Chip (laptop)",
+      "kind": "custom",
+      "refersTo": "portrait-topic-chip",
+      "description": "Hairline-boxed topic button, 44px; the one in view takes the gray band and condensed bold capitals (the grease-pencil topic arrow plate is not reproduced here).",
+      "html": "<button class=\"ds-chip\">Race and Ethnicity</button> <button class=\"ds-chip\" aria-pressed=\"true\">Sex and Age</button>",
+      "css": ".ds-chip { min-height: 44px; padding: 4px 14px; border: 1px solid var(--ink, #111); border-radius: 0; background: none; font: inherit; } .ds-chip[aria-pressed=true] { background: var(--band, #ededea); font-family: var(--font-caps, 'Saira Extra Condensed', sans-serif); font-weight: 700; }"
+    },
+    {
+      "name": "Problem Note",
+      "kind": "custom",
+      "refersTo": "portrait-issue",
+      "description": "One hairline-boxed line of small body type per problem in DYCU's file, above the table.",
+      "html": "<p class=\"ds-issue\">The Total columns are 0 for every row in DYCU's file; this may be missing data.</p>",
+      "css": ".ds-issue { margin: 16px 0; padding: 6px 12px; border: 1px solid var(--ink, #111); font-size: var(--fs-small, 15px); }"
     }
   ],
   "narrative": {

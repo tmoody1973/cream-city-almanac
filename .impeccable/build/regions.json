@@ -1,20 +1,105 @@
 {
-  "regions": [
-    { "id": "wordmark", "kind": "text", "grid": "A0:D0", "note": "CREAM CITY ALMANAC wordmark, heavy condensed black capitals" },
-    { "id": "masthead-nav", "kind": "control", "grid": "G0:J0", "snap": false, "note": "SEARCH ASK SAVED in gray, HOW IT WORKS black and underlined (current page); rule under the masthead" },
-    { "id": "headline", "kind": "text", "grid": "A1:G1", "note": "HOW TO READ A DATASET IN 60 SECONDS, huge condensed black capitals, indented ~130px" },
-    { "id": "lede", "kind": "text", "grid": "A2:H2", "snap": false, "note": "one body line: Unofficial. Built on Data You Can Use's public data: 93 raw data · 282 reports · 7 visualizations." },
-    { "id": "note-grid", "kind": "text", "grid": "A3:B3", "snap": false, "note": "red handwriting 'every year & place DYCU publishes' with a red arrow pointing right at the sheet" },
-    { "id": "pencil-arrow", "kind": "plate", "grid": "B3:B3", "note": "hand-drawn red arrow pointing right, transparent ground" },
-    { "id": "sheet-head", "kind": "chrome", "grid": "C3:H3", "snap": false, "note": "gray band with rule above and below: W01 big condensed, 'Asthma Prevalence' condensed bold" },
-    { "id": "sheet-grid", "kind": "control", "grid": "C4:E4", "snap": false, "note": "ruled grid: PLACE header, years 2021 2022 2023, City and County rows with black squares and dashes" },
-    { "id": "sheet-explainer", "kind": "text", "grid": "F3:H3", "snap": false, "note": "vertical rule at left; two-line explainer 'Share of adults who report having asthma, by city and county.' and a boxed AI tag" },
-    { "id": "note-source", "kind": "text", "grid": "I3:J4", "snap": false, "note": "red handwriting 'who wrote this: DYCU, the Hub, the source, or AI' with a red arrow pointing left at the AI tag" },
-    { "id": "column-guide", "kind": "control", "grid": "C5:H5", "snap": false, "note": "gray band COLUMN GUIDE heading; two ruled rows: field name bold condensed, meaning in body text" },
-    { "id": "note-preview", "kind": "text", "grid": "A6:B6", "snap": false, "note": "red handwriting 'live rows from DYCU's Hub' with a red arrow pointing right" },
-    { "id": "live-preview", "kind": "control", "grid": "C6:H7", "snap": false, "note": "gray band LIVE PREVIEW heading; dot strip chart, one row per year, gray caption at right" },
-    { "id": "note-download", "kind": "text", "grid": "A7:B8", "snap": false, "note": "red handwriting 'download the real data' with a red arrow pointing right at the buttons" },
-    { "id": "sheet-actions", "kind": "control", "grid": "C8:I8", "snap": false, "note": "two outlined buttons CSV and OPEN SHEET, the sheet's closing rule, and the full-width rule above the sections" },
-    { "id": "section-heads", "kind": "chrome", "grid": "A9:J9", "snap": false, "note": "rule; three columns of big condensed headings EACH WEEK, WHAT THE AI DOES, HOW SEARCH WORKS, each with a rule under it" }
-  ]
+ "regions": [
+  {
+   "id": "topics",
+   "kind": "control",
+   "grid": "A0:J2",
+   "snap": false,
+   "container": true,
+   "note": "topic strip: 16 boxed flat buttons with thin black borders in 4 wrapped rows (Race and Ethnicity ... Household Income); Sex and Age pressed: gray band fill, bold"
+  },
+  {
+   "id": "topic-arrow",
+   "kind": "plate",
+   "bleed": true,
+   "note": "small red grease-pencil arrow pointing down-left at the pressed Sex and Age topic button (top clipped by the crop)",
+   "box": {
+    "x": 0.3579,
+    "y": 0.0,
+    "w": 0.0355,
+    "h": 0.0293
+   }
+  },
+  {
+   "id": "heading",
+   "kind": "text",
+   "grid": "A2:E3",
+   "note": "WHAT'S IN EACH SPREADSHEET, bold condensed black capitals",
+   "box": {
+    "x": 0.0216,
+    "y": 0.2633,
+    "w": 0.3934,
+    "h": 0.0426
+   }
+  },
+  {
+   "id": "lead",
+   "kind": "text",
+   "grid": "A3:J3",
+   "note": "two-line plain sans lead: Each file is one neighborhood's numbers from the Census Bureau's American Community Survey (5-year estimates), as DYCU published them. [DYCU] boxed tag",
+   "box": {
+    "x": 0.0216,
+    "y": 0.3165,
+    "w": 0.9074,
+    "h": 0.0638
+   }
+  },
+  {
+   "id": "pick-neighborhood",
+   "kind": "control",
+   "grid": "A4:F4",
+   "note": "bold label Neighborhood: then a bordered native select reading Walker's Point with a chevron"
+  },
+  {
+   "id": "pick-year",
+   "kind": "control",
+   "grid": "F4:I4",
+   "note": "bold label Year: then a bordered native select reading 2023 with a chevron"
+  },
+  {
+   "id": "issue",
+   "kind": "text",
+   "grid": "A5:J5",
+   "note": "thin-bordered note box: The Total columns are 0 for every row in DYCU's file; this may be missing data."
+  },
+  {
+   "id": "caption",
+   "kind": "text",
+   "grid": "A5:D6",
+   "note": "Walker's Point, 2023: Sex and Age, bold condensed caption above the table",
+   "box": {
+    "x": 0.0216,
+    "y": 0.5505,
+    "w": 0.368,
+    "h": 0.0426
+   }
+  },
+  {
+   "id": "table-groups",
+   "kind": "chrome",
+   "grid": "A6:J6",
+   "snap": false,
+   "note": "ruled table head: empty corner cell, then TOTAL, MALE, FEMALE group headers in condensed capitals, each spanning two columns, then Estimate and \u00b1 Margin column headers"
+  },
+  {
+   "id": "table-body",
+   "kind": "text",
+   "grid": "A7:J9",
+   "snap": false,
+   "container": true,
+   "note": "ruled table body, tabular figures right-aligned: Total 0 0 4,185 \u00b1503 3,483 \u00b1454; Under 5 years; 5 to 9 years; 10 to 14 years; 15 to 17 years; first row on a gray band"
+  },
+  {
+   "id": "moe-note",
+   "kind": "text",
+   "grid": "A9:H9",
+   "note": "small graphite line: Margin of error: the range the true number likely falls in, at the Census Bureau's 90% confidence level.",
+   "box": {
+    "x": 0.0216,
+    "y": 0.9521,
+    "w": 0.7868,
+    "h": 0.0293
+   }
+  }
+ ]
 }

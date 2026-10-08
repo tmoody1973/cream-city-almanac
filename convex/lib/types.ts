@@ -101,6 +101,8 @@ export interface Snippet {
   title: string;
   section: string;
   text: string;
+  // Spreadsheet passages only: which neighborhood table to open.
+  focus?: { place: string; year: number | null; topic: string };
 }
 
 export interface ResultRow {

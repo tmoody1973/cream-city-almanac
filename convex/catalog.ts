@@ -2,10 +2,11 @@ import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
 import { query, type QueryCtx } from "./_generated/server";
 import { pdfUrl } from "./lib/arcgis";
-import { isPdfFamily } from "./lib/families";
+import { isPdfFamily, isSpreadsheetFamily } from "./lib/families";
 import { placeYearGrid } from "./lib/grid";
 import { matchSources } from "./lib/sources";
 import { rundownRows, toRow } from "./search";
+import { placeKey } from "./lib/portrait";
 
 const MAX_CODE_CHARS = 8;
 const newestFirst = (a: Doc<"members">, b: Doc<"members">) => b.modified.localeCompare(a.modified);
@@ -19,6 +20,43 @@ async function familyCard(ctx: QueryCtx, key: string) {
 }
 
 export const rundown = query({ args: {}, handler: (ctx) => rundownRows(ctx) });
+
+type MemberDoc = Doc<"members">;
+
+const tableView = ({ _id, _creationTime, hubId, modified, ...rest }: Doc<"portraitTables">) => rest;
+
+async function tablesFor(ctx: QueryCtx, hubId: string) {
+  return (await ctx.db.query("portraitTables").withIndex("by_hubId", (q) => q.eq("hubId", hubId)).collect())
+    .sort((a, b) => a.order - b.order)
+    .map(tableView);
+}
+
+const newestYearFirst = (a: MemberDoc, b: MemberDoc) => (b.years[0] ?? 0) - (a.years[0] ?? 0) || newestFirst(a, b);
+
+// Neighborhoods for the spreadsheet pickers, each file list newest year first (a re-uploaded old file stays in place).
+async function portraitIndex(ctx: QueryCtx, unordered: MemberDoc[]) {
+  const members = [...unordered].sort(newestYearFirst);
+  const byKey = new Map<string, { key: string; label: string; files: { hubId: string; year: number | null }[] }>();
+  for (const m of members) {
+    const place = m.place ?? m.title;
+    const key = placeKey(place);
+    const entry = byKey.get(key) ?? { key, label: place, files: [] };
+    entry.files.push({ hubId: m.hubId, year: m.years[0] ?? null });
+    byKey.set(key, entry);
+  }
+  const neighborhoods = [...byKey.values()].sort((a, b) => a.label.localeCompare(b.label));
+  // Open on the newest year that has been read, so a new or failing file never becomes everyone's first view.
+  for (const m of members) {
+    const tables = await tablesFor(ctx, m.hubId);
+    if (tables.length) return { neighborhoods, initial: { hubId: m.hubId, tables } };
+  }
+  return { neighborhoods, initial: members[0] ? { hubId: members[0].hubId, tables: [] } : null };
+}
+
+export const portraitTables = query({
+  args: { hubId: v.string() },
+  handler: (ctx, { hubId }) => tablesFor(ctx, hubId),
+});
 
 export const familySheet = query({
   args: { code: v.string() },
@@ -60,6 +98,7 @@ export const familySheet = query({
             basic: card.basic,
           }
         : null,
+      portraits: isSpreadsheetFamily(family) ? await portraitIndex(ctx, members) : null,
       sources: matchSources(profiles, [dictionary?.dataSource ?? "", ...members.map((m) => m.description)].join(" ")),
     };
   },
