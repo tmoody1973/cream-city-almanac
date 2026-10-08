@@ -78,17 +78,18 @@ New `settings` fields: `askModel`, `askInputUsdPerToken`, `askOutputUsdPerToken`
 
 **The chat:** messages; an input at the bottom with "Don't paste private source info"; "27 of 30 questions left today".
 
-**Cards** (one per tool result; provenance tags as on sheets):
+**Margin notes** (Tarik's pick from the comp round, 2026-10-08). Each question sits in a gray band; the answer is a short numbered note in plain words, with no figures. Tool results land as follows:
 
-| Card | Shows | Open |
+| Tool | Laptop | Phone |
 |---|---|---|
-| Datasets | up to 5 rows like search results | that sheet |
-| Dataset | code, name, places, years, explainer | the sheet |
-| Live preview | first rows or chart, HUB tag | the sheet's preview |
-| Number | row label, estimate ± margin, table ID, vintage, neighborhood, year, DYCU tag, the table's notes | that exact table (`?open=N03&place=…&year=…&topic=…`) |
-| Passage | the quote, report name, section, family code | the report's sheet |
+| `getNumber` | The pane opens that exact table (`?open=N03&place=…&year=…&topic=…&row=…`) with the row outlined in ink; an ink leader runs from the note to the row | A compact excerpt of the table under the note (the row and its neighbors, the row outlined, DYCU tag, Census table, "Open the full table →") with a short leader |
+| `showDataset`, `previewData` | The pane opens that sheet; the leader points at its heading | The note carries "Open CODE →" (and the live chart for `previewData`) |
+| `searchCatalog` | Up to 5 compact ruled rows inside the note, each with Open | Same |
+| `readReport` | Quoted passages inside the note with report name and section, each with Open | Same |
 
-**Look:** comp-led. Laptop and phone comps are made during the build and Tarik picks, as with Start here; `DESIGN.md` gains an Ask section.
+Leaders and outlines are ink, never red (red is DYCU's teaching voice, not the AI's).
+
+**Look:** comp-led: laptop `.impeccable/mocks/ask-laptop.webp`, phone `.impeccable/mocks/ask-a-phone.webp`; surface brief `.impeccable/surfaces/ui-components-askpanel-tsx.md`. `DESIGN.md` gains an Ask section.
 
 ## 8. The prose number check
 

@@ -1,0 +1,9 @@
+{
+  "prompt": "Phone web app screenshot, portrait 1024x1536 at a 390px-wide phone viewport scaled up, flat UI, same design system as the reference image: white paper ground #ffffff, ink #111111 text and rules, gray band #ededea label bands, graphite #5c5c5c secondary text, tall condensed sans capitals for headings and codes (Saira Extra Condensed style), plain sans body (Vazirmatn style), 2px ink rules opening blocks, 1px hairlines inside, small boxed provenance tags (DYCU, HUB, AI). No shadows, no rounded corners, no gradients, no red, no icons except thin drawn arrows. Top: phone masthead with the wordmark CREAM CITY ALMANAC. Bottom: a pinned tab bar with SEARCH  ASK  SAVED, ASK active with a thick ink bar. Just above the tab bar, a 2px rule and a question input \"Ask about Milwaukee data\" with a graphite line \"27 of 30 questions left today · Don't paste private source info\". The screen is the Ask chat as editor's margin notes: each person's question in a gray band in small bold sans, then a numbered note (a large condensed numeral 1, 2 at left, a plain sentence at right, no figures in the sentence). Note 1 under the band \"Where can I find daily air readings?\" reads \"Daily air readings are on V02.\" with \"Open V02 →\". Note 2 under the band \"What about poverty by age in Harambee?\" reads \"Harambee's poverty-by-age table is open. The row you asked about is marked.\"  Under note 2 there is no table: just a ruled link row \"Open N03 · Harambee, 2024 · Poverty Status by Age →\" in condensed caps with a DYCU tag and a graphite line \"Opens the table with your row marked\". The notes stay short and text-only; generous white space between notes.\n",
+  "createdAt": "2026-10-08T22:23:33.420Z",
+  "tool": "impeccable generate-image",
+  "model": "gpt-image-2.5-flare",
+  "refs": [
+    ".impeccable/review/mobile.png"
+  ]
+}

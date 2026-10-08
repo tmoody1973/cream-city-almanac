@@ -1,0 +1,11 @@
+{
+  "prompt": "Phone web app screenshot, portrait 1024x1536 at a 390px-wide phone viewport scaled up, flat UI, same design system as the reference image: white paper ground #ffffff, ink #111111 text and rules, gray band #ededea label bands, graphite #5c5c5c secondary text, tall condensed sans capitals for headings and codes (Saira Extra Condensed style), plain sans body (Vazirmatn style), 2px ink rules opening blocks, 1px hairlines inside, small boxed provenance tags (DYCU, HUB, AI). No shadows, no rounded corners, no gradients, no red, no icons except thin drawn arrows. Top: phone masthead with the wordmark CREAM CITY ALMANAC. Bottom: a pinned tab bar with SEARCH  ASK  SAVED, ASK active with a thick ink bar. Just above the tab bar, a 2px rule and a question input \"Ask about Milwaukee data\" with a graphite line \"27 of 30 questions left today \u00b7 Don't paste private source info\". The screen is the Ask chat as editor's margin notes: each person's question in a gray band in small bold sans, then a numbered note (a large condensed numeral 1, 2 at left, a plain sentence at right, no figures in the sentence). Note 1 under the band \"Where can I find daily air readings?\" reads \"Daily air readings are on V02.\" with \"Open V02 \u2192\". Note 2 under the band \"What about poverty by age in Harambee?\" reads \"Harambee's poverty-by-age table is open. The row you asked about is marked.\"  Under note 2, inline: a short thin ink leader line with a small arrowhead drops from the note down into a compact excerpt of the real table directly beneath it: a hairline box titled \"Harambee, 2024 \u00b7 Poverty Status by Age\" with a DYCU tag, three ruled rows (Total 18,894 \u00b11,504; Under 5 years 608 \u00b1252, this row outlined with a thicker ink box; 5 years 120 \u00b160), \"Census table B17001\", and \"Open the full table \u2192\".\n",
+  "createdAt": "2026-10-08T22:23:34.827Z",
+  "tool": "impeccable generate-image",
+  "model": "gpt-image-2.5-flare",
+  "refs": [
+    ".impeccable/review/mobile.png"
+  ],
+  "approved": true,
+  "approvedBy": "Tarik, 2026-10-08"
+}
