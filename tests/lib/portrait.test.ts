@@ -89,6 +89,8 @@ describe("cells and names", () => {
     const race = bySlug(parsePortrait(portraitBytes(2023)), "race-and-ethnicity");
     const text = portraitPassage("Walker's Point", 2023, race);
     expect(text.startsWith("Walker's Point 2023 · Race and Ethnicity (B03002)")).toBe(true);
-    expect(text).toContain("Total:: 7668 ± 789.722103021056");
+    // The topic line and rounded numbers keep gibberish searches from matching digit-heavy passages (measured 2026-10-08).
+    expect(text).toContain("How many residents identify with each race");
+    expect(text).toContain("Total:: 7,668 ± 790");
   });
 });

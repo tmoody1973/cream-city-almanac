@@ -130,18 +130,29 @@ export function readPortraitSheet(sheet: Sheet, order: number): PortraitTable {
   return { ...base, tableIds: tableIdsOf(tableIdText), tableIdText, vintage: meta.get("VINTAGE") || null, groups: names, rows, issues };
 }
 
+// Estimates and margins as whole numbers with commas; rates (between 0 and 1) to 3 places; anything else as written.
+export function formatPortraitNumber(s: string): string {
+  const t = s.trim();
+  if (!/^-?\d+(\.\d+)?$/.test(t)) return s;
+  const n = Number(t);
+  if (n !== 0 && Math.abs(n) < 1) return n.toFixed(3);
+  return Math.round(n).toLocaleString("en-US");
+}
+
 const MAX_PASSAGE_CHARS = 1500;
 
-// One search passage per neighborhood x year x topic. It leads with the place so a search for it ranks.
+// One search passage per neighborhood x year x topic. It leads with the place so a search for it ranks; the topic line
+// and rounded numbers keep it from matching gibberish (raw 15-digit decimals did, measured 2026-10-08).
 export function portraitPassage(place: string, year: number | null, t: PortraitTable): string {
   const lines = t.rows
     .filter((r) => !r.heading)
     .map((r) => {
       const parts = r.values.flatMap((v, i) =>
-        v ? [`${t.groups[i] ? `${t.groups[i]} ` : ""}${v.estimate}${v.moe ? ` ± ${v.moe}` : ""}`] : [],
+        v ? [`${t.groups[i] ? `${t.groups[i]} ` : ""}${formatPortraitNumber(v.estimate)}${v.moe ? ` ± ${formatPortraitNumber(v.moe)}` : ""}`] : [],
       );
       return `${r.label}: ${parts.join("; ")}`;
     });
   const head = `${place}${year ? ` ${year}` : ""} · ${t.topic}${t.tableIdText ? ` (${t.tableIdText})` : ""}`;
-  return [head, ...lines].join("\n").slice(0, MAX_PASSAGE_CHARS);
+  const about = TOPICS.find((x) => x.slug === t.slug)?.about;
+  return [head, ...(about ? [about] : []), ...lines].join("\n").slice(0, MAX_PASSAGE_CHARS);
 }

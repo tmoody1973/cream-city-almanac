@@ -1,3 +1,5 @@
+export { formatPortraitNumber } from "../../convex/lib/portrait";
+
 export interface PortraitIndex {
   neighborhoods: { key: string; label: string; files: { hubId: string; year: number | null }[] }[];
   initial: { hubId: string; tables: unknown[] } | null;
@@ -8,14 +10,6 @@ export interface PortraitFocus {
   topic: string;
 }
 
-// Estimates and margins as whole numbers with commas; rates (between 0 and 1) to 3 places; anything else as written.
-export function formatPortraitNumber(s: string): string {
-  const t = s.trim();
-  if (!/^-?\d+(\.\d+)?$/.test(t)) return s;
-  const n = Number(t);
-  if (n !== 0 && Math.abs(n) < 1) return n.toFixed(3);
-  return Math.round(n).toLocaleString("en-US");
-}
 
 export function resolvePortraitFocus(index: PortraitIndex, params: URLSearchParams, topics: string[]) {
   const initialPlace = index.neighborhoods.find((n) => n.files.some((f) => f.hubId === index.initial?.hubId)) ?? index.neighborhoods[0];

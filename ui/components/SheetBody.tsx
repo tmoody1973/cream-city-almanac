@@ -3,6 +3,7 @@ import type { api } from "@/convex/_generated/api";
 import { shortDate, subline, yearSpan } from "@/ui/lib/format";
 import { LivePreview } from "./LivePreview";
 import { PlaceYearGrid } from "./PlaceYearGrid";
+import { PortraitTables } from "./PortraitTables";
 import { ProvenanceTag } from "./ProvenanceTag";
 import styles from "./sheet.module.css";
 
@@ -35,6 +36,8 @@ export function SheetBody({ sheet, headingId }: { sheet: SheetData; headingId?: 
           <p>{card?.explainer ?? latest?.title} {card && <ProvenanceTag source={card.explainerProvenance} />}</p>
         </section>
       </div>
+
+      {sheet.portraits && <PortraitTables index={sheet.portraits} />}
 
       {card && card.glossary.length > 0 && (
         <section className={styles.section}>
