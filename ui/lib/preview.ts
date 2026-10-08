@@ -64,3 +64,7 @@ export async function fetchFeatures(url: string, ms = PREVIEW_TIMEOUT_MS, fetchI
   );
   return { ok: true, data: { features } };
 }
+
+// The Hub's bookkeeping columns: never shown as data, never taught.
+const SYSTEM = /^(objectid|object_id|fid|globalid|shape(__area|__length)?)$/i;
+export const isSystemColumn = (field: string): boolean => SYSTEM.test(field);

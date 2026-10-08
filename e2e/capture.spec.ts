@@ -52,4 +52,17 @@ test.describe("@capture", () => {
     await settle(page);
     await page.screenshot({ path: ".impeccable/review/laptop-repro.png" });
   });
+  test("how it works at the comp sizes", async ({ page }) => {
+    await page.clock.setFixedTime(FIXED);
+    for (const [width, height, file] of [
+      [1536, 1024, "how-laptop-repro.png"],
+      [1024, 1536, "how-phone-repro.png"],
+    ] as const) {
+      await page.setViewportSize({ width, height });
+      await page.goto("/how-it-works");
+      await page.locator("figure svg").first().waitFor({ timeout: 20_000 });
+      await settle(page);
+      await page.screenshot({ path: `.impeccable/review/${file}` });
+    }
+  });
 });

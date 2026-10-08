@@ -1,14 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
-import { fetchFeatures, fieldValue, headlineColumn, rowsUrl, sharedScale, valuesUrl, type FetchResult, type Features } from "@/ui/lib/preview";
+import { fetchFeatures, fieldValue, headlineColumn, rowsUrl, sharedScale, valuesUrl, type FetchResult, type Features, isSystemColumn } from "@/ui/lib/preview";
 import { StripChart } from "./StripChart";
 import styles from "./sheet.module.css";
 
 type Member = { place: string | null; yearLabel: string | null; featureServerUrl: string | null };
-const SYSTEM = /^(objectid|object_id|fid|globalid|shape(__area|__length)?)$/i;
 const MAX_SERIES = 6;
 
-export function LivePreview({ members, fields }: { members: Member[]; fields: string[] }) {
+export function LivePreview({ members, fields, chartOnly = false }: { members: Member[]; fields: string[]; chartOnly?: boolean }) {
   const sources = members.filter((m) => m.featureServerUrl).slice(0, MAX_SERIES);
   const latestUrl = sources[0]?.featureServerUrl ?? null;
   const headline = headlineColumn(fields);
@@ -54,22 +53,24 @@ export function LivePreview({ members, fields }: { members: Member[]; fields: st
     );
   }
   const first = rows.data.features.map((f) => f.attributes);
-  const columns = Object.keys(first[0] ?? {}).filter((c) => !SYSTEM.test(c));
+  const columns = Object.keys(first[0] ?? {}).filter((c) => !isSystemColumn(c));
   const scale = series ? sharedScale(series.map((s) => s.values)) : null;
   return (
     <>
-      <div className={styles.scroll} tabIndex={0} role="region" aria-label="First rows, scroll sideways for more columns">
-        <table className={styles.rowsTable} aria-label="First rows from the Hub">
-          <thead>
-            <tr>{columns.map((c) => <th key={c} scope="col">{c}</th>)}</tr>
-          </thead>
-          <tbody>
-            {first.map((row, i) => (
-              <tr key={i}>{columns.map((c) => <td key={c}>{String(row[c] ?? "")}</td>)}</tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {!chartOnly && (
+        <div className={styles.scroll} tabIndex={0} role="region" aria-label="First rows, scroll sideways for more columns">
+          <table className={styles.rowsTable} aria-label="First rows from the Hub">
+            <thead>
+              <tr>{columns.map((c) => <th key={c} scope="col">{c}</th>)}</tr>
+            </thead>
+            <tbody>
+              {first.map((row, i) => (
+                <tr key={i}>{columns.map((c) => <td key={c}>{String(row[c] ?? "")}</td>)}</tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
       {headline && series && scale && <StripChart field={headline} series={series} scale={scale} />}
     </>
   );

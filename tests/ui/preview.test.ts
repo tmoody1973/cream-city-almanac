@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { fetchFeatures, fetchJson, fieldValue, headlineColumn, rowsUrl, sharedScale, valuesUrl } from "../../ui/lib/preview";
+import { fetchFeatures, fetchJson, fieldValue, headlineColumn, isSystemColumn, rowsUrl, sharedScale, valuesUrl } from "../../ui/lib/preview";
 
 describe("live preview helpers", () => {
   it("builds ArcGIS query URLs", () => {
@@ -45,5 +45,12 @@ describe("live preview helpers", () => {
       ok: true,
       data: { features: [{ attributes: { per_asthma: 11 } }] },
     });
+  });
+});
+
+describe("isSystemColumn", () => {
+  it("flags the Hub's bookkeeping columns, not the data", () => {
+    expect(["OBJECTID", "object_id", "FID", "GlobalID", "Shape__Area"].every(isSystemColumn)).toBe(true);
+    expect(["GEOID", "per_asthma", "Year"].some(isSystemColumn)).toBe(false);
   });
 });

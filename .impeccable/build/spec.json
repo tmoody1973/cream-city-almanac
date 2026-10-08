@@ -1,7 +1,7 @@
 {
   "tool": "comp-spec",
   "version": 1,
-  "createdAt": "2026-10-08T01:34:14.694Z",
+  "createdAt": "2026-10-08T01:42:17.395Z",
   "comp": ".impeccable/mocks/how-laptop.webp",
   "warnings": [],
   "uncoveredInkCells": [],
@@ -155,29 +155,7 @@
       },
       "medium": "semantic",
       "plate": null,
-      "text": null,
-      "type": {
-        "comp": {
-          "lines": 1,
-          "glyphs": 20,
-          "capHeightPx": 53.6,
-          "inkIsDark": true,
-          "allCaps": true,
-          "advance": 0.3916,
-          "advTall": 0.3916,
-          "advX": null,
-          "gap": 0.0559,
-          "xRatio": null,
-          "stemW": 0.2151,
-          "contrast": 1.0751,
-          "serif": 1.0015,
-          "densTall": 0.7711,
-          "densX": null,
-          "weight": 0.7711
-        },
-        "widthClass": "compressed",
-        "weightClass": "black"
-      }
+      "text": null
     },
     {
       "id": "masthead-nav",
@@ -278,54 +256,7 @@
       },
       "medium": "semantic",
       "plate": null,
-      "text": null,
-      "type": {
-        "comp": {
-          "lines": 1,
-          "glyphs": 30,
-          "capHeightPx": 54.3,
-          "inkIsDark": true,
-          "allCaps": true,
-          "advance": 0.4786,
-          "advTall": 0.4786,
-          "advX": null,
-          "gap": 0.092,
-          "xRatio": null,
-          "stemW": 0.1889,
-          "contrast": 1.042,
-          "serif": 1.0064,
-          "densTall": 0.7701,
-          "densX": null,
-          "weight": 0.7701
-        },
-        "widthClass": "condensed",
-        "weightClass": "black",
-        "chosen": {
-          "family": "Saira Extra Condensed",
-          "weight": 700,
-          "fontSizePx": 78,
-          "source": "index",
-          "fp": {
-            "lines": 1,
-            "glyphs": 18,
-            "capHeightPx": 54.2,
-            "inkIsDark": true,
-            "allCaps": true,
-            "advance": 0.4979,
-            "advTall": 0.4979,
-            "advX": null,
-            "gap": 0.0922,
-            "xRatio": null,
-            "stemW": 0.184,
-            "contrast": 1.0869,
-            "serif": 1.0658,
-            "densTall": 0.7198,
-            "densX": null,
-            "weight": 0.7198
-          },
-          "stamp": "98f6a2372227"
-        }
-      }
+      "text": null
     },
     {
       "id": "lede",
@@ -373,29 +304,7 @@
       },
       "medium": "semantic",
       "plate": null,
-      "text": null,
-      "type": {
-        "comp": {
-          "lines": 1,
-          "glyphs": 22,
-          "capHeightPx": 31.5,
-          "inkIsDark": true,
-          "allCaps": false,
-          "advance": 0.3492,
-          "advTall": 0.4127,
-          "advX": 0.3492,
-          "gap": 0.0635,
-          "xRatio": 0.4873,
-          "stemW": 0.1373,
-          "contrast": 1.2816,
-          "serif": 0.93,
-          "densTall": 0.7688,
-          "densX": 0.8009,
-          "weight": 0.7688
-        },
-        "widthClass": "compressed",
-        "weightClass": "black"
-      }
+      "text": null
     },
     {
       "id": "note-grid",
@@ -443,54 +352,7 @@
       },
       "medium": "semantic",
       "plate": null,
-      "text": null,
-      "type": {
-        "comp": {
-          "lines": 1,
-          "glyphs": 15,
-          "capHeightPx": 30.6,
-          "inkIsDark": true,
-          "allCaps": true,
-          "advance": 0.1633,
-          "advTall": null,
-          "advX": null,
-          "gap": 0.0735,
-          "xRatio": null,
-          "stemW": 0.089,
-          "contrast": 0.9172,
-          "serif": null,
-          "densTall": null,
-          "densX": null,
-          "weight": null
-        },
-        "widthClass": "compressed",
-        "weightClass": "light",
-        "chosen": {
-          "family": "Rock Salt",
-          "weight": 400,
-          "fontSizePx": 26,
-          "source": "index",
-          "fp": {
-            "lines": 1,
-            "glyphs": 9,
-            "capHeightPx": 31.7,
-            "inkIsDark": true,
-            "allCaps": false,
-            "advance": null,
-            "advTall": null,
-            "advX": null,
-            "gap": 0.0789,
-            "xRatio": 0.8328,
-            "stemW": 0.0988,
-            "contrast": 0.9144,
-            "serif": 1.0691,
-            "densTall": null,
-            "densX": null,
-            "weight": null
-          },
-          "stamp": "8f3f9cc4c9eb"
-        }
-      }
+      "text": null
     },
     {
       "id": "pencil-arrow",
@@ -639,17 +501,17 @@
       "id": "sheet-explainer",
       "kind": "text",
       "note": "vertical rule at left; two-line explainer 'Share of adults who report having asthma, by city and county.' and a boxed AI tag",
-      "grid": "F4:H4",
+      "grid": "F3:H3",
       "snap": false,
       "box": {
         "x": 0.5,
-        "y": 0.4,
+        "y": 0.3,
         "w": 0.3,
         "h": 0.1
       },
       "px": {
         "x": 768,
-        "y": 410,
+        "y": 307,
         "w": 461,
         "h": 102
       },
@@ -657,20 +519,31 @@
       "palette": [
         {
           "hex": "#f5f5f5",
-          "coverage": 1
+          "coverage": 0.8988
+        },
+        {
+          "hex": "#0d0d0d",
+          "coverage": 0.0616
+        },
+        {
+          "hex": "#4e4f4f",
+          "coverage": 0.0177
+        },
+        {
+          "hex": "#b9b9b9",
+          "coverage": 0.0128
+        },
+        {
+          "hex": "#89898b",
+          "coverage": 0.0091
         }
       ],
       "detail": {
-        "energy": 1.6483
+        "energy": 47.7453
       },
       "medium": "semantic",
       "plate": null,
-      "text": null,
-      "type": {
-        "comp": null,
-        "measuredAt": "2026-10-08T01:34:14.788Z",
-        "note": "no separable lettering in the crop; size by the region box"
-      }
+      "text": null
     },
     {
       "id": "note-source",
@@ -718,54 +591,7 @@
       },
       "medium": "semantic",
       "plate": null,
-      "text": null,
-      "type": {
-        "comp": {
-          "lines": 1,
-          "glyphs": 9,
-          "capHeightPx": 91,
-          "inkIsDark": true,
-          "allCaps": true,
-          "advance": null,
-          "advTall": null,
-          "advX": null,
-          "gap": 0.0165,
-          "xRatio": null,
-          "stemW": 0.03,
-          "contrast": 0.7801,
-          "serif": null,
-          "densTall": null,
-          "densX": null,
-          "weight": null
-        },
-        "widthClass": "normal",
-        "weightClass": "light",
-        "chosen": {
-          "family": "Edu AU VIC WA NT Arrows",
-          "weight": 700,
-          "fontSizePx": 98,
-          "source": "index",
-          "fp": {
-            "lines": 1,
-            "glyphs": 14,
-            "capHeightPx": 91.3,
-            "inkIsDark": true,
-            "allCaps": false,
-            "advance": 0.5642,
-            "advTall": 0.5642,
-            "advX": null,
-            "gap": 0.1315,
-            "xRatio": 0.5996,
-            "stemW": 0.0291,
-            "contrast": 0.893,
-            "serif": null,
-            "densTall": 0.1825,
-            "densX": null,
-            "weight": 0.1825
-          },
-          "stamp": "1d77a791767a"
-        }
-      }
+      "text": null
     },
     {
       "id": "column-guide",
@@ -861,29 +687,7 @@
       },
       "medium": "semantic",
       "plate": null,
-      "text": null,
-      "type": {
-        "comp": {
-          "lines": 1,
-          "glyphs": 7,
-          "capHeightPx": 26,
-          "inkIsDark": true,
-          "allCaps": false,
-          "advance": 0.8842,
-          "advTall": null,
-          "advX": null,
-          "gap": 0.1538,
-          "xRatio": 0.4718,
-          "stemW": 0.1015,
-          "contrast": 0.7981,
-          "serif": null,
-          "densTall": null,
-          "densX": null,
-          "weight": null
-        },
-        "widthClass": "wide",
-        "weightClass": "light"
-      }
+      "text": null
     },
     {
       "id": "live-preview",
@@ -979,29 +783,7 @@
       },
       "medium": "semantic",
       "plate": null,
-      "text": null,
-      "type": {
-        "comp": {
-          "lines": 2,
-          "glyphs": 20,
-          "capHeightPx": 28.5,
-          "inkIsDark": true,
-          "allCaps": true,
-          "advance": 0.7472,
-          "advTall": 0.7472,
-          "advX": null,
-          "gap": 0.1196,
-          "xRatio": null,
-          "stemW": 0.0888,
-          "contrast": 1.0582,
-          "serif": 1.0131,
-          "densTall": 0.7752,
-          "densX": null,
-          "weight": 0.7752
-        },
-        "widthClass": "normal",
-        "weightClass": "black"
-      }
+      "text": null
     },
     {
       "id": "sheet-actions",
