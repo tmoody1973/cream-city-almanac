@@ -9,7 +9,7 @@
 2. **Take decimals from each cell's number format.** Cost: there is nothing to take. All 685 long decimals of 10 or more in the test files use Excel's "General" format, which sets no decimal places; Excel just shows whatever fits the column.
 3. **Keep typed decimals as written and round calculated ones by size.** Cost: a calculated value of 10 or more loses its decimals ("Unemployed 60.3407" shows as 60).
 
-**What we chose and why:** Option 3 (Claude; Tarik to confirm at the preview check). It never changes a number DYCU typed, keeps small calculated values like household size readable (2.43), and rounds margins of error to whole people, the way reporters quote them.
+**What we chose and why:** Option 3 (Claude recommended; Tarik confirmed 2026-10-08). It never changes a number DYCU typed, keeps small calculated values like household size readable (2.43), and rounds margins of error to whole people, the way reporters quote them.
 
 **What we gave up:** The decimals of calculated values of 10 or more on screen. The coming Ask chat reads the stored tables, which keep every digit, so answers there aren't affected.
 
