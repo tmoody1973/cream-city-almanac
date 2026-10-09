@@ -1,4 +1,5 @@
-import { expect, test } from "@playwright/test";
+// The shared fixtures add the Vercel preview bypass in CI.
+import { expect, test } from "./fixtures";
 
 test("signed out, Ask offers sign-in and search stays public", async ({ page }, info) => {
   await page.goto(info.project.name === "phone" ? "/ask" : "/?ask=1");
@@ -19,8 +20,9 @@ test.describe("signed in", () => {
     const { clerk, setupClerkTestingToken } = await import("@clerk/testing/playwright");
     await setupClerkTestingToken({ page });
     // The scripted test model (lib/ask/model.ts): no real AI calls, no cost, not counted against the account.
-    // Only our route gets the header; sent everywhere it breaks Clerk's cross-origin requests.
-    await page.route("**/api/copilotkit/**", (route) => route.continue({ headers: { ...route.request().headers(), "x-ask-fake": "1" } }));
+    // Only our route gets the header (sent everywhere it breaks Clerk's cross-origin requests); fallback() then lets
+    // the fixtures' preview-bypass route add its header too.
+    await page.route("**/api/copilotkit/**", (route) => route.fallback({ headers: { ...route.request().headers(), "x-ask-fake": "1" } }));
     // Sign in on the page under test, then reload: Clerk navigates on its own after signing in.
     const target = info.project.name === "phone" ? "/ask" : "/?ask=1";
     await page.goto(target);

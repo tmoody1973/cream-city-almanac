@@ -131,7 +131,7 @@ test.describe("@capture", () => {
     test.skip(!process.env.E2E_CLERK_USER_EMAIL || !process.env.CLERK_SECRET_KEY, "needs a Clerk test user");
     const { clerk, setupClerkTestingToken } = await import("@clerk/testing/playwright");
     await setupClerkTestingToken({ page });
-    await page.route("**/api/copilotkit/**", (route) => route.continue({ headers: { ...route.request().headers(), "x-ask-fake": "1" } }));
+    await page.route("**/api/copilotkit/**", (route) => route.fallback({ headers: { ...route.request().headers(), "x-ask-fake": "1" } }));
     for (const [width, height, path, start] of [
       [1536, 1024, ".impeccable/review/ask-laptop-repro.png", "/?ask=1"],
       [390, 844, ".impeccable/review/ask-phone-repro.png", "/ask"],

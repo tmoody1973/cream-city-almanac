@@ -206,7 +206,7 @@ export function SearchHome({ rundown, status }: { rundown: ResultRow[]; status: 
             onShowNewest={showNewest}
           />
         )}
-        <aside className={styles.askRail}>
+        <aside className={styles.askRail} aria-label="Ask">
           <a
             className={styles.askRailLabel}
             href={`/${selectionSearch({ q: query, open, ask: !askOpen })}`}

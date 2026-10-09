@@ -8,7 +8,7 @@ test("the newest dataset opens in the right pane on arrival", async ({ page }) =
   await page.goto("/");
   const first = await page.locator("li[data-code]").first().getAttribute("data-code");
   await expect(pane(page)).toContainText(first!);
-  await expect(page.getByRole("complementary", { name: /ask: coming soon/i })).toBeVisible();
+  await expect(page.getByRole("complementary", { name: "Ask" })).toBeVisible();
 });
 
 test("clicking a row opens its sheet and puts it in the address", async ({ page }) => {
@@ -147,7 +147,7 @@ test.describe("before scripts run", () => {
   test("the Ask rail sits in the right-hand strip", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/");
-    const rail = await page.getByRole("complementary", { name: /ask: coming soon/i }).boundingBox();
+    const rail = await page.getByRole("complementary", { name: "Ask" }).boundingBox();
     expect(rail!.x).toBeGreaterThan(1300);
   });
 });

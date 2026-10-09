@@ -30,10 +30,10 @@ for (const path of PAGES) {
 
 test("the search works from the keyboard alone", async ({ page }, info) => {
   await page.goto("/");
-  // The search box comes right after the links above it in reading order (laptop site links, the How it works band).
-  // Some browsers skip links when tabbing, so allow up to four stops before it.
+  // The search box comes right after the links above it in reading order (laptop site links SEARCH, ASK, START HERE,
+  // HOW IT WORKS, then the band's link). Some browsers skip links when tabbing, so allow up to five stops before it.
   await page.keyboard.press("Tab");
-  for (let i = 0; i < 4 && !(await page.getByLabel("SLUG:").evaluate((el) => el === document.activeElement)); i++) await page.keyboard.press("Tab");
+  for (let i = 0; i < 5 && !(await page.getByLabel("SLUG:").evaluate((el) => el === document.activeElement)); i++) await page.keyboard.press("Tab");
   await expect(page.getByLabel("SLUG:")).toBeFocused();
   await page.keyboard.type("asthma");
   await expect(page.locator("[data-code='W01']")).toBeVisible();
