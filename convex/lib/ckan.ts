@@ -43,11 +43,16 @@ async function action<T>(name: string, params: Record<string, string | number>, 
 
 export async function fetchCityCatalog(): Promise<HubItem[]> {
   const all: CkanPackage[] = [];
+  let count = 0;
   for (let start = 0; ; start += PAGE) {
     const r = await action<{ count: number; results: CkanPackage[] }>("package_search", { rows: PAGE, start }, CATALOG_TIMEOUT_MS);
+    count = r.count;
     all.push(...r.results);
-    if (all.length >= r.count || r.results.length === 0) break;
+    if (all.length >= count || r.results.length === 0) break;
   }
+  // A cut-short or empty catalog must not look like a real one: the build keeps last week's City families instead.
+  if (all.length === 0) throw new Error("City catalog came back empty");
+  if (all.length < count) throw new Error(`City catalog ended early: got ${all.length} of ${count}`);
   return parseCkan(all);
 }
 

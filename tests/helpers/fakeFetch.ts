@@ -52,8 +52,13 @@ export function installFakeFetch(opts: FakeOptions = {}) {
     const body = init?.body ? JSON.parse(String(init.body)) : undefined;
     calls.push({ url, body });
 
-    if (url.includes("data.milwaukee.gov/api/3/action/package_search"))
-      return json(opts.cityStatus ?? 200, opts.cityCatalog ?? { success: true, result: { count: 0, results: [] } });
+    if (url.includes("data.milwaukee.gov/api/3/action/package_search")) {
+      // Like CKAN, honour `start`: a page past the end of the results is empty.
+      const catalog = (opts.cityCatalog ?? { success: true, result: { count: 0, results: [] } }) as { result?: { results?: unknown[] } };
+      const start = Number(new URL(url).searchParams.get("start") ?? 0);
+      const paged = catalog.result?.results ? { ...catalog, result: { ...catalog.result, results: catalog.result.results.slice(start) } } : catalog;
+      return json(opts.cityStatus ?? 200, paged);
+    }
     if (url.includes("data.milwaukee.gov/api/3/action/datastore_search_sql")) {
       const sql = new URL(url).searchParams.get("sql") ?? "";
       return json(opts.cityStatus ?? 200, { success: true, result: { records: opts.citySql ? opts.citySql(sql) : [] } });

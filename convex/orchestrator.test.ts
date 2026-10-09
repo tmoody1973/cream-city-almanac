@@ -128,6 +128,21 @@ describe("weekly build", () => {
     expect(build.notes.join(" ")).toContain("City catalog unavailable");
   }, 120_000);
 
+  it.each([
+    ["cut short (claims 3, returns 1)", () => ({ success: true, result: { count: 3, results: cityCatalog().result.results.slice(0, 1) } })],
+    ["empty", () => ({ success: true, result: { count: 0, results: [] } })],
+  ])("keeps last week's City families when the City catalog is %s", async (_name, bad) => {
+    const t = convexTest(schema, modules);
+    installFakeFetch({ cityCatalog: cityCatalog() });
+    await run(t);
+    vi.unstubAllGlobals();
+    installFakeFetch({ cityCatalog: bad() });
+    const build = await run(t);
+    expect(build.status).toBe("completed");
+    expect((await t.run((ctx) => ctx.db.query("families").collect())).filter((f) => f.source === "city")).toHaveLength(2);
+    expect(build.notes.join(" ")).toContain("City catalog unavailable");
+  }, 120_000);
+
   it("fails cleanly and keeps the catalog when the Hub feed is down", async () => {
     const t = convexTest(schema, modules);
     installFakeFetch({ hubStatus: 500 });
