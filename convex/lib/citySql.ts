@@ -14,13 +14,19 @@ export interface CountArgs { from?: string; to?: string; filters?: { column: str
 export type Built =
   | { ok: true; totalSql: string; groupSql: string | null; futureSql: string | null; period: string; filterLabels: string[]; groupLabel: string | null }
   | { ok: false; status: "choose"; column: string; asked: string; choices: string[] }
-  | { ok: false; status: "bad-column"; column: string; columns: string[] };
+  | { ok: false; status: "bad-column"; column: string; columns: string[] }
+  | { ok: false; status: "bad-dates"; from: string; to: string };
 
 const lit = (s: string) => `'${s.replace(/'/g, "''")}'`;
 const isoDay = (d: Date) => d.toISOString().slice(0, 10);
 const addDays = (day: string, n: number) => isoDay(new Date(Date.parse(`${day}T00:00:00Z`) + n * 86_400_000));
 const human = (day: string) => { const [y, m, d] = day.split("-").map(Number); return `${MONTHS[m - 1]} ${d}, ${y}`; };
-const validDay = (s: string | undefined) => (s && /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : undefined);
+// A real calendar day only: "2025-02-30" and "2025-13-45" are treated as absent.
+const validDay = (s: string | undefined) => {
+  if (!s || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return undefined;
+  const t = Date.parse(`${s}T00:00:00Z`); // NaN for month 13; rolls over for Feb 30, which the round-trip catches
+  return Number.isFinite(t) && isoDay(new Date(t)) === s ? s : undefined;
+};
 
 export const groupLabelFor = (column: string, value: string) => (isOffenseColumn(column) ? offenseName(value) : value);
 const filterLabel = (column: string, value: string, districts: string[]) =>
@@ -59,12 +65,15 @@ export function buildCount(p: CityProfile, a: CountArgs, today: string): Built {
   let period = "all records";
   let futureSql: string | null = null;
   if (p.dateColumn) {
-    const to = validDay(a.to) && a.to! < today ? a.to! : today;
-    const from = validDay(a.from) ?? addDays(today, -365);
+    const askedTo = validDay(a.to);
+    const askedFrom = validDay(a.from);
+    const to = askedTo && askedTo < today ? askedTo : today;
+    const from = askedFrom ?? addDays(to, -365);
+    if (from > to) return { ok: false, status: "bad-dates", from, to };
     const d = quoteId(p.dateColumn);
     const others = where.join(" AND ");
     where.unshift(`${d} >= ${lit(from)} AND ${d} < ${lit(addDays(to, 1))}`);
-    period = `${human(from)} – ${human(to)}${!a.from && !a.to ? " (last 12 months)" : ""}`;
+    period = `${human(from)} – ${human(to)}${!askedFrom && !askedTo ? " (last 12 months)" : ""}`;
     if (to === today) futureSql = `SELECT COUNT(*) AS n FROM ${table} WHERE ${d} > ${lit(addDays(today, 1))}${others ? ` AND ${others}` : ""}`;
   }
   const whereSql = where.length ? ` WHERE ${where.join(" AND ")}` : "";
@@ -74,7 +83,7 @@ export function buildCount(p: CityProfile, a: CountArgs, today: string): Built {
   let groupLabel: string | null = null;
   if (a.groupBy === "month" || a.groupBy === "year") {
     if (p.dateColumn) {
-      groupSql = `SELECT left(${quoteId(p.dateColumn)}, ${a.groupBy === "month" ? 7 : 4}) AS g, COUNT(*) AS n FROM ${table}${whereSql} GROUP BY g ORDER BY g LIMIT ${MAX_GROUPS}`;
+      groupSql = `SELECT left(${quoteId(p.dateColumn)}, ${a.groupBy === "month" ? 7 : 4}) AS g, COUNT(*) AS n FROM ${table}${whereSql} GROUP BY g ORDER BY g DESC LIMIT ${MAX_GROUPS}`;
       groupLabel = a.groupBy;
     }
   } else if (a.groupBy) {

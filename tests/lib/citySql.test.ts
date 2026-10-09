@@ -63,7 +63,7 @@ describe("count query builder", () => {
     const c = buildCount(P, { groupBy: "Offense_All" }, TODAY);
     if (!m.ok || !y.ok || !c.ok) throw new Error("expected ok");
     expect(m.groupSql).toContain(`SELECT left("Incident_Date", 7) AS g, COUNT(*) AS n`);
-    expect(m.groupSql).toContain("GROUP BY g ORDER BY g LIMIT 24");
+    expect(m.groupSql).toContain("GROUP BY g ORDER BY g DESC LIMIT 24");
     expect(m.groupLabel).toBe("month");
     expect(y.groupSql).toContain(`SELECT left("Incident_Date", 4) AS g, COUNT(*) AS n`);
     expect(c.groupSql).toContain(`SELECT "Offense_All" AS g, COUNT(*) AS n`);
@@ -78,6 +78,26 @@ describe("count query builder", () => {
   });
   it("refuses a resource id that isn't a CKAN id", () => {
     expect(() => buildCount({ ...P, resourceId: 'x"; DROP' }, {}, TODAY)).toThrow();
+  });
+  it("defaults from to a year before a given to-date", () => {
+    const b = buildCount(P, { to: "2020-01-01" }, TODAY);
+    if (!b.ok) throw new Error("expected ok");
+    expect(b.totalSql).toContain(`"Incident_Date" >= '2019-01-01' AND "Incident_Date" < '2020-01-02'`);
+    expect(b.period).toBe("Jan 1, 2019 – Jan 1, 2020");
+    expect(b.futureSql).toBeNull();
+  });
+  it("refuses a from-date after the to-date", () => {
+    expect(buildCount(P, { from: "2026-09-01", to: "2026-01-01" }, TODAY)).toMatchObject({ ok: false, status: "bad-dates", from: "2026-09-01", to: "2026-01-01" });
+  });
+  it("refuses a future from-date (to is clamped to today)", () => {
+    expect(buildCount(P, { from: "2027-01-01" }, TODAY)).toMatchObject({ ok: false, status: "bad-dates", from: "2027-01-01", to: "2026-10-09" });
+  });
+  it("treats impossible calendar dates as absent and never throws", () => {
+    for (const bad of ["2025-13-45", "2025-02-30", "2026-13-01"]) {
+      const b = buildCount(P, { from: bad, to: bad }, TODAY);
+      if (!b.ok) throw new Error("expected ok");
+      expect(b.period).toBe("Oct 9, 2025 – Oct 9, 2026 (last 12 months)");
+    }
   });
   it("never emits NULLIF or :: casts (the City refuses them)", () => {
     const shapes = [
