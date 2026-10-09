@@ -5,12 +5,15 @@ import { generateText, gateway, stepCountIs, tool } from "ai";
 import { ASK_PROMPT } from "../lib/ask/prompt";
 import { askTools, type AskBackend } from "../lib/ask/tools";
 import { proseSegments } from "../ui/lib/askProse";
+import { ASK_EXAMPLES } from "../lib/ask/examples";
 import { ASK_QUESTIONS } from "./ask-questions";
 
 const MODEL = process.env.ASK_MODEL ?? "anthropic/claude-sonnet-5.5";
 const CAP = Number(process.argv.find((a) => a.startsWith("--cap="))?.slice(6) ?? 1);
 const VERBOSE = process.argv.includes("--verbose");
 const ONLY = process.argv.find((a) => a.startsWith("--only="))?.slice(7).split(",").map(Number);
+// --examples grades only the guide's example questions (lib/ask/examples.ts).
+const EXAMPLES = process.argv.includes("--examples") ? new Set(ASK_EXAMPLES.map((e) => e.question)) : null;
 const PRICE = { in: 0.000002, out: 0.00001 };
 const identity = JSON.stringify({ subject: "report-card", issuer: "report-card", email: "report-card@datayoucanuse.org", emailVerified: true });
 const run = (fn: string, args: object, asUser = false) =>
@@ -28,6 +31,7 @@ let spent = 0;
 let passed = 0;
 for (const [i, item] of ASK_QUESTIONS.entries()) {
   if (ONLY && !ONLY.includes(i + 1)) continue;
+  if (EXAMPLES && !EXAMPLES.has(item.q)) continue;
   if (spent >= CAP) { console.log(`stopped at the $${CAP} cap`); break; }
   const r = await generateText({ model: gateway(MODEL), system: ASK_PROMPT, prompt: item.q, tools, stopWhen: stepCountIs(7), maxOutputTokens: 800 });
   spent += (r.totalUsage.inputTokens ?? 0) * PRICE.in + (r.totalUsage.outputTokens ?? 0) * PRICE.out;
