@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { action, internalQuery, mutation, query, type QueryCtx } from "./_generated/server";
-import { chicagoDay, costUsd, dailyLimit, matchTopic, pickRow } from "./lib/ask";
+import { chicagoDay, costUsd, dailyLimit, isContentsPassage, matchTopic, pickRow } from "./lib/ask";
 import { embed, gatewayKey } from "./lib/gateway";
 import { placeKey, TOPICS } from "./lib/portrait";
 import { MIN_VECTOR_SCORE } from "./lib/rank";
@@ -143,7 +143,7 @@ export const readReport = action({
     const hits = (await ctx.vectorSearch("docChunks", "by_embedding", { vector: vectors[0], limit: 16 })).filter((h) => h._score >= MIN_VECTOR_SCORE);
     const passages: Passage[] = await ctx.runQuery(internal.ask.chunkDetails, { ids: hits.map((h) => h._id) });
     const wanted = familyCode?.trim().toUpperCase();
-    return { status: "ok", passages: passages.filter((p) => !wanted || p.code === wanted).slice(0, 3) };
+    return { status: "ok", passages: passages.filter((p) => (!wanted || p.code === wanted) && !isContentsPassage(p.section, p.quote)).slice(0, 3) };
   },
 });
 

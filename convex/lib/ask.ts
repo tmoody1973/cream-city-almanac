@@ -45,3 +45,10 @@ export function pickRow<R extends { label: string; heading?: boolean }>(rows: R[
   const repeated = (label: string) => options.filter((o) => o.row.label === label).length > 1;
   return { choose: options.map((n) => (repeated(n.row.label) ? n.full : n.row.label)) };
 }
+
+// A report's table of contents answers no question: chapter titles, then a column of bare page numbers.
+export function isContentsPassage(section: string, text: string): boolean {
+  if (/table of contents|^contents$/i.test(section.trim())) return true;
+  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+  return lines.length > 0 && lines.filter((l) => /^\d{1,3}$/.test(l)).length / lines.length >= 0.3;
+}

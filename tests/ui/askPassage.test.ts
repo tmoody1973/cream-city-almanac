@@ -28,4 +28,7 @@ describe("report passages as blocks", () => {
   it("strips markdown emphasis and skips blank lines", () => {
     expect(passageBlocks("**Housing**\n\n*Rent* is high.")).toEqual([{ kind: "p", text: "Housing" }, { kind: "p", text: "Rent is high." }]);
   });
+  it("drops lone page numbers", () => {
+    expect(passageBlocks("Population by Race\n2\nHousing\n12")).toEqual([{ kind: "p", text: "Population by Race" }, { kind: "p", text: "Housing" }]);
+  });
 });

@@ -10,7 +10,7 @@ import { fakeEmbedding, installFakeFetch } from "../tests/helpers/fakeFetch";
 import rateLimiterTest from "@convex-dev/rate-limiter/test";
 import { internal } from "./_generated/api";
 import { toFamilyInput } from "./lib/families";
-import { matchTopic, pickRow } from "./lib/ask";
+import { isContentsPassage, matchTopic, pickRow } from "./lib/ask";
 import type { TestConvex } from "convex-test";
 
 const modules = import.meta.glob("./**/*.*s");
@@ -206,6 +206,14 @@ describe("getNumber", () => {
   });
 });
 
+describe("tables of contents", () => {
+  it("spots a contents passage by its section or its page numbers", () => {
+    expect(isContentsPassage("Table of Contents", "Introduction and Background\nPopulation by Race")).toBe(true);
+    expect(isContentsPassage("Report", "Introduction\nPopulation by Race\nHousing\n2\n3\n4")).toBe(true);
+    expect(isContentsPassage("Key Takeaways", "21% have one bedroom.\nOver half were built before 1939.")).toBe(false);
+  });
+});
+
 describe("readReport", () => {
   afterEach(() => vi.unstubAllGlobals());
   it("needs a signed-in account", async () => {
@@ -232,6 +240,20 @@ describe("readReport", () => {
     expect(r.passages[0]).toMatchObject({ section: expect.stringMatching(/^Housing/), code: expect.any(String), report: expect.any(String) });
     const filtered = await t.withIdentity(reader).action(api.ask.readReport, { question: "Harambee housing", familyCode: "ZZ9" });
     expect(filtered.passages).toEqual([]);
+  });
+  it("never returns a table of contents as a passage", async () => {
+    vi.stubEnv("AI_GATEWAY_API_KEY", "test-key");
+    installFakeFetch();
+    const t = convexTest(schema, modules);
+    rateLimiterTest.register(t);
+    await seed(t);
+    const hubId = harambee(2024).hubId;
+    await t.run(async (ctx) => {
+      await ctx.db.insert("docChunks", { hubId, modified: "m", section: "Table of Contents", text: "Harambee contents\nPopulation by Race\n2\n3", embedding: fakeEmbedding("Harambee") });
+      await ctx.db.insert("docChunks", { hubId, modified: "m", section: "Housing", text: "Harambee homes are old.", embedding: fakeEmbedding("Harambee") });
+    });
+    const r = await t.withIdentity(reader).action(api.ask.readReport, { question: "Harambee housing" });
+    expect(r.passages.map((p) => p.section)).toEqual(["Housing"]);
   });
   it("rate-limits report reads per account", async () => {
     vi.stubEnv("AI_GATEWAY_API_KEY", "test-key");

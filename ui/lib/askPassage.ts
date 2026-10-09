@@ -17,7 +17,7 @@ export function passageBlocks(text: string): Block[] {
   const blocks: Block[] = [];
   for (const raw of text.split("\n")) {
     const line = raw.trim();
-    if (!line) continue;
+    if (!line || /^\d{1,3}$/.test(line)) continue; // blank, or a lone page number from the PDF
     const last = blocks.at(-1);
     if (/^-{3,}$|^\*{3,}$|^_{3,}$/.test(line)) blocks.push({ kind: "rule" });
     else if (line.startsWith("|")) {
