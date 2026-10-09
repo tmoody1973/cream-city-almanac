@@ -60,7 +60,7 @@ test("no sideways scroll on Start here", async ({ page }, info) => {
 test("the resident's chart runs one mark per day, January to December", async ({ page }) => {
   await page.goto("/start-here");
   const chart = page.locator("[data-example=resident] figure");
-  await expect(chart.locator("figcaption")).toHaveText(/^Each mark is one day, January to December\. Darker means a higher reading \(.+\); every row shares one scale\.$/);
+  await expect(chart.locator("figcaption")).toHaveText(/^Each mark is one day, January to December\. A stronger mark means a higher reading \(.+\); every row shares one scale\.$/);
   await expect(chart.getByText("Jan 1")).toBeVisible();
   // One mark per day: a year's row holds about 365 of them, not a handful.
   expect(await chart.locator("g").first().locator("rect").count()).toBeGreaterThan(300);

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AccountLink } from "./AccountLink";
+import { ThemeSwitch } from "./ThemeSwitch";
 import styles from "./rundown.module.css";
 
 export function CreditFooter() {
@@ -11,6 +12,7 @@ export function CreditFooter() {
       {" · "}
       <Link href="/how-it-works">How it works</Link>
       <AccountLink className={styles.footerButton} labels={["Account", "Sign out"]} before=" · " between=" · " />
+      <ThemeSwitch />
     </footer>
   );
 }

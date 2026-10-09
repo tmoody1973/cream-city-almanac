@@ -6,6 +6,16 @@
   --pencil: #d7261e;
   --rule: 2px solid var(--ink);
   --hair: 1px solid var(--ink);
+  color-scheme: light;
+  /* Clerk's sign-in and account windows draw from the same tokens, so they follow the theme. */
+  --clerk-color-background: var(--paper);
+  --clerk-color-foreground: var(--ink);
+  --clerk-color-muted-foreground: var(--muted);
+  --clerk-color-primary: var(--ink);
+  --clerk-color-primary-foreground: var(--paper);
+  --clerk-color-input: var(--paper);
+  --clerk-color-input-foreground: var(--ink);
+  --clerk-color-neutral: var(--ink);
   /* Codes, headings, labels: Saira Extra Condensed 700 (font-match on the comp's row code). The wordmark is
      variable Saira at its ultra-condensed width, 900, matched to the comp's heavy rounded lettering. */
   --font-caps: var(--font-saira), "Arial Narrow", sans-serif;
@@ -25,6 +35,29 @@
   --fs-credit: clamp(13px, 1.76vw, 18px);
   --gutter: clamp(16px, 3.5vw, 36px);
   --row-h: clamp(64px, 13.2vw, 135px);
+}
+
+/* Night edition: the device asks for dark and the reader hasn't picked Light, or the reader picked Dark (the
+   footer switch sets data-theme on <html> before the page draws). Ink stops short of white to cut glare. Every
+   pair holds WCAG AA: ink 15.4:1 on paper, graphite 7.2:1 on paper and 6.1:1 on the band, pencil text 6.6:1.
+   The red plates stay raster red (3.7:1 on paper, 3.1:1 on the band; graphics need 3:1). */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #141413;
+    --ink: #ecebe6;
+    --band: #242422;
+    --muted: #a3a29c;
+    --pencil: #ff6b5e;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #141413;
+  --ink: #ecebe6;
+  --band: #242422;
+  --muted: #a3a29c;
+  --pencil: #ff6b5e;
+  color-scheme: dark;
 }
 
 *,
