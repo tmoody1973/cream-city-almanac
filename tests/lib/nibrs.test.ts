@@ -12,6 +12,11 @@ describe("NIBRS offense names", () => {
     expect(offenseCodes("13B")).toEqual(["13B"]);
     expect(offenseCodes("theft").length).toBeGreaterThan(3);
   });
+  it("matches no codes for an empty or unknown word, so a filter never widens", () => {
+    expect(offenseCodes("")).toEqual([]);
+    expect(offenseCodes("   ")).toEqual([]);
+    expect(offenseCodes("zebra")).toEqual([]);
+  });
   it("knows the offense column", () => {
     expect(isOffenseColumn("Offense_All")).toBe(true);
     expect(isOffenseColumn("Police_District")).toBe(false);

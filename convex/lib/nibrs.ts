@@ -26,6 +26,7 @@ export const isOffenseColumn = (name: string) => /offense/i.test(name);
 
 export function offenseCodes(words: string): string[] {
   const w = words.trim().toLowerCase();
+  if (!w) return [];
   if (NIBRS[w.toUpperCase()]) return [w.toUpperCase()];
   return Object.entries(NIBRS).filter(([, name]) => name.toLowerCase().includes(w)).map(([code]) => code);
 }
