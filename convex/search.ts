@@ -26,6 +26,8 @@ export const toRow = (f: Doc<"families">): ResultRow => ({
   years: f.years,
   latestModified: f.latestModified,
   snippet: null,
+  source: f.source ?? null,
+  live: f.live ?? false,
 });
 
 export const searchCatalog = action({

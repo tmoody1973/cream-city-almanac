@@ -125,6 +125,8 @@ export interface ResultRow {
   years: number[];
   latestModified: string;
   snippet: Snippet | null;
+  source: "city" | null;
+  live: boolean;
 }
 
 export interface SearchResponse {

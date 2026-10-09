@@ -109,6 +109,17 @@ export const portraitTables = query({
   handler: (ctx, { hubId }) => tablesFor(ctx, hubId),
 });
 
+async function cityInfo(ctx: QueryCtx, familyKey: string) {
+  const p = await ctx.db.query("cityProfiles").withIndex("by_family", (q) => q.eq("familyKey", familyKey)).first();
+  return {
+    columns: p?.columns.map((c) => c.name) ?? [],
+    namesPeople: p?.namesPeople ?? false,
+    coverage: { min: p?.minDate ?? null, max: p?.maxDate ?? null },
+    datastoreId: p && p.rowCount > 0 ? p.resourceId : null,
+    dateColumn: p?.dateColumn ?? null,
+  };
+}
+
 export const familySheet = query({
   args: { code: v.string() },
   handler: async (ctx, { code }) => {
@@ -135,9 +146,11 @@ export const familySheet = query({
         modified: m.modified,
         landingPage: m.landingPage,
         featureServerUrl: m.featureServerUrl,
+        datastoreId: m.datastoreId ?? null,
         downloads: m.downloads,
         fileUrl: m.kind === "document" ? pdfUrl(m.hubId) : null,
       })),
+      city: family.source === "city" ? await cityInfo(ctx, family.key) : null,
       card: card
         ? {
             explainer: card.explainer,

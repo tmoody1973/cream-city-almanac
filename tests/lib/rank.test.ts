@@ -37,7 +37,7 @@ describe("relevantRanks", () => {
 
 describe("applyFilters", () => {
   const row = (key: string, places: string[], years: number[], topic = "Health"): ResultRow => ({
-    key, code: "W01", name: key, kind: "dataset", topic, places, years, latestModified: "", snippet: null,
+    key, code: "W01", name: key, kind: "dataset", topic, places, years, latestModified: "", snippet: null, source: null, live: false,
   });
   const rows = [row("a", ["City"], [2022]), row("b", ["County"], [2023], "Housing")];
   it("filters by place (case-insensitive), year and topic", () => {

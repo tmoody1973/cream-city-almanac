@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { proseSegments } from "../../ui/lib/askProse";
 import { askTools, type AskBackend } from "../../lib/ask/tools";
-import { meteredModel, useFakeModel } from "../../lib/ask/model";
+import { ASK_PROMPT } from "../../lib/ask/prompt";
+import { fakeAskModel, meteredModel, useFakeModel } from "../../lib/ask/model";
 import { MockLanguageModelV3 } from "ai/test";
 import { simulateReadableStream } from "ai";
 
@@ -64,6 +65,7 @@ const backend: AskBackend = {
       : null,
   number: async () => ({ status: "no-topic", topics: ["Rent Paid"] }) as never,
   report: async () => ({ status: "ok", passages: [] }),
+  count: async () => ({ status: "not-found" }) as never,
 };
 const tool = (name: string) => askTools(backend).find((t) => t.name === name)!;
 
@@ -143,5 +145,40 @@ describe("metering", () => {
     const model = meteredModel(inner(10, 5), async () => { throw new Error("convex down"); }) as unknown as { doStream: (o: object) => Promise<{ stream: ReadableStream<{ type: string }> }> };
     const { stream } = await model.doStream({ prompt });
     expect(await drain(stream)).toContain("finish");
+  });
+});
+
+const fakeBackend = () => backend;
+describe("countRecords tool", () => {
+  it("is offered and passes its arguments through", async () => {
+    const seen: unknown[] = [];
+    const b = { ...fakeBackend(), count: async (a: unknown) => (seen.push(a), { status: "ok", count: 3 }) } as never;
+    const t = askTools(b).find((x) => x.name === "countRecords")!;
+    expect(await t.execute({ code: "P01", groupBy: "month" } as never)).toEqual({ status: "ok", count: 3 });
+    expect(seen).toEqual([{ code: "P01", groupBy: "month" }]);
+  });
+  it("previewData answers for a live City dataset instead of 'no-feed'", async () => {
+    const b = { ...fakeBackend(), sheet: async () => ({ family: { code: "P01", name: "NIBRS Crime Data", source: "city" }, members: [], card: null, city: { columns: ["Incident_Date"], namesPeople: false, coverage: { min: "2024-01-01", max: "2026-10-08" }, datastoreId: "rid" } }) } as never;
+    expect(await askTools(b).find((x) => x.name === "previewData")!.execute({ code: "P01" } as never)).toMatchObject({ status: "ok", city: true, fields: ["Incident_Date"] });
+  });
+  it("tells the model to count only through countRecords and never repeat a person's record", () => {
+    expect(ASK_PROMPT).toContain("countRecords");
+    expect(ASK_PROMPT).toMatch(/never repeat or look up an individual/i);
+  });
+  it("the fake model searches then counts for 'thefts'", async () => {
+    const model = fakeAskModel() as unknown as { doStream(o: unknown): Promise<{ stream: ReadableStream<{ type: string }> }> };
+    const run = async (prompt: unknown[]) => {
+      const { stream } = await model.doStream({ prompt });
+      const calls: { toolName: string; input: string }[] = [];
+      const r = stream.getReader();
+      for (;;) { const { done, value } = await r.read(); if (done) break; if (value.type === "tool-call") calls.push(value as never); }
+      return calls;
+    };
+    const user = { role: "user", content: [{ type: "text", text: "How many thefts?" }] };
+    expect((await run([user]))[0].toolName).toBe("searchCatalog");
+    const tool = { role: "tool", content: [{ type: "tool-result", toolCallId: "c", toolName: "searchCatalog", output: { type: "json", value: { rows: [{ code: "P07" }] } } }] };
+    const second = await run([user, tool]);
+    expect(second[0].toolName).toBe("countRecords");
+    expect(JSON.parse(second[0].input)).toMatchObject({ code: "P07", groupBy: "month" });
   });
 });

@@ -9,5 +9,6 @@ export function convexBackend(token: string): AskBackend {
     sheet: (code) => fetchQuery(api.catalog.familySheet, { code }),
     number: (a) => fetchQuery(api.ask.getNumber, a),
     report: (a) => fetchAction(api.ask.readReport, a, { token }),
+    count: (a) => fetchAction(api.city.countRecords, a, { token }),
   };
 }

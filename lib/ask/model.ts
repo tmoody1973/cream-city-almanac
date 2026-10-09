@@ -69,12 +69,24 @@ export function fakeAskModel(): LanguageModel {
       const answered = prompt.at(-1)?.role === "tool";
       const question = JSON.stringify(prompt.filter((m) => m.role === "user").at(-1) ?? "").toLowerCase();
       if (!answered && question.includes("fail")) throw new Error("fake failure");
+      const last = prompt.at(-1);
+      const searched = answered && last?.role === "tool"
+        ? (last.content as { type: string; toolName?: string; output?: { type: string; value: unknown } }[]).find((p) => p.type === "tool-result" && p.toolName === "searchCatalog")
+        : undefined;
+      if (question.includes("thefts") && searched?.output) {
+        const v = searched.output.type === "json" ? searched.output.value : JSON.parse(String(searched.output.value));
+        const code = (v as { rows?: { code: string }[] }).rows?.[0]?.code ?? "P01";
+        const stream = [call("countRecords", { code, filters: [{ column: "Offense_All", values: ["All Other Larceny"] }], groupBy: "month" }), finish("tool-calls")];
+        return { stream: simulateReadableStream({ chunks: [{ type: "stream-start" as const, warnings: [] }, ...stream] }) };
+      }
       const chunks = answered
         ? [...text("Here is what the data shows."), finish("stop")]
         : question.includes("unverified")
           ? [...text("There are 608 children."), finish("stop")]
           : [
-              question.includes("poverty")
+              question.includes("thefts")
+                ? call("searchCatalog", { query: "NIBRS crime" })
+                : question.includes("poverty")
                 ? call("getNumber", { neighborhood: "Harambee", topic: "Poverty Status by Age", row: "Under 5 years" })
                 : question.includes("air")
                   ? call("previewData", { code: "V02" })
