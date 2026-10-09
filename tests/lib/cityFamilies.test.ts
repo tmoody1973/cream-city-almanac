@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parseCkan } from "../../convex/lib/ckan";
-import { cityTopic, groupCityItems } from "../../convex/lib/cityFamilies";
+import { cityRepresentative, cityTopic, groupCityItems } from "../../convex/lib/cityFamilies";
 import { codeLetter } from "../../convex/lib/codes";
 import { cityPackages } from "../helpers/cityFixtures";
 
@@ -26,5 +26,16 @@ describe("City families", () => {
   it("unknown group gets Other (letter X), still a family", () => {
     expect(cityTopic(["Something New"])).toBe("Other");
     expect(codeLetter("dataset", "Other")).toBe("X");
+  });
+  it("counts read the (Current) resource when Current and Historical tie on modified", () => {
+    const crime = fams.find((f) => f.key === "city:nibrs-crime-data")!;
+    // Historical is listed first and is newest-by-created-order-agnostic: the title must decide.
+    expect(cityRepresentative([...crime.members].reverse())?.title).toBe("NIBRS Crime Data (Current)");
+    expect(cityRepresentative(crime.members)?.title).toBe("NIBRS Crime Data (Current)");
+  });
+  it("without a Current title, the newest modified queryable member wins; non-queryable are ignored", () => {
+    const m = (hubId: string, modified: string, datastoreId: string | null) => ({ hubId, title: hubId, modified, datastoreId });
+    expect(cityRepresentative([m("old", "2020", "r1"), m("new", "2024", "r2"), m("newest-no-feed", "2025", null)])?.hubId).toBe("new");
+    expect(cityRepresentative([m("a", "2024", null)])).toBeUndefined();
   });
 });

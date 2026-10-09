@@ -17,7 +17,7 @@ import {
   uniqueDescriptions,
   type AiCard,
 } from "./lib/card";
-import { groupCityItems } from "./lib/cityFamilies";
+import { cityRepresentative, groupCityItems } from "./lib/cityFamilies";
 import { chunkMarkdown } from "./lib/chunk";
 import { fetchCityCatalog, datastoreFields, datastoreSql } from "./lib/ckan";
 import { assembleProfile, planProfile, profileSql } from "./lib/cityProfile";
@@ -86,7 +86,7 @@ async function writeCard(ctx: ActionCtx, buildId: Id<"builds">, familyKey: strin
   const rep = members
     .filter((m) => m.featureServerUrl)
     .sort((a, b) => b.modified.localeCompare(a.modified))[0];
-  const cityRep = members.filter((m) => m.datastoreId).sort((a, b) => b.modified.localeCompare(a.modified))[0];
+  const cityRep = cityRepresentative(members);
   const columns: Column[] = cityRep?.datastoreId
     ? await profileCity(ctx, familyKey, cityRep.datastoreId)
     : rep?.featureServerUrl ? await fetchColumns(rep.featureServerUrl) : [];

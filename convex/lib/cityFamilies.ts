@@ -22,6 +22,14 @@ export function cityTopic(groups: string[]): string {
   return "Other";
 }
 
+// The member counts and the profile read from: Current and Historical tie on `modified` (both refresh nightly), so a
+// "(Current)" title wins; otherwise the newest modified. Only members with a queryable resource qualify, and the
+// sort is stable, so a full tie keeps the catalog's order (the Member doesn't carry `created`).
+export function cityRepresentative<M extends { title: string; modified: string; datastoreId?: string | null }>(members: M[]): M | undefined {
+  const queryable = members.filter((m) => m.datastoreId);
+  return queryable.find((m) => /\(current\)/i.test(m.title)) ?? [...queryable].sort((a, b) => b.modified.localeCompare(a.modified))[0];
+}
+
 function keyAndName(title: string): { key: string; name: string; years: number[] } {
   const e = title.match(ELECTION);
   if (e) {
