@@ -427,18 +427,13 @@ export const replacePortrait = internalMutation({
   },
 });
 
-// One profile per City family. The family is re-dated (so it shows in "Updated this season") only when it already
-// had a profile and its column list has changed since. A first-ever profile never re-dates it, and daily row
-// refreshes never do either, so a daily feed can't flood that list.
+// One profile per City family. Profiling never re-dates the family: every City family is dated by when the City
+// created it, so a daily refresh or a file switch with new columns can't flood "Updated this season" (decision 023).
 export const replaceCityProfile = internalMutation({
   args: { profile: vCityProfile },
   handler: async (ctx, { profile }) => {
     const old = await ctx.db.query("cityProfiles").withIndex("by_family", (q) => q.eq("familyKey", profile.familyKey)).first();
     if (old) await ctx.db.replace(old._id, profile);
     else await ctx.db.insert("cityProfiles", profile);
-    if (old && old.signature !== profile.signature) {
-      const fam = await ctx.db.query("families").withIndex("by_key", (q) => q.eq("key", profile.familyKey)).first();
-      if (fam) await ctx.db.patch(fam._id, { latestModified: new Date(profile.updatedAt).toISOString() });
-    }
   },
 });

@@ -271,7 +271,7 @@ describe("City profiles", () => {
     expect((await buildOf(t, buildId))!.failed).toBe(1);
   });
 
-  it("re-dates a City family whose columns changed since the last profile", async () => {
+  it("never re-dates a City family, even when its columns changed since the last profile", async () => {
     const t = convexTest(schema, modules);
     const buildId = await seedCity(t);
     const before = (await crimeFamily(t))!.latestModified;
@@ -283,7 +283,6 @@ describe("City profiles", () => {
     );
     crimeFake();
     await t.action(internal.build.processFamily, { buildId, familyKey: CRIME });
-    expect(before < "2026-01-01").toBe(true);
-    expect((await crimeFamily(t))!.latestModified > "2026-01-01").toBe(true);
+    expect((await crimeFamily(t))!.latestModified).toBe(before);
   });
 });

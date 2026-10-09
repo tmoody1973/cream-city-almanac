@@ -4,7 +4,7 @@ import type { Family, HubItem, Member } from "./types";
 
 // City of Milwaukee datasets: "(Current)" and "(Historical)" versions are one family; election files ("2016 Nov 8,
 // County Clerk") group by election date. Daily feeds are LIVE: dated by their newest creation, so the daily refresh
-// doesn't flood "Updated this season" (a column change re-dates them, in the build's profile step).
+// doesn't flood "Updated this season".
 export const LIVE_DAYS = 7;
 const VERSION = /\s*\((current|historical)\)\s*$/i;
 const ELECTION = /^\s*(\d{4}) ([A-Z][a-z]{2}) (\d{1,2})\s*,/;
