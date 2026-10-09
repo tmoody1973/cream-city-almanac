@@ -1,0 +1,79 @@
+/// <reference types="vite/client" />
+import rateLimiterTest from "@convex-dev/rate-limiter/test";
+import { convexTest } from "convex-test";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { installFakeFetch } from "../tests/helpers/fakeFetch";
+import { api } from "./_generated/api";
+import schema from "./schema";
+
+const modules = import.meta.glob("./**/*.*s");
+const RID = "87843297-a6fa-46d4-ba5d-cb342fb2d3bb";
+const reader = { subject: "u1", issuer: "test", tokenIdentifier: "test|u1" };
+afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
+
+async function seed(withProfile = true) {
+  const t = convexTest(schema, modules);
+  rateLimiterTest.register(t);
+  await t.run(async (ctx) => {
+    await ctx.db.insert("families", { key: "city:nibrs-crime-data", code: "P01", name: "NIBRS Crime Data", kind: "dataset", topic: "Public Safety", keywords: [], places: ["City"], years: [], latestModified: "2023-01-05", baseSearchText: "", searchText: "", dictionaryTab: null, source: "city", live: true });
+    await ctx.db.insert("cards", { familyKey: "city:nibrs-crime-data", inputHash: "h", explainer: "x", explainerProvenance: "AI", hubSummary: "", glossary: [], caveats: ["These are reported incidents, not all crime."], storyAngles: [], basic: false, embedding: new Array(1536).fill(0) });
+    if (withProfile) await ctx.db.insert("cityProfiles", { familyKey: "city:nibrs-crime-data", resourceId: RID, columns: [], dateColumn: "Incident_Date", districtColumns: ["Police_District"], categories: [{ column: "Police_District", values: [{ value: "6", count: 5 }] }, { column: "Offense_All", values: [{ value: "120", count: 5 }] }], rowCount: 10, minDate: "2024-01-01", maxDate: "2026-10-08", namesPeople: false, signature: "s", updatedAt: 0 });
+  });
+  return t;
+}
+
+describe("countRecords", () => {
+  it("counts live, groups oldest to newest, and reports future-dated records left out", async () => {
+    const t = await seed();
+    installFakeFetch({ citySql: (sql) => sql.includes("left(") ? [{ g: "2026-10", n: "26" }, { g: "2026-09", n: "230" }] : sql.includes("> '") ? [{ n: "1" }] : [{ n: "256" }] });
+    const r = await t.withIdentity(reader).action(api.city.countRecords, { code: "p01", filters: [{ column: "Police_District", values: ["6"] }, { column: "Offense_All", values: ["robbery"] }], groupBy: "month" });
+    expect(r).toMatchObject({ status: "ok", code: "P01", count: 256, groups: [{ label: "Sep 2026", count: 230 }, { label: "Oct 2026", count: 26 }], other: 0, futureExcluded: 1, filters: ["Police district 6", "Robbery"], caveat: "These are reported incidents, not all crime." });
+  });
+  it("labels the dropped remainder 'Earlier' for date groups and 'Other' for column groups when capped", async () => {
+    const t = await seed();
+    const months = Array.from({ length: 24 }, (_, i) => ({ g: `2026-${String(12 - (i % 12)).padStart(2, "0")}`, n: "1" }));
+    installFakeFetch({ citySql: (sql) => sql.includes("left(") ? months : sql.includes("> '") ? [{ n: "0" }] : [{ n: "40" }] });
+    expect(await t.withIdentity(reader).action(api.city.countRecords, { code: "P01", groupBy: "month" })).toMatchObject({ status: "ok", count: 40, other: 16, otherLabel: "Earlier" });
+    const cols = Array.from({ length: 24 }, () => ({ g: "6", n: "1" }));
+    installFakeFetch({ citySql: (sql) => sql.includes("AS g") ? cols : sql.includes("> '") ? [{ n: "0" }] : [{ n: "40" }] });
+    expect(await t.withIdentity(reader).action(api.city.countRecords, { code: "P01", groupBy: "Police_District" })).toMatchObject({ status: "ok", other: 16, otherLabel: "Other" });
+  });
+  it("offers choices instead of guessing", async () => {
+    const t = await seed();
+    installFakeFetch();
+    expect(await t.withIdentity(reader).action(api.city.countRecords, { code: "P01", filters: [{ column: "Police_District", values: ["99"] }] })).toMatchObject({ status: "choose", choices: ["6"] });
+  });
+  it("names the columns when asked about one that isn't there", async () => {
+    const t = await seed();
+    installFakeFetch();
+    expect(await t.withIdentity(reader).action(api.city.countRecords, { code: "P01", filters: [{ column: "Nope", values: ["x"] }] })).toMatchObject({ status: "bad-column", column: "Nope", columns: ["Police_District", "Offense_All"] });
+  });
+  it("refuses impossible date ranges without calling the City", async () => {
+    const t = await seed();
+    installFakeFetch({ cityStatus: 500 });
+    expect(await t.withIdentity(reader).action(api.city.countRecords, { code: "P01", from: "2026-12-01", to: "2026-01-01" })).toMatchObject({ status: "bad-dates", code: "P01", name: "NIBRS Crime Data", from: "2026-12-01", to: "2026-01-01" });
+  });
+  it("says an unknown code is not found", async () => {
+    const t = await seed();
+    expect(await t.withIdentity(reader).action(api.city.countRecords, { code: "zzz" })).toEqual({ status: "not-found", code: "ZZZ" });
+  });
+  it("says a dataset without a live profile can't be counted", async () => {
+    const t = await seed(false);
+    expect(await t.withIdentity(reader).action(api.city.countRecords, { code: "P01" })).toMatchObject({ status: "not-live", name: "NIBRS Crime Data" });
+  });
+  it("returns unavailable, never a number, when the City fails", async () => {
+    const t = await seed();
+    installFakeFetch({ cityStatus: 500 });
+    expect(await t.withIdentity(reader).action(api.city.countRecords, { code: "P01" })).toMatchObject({ status: "unavailable" });
+  });
+  it("goes busy after the account's burst allowance", async () => {
+    const t = await seed(false);
+    const call = () => t.withIdentity(reader).action(api.city.countRecords, { code: "P01" });
+    for (let i = 0; i < 20; i++) expect(await call()).toMatchObject({ status: "not-live" });
+    expect(await call()).toEqual({ status: "busy" });
+  });
+  it("requires sign-in", async () => {
+    const t = await seed();
+    await expect(t.action(api.city.countRecords, { code: "P01" })).rejects.toThrow(/sign in/i);
+  });
+});
