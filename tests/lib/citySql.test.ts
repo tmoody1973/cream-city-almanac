@@ -108,12 +108,27 @@ describe("count query builder", () => {
   it("refuses a future from-date (to is clamped to today)", () => {
     expect(buildCount(P, { from: "2027-01-01" }, TODAY)).toMatchObject({ ok: false, status: "bad-dates", from: "2027-01-01", to: "2026-10-09" });
   });
-  it("treats impossible calendar dates as absent and never throws", () => {
-    for (const bad of ["2025-13-45", "2025-02-30", "2026-13-01"]) {
-      const b = buildCount(P, { from: bad, to: bad }, TODAY);
-      if (!b.ok) throw new Error("expected ok");
-      expect(b.period).toBe("Oct 9, 2025 – Oct 9, 2026 (last 12 months)");
+  it("refuses a malformed or impossible date instead of swapping in the default window (m3)", () => {
+    for (const bad of ["2025-13-45", "2025-02-30", "2026-13-01", "10/01/2026", "last week"]) {
+      expect(buildCount(P, { from: bad }, TODAY), bad).toMatchObject({ ok: false, status: "bad-dates", from: bad });
+      expect(buildCount(P, { to: bad }, TODAY), bad).toMatchObject({ ok: false, status: "bad-dates", to: bad });
     }
+    const absent = buildCount(P, { from: undefined, to: "" }, TODAY);
+    if (!absent.ok) throw new Error("expected ok");
+    expect(absent.period).toBe("Oct 9, 2025 – Oct 9, 2026 (last 12 months)");
+  });
+  it("refuses month or year groups on a dataset without a date column (m2)", () => {
+    for (const groupBy of ["month", "year"]) {
+      expect(buildCount({ ...P, dateColumn: null }, { groupBy }, TODAY)).toMatchObject({ ok: false, status: "bad-column", column: groupBy, columns: ["Police_District", "Offense_All", "Weapon_Used_All", "TITLE"] });
+    }
+  });
+  it("asks which offense when the words match more than five codes (m4)", () => {
+    const wide = { ...P, categories: [{ column: "Offense_All", values: ["23D", "23E", "23F", "23G", "240", "26F", "120"].map((value) => ({ value, count: 1 })), multi: true }] };
+    const b = buildCount(wide, { filters: [{ column: "Offense_All", values: ["theft"] }] }, TODAY);
+    expect(b).toMatchObject({ ok: false, status: "choose", column: "Offense_All", asked: "theft" });
+    if (b.ok || b.status !== "choose") throw new Error("expected choose");
+    expect([...b.choices].sort()).toEqual(["Theft From Building", "Theft From Coin-Operated Machine or Device", "Theft From Motor Vehicle", "Theft of Motor Vehicle Parts or Accessories", "Motor Vehicle Theft", "Identity Theft"].sort());
+    expect(buildCount(wide, { filters: [{ column: "Offense_All", values: ["motor vehicle"] }] }, TODAY)).toMatchObject({ ok: true });
   });
   it("never emits NULLIF or :: casts (the City refuses them)", () => {
     const shapes = [
