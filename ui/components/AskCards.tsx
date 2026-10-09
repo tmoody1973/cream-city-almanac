@@ -226,9 +226,9 @@ export function AskCards({ onOpen }: { onOpen?: (search: string) => void }) {
     if (r.status === "ok") return <CountCard r={r} onOpen={onOpen} />;
     if (r.status === "outside-coverage") return <p className={styles.failed} data-card="count-outside">{outsideCoverage(r)} <OpenLink code={r.code} onOpen={onOpen} /></p>;
     if (r.status === "unavailable") return <p className={styles.failed}>The City&apos;s data didn&apos;t respond. Try again shortly.</p>;
-    if (r.status === "not-live") return <p className={styles.failed}>{r.name} can&apos;t be counted live. <OpenLink code={r.code} onOpen={onOpen} /></p>;
+    if (r.status === "not-live") return <p className={styles.failed}>{r.name} can&apos;t be counted live.{r.note ? ` ${r.note}` : ""} <OpenLink code={r.code} onOpen={onOpen} /></p>;
     if (r.status === "busy") return <p className={styles.failed}>City counts are busy for your account; try again shortly.</p>;
-    return null; // choose / bad-column / bad-dates / not-found: the model asks or retries
+    return null; // choose / bad-column / bad-dates / not-found / not-city: the model asks or retries
   } }, [onOpen]);
 
   useRenderTool({ name: "readReport", parameters: z.object({ question: z.string() }), render: (props) => {

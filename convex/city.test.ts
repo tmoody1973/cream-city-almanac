@@ -90,6 +90,34 @@ describe("countRecords", () => {
     installFakeFetch({ cityStatus: 500 });
     expect(await t.withIdentity(reader).action(api.city.countRecords, { code: "P01" })).toMatchObject({ status: "unavailable" });
   });
+  it("returns unavailable, never 0, when the City's answer has no usable count (m5)", async () => {
+    const t = await seed();
+    for (const total of [[], [{ n: "" }], [{ n: "abc" }], [{}]]) {
+      installFakeFetch({ citySql: (sql) => (sql.includes("> '") ? [{ n: "0" }] : total) });
+      expect(await t.withIdentity(reader).action(api.city.countRecords, { code: "P01" }), JSON.stringify(total)).toMatchObject({ status: "unavailable" });
+    }
+    installFakeFetch({ citySql: (sql) => (sql.includes("AS g") ? [{ g: "6", n: null }] : [{ n: "3" }]) });
+    expect(await t.withIdentity(reader).action(api.city.countRecords, { code: "P01", groupBy: "Police_District" })).toMatchObject({ status: "unavailable" });
+  });
+  it("tells the model when a dataset names people (m1)", async () => {
+    const t = await seed();
+    installFakeFetch({ citySql: () => [{ n: "2" }] });
+    expect(await t.withIdentity(reader).action(api.city.countRecords, { code: "P01" })).toMatchObject({ status: "ok", namesPeople: false });
+  });
+  it("won't count election results, whose rows are wards (r2)", async () => {
+    const t = await seed();
+    await t.run(async (ctx) => {
+      await ctx.db.insert("families", { key: "city:election-2024-11-05", code: "B01", name: "Election results, Nov 5, 2024", kind: "dataset", topic: "Elections", keywords: [], places: ["City"], years: [2024], latestModified: "2024-11-06", baseSearchText: "", searchText: "", dictionaryTab: null, source: "city", live: false });
+      await ctx.db.insert("cityProfiles", { familyKey: "city:election-2024-11-05", resourceId: RID, columns: [], dateColumn: null, districtColumns: ["Ward"], categories: [], rowCount: 327, minDate: null, maxDate: null, namesPeople: false, signature: "s", updatedAt: 0 });
+    });
+    installFakeFetch({ cityStatus: 500 });
+    expect(await t.withIdentity(reader).action(api.city.countRecords, { code: "B01" })).toEqual({ status: "not-live", code: "B01", name: "Election results, Nov 5, 2024", note: "Election results list wards and vote totals, not records to count." });
+  });
+  it("says a DYCU code isn't City data instead of not-found (r3)", async () => {
+    const t = await seed();
+    await t.run((ctx) => ctx.db.insert("families", { key: "dataset:asthma", code: "W01", name: "Asthma Prevalence", kind: "dataset", topic: "Health", keywords: [], places: ["City"], years: [2023], latestModified: "2024-01-01", baseSearchText: "", searchText: "", dictionaryTab: null }));
+    expect(await t.withIdentity(reader).action(api.city.countRecords, { code: "w01" })).toEqual({ status: "not-city", code: "W01", name: "Asthma Prevalence" });
+  });
   it("goes busy after the account's burst allowance", async () => {
     const t = await seed(false);
     const call = () => t.withIdentity(reader).action(api.city.countRecords, { code: "P01" });
