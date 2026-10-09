@@ -102,3 +102,8 @@
 .excerpt { position: relative; margin-top: 36px; }
 .drop { position: absolute; left: 18px; top: -32px; color: var(--ink); }
 .status { white-space: normal; }
+
+/* The guide's question, waiting for sign-in; and the line to the guide, until the first question is asked. */
+.waiting { margin: 8px 0; padding: 8px 12px; border: var(--hair); }
+.examplesLine { margin: 4px 0 8px; font-size: var(--fs-small); }
+.panel:has([data-ask-question]) .examplesLine { display: none; }

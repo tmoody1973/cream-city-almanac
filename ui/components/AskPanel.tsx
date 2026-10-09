@@ -1,10 +1,12 @@
 "use client";
 import { Show, SignInButton, SignOutButton } from "@clerk/nextjs";
-import { CopilotChat, CopilotChatToolCallsView, CopilotKitProvider } from "@copilotkit/react-core/v2";
+import { CopilotChat, CopilotChatToolCallsView, CopilotChatView, CopilotKitProvider, type CopilotChatViewProps } from "@copilotkit/react-core/v2";
 import { useQuery } from "convex/react";
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { noteNumbers, noteOrder } from "@/ui/lib/askNotes";
+import { readPrompt, withoutPrompt } from "@/ui/lib/askPrompt";
 import { proseSegments } from "@/ui/lib/askProse";
 import { AskCards } from "./AskCards";
 import styles from "./ask.module.css";
@@ -85,17 +87,50 @@ function StatusLine({ left, limit }: { left: number; limit: number }) {
   );
 }
 
+// The guide's examples arrive as ?prompt=…: CopilotChat keeps the input's text in its own state and ignores an
+// inputValue prop, so a thin chat view calls its setter once (as if typed), then focuses the box. Never sends.
+const PromptFill = createContext<{ prompt: string; placed: () => void }>({ prompt: "", placed: () => {} });
+function PrefillChatView(props: CopilotChatViewProps) {
+  const { prompt, placed } = useContext(PromptFill);
+  const { onInputChange } = props;
+  useEffect(() => {
+    if (!prompt || !onInputChange) return;
+    onInputChange(prompt);
+    placed();
+    requestAnimationFrame(() => document.querySelector<HTMLTextAreaElement>('section[aria-label="Ask"] textarea')?.focus());
+  }, [prompt, onInputChange, placed]);
+  return <CopilotChatView {...props} />;
+}
+
+const ExamplesLine = () => (
+  <p className={styles.examplesLine}>
+    <Link href="/ask/guide">What can I ask? See examples →</Link>
+  </p>
+);
+
 export function AskPanel({ onOpen }: { onOpen?: (search: string) => void }) {
+  // Read once on mount, before Search's own address writes (the parent's effects run after this one).
+  const [prompt, setPrompt] = useState("");
+  useEffect(() => setPrompt(readPrompt(window.location.search)), []);
+  const placed = useCallback(() => {
+    setPrompt("");
+    window.history.replaceState(null, "", withoutPrompt(window.location.href));
+  }, []);
   return (
     <section className={styles.panel} aria-label="Ask">
       <Show when="signed-out">
         <p className={styles.intro}>Ask a question about Milwaukee data. Answers show the real tables and reports, with their sources.</p>
+        {prompt && <p className={styles.waiting}>Your question is waiting: “{prompt}”</p>}
         <SignInButton mode="modal">
           <button type="button" className={styles.signIn}>Sign in to ask</button>
         </SignInButton>
+        <ExamplesLine />
       </Show>
       <Show when="signed-in">
-        <AskChat onOpen={onOpen} />
+        <ExamplesLine />
+        <PromptFill.Provider value={{ prompt, placed }}>
+          <AskChat onOpen={onOpen} />
+        </PromptFill.Provider>
       </Show>
     </section>
   );
@@ -121,6 +156,7 @@ function AskChat({ onOpen }: { onOpen?: (search: string) => void }) {
         className={styles.chat}
         labels={{ chatInputPlaceholder: "Ask about Milwaukee data" }}
         welcomeScreen={false}
+        chatView={PrefillChatView as never}
         messageView={{ transformMessages: noteOrder as never, userMessage: Question as never, assistantMessage: Note as never }}
         input={{
           className: blocked ? styles.hidden : styles.input,
