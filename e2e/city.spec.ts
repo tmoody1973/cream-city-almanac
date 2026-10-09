@@ -11,7 +11,7 @@ test("City datasets appear in search with the CITY tag, live feeds marked LIVE",
 
 test("a City sheet shows live rows and the private-names note where it applies", async ({ page }) => {
   await page.goto("/?q=" + encodeURIComponent("master property file"));
-  const code = await page.locator("li[data-code]").filter({ hasText: /Master Property/ }).first().getAttribute("data-code");
+  const code = await page.locator("li[data-code]").filter({ hasText: /Master Property/, hasNotText: /Visualizations/ }).first().getAttribute("data-code");
   await page.goto(`/d/${code}`);
   await expect(page.getByText("Names private individuals. Shown as the City publishes it.")).toBeVisible();
   await expect(page.locator("[data-city-preview] tbody tr").first()).toBeVisible({ timeout: 20_000 });
