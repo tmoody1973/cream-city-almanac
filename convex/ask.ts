@@ -38,6 +38,8 @@ export const begin = mutation({
     const { day, count, spend } = await today(ctx, identity.tokenIdentifier);
     if ((spend?.usd ?? 0) >= s.askDailyCapUsd) return { ok: false as const, reason: "paused" as const };
     if ((count?.questions ?? 0) >= dailyLimit(identity, s)) return { ok: false as const, reason: "limit" as const };
+    if (!(await rateLimiter.limit(ctx, "askRuns", { key: identity.tokenIdentifier })).ok) return { ok: false as const, reason: "busy" as const };
+    if (!(await rateLimiter.limit(ctx, "askRunsAll")).ok) return { ok: false as const, reason: "busy" as const };
     if (count) await ctx.db.patch(count._id, { questions: count.questions + 1 });
     else await ctx.db.insert("askCounts", { day, user: identity.tokenIdentifier, questions: 1 });
     return { ok: true as const };

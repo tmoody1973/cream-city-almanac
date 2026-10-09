@@ -3,18 +3,32 @@ import { MockLanguageModelV3 } from "ai/test";
 
 type Meter = (u: { inputTokens: number; outputTokens: number }) => Promise<void>;
 
-// The real model, through the AI Gateway, metered after every step.
-export function askModel(id: string, meter: Meter): LanguageModel {
+// Roughly four characters a token; a little high for JSON, which errs toward charging more.
+const estimateTokens = (prompt: unknown) => Math.ceil(JSON.stringify(prompt).length / 4);
+
+// Metering never breaks an answer the person has already been charged a question for; it logs (no text) and moves on.
+const safely = (meter: Meter) => (u: { inputTokens: number; outputTokens: number }) =>
+  meter(u).catch((e: unknown) => console.warn(`Ask meter failed: ${e instanceof Error ? e.message : String(e)}`));
+
+// Each step is charged its estimated input before the model runs, so an answer abandoned mid-stream still counts
+// toward the site budget; the finish adds the output and any input beyond the estimate.
+export function meteredModel(model: LanguageModel, meter: Meter): LanguageModel {
+  const charge = safely(meter);
   return wrapLanguageModel({
-    model: gateway(id),
+    model: model as Parameters<typeof wrapLanguageModel>[0]["model"],
     middleware: {
       specificationVersion: "v3",
-      wrapStream: async ({ doStream }) => {
+      wrapStream: async ({ doStream, params }) => {
+        const estimate = estimateTokens(params.prompt);
+        await charge({ inputTokens: estimate, outputTokens: 0 });
         const r = await doStream();
         const stream = r.stream.pipeThrough(
           new TransformStream({
             async transform(part, controller) {
-              if (part.type === "finish") await meter({ inputTokens: part.usage.inputTokens.total ?? 0, outputTokens: part.usage.outputTokens.total ?? 0 });
+              if (part.type === "finish") {
+                const input = part.usage.inputTokens.total ?? 0;
+                await charge({ inputTokens: Math.max(0, input - estimate), outputTokens: part.usage.outputTokens.total ?? 0 });
+              }
               controller.enqueue(part);
             },
           }),
@@ -23,6 +37,11 @@ export function askModel(id: string, meter: Meter): LanguageModel {
       },
     },
   });
+}
+
+// The real model, through the AI Gateway.
+export function askModel(id: string, meter: Meter): LanguageModel {
+  return meteredModel(gateway(id), meter);
 }
 
 // Browser tests send x-ask-fake: 1; production never honors it.

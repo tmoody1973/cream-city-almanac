@@ -7,4 +7,14 @@ export const SEARCH_EMBEDS = { kind: "token bucket" as const, rate: 600, period:
 // Report reads from Ask spend one embedding each; 20 at once, refilling 60 an hour, per account.
 export const ASK_EMBEDS = { kind: "token bucket" as const, rate: 60, period: HOUR, capacity: 20 };
 
-export const rateLimiter = new RateLimiter(components.rateLimiter, { searchEmbeds: SEARCH_EMBEDS, askEmbeds: ASK_EMBEDS });
+// Questions starting at once. The site budget only counts spend already recorded, so parallel questions could
+// overshoot it; these bound the overshoot: 5 at once per account (2 a minute after), 20 at once site-wide.
+export const ASK_RUNS = { kind: "token bucket" as const, rate: 120, period: HOUR, capacity: 5 };
+export const ASK_RUNS_ALL = { kind: "token bucket" as const, rate: 1200, period: HOUR, capacity: 20 };
+
+export const rateLimiter = new RateLimiter(components.rateLimiter, {
+  searchEmbeds: SEARCH_EMBEDS,
+  askEmbeds: ASK_EMBEDS,
+  askRuns: ASK_RUNS,
+  askRunsAll: ASK_RUNS_ALL,
+});

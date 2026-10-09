@@ -43,13 +43,21 @@ describe("ask helpers", () => {
 describe("gatekeeper", () => {
   it("is null when signed out and refuses to begin", async () => {
     const t = convexTest(schema, modules);
+    rateLimiterTest.register(t);
     expect(await t.query(api.ask.status, {})).toBeNull();
     expect(await t.mutation(api.ask.begin, {})).toEqual({ ok: false, reason: "signed-out" });
   });
   it("counts questions down to the limit, then refuses", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(Date.UTC(2026, 9, 8, 15, 0));
     const t = convexTest(schema, modules);
+    rateLimiterTest.register(t);
     const me = t.withIdentity(reader);
-    for (let i = 0; i < 30; i++) expect(await me.mutation(api.ask.begin, {})).toEqual({ ok: true });
+    // Questions a person actually asks, half a minute apart (bursts are their own test).
+    for (let i = 0; i < 30; i++) {
+      expect(await me.mutation(api.ask.begin, {})).toEqual({ ok: true });
+      vi.advanceTimersByTime(31_000);
+    }
     expect(await me.mutation(api.ask.begin, {})).toEqual({ ok: false, reason: "limit" });
     expect(await me.query(api.ask.status, {})).toMatchObject({ limit: 30, left: 0, paused: false, newsroom: false });
     // Another account is unaffected.
@@ -57,10 +65,28 @@ describe("gatekeeper", () => {
   });
   it("pauses everyone once today's spend reaches the cap", async () => {
     const t = convexTest(schema, modules);
+    rateLimiterTest.register(t);
     const me = t.withIdentity(reader);
     await me.mutation(api.ask.recordUsage, { secret: "meter-test", inputTokens: 4_000_000, outputTokens: 200_000 }); // $10
     expect(await me.mutation(api.ask.begin, {})).toEqual({ ok: false, reason: "paused" });
     expect(await me.query(api.ask.status, {})).toMatchObject({ paused: true });
+  });
+  it("refuses a burst of questions started at once from one account", async () => {
+    const t = convexTest(schema, modules);
+    rateLimiterTest.register(t);
+    const me = t.withIdentity(reader);
+    const results = await Promise.all(Array.from({ length: 8 }, () => me.mutation(api.ask.begin, {})));
+    expect(results.filter((r) => r.ok)).toHaveLength(5);
+    expect(results.filter((r) => !r.ok && r.reason === "busy")).toHaveLength(3);
+    // The burst didn't spend daily questions it was refused.
+    expect(await me.query(api.ask.status, {})).toMatchObject({ left: 25 });
+  });
+  it("caps questions starting at once across the whole site", async () => {
+    const t = convexTest(schema, modules);
+    rateLimiterTest.register(t);
+    const people = Array.from({ length: 30 }, (_, i) => t.withIdentity({ ...reader, subject: `p${i}`, email: `p${i}@example.com` }));
+    const results = await Promise.all(people.map((p) => p.mutation(api.ask.begin, {})));
+    expect(results.filter((r) => r.ok)).toHaveLength(20);
   });
   it("refuses usage without the meter secret", async () => {
     const t = convexTest(schema, modules);
@@ -68,10 +94,14 @@ describe("gatekeeper", () => {
   });
   it("starts a fresh count on the next Chicago day", async () => {
     vi.useFakeTimers();
-    vi.setSystemTime(Date.UTC(2026, 9, 9, 4, 59));
+    vi.setSystemTime(Date.UTC(2026, 9, 9, 4, 30)); // 11:30 pm Oct 8 in Chicago
     const t = convexTest(schema, modules);
+    rateLimiterTest.register(t);
     const me = t.withIdentity(reader);
-    for (let i = 0; i < 30; i++) await me.mutation(api.ask.begin, {});
+    for (let i = 0; i < 30; i++) {
+      await me.mutation(api.ask.begin, {});
+      vi.advanceTimersByTime(31_000);
+    }
     expect(await me.mutation(api.ask.begin, {})).toEqual({ ok: false, reason: "limit" });
     vi.setSystemTime(Date.UTC(2026, 9, 9, 5, 1));
     expect(await me.mutation(api.ask.begin, {})).toEqual({ ok: true });

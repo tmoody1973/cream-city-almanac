@@ -1,3 +1,4 @@
+import "@/lib/ask/telemetry-off"; // first: before CopilotKit's runtime builds its telemetry client
 import { auth } from "@clerk/nextjs/server";
 import { BuiltInAgent, CopilotRuntime, createCopilotRuntimeHandler, defineTool } from "@copilotkit/runtime/v2";
 import { fetchMutation, fetchQuery } from "convex/nextjs";
@@ -12,6 +13,8 @@ export const maxDuration = 60;
 
 const RUN_ROUTE = "agent/run"; // confirmed in node_modules/@copilotkit/runtime/dist/v2/runtime/core/hooks.d.mts
 const MAX_QUESTION_CHARS = 500;
+// The whole conversation is re-sent with every question; this bounds what one question can cost (~16k tokens).
+const MAX_BODY_BYTES = 64_000;
 
 async function convexToken(): Promise<string | null> {
   const { getToken, sessionClaims, userId } = await auth();
@@ -41,10 +44,14 @@ const handler = createCopilotRuntimeHandler({
       if (route.method === "agent/suggest") throw new Response("Not found", { status: 404 });
       if (route.method !== RUN_ROUTE) return;
       const body = await request.clone().text();
-      if (body.length > 200_000) throw new Response("Too long", { status: 413 });
+      if (body.length > MAX_BODY_BYTES) throw new Response(JSON.stringify({ reason: "too-long" }), { status: 413 });
       const token = await convexToken();
       if (!token) throw new Response(JSON.stringify({ reason: "signed-out" }), { status: 401 });
-      const lastUser = [...(JSON.parse(body).messages ?? [])].reverse().find((m: { role?: string }) => m.role === "user");
+      const messages: { role?: string; content?: unknown }[] = JSON.parse(body).messages ?? [];
+      const asked = messages.filter((m) => m.role === "user");
+      // Questions are plain text only: a document, image or file link would be fetched and read by the model.
+      if (asked.some((m) => typeof m.content !== "string")) throw new Response(JSON.stringify({ reason: "text-only" }), { status: 400 });
+      const lastUser = asked.at(-1);
       if (typeof lastUser?.content === "string" && lastUser.content.length > MAX_QUESTION_CHARS) throw new Response(JSON.stringify({ reason: "too-long" }), { status: 413 });
       // The scripted test model costs nothing, so its runs don't spend a test account's daily questions.
       if (useFakeModel(request)) return;

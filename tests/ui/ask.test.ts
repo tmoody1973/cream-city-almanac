@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { proseSegments } from "../../ui/lib/askProse";
 import { askTools, type AskBackend } from "../../lib/ask/tools";
-import { useFakeModel } from "../../lib/ask/model";
+import { meteredModel, useFakeModel } from "../../lib/ask/model";
+import { MockLanguageModelV3 } from "ai/test";
+import { simulateReadableStream } from "ai";
 
 const flagged = (t: string) => proseSegments(t).filter((s) => s.unverified).map((s) => s.text);
 
@@ -86,5 +88,51 @@ describe("fake model switch", () => {
   });
   it("ignores the fake header in production", () => {
     expect(useFakeModel(req({ "x-ask-fake": "1" }), { VERCEL_ENV: "production" })).toBe(false);
+  });
+});
+
+describe("metering", () => {
+  const usage = (input: number, output: number) => ({ inputTokens: { total: input, noCache: input, cacheRead: 0, cacheWrite: 0 }, outputTokens: { total: output, text: output, reasoning: 0 } });
+  const inner = (input: number, output: number) =>
+    new MockLanguageModelV3({
+      doStream: async () => ({
+        stream: simulateReadableStream({
+          chunks: [
+            { type: "stream-start" as const, warnings: [] },
+            { type: "text-start" as const, id: "a" },
+            { type: "text-delta" as const, id: "a", delta: "Hi." },
+            { type: "text-end" as const, id: "a" },
+            { type: "finish" as const, finishReason: { unified: "stop" as const, raw: "stop" }, usage: usage(input, output) },
+          ],
+        }),
+      }),
+    });
+  const prompt = [{ role: "user" as const, content: [{ type: "text" as const, text: "x".repeat(4000) }] }];
+  const drain = async (stream: ReadableStream<{ type: string }>) => {
+    const parts: string[] = [];
+    for await (const p of stream as unknown as AsyncIterable<{ type: string }>) parts.push(p.type);
+    return parts;
+  };
+
+  it("charges the estimated input before any reply, so an abandoned answer is still counted", async () => {
+    const calls: { inputTokens: number; outputTokens: number }[] = [];
+    const model = meteredModel(inner(500, 20), async (u) => void calls.push(u)) as unknown as { doStream: (o: object) => Promise<{ stream: ReadableStream<{ type: string }> }> };
+    await model.doStream({ prompt });
+    expect(calls).toHaveLength(1);
+    expect(calls[0].outputTokens).toBe(0);
+    expect(calls[0].inputTokens).toBeGreaterThanOrEqual(1000); // 4,000+ characters of prompt
+  });
+  it("charges output at the finish, plus any input beyond the estimate", async () => {
+    const calls: { inputTokens: number; outputTokens: number }[] = [];
+    const model = meteredModel(inner(5000, 20), async (u) => void calls.push(u)) as unknown as { doStream: (o: object) => Promise<{ stream: ReadableStream<{ type: string }> }> };
+    const { stream } = await model.doStream({ prompt });
+    await drain(stream);
+    const estimate = calls[0].inputTokens;
+    expect(calls[1]).toEqual({ inputTokens: 5000 - estimate, outputTokens: 20 });
+  });
+  it("lets the answer through when the meter fails", async () => {
+    const model = meteredModel(inner(10, 5), async () => { throw new Error("convex down"); }) as unknown as { doStream: (o: object) => Promise<{ stream: ReadableStream<{ type: string }> }> };
+    const { stream } = await model.doStream({ prompt });
+    expect(await drain(stream)).toContain("finish");
   });
 });
