@@ -3,8 +3,11 @@
 // The City's SQL refuses casts and NULLIF, so dates are read as ISO text ("2026-06-16 14:51:00"), which sorts correctly.
 const DATE_NAMES = ["incident_date", "creationdate", "casedate", "date", "issue_date", "dateissued", "reportdate", "calldate"];
 const DISTRICT = /^(police_?district|ald(erman(ic)?)?_?(dist(rict)?)?|aldermanic_?district|ward|zip(_?code)?|zipcode)$/i;
-const PEOPLE = /owner_?name|owner_?mail|taxpayer|first_?name|last_?name|^name$|mail(ing)?_?addr/i;
-const NOT_CATEGORY = /(number|_nr|_num|key|_id|^id$|addr|address|location|lat|long|desc|name|comment|narrative|^x$|^y$)/i;
+// Columns that name or identify a person: they flag the dataset and are never offered for counting.
+const PEOPLE = /owner|taxpayer|first_?name|last_?name|^name$|mail(ing)?_?addr|licensee|applicant|agent|contact|operator|dispatcher|call[_ ]?taker|changed[_ ]?by|officer|person[_ ]?id/i;
+const NOT_CATEGORY = /(number|nbr|_nr|_num|_no$|key|_id|^id_|id$|objectid|addr|address|location|lat|long|desc|name|comment|narrative|^x$|^y$)/i;
+// A date that says when a record expires or was last edited is not when it happened: better no date column.
+const NOT_EVENT_DATE = /exp|expire|upd|edited|last|changed/i;
 const MAX_CATEGORIES = 6;
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}/;
 
@@ -12,10 +15,10 @@ export interface ProfilePlan { dateColumn: string | null; districtColumns: strin
 
 export function planProfile(fields: { id: string; type: string }[]): ProfilePlan {
   const names = fields.map((f) => f.id);
-  const dateColumn = names.find((n) => DATE_NAMES.includes(n.toLowerCase())) ?? names.find((n) => /date/i.test(n)) ?? null;
-  const districtColumns = names.filter((n) => DISTRICT.test(n));
+  const dateColumn = names.find((n) => DATE_NAMES.includes(n.toLowerCase())) ?? names.find((n) => /date/i.test(n) && !NOT_EVENT_DATE.test(n)) ?? null;
+  const districtColumns = names.filter((n) => DISTRICT.test(n) && !PEOPLE.test(n));
   const categoryColumns = fields
-    .filter((f) => f.type === "text" && f.id !== dateColumn && !districtColumns.includes(f.id) && !NOT_CATEGORY.test(f.id) && !/date|time/i.test(f.id))
+    .filter((f) => f.type === "text" && f.id !== dateColumn && !districtColumns.includes(f.id) && !PEOPLE.test(f.id) && !NOT_CATEGORY.test(f.id) && !/date|time/i.test(f.id))
     .map((f) => f.id)
     .slice(0, MAX_CATEGORIES);
   return { dateColumn, districtColumns, categoryColumns, namesPeople: names.some((n) => PEOPLE.test(n)) };

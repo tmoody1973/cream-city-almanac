@@ -13,6 +13,24 @@ describe("City column profiles", () => {
   it("flags datasets that name people", () => {
     expect(planProfile([{ id: "OWNER_NAME_1", type: "text" }, { id: "TAXKEY", type: "text" }]).namesPeople).toBe(true);
   });
+  it("flags name columns and never counts by them (I1)", () => {
+    for (const id of ["LICENSEE", "Operator", "Call_Taker", "Dispatcher", "Changed By", "IncidentPersonID", "APPLICANT", "Agent", "CONTACT", "OFFICER", "OWNER"]) {
+      const p = planProfile([{ id, type: "text" }, { id: "STATUS", type: "text" }]);
+      expect(p.namesPeople, id).toBe(true);
+      expect(p.categoryColumns, id).toEqual(["STATUS"]);
+      expect(p.districtColumns, id).toEqual([]);
+    }
+  });
+  it("keeps ID-like columns off the category menu (r1)", () => {
+    const p = planProfile(["TAX_NBR", "PERMIT_NO", "PermitID", "OBJECTID", "ID_CODE", "parcel_id", "TYPE"].map((id) => ({ id, type: "text" })));
+    expect(p.categoryColumns).toEqual(["TYPE"]);
+  });
+  it("never picks an expiry or edit date as the date column (I2)", () => {
+    for (const id of ["EXP_DATE", "EXPIRE_DATE", "UPD_DATE", "DateEdited", "LAST_DATE", "Changed_Date", "Incident_Last_Edited"]) {
+      expect(planProfile([{ id, type: "text" }]).dateColumn, id).toBeNull();
+    }
+    expect(planProfile([{ id: "EXP_DATE", type: "text" }, { id: "PERMIT_DATE", type: "text" }]).dateColumn).toBe("PERMIT_DATE");
+  });
   it("writes count, range and top-value queries that read dates as ISO text", () => {
     const q = profileSql("87843297-a6fa-46d4-ba5d-cb342fb2d3bb", plan);
     expect(q.count).toBe('SELECT COUNT(*) AS n FROM "87843297-a6fa-46d4-ba5d-cb342fb2d3bb"');
