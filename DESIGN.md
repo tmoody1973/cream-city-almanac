@@ -310,7 +310,7 @@ Ruled and flat, like a box drawn on the sheet with a marker.
 There are none. An opened row's preview is an indented region closed by a hairline, on the row's own ground. Dataset sheet sections are ruled blocks separated by hairlines, each led by a label-voice capital heading.
 
 ### Inputs / Fields
-- **Slug entry:** the TOPIC: label in code-voice capitals, then a borderless, transparent input on the same baseline, in body type, 44px minimum height, with a graphite placeholder ("What are you reporting on?") and an ink caret. The line is closed below by the 2px rule.
+- **Topic entry:** the TOPIC: label in code-voice capitals, then a borderless, transparent input on the same baseline, in body type, 44px minimum height, with a graphite placeholder ("What are you looking into?") and an ink caret. The line is closed below by the 2px rule.
 - **Neighborhood / Year selects:** native selects in a square 1px ink hairline box, 44px tall, body type on paper, with the chevron drawn as a 2px ink stroke; the label sits inline before it in bold body type with a colon. A select is capped at 17.5em; at 480px and narrower each label sits above a full-width select.
 - **Focus:** the system focus ring (3px ink outline, 2px offset).
 
