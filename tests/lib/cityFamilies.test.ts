@@ -38,4 +38,26 @@ describe("City families", () => {
     expect(cityRepresentative([m("old", "2020", "r1"), m("new", "2024", "r2"), m("newest-no-feed", "2025", null)])?.hubId).toBe("new");
     expect(cityRepresentative([m("a", "2024", null)])).toBeUndefined();
   });
+  it("an ungrouped package is sorted by its publisher, then its title, then its file types", () => {
+    const t = (title: string, organization?: string, formats: string[] = ["CSV"]) => cityTopic([], { organization, title, formats });
+    expect(t("Firehouse Locations", "Milwaukee Fire Department ", ["SHP", "ESRI REST"])).toBe("Public Safety");
+    expect(t("Library Service Areas", "Milwaukee Public Library", ["ESRI REST", "SHP"])).toBe("City Services");
+    expect(t("Election results, Nov 6, 2016", "Election Commission")).toBe("Elections");
+    expect(t("Ward 12 turnout", "Information Technology and Management Division")).toBe("Elections");
+    expect(t("Land Use Code", "Information Technology and Management Division")).toBe("Housing");
+    expect(t("Building Permits", undefined)).toBe("Housing");
+    expect(t("Traffic Crash Locations", "Department of Public Works")).toBe("City Services");
+    expect(t("Crash Data", "Information Technology and Management Division")).toBe("Public Safety");
+    expect(t("MMSD Geography", "External Organizations ", ["Esri REST", "Esri REST"].map((f) => f.toUpperCase()))).toBe("Maps");
+    expect(t("Aldermanic Districts", "Common Council" )).toBe("City Services");
+    expect(t("Aldermanic Districts", "Something Else")).toBe("Maps");
+    expect(t("Things", "Something Else")).toBe("Other");
+  });
+  it("groups still win over the publisher", () => {
+    expect(cityTopic(["Housing & Property"], { organization: "Milwaukee Fire Department", title: "Firehouse Locations" })).toBe("Housing");
+  });
+  it("parseCkan carries the organization title, trimmed", () => {
+    const items = parseCkan(cityPackages() as never);
+    expect(items[0].organization).toBe("Milwaukee Police Department");
+  });
 });

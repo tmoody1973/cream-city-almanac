@@ -17,6 +17,7 @@ export interface HubItem {
   datastoreId?: string | null; // City: the CKAN resource that can be queried live
   created?: string;
   groups?: string[];
+  organization?: string; // City: the publishing department
 }
 
 export interface ParsedTitle {

@@ -11,7 +11,7 @@ const QUERY_TIMEOUT_MS = 10_000;
 interface CkanResource { id: string; format?: string; url?: string; datastore_active?: boolean }
 export interface CkanPackage {
   id: string; name: string; title: string; notes?: string | null; metadata_modified: string; metadata_created: string;
-  tags?: { name: string }[]; groups?: { title: string }[]; resources: CkanResource[];
+  tags?: { name: string }[]; groups?: { title: string }[]; organization?: { title: string } | null; resources: CkanResource[];
 }
 
 export function parseCkan(packages: CkanPackage[]): HubItem[] {
@@ -29,6 +29,7 @@ export function parseCkan(packages: CkanPackage[]): HubItem[] {
     datastoreId: p.resources.find((r) => r.datastore_active)?.id ?? null,
     created: p.metadata_created,
     groups: (p.groups ?? []).map((g) => g.title.trim()),
+    organization: p.organization?.title?.trim() || undefined,
   }));
 }
 

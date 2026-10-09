@@ -17,8 +17,29 @@ const GROUP_TOPIC: [RegExp, string][] = [
   [/maps?\b/i, "Maps"],
 ];
 
-export function cityTopic(groups: string[]): string {
+// When a package has no group (about a quarter of them), its publisher and then its title say what it is.
+const ORG_TOPIC: [RegExp, string][] = [
+  [/election commission/i, "Elections"],
+  [/police department|fire department|fire and police commission/i, "Public Safety"],
+  [/assessor|city development|neighborhood services/i, "Housing"],
+  [/public works|water works|public library|license division|common council|treasurer|comptroller|department of administration/i, "City Services"],
+];
+const TITLE_TOPIC: [RegExp, string][] = [
+  [/election|\bwards?\b|polling|ballot/i, "Elections"],
+  [/crime|crash|\bfire|\bems\b|police|shooting/i, "Public Safety"],
+  [/boundar|district|\bareas?\b|map|polygon|parcel outline/i, "Maps"],
+  [/property|parcel|assessment|permit|vacant|housing|land use|zoning/i, "Housing"],
+];
+const MAP_FORMATS = /^(ESRI REST|SHP|KML|GEOJSON)$/;
+
+export function cityTopic(groups: string[], more: { organization?: string; title?: string; formats?: string[] } = {}): string {
   for (const [re, topic] of GROUP_TOPIC) if (groups.some((g) => re.test(g))) return topic;
+  const org = more.organization?.trim() ?? "";
+  for (const [re, topic] of ORG_TOPIC) if (re.test(org)) return topic;
+  const title = more.title ?? "";
+  for (const [re, topic] of TITLE_TOPIC) if (re.test(title)) return topic;
+  // Only map files (Esri REST / shapefile) on offer: it is a map layer.
+  if (more.formats?.length && more.formats.every((f) => MAP_FORMATS.test(f))) return "Maps";
   return "Other";
 }
 
@@ -61,7 +82,7 @@ export function groupCityItems(items: HubItem[], now: Date): Family[] {
     const live = g.items.some((i) => i.datastoreId && i.modified >= liveSince);
     const newest = (pick: (i: HubItem) => string) => g.items.reduce((max, i) => (pick(i) > max ? pick(i) : max), "");
     const base = {
-      key, name: g.name, kind: "dataset" as const, topic: cityTopic(g.items.flatMap((i) => i.groups ?? [])),
+      key, name: g.name, kind: "dataset" as const, topic: cityTopic(g.items.flatMap((i) => i.groups ?? []), { organization: g.items.find((i) => i.organization)?.organization, title: g.name, formats: [...new Set(g.items.flatMap((i) => Object.keys(i.downloads)))] }),
       keywords: [...new Set(g.items.flatMap((i) => i.keywords))], places: ["City"], years: [...g.years].sort(),
       latestModified: live ? newest((i) => i.created ?? i.modified) : newest((i) => i.modified),
       members, source: "city" as const, live,
