@@ -1,3 +1,4 @@
+import { ASK_EXAMPLES } from "../lib/ask/examples";
 import type { AskToolName } from "../lib/ask/tools";
 
 export interface AskQuestion { q: string; tool: AskToolName | AskToolName[]; expect: Record<string, string | number> }
@@ -29,3 +30,6 @@ export const ASK_QUESTIONS: AskQuestion[] = [
   { q: "Give me story angles about old housing and health in Milwaukee", tool: "showDataset", expect: { code: "H05" } },
   { q: "What stories could I do with the daily air quality data?", tool: "showDataset", expect: { code: "V02" } },
 ];
+
+// The guide's examples (/ask/guide) are graded too: any not already above joins the card.
+for (const e of ASK_EXAMPLES) if (!ASK_QUESTIONS.some((q) => q.q === e.question)) ASK_QUESTIONS.push({ q: e.question, tool: e.tool, expect: e.expect });

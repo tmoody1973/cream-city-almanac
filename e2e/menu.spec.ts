@@ -9,13 +9,13 @@ const menu = (page: Page) => page.getByRole("dialog", { name: "Menu" });
 test.describe("phone menu", () => {
   test.beforeEach(({}, info) => test.skip(info.project.name !== "phone", "phones only"));
 
-  for (const [path, current] of [["/", "SEARCH"], ["/start-here", "START HERE"], ["/how-it-works", "HOW IT WORKS"], ["/d/W01", null], ["/ask", "ASK"]] as const)
+  for (const [path, current] of [["/", "SEARCH"], ["/start-here", "START HERE"], ["/how-it-works", "HOW IT WORKS"], ["/d/W01", null], ["/ask", "ASK"], ["/ask/guide", "HOW TO USE ASK"]] as const)
     test(`MENU on ${path} opens every page, marking the current one`, async ({ page }) => {
       await page.goto(path);
       await menuButton(page).click();
       const m = menu(page);
       await expect(m).toBeVisible();
-      for (const name of ["SEARCH", "ASK", "START HERE", "HOW IT WORKS"]) await expect(m.getByRole("link", { name, exact: true })).toBeVisible();
+      for (const name of ["SEARCH", "ASK", "HOW TO USE ASK", "START HERE", "HOW IT WORKS"]) await expect(m.getByRole("link", { name, exact: true })).toBeVisible();
       await expect(m.getByRole("group", { name: "Theme" })).toBeVisible();
       if (current) await expect(m.getByRole("link", { name: current, exact: true })).toHaveAttribute("aria-current", "page");
       else await expect(m.locator("[aria-current=page]")).toHaveCount(0);

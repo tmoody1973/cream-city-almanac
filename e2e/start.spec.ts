@@ -68,9 +68,10 @@ test("the resident's chart runs one mark per day, January to December", async ({
 
 test("the reporter's search finds both datasets", async ({ page }) => {
   await page.goto("/?q=" + encodeURIComponent("older housing and asthma rates"));
-  await expect(page.locator("li[data-code]").first()).toBeVisible();
-  const codes = await page.locator("li[data-code]").evaluateAll((els) => els.slice(0, 5).map((e) => e.getAttribute("data-code")));
-  expect(codes).toEqual(expect.arrayContaining(["W01", "H05"]));
+  // The home rundown's rows show before the search answers and are then replaced: keep reading the top five until the
+  // results arrive (reading once raced the swap and saw an empty list on phones).
+  const top5 = () => page.locator("li[data-code]").evaluateAll((els) => els.slice(0, 5).map((e) => e.getAttribute("data-code")));
+  await expect.poll(top5, { timeout: 15_000 }).toEqual(expect.arrayContaining(["W01", "H05"]));
 });
 
 test("the resident chart's labels stay readable", async ({ page }) => {

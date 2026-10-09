@@ -41,6 +41,7 @@ export function StartHere({ data }: { data: Data | null }) {
       <main className={styles.main}>
         <h2 className={styles.headline}>START HERE</h2>
         <p className={styles.lede}>Three people, three questions, and how each gets an answer here.</p>
+        <p className={styles.try}><Link href="/ask/guide">Prefer to ask in plain English? How to use Ask<Arrow /></Link></p>
 
         <div className={styles.examples}>
         <Example

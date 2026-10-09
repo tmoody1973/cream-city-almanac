@@ -11,6 +11,8 @@ export function CreditFooter() {
       <Link href="/start-here">Start here</Link>
       {" · "}
       <Link href="/how-it-works">How it works</Link>
+      {" · "}
+      <Link href="/ask/guide">How to use Ask</Link>
       <AccountLink className={styles.footerButton} labels={["Account", "Sign out"]} before=" · " between=" · " />
       <ThemeSwitch />
     </footer>

@@ -11,7 +11,7 @@ import styles from "./ask.module.css";
 // Laptop passes onOpen (the pane beside the notes shows the answer); a phone omits it (answers sit in the note).
 type Open = ((search: string) => void) | undefined;
 type Value = { estimate: string; moe: string | null } | null;
-type NumberResult = {
+export type NumberResult = {
   status: string; code: string; neighborhood: string; place: string; year: number | null; topic: string; slug: string;
   tableIdText: string; label: string; rowIndex: number; values: Value[]; groups: string[]; nearby: { label: string; values: Value[]; marked: boolean }[];
 };
@@ -81,7 +81,7 @@ const Busy = () => <p className={styles.busy} aria-busy="true">Looking it up…<
 const Failed = () => <p className={styles.failed}>This didn&apos;t load. Ask again to retry.</p>;
 const rowQuery = (r: NumberResult) => new URLSearchParams({ place: r.place, ...(r.year ? { year: String(r.year) } : {}), topic: r.slug, row: String(r.rowIndex) }).toString();
 
-function NumberCard({ r, onOpen, callKey }: { r: NumberResult; onOpen: Open; callKey: string }) {
+export function NumberCard({ r, onOpen, callKey }: { r: NumberResult; onOpen: Open; callKey: string }) {
   const query = rowQuery(r);
   useOpenOnce(callKey, `open=${r.code}&${query}`, onOpen);
   const title = `${r.neighborhood}, ${r.year ?? "latest"} · ${r.topic}`;

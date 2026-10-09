@@ -8,6 +8,12 @@ test("signed out, Ask offers sign-in and search stays public", async ({ page }, 
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 });
 
+test("signed out, Ask shows the waiting question and links to examples", async ({ page }) => {
+  await page.goto("/ask?prompt=" + encodeURIComponent("Rent & burden in Lincoln Park"));
+  await expect(page.getByText("Your question is waiting: “Rent & burden in Lincoln Park”").filter({ visible: true })).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole("link", { name: /what can i ask/i }).filter({ visible: true }).first()).toHaveAttribute("href", "/ask/guide");
+});
+
 test("signed out, there is no ACCOUNT", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("link", { name: "ASK" }).first()).toBeVisible();
@@ -151,6 +157,20 @@ test.describe("signed in", () => {
     await expect(page).toHaveURL(/\/start-here/);
   });
 
+  test("a prompt in the address lands in the box, focused, unsent, and only once", async ({ page }, info) => {
+    const q = "Rent & burden in Lincoln Park";
+    await page.goto("/ask?prompt=" + encodeURIComponent(q));
+    const box = page.getByPlaceholder("Ask about Milwaukee data");
+    await expect(box).toHaveValue(q, { timeout: 20_000 });
+    await expect(box).toBeFocused();
+    await page.waitForTimeout(1500);
+    await expect(page.locator("[data-ask-question]")).toHaveCount(0);
+    await expect(page).not.toHaveURL(/prompt=/);
+    if (info.project.name === "desktop") await expect(page).toHaveURL(/ask=1/);
+    await page.reload();
+    await expect(page.getByPlaceholder("Ask about Milwaukee data")).toHaveValue("", { timeout: 20_000 });
+  });
+
   test("shows today's count and a way to sign out", async ({ page }) => {
     await expect(page.getByText(/of \d+ questions left today/)).toBeVisible({ timeout: 20_000 });
     await page.getByTestId("copilot-input-overlay").getByRole("button", { name: "Sign out" }).click();
@@ -162,4 +182,16 @@ test("a table address with row= outlines that row", async ({ page }) => {
   // row is the row's position in the table (labels repeat across sections in some tables); 2 is "Under 5 years".
   await page.goto("/d/N03?place=harambee&year=2024&topic=poverty-status-by-age&row=2");
   await expect(page.locator("[data-row-marked]")).toContainText("Under 5 years");
+});
+
+test.describe("signing in with a waiting question", () => {
+  test.skip(!process.env.E2E_CLERK_USER_EMAIL || !process.env.CLERK_SECRET_KEY, "needs a Clerk test user");
+  test("the question is in the box after sign-in", async ({ page }) => {
+    const { clerk, setupClerkTestingToken } = await import("@clerk/testing/playwright");
+    await setupClerkTestingToken({ page });
+    await page.goto("/ask?prompt=" + encodeURIComponent("How old are the homes in Harambee?"));
+    await expect(page.getByText(/Your question is waiting/).filter({ visible: true })).toBeVisible({ timeout: 15_000 });
+    await clerk.signIn({ page, emailAddress: process.env.E2E_CLERK_USER_EMAIL! });
+    await expect(page.getByPlaceholder("Ask about Milwaukee data")).toHaveValue("How old are the homes in Harambee?", { timeout: 20_000 });
+  });
 });
