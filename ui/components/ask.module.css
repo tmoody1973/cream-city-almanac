@@ -15,7 +15,7 @@
 .question { position: relative; margin: 32px 0 0; padding: 8px 14px; background: var(--band); font-weight: 700; font-size: var(--fs-small); overflow-wrap: anywhere; }
 /* A hairline closes the note above, with room before the next question (the first one sits under the column's rule). */
 .question::before { content: ""; position: absolute; left: 0; right: 0; top: -16px; border-top: var(--hair); }
-.firstQuestion { margin-top: 0; }
+.firstQuestion { margin-top: 16px; }
 .firstQuestion::before { content: none; }
 
 /* A margin note: a large condensed numeral, then the note's words. */
