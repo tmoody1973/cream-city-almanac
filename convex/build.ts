@@ -4,7 +4,6 @@ import type { Id } from "./_generated/dataModel";
 import { internalAction, type ActionCtx } from "./_generated/server";
 import { fetchColumns, pdfUrl } from "./lib/arcgis";
 import {
-  aiCardSchema,
   assembleCard,
   basicCard,
   buildCardPrompt,
@@ -13,6 +12,7 @@ import {
   cardEmbeddingText,
   cardMaxTokens,
   latestDescription,
+  parseAiCard,
   PROMPT_VERSION,
   uniqueDescriptions,
   type AiCard,
@@ -163,7 +163,7 @@ async function writeAiCard(
         key,
       );
       spent += costUsd(usage, settings.cardInputUsdPerToken, settings.cardOutputUsdPerToken);
-      const parsed = aiCardSchema.safeParse(value);
+      const parsed = parseAiCard(value);
       if (parsed.success) return { card: parsed.data, costUsd: spent, error: "" };
       error = `schema: ${parsed.error.issues[0]?.message ?? "invalid"}`;
     } catch (e) {

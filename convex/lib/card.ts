@@ -44,14 +44,26 @@ export const CARD_JSON_SCHEMA = {
   },
 };
 
+// The widest City tables (MPROP) have 92 columns and the glossary has one entry per column, so the cap sits well above.
+const MAX_GLOSSARY = 200;
+const MAX_CAVEATS = 8;
+const MAX_ANGLES = 6;
+
 export const aiCardSchema = z.object({
   explainer: z.string().min(20).max(1200),
-  glossary: z.array(z.object({ field: z.string().min(1), meaning: z.string().min(3).max(400) })).max(80),
-  caveats: z.array(z.string().min(5).max(400)).max(8),
-  storyAngles: z.array(z.string().min(5).max(300)).max(6),
+  glossary: z.array(z.object({ field: z.string().min(1), meaning: z.string().min(3).max(400) })).max(MAX_GLOSSARY),
+  caveats: z.array(z.string().min(5).max(400)).max(MAX_CAVEATS),
+  storyAngles: z.array(z.string().min(5).max(300)).max(MAX_ANGLES),
 });
 
 export type AiCard = z.infer<typeof aiCardSchema>;
+
+// Too many items is not a reason to lose the card: trim each list to its cap, then validate everything else.
+export function parseAiCard(value: unknown) {
+  const trim = (v: unknown, max: number) => (Array.isArray(v) ? v.slice(0, max) : v);
+  const o = typeof value === "object" && value !== null ? (value as Record<string, unknown>) : null;
+  return aiCardSchema.safeParse(o && { ...o, glossary: trim(o.glossary, MAX_GLOSSARY), caveats: trim(o.caveats, MAX_CAVEATS), storyAngles: trim(o.storyAngles, MAX_ANGLES) });
+}
 
 export interface CardPromptInput {
   name: string;

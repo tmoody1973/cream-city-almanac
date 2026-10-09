@@ -7,6 +7,7 @@ import {
   cardEmbeddingText,
   cardMaxTokens,
   latestDescription,
+  parseAiCard,
   type CardBase,
 } from "../../convex/lib/card";
 
@@ -118,5 +119,27 @@ describe("cardMaxTokens", () => {
     expect(cardMaxTokens(0)).toBe(1500);
     expect(cardMaxTokens(30)).toBe(3300);
     expect(cardMaxTokens(500)).toBe(8000);
+  });
+});
+
+describe("parseAiCard", () => {
+  const ai = (n: number) => ({
+    explainer: "This dataset lists every property in the City of Milwaukee.",
+    glossary: Array.from({ length: n }, (_, i) => ({ field: `COL_${i}`, meaning: "What this column holds." })),
+    caveats: ["Check the update date before citing."],
+    storyAngles: ["Which blocks changed most?"],
+  });
+  it("keeps a 90-column glossary (the widest City tables have 92 columns)", () => {
+    const r = parseAiCard(ai(90));
+    expect(r.success && r.data.glossary).toHaveLength(90);
+  });
+  it("trims an over-long list to the cap rather than throwing the whole card away", () => {
+    const r = parseAiCard({ ...ai(250), caveats: Array(12).fill("A caveat that is long enough."), storyAngles: Array(9).fill("A question to chase?") });
+    expect(r.success).toBe(true);
+    if (r.success) expect([r.data.glossary.length, r.data.caveats.length, r.data.storyAngles.length]).toEqual([200, 8, 6]);
+  });
+  it("still rejects a card that is wrong in kind, not just long", () => {
+    expect(parseAiCard({ ...ai(3), explainer: "short" }).success).toBe(false);
+    expect(parseAiCard("nope").success).toBe(false);
   });
 });
