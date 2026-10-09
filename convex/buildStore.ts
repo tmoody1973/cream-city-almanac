@@ -170,10 +170,21 @@ async function retireFamily(ctx: MutationCtx, fam: Doc<"families">) {
   for (const m of members) await ctx.db.delete(m._id);
   const cards = await ctx.db.query("cards").withIndex("by_family", (q) => q.eq("familyKey", fam.key)).collect();
   for (const c of cards) await ctx.db.delete(c._id);
+  await deleteProfiles(ctx, fam.key);
   const code = await ctx.db.query("codes").withIndex("by_familyKey", (q) => q.eq("familyKey", fam.key)).first();
   if (code) await ctx.db.patch(code._id, { retiredAt: Date.now() });
   await ctx.db.delete(fam._id);
 }
+
+async function deleteProfiles(ctx: MutationCtx, familyKey: string) {
+  for (const p of await ctx.db.query("cityProfiles").withIndex("by_family", (q) => q.eq("familyKey", familyKey)).collect()) await ctx.db.delete(p._id);
+}
+
+// A City family with no live resource left (or one the City won't describe) can't be counted: its profile goes.
+export const deleteCityProfile = internalMutation({
+  args: { familyKey: v.string() },
+  handler: (ctx, { familyKey }) => deleteProfiles(ctx, familyKey),
+});
 
 export const setPending = internalMutation({
   args: {

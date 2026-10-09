@@ -90,6 +90,14 @@ describe("swapCatalog", () => {
     expect(await bySource(t)).toEqual({ dycu: 48, city: 20 });
   });
 
+  it("deletes a retired City family's profile (I4)", async () => {
+    const t = convexTest(schema, modules);
+    await swap(t, [...inputs(), ...cityInputs(20)]);
+    await t.run((ctx) => ctx.db.insert("cityProfiles", { familyKey: "city:c0", resourceId: "r", columns: [], dateColumn: null, districtColumns: [], categories: [], rowCount: 5, minDate: null, maxDate: null, namesPeople: false, signature: "s", updatedAt: 1 }));
+    await swap(t, [...inputs(), ...cityInputs(20).slice(1)]);
+    expect(await t.run((ctx) => ctx.db.query("cityProfiles").collect())).toEqual([]);
+  });
+
   it("still takes a City catalog that grows or barely shrinks (I3)", async () => {
     const t = convexTest(schema, modules);
     await swap(t, [...inputs(), ...cityInputs(20)]);

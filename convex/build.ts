@@ -61,9 +61,16 @@ export const processFamily = internalAction({
   },
 });
 
-// Live City dataset: read its columns and build the counting menu. A failed query keeps last week's profile.
+// Live City dataset: read its columns and build the counting menu. If the City won't describe its columns, the profile
+// goes (it can't be counted); a failed counting query after that keeps last week's profile.
 async function profileCity(ctx: ActionCtx, familyKey: string, rid: string, resourceName: string | null): Promise<Column[]> {
-  const fields = await datastoreFields(rid);
+  let fields: { id: string; type: string }[];
+  try {
+    fields = await datastoreFields(rid);
+  } catch (e) {
+    await ctx.runMutation(internal.buildStore.deleteCityProfile, { familyKey });
+    throw e;
+  }
   const plan = planProfile(fields);
   const q = profileSql(rid, plan);
   try {
@@ -91,6 +98,7 @@ async function writeCard(ctx: ActionCtx, buildId: Id<"builds">, familyKey: strin
     .filter((m) => m.featureServerUrl)
     .sort((a, b) => b.modified.localeCompare(a.modified))[0];
   const cityRep = cityRepresentative(members);
+  if (family.source === "city" && !cityRep?.datastoreId) await ctx.runMutation(internal.buildStore.deleteCityProfile, { familyKey });
   const columns: Column[] = cityRep?.datastoreId
     ? await profileCity(ctx, familyKey, cityRep.datastoreId, cityRep.datastoreName ?? null)
     : rep?.featureServerUrl ? await fetchColumns(rep.featureServerUrl) : [];
