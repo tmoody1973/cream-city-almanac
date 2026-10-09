@@ -377,6 +377,10 @@ Three people, three real questions, and DYCU's own guides, at `/start-here`. One
 - **Phones:** one column; steps are ruled rows with condensed numerals; the guides open with a band label.
 - **Excerpts are live, never typed:** story angles and caveats appear exactly as on their sheets with their AI tags; the neighborhood table shows its first rows with the DYCU tag and its problem notes; the air readings come through the live preview's strip chart, which for daily readings (a dataset with a Day column) runs January to December, one thin mark per day, darker for a higher reading, since 366 dots placed by value overlap into a bar. Excerpt labels and the table caption are gray-band labels in bold body type. When data doesn't load, the example keeps its steps and link and says so.
 
+### How to Use Ask (`/ask/guide`)
+
+Start here's layout and type: wordmark-lettered headline, lede, banded section heads (READING AN ANSWER, WHAT TO ASK, WHAT ASK WON'T DO); three ruled role columns on laptops (A JOURNALIST, A NONPROFIT, A CITIZEN), stacked on phones. The sample answer is built from Ask's own parts: the first-question band, note 1 with figure-free prose, the phone number card filled live from `getNumber`, and one line showing the unverified mark on a made-up figure that says so. Grease-pencil notes sit in the right margin on laptops (the sample holds 560px with 280px of margin; the mark's note is lifted so its arrow meets the line) and above each part on phones. Example questions are ruled ink links that open Ask with the question typed in, never sent; Ask's empty panel, Start here, the footer and the phone menu link here.
+
 ### Guide Pages (DYCU's Hub pages)
 Families of kind `page` are DYCU's guides to its Hub, not data: they stay out of "Updated this season", stay findable in search, and their sheet and phone preview show one line, "A guide page on DYCU's Hub, not a dataset.", with an "Open it on the Hub" link and its HUB tag (plus "New here? Start here." on the sheet).
 

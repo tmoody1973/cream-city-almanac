@@ -51,7 +51,8 @@ test("Clerk's account window follows dark mode", async ({ page }) => {
   await setupClerkTestingToken({ page });
   await page.goto("/start-here");
   await clerk.signIn({ page, emailAddress: process.env.E2E_CLERK_USER_EMAIL! });
-  await page.reload();
+  // Clerk may still be redirecting after sign-in; a canceled reload just means load the page fresh.
+  await page.reload().catch(() => page.goto("/start-here"));
   await page.getByRole("button", { name: /^account$/i }).filter({ visible: true }).first().click();
   const root = page.locator(".cl-userProfile-root");
   await expect(root).toBeVisible({ timeout: 15_000 });

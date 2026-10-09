@@ -29,6 +29,7 @@ const tools = Object.fromEntries(askTools(backend).map((t) => [t.name, tool({ de
 
 let spent = 0;
 let passed = 0;
+let graded = 0;
 for (const [i, item] of ASK_QUESTIONS.entries()) {
   if (ONLY && !ONLY.includes(i + 1)) continue;
   if (EXAMPLES && !EXAMPLES.has(item.q)) continue;
@@ -44,6 +45,7 @@ for (const [i, item] of ASK_QUESTIONS.entries()) {
   const flaggedWords = proseSegments(r.text, JSON.stringify(calls.map((c) => c.output))).filter((s) => s.unverified).map((s) => s.text);
   const unverified = flaggedWords.length;
   const ok = fieldsOk && unverified === 0;
+  graded++;
   if (ok) passed++;
   if (VERBOSE) {
     for (const c of calls) console.log(`   ${c.toolName}(${JSON.stringify(c.input)}) → ${JSON.stringify(c.output).slice(0, 220)}`);
@@ -51,4 +53,4 @@ for (const [i, item] of ASK_QUESTIONS.entries()) {
   }
   console.log(`${ok ? "PASS" : "MISS"} ${item.q} → ${calls.map((c) => c.toolName).join(", ") || "no tools"}${unverified ? ` (${unverified} unverified: ${flaggedWords.join(" | ")})` : ""}`);
 }
-console.log(`\n${passed}/${ASK_QUESTIONS.length} passed · $${spent.toFixed(3)} spent · $${(spent / ASK_QUESTIONS.length).toFixed(4)} per question`);
+console.log(`\n${passed}/${graded} passed · $${spent.toFixed(3)} spent · $${(spent / Math.max(graded, 1)).toFixed(4)} per question`);
