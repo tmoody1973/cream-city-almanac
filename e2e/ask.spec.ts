@@ -69,6 +69,30 @@ test.describe("signed in", () => {
     await expect(page.getByText("Ask is unavailable right now. Search still works.")).toBeVisible({ timeout: 30_000 });
   });
 
+  test("closing and reopening Ask on a laptop keeps the conversation", async ({ page }, info) => {
+    test.skip(info.project.name === "phone", "laptop only");
+    await ask(page, "unverified please");
+    await expect(page.locator("mark[data-unverified]")).toBeVisible({ timeout: 30_000 });
+    await page.getByRole("link", { name: "Close Ask" }).click();
+    await expect(page.getByText("UPDATED THIS SEASON")).toBeVisible();
+    await page.getByRole("link", { name: "Open Ask" }).click();
+    await expect(page.locator("mark[data-unverified]")).toBeVisible();
+  });
+
+  test("on a phone, opening the full table keeps the chat (a new tab)", async ({ page }, info) => {
+    test.skip(info.project.name !== "phone", "phone only");
+    await ask(page, "How many kids under 5 are in poverty in Harambee?");
+    await expect(page.locator("[data-card=number] a")).toHaveAttribute("target", "_blank", { timeout: 30_000 });
+  });
+
+  test("a good answer after a failure clears the unavailable line", async ({ page }) => {
+    await ask(page, "fail please");
+    await expect(page.getByText("Ask is unavailable right now. Search still works.")).toBeVisible({ timeout: 30_000 });
+    await ask(page, "unverified please");
+    await expect(page.locator("mark[data-unverified]")).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText("Ask is unavailable right now. Search still works.")).toHaveCount(0);
+  });
+
   test("closing Ask brings the list back on a laptop", async ({ page }, info) => {
     test.skip(info.project.name === "phone", "laptop only");
     await page.getByRole("link", { name: "Close Ask" }).click();

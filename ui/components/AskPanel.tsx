@@ -2,7 +2,7 @@
 import { Show, SignInButton, SignOutButton } from "@clerk/nextjs";
 import { CopilotChat, CopilotChatToolCallsView, CopilotKitProvider } from "@copilotkit/react-core/v2";
 import { useQuery } from "convex/react";
-import { useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { noteNumbers, noteOrder } from "@/ui/lib/askNotes";
 import { proseSegments } from "@/ui/lib/askProse";
@@ -10,6 +10,8 @@ import { AskCards } from "./AskCards";
 import styles from "./ask.module.css";
 
 const MAX_QUESTION = 500;
+// A note that arrives with words is a good answer: it clears an earlier failure's "unavailable" line.
+const AnswerArrived = createContext<() => void>(() => {});
 type Msg = { id: string; role: string; content?: unknown };
 
 // The person's question: a gray band, as the comps draw it. A hairline above it closes the note before;
@@ -50,6 +52,10 @@ function Prose({ text, data }: { text: string; data: string }) {
 function Note({ message, messages = [] }: { message: Msg & { toolCalls?: unknown[] }; messages?: Msg[] }) {
   const text = typeof message.content === "string" ? message.content.trim() : "";
   const n = noteNumbers(messages).get(message.id);
+  const answered = useContext(AnswerArrived);
+  useEffect(() => {
+    if (text) answered();
+  }, [text !== "", answered]); // eslint-disable-line react-hooks/exhaustive-deps
   // What the tools returned in this conversation: a quoted label in the note must come from it.
   const data = messages.filter((m) => m.role === "tool").map((m) => (typeof m.content === "string" ? m.content : "")).join("\n");
   return (
@@ -98,6 +104,8 @@ export function AskPanel({ onOpen }: { onOpen?: (search: string) => void }) {
 function AskChat({ onOpen }: { onOpen?: (search: string) => void }) {
   const status = useQuery(api.ask.status);
   const [unavailable, setUnavailable] = useState(false);
+
+  const clearUnavailable = useRef(() => setUnavailable(false)).current;
   if (status === undefined) return <p aria-busy="true">Checking your account…</p>;
   if (status === null) return null;
   const blocked = status.paused
@@ -106,6 +114,7 @@ function AskChat({ onOpen }: { onOpen?: (search: string) => void }) {
       ? `You've used today's ${status.limit} questions. They reset at midnight.`
       : null;
   return (
+    <AnswerArrived.Provider value={clearUnavailable}>
     <CopilotKitProvider runtimeUrl="/api/copilotkit" enableInspector={false}>
       <AskCards onOpen={onOpen} />
       <CopilotChat
@@ -127,5 +136,6 @@ function AskChat({ onOpen }: { onOpen?: (search: string) => void }) {
       {blocked && <p role="status" className={styles.blocked}>{blocked}</p>}
       {blocked && <StatusLine left={status.left} limit={status.limit} />}
     </CopilotKitProvider>
+    </AnswerArrived.Provider>
   );
 }

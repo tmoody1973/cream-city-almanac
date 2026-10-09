@@ -40,6 +40,8 @@ function OpenLink({ code, query = "", onOpen, label, anchor }: { code: string; q
       className={styles.open}
       data-leader-anchor={anchor || undefined}
       href={onOpen ? `/?ask=1&${params}` : `/d/${code}${query ? `?${query}` : ""}`}
+      // Phone: the sheet opens in a new tab, so the conversation (paid for in questions) stays.
+      {...(onOpen ? {} : { target: "_blank", rel: "noopener" })}
       onClick={onOpen ? (e) => { e.preventDefault(); onOpen(params); } : undefined}
     >
       {label ?? `Open ${code}`} →

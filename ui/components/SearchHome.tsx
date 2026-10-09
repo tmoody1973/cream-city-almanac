@@ -31,6 +31,11 @@ export function SearchHome({ rundown, status }: { rundown: ResultRow[]; status: 
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState<string | null>(null); // an explicit choice, from a click or the address
   const [askOpen, setAskOpen] = useState(false); // laptop: the Ask column replaces the list (ask=1)
+  // Once opened, Ask stays mounted (hidden when closed) so closing it never discards the conversation.
+  const [askMounted, setAskMounted] = useState(false);
+  useEffect(() => {
+    if (askOpen) setAskMounted(true);
+  }, [askOpen]);
   // One-shot: set by a keyboard choice, cleared by the pane once it has moved focus (or by a new search).
   const [focusPane, setFocusPane] = useState(false);
   const [response, setResponse] = useState<SearchResponse | null>(null);
@@ -162,11 +167,12 @@ export function SearchHome({ rundown, status }: { rundown: ResultRow[]; status: 
       />
       <div className={styles.split} ref={split} style={laptop && askOpen ? { position: "relative" } : undefined}>
         {laptop && askOpen && <AskLeader container={split} />}
-        {laptop && askOpen ? (
-          <div className={styles.main}>
+        {laptop && askMounted && (
+          <div className={styles.main} hidden={!askOpen}>
             <AskPanel onOpen={openFromAsk} />
           </div>
-        ) : (
+        )}
+        {!(laptop && askOpen) && (
         <main className={styles.main}>
           {!searching && <CatalogLine status={status} />}
           {!searching && <ExplainerBand />}
