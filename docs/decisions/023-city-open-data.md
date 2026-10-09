@@ -1,6 +1,6 @@
 # 023: The City of Milwaukee's open data joins the almanac, and Ask counts it live
 
-**Decision:** Add the City of Milwaukee's open-data catalog (all 186 datasets, grouped into about 130 families, meaning one entry per dataset with its Current and Historical files joined, each with a code, the short ID like V02 shown on every row) to the almanac next to DYCU's data, and let Ask count City records live by date range, type and the City's own districts. A number appears only on a card, never in the AI's own words.
+**Decision:** Add the City of Milwaukee's open-data catalog (all 186 datasets, grouped into about 130 families, meaning one entry per subject, joining the Current and Historical files of the same data (and each election's results into one), each with a code, the short ID like V02 shown on every row) to the almanac next to DYCU's data, and let Ask count City records live by date range, type and the City's own districts. A number appears only on a card, never in the AI's own words.
 
 **Why this came up:** DYCU's data describes what neighborhoods are like (income, housing, age). The City's data records what happens in them: crimes, crashes, 311 requests (the City's non-emergency service line), permits, property sales. A reporter needs both, and the almanac only had the first. A recent community event on food insecurity showed the appetite for answers ("how many, where, since when"), not just pointers to a file. The risk if we got it wrong: a confident number that doesn't match the City's own site, in a tool people will quote.
 
@@ -17,7 +17,7 @@
 
 **What live testing changed:**
 - The City's server refuses some database functions (like one that skips blank values, `NULLIF`, and one that cuts out part of a text, `substr`). Our tests used a pretend City and passed; a live probe against the real one caught it. We now compare dates as plain ISO text (like `2026-01-31`) instead.
-- The City publishes a "Current" and a "Historical" file for the same data, updated the same day. An early version counted the Historical file, which would have made crime counts "this year" come back zero. Counts now always use the Current file.
+- The City publishes a Current file and a Historical file for the same data, updated the same day. An early version broke the tie in favor of the Historical file, whose crime data ends December 31, 2023, so a count for "this year" would have come back zero. Counts now always use the Current file.
 - 53 families got the catch-all code, because some City datasets have no topic group; we then also read topics from the owning department and the title.
 - The City re-saves static map layers (zoning, parcels, boundaries) every day, which flooded "Updated this season" with ten map layers and pushed DYCU's datasets off the home page. Now every City dataset is dated by when the City created it.
 
