@@ -393,6 +393,14 @@
       "description": "A DYCU Hub guide page's sheet: one line saying it is a guide, not a dataset, linking out to the Hub with the HUB tag.",
       "html": "<p>A guide page on DYCU's Hub, not a dataset. <a href=\"#\">Open it on the Hub</a> <span class=\"ds-tag\">HUB</span></p>",
       "css": ".ds-tag { display: inline-block; padding: 0 0.35em; border: 1px solid var(--ink, #111); font-size: 0.8em; }"
+    },
+    {
+      "name": "Ask Margin Note",
+      "kind": "custom",
+      "refersTo": "ask-note",
+      "description": "One Ask exchange: the question in a gray band, a large condensed numeral beside the note's plain words (no figures), and a condensed Open link the ink leader starts from; a hairline closes the note.",
+      "html": "<div class=\"ds-ask\"><p class=\"ds-ask-q\">What about poverty by age in Harambee?</p><div class=\"ds-ask-note\"><span class=\"ds-ask-n\">2</span><p>Harambee's poverty-by-age table is open, with your row marked.</p><p class=\"ds-ask-ref\">Harambee, 2024 · Poverty Status by Age · Under 5 years <a href=\"#\">Open N03 →</a></p></div></div>",
+      "css": ".ds-ask-q { margin: 0; padding: 8px 14px; background: var(--band, #ededea); font-weight: 700; } .ds-ask-note { display: grid; grid-template-columns: 2.2em 1fr; column-gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--ink, #111); } .ds-ask-n { grid-row: span 2; font-family: var(--font-caps, 'Saira Extra Condensed', sans-serif); font-weight: 900; font-size: 48px; line-height: .9; } .ds-ask-note p { margin: 0; } .ds-ask-ref { grid-column: 2; margin-top: 8px !important; font-size: 14px; } .ds-ask-ref a { font-family: var(--font-caps, 'Saira Extra Condensed', sans-serif); font-weight: 700; color: inherit; }"
     }
   ],
   "narrative": {
