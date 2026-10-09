@@ -17,7 +17,9 @@ import {
   uniqueDescriptions,
   type AiCard,
 } from "./lib/card";
+import { groupCityItems } from "./lib/cityFamilies";
 import { chunkMarkdown } from "./lib/chunk";
+import { fetchCityCatalog } from "./lib/ckan";
 import { HUB_FEED_URL, parseDcat } from "./lib/dcat";
 import { INVENTORY_XLSX_URL, isSuspectLink, mapDictionaries, readInventory, unlinkedTabs, type Inventory } from "./lib/dictionary";
 import { groupItems, hubCounts, isPdfFamily, isSpreadsheetFamily, reportDelays, toFamilyInput } from "./lib/families";
@@ -28,7 +30,7 @@ import { hashInputs } from "./lib/hash";
 import { fetchWithTimeout } from "./lib/http";
 import { matchSources, SOURCE_JSON_SCHEMA, SOURCE_SITES, SOURCE_SYSTEM, sourceProfileSchema } from "./lib/sources";
 import { fixTypos } from "./lib/titles";
-import type { Card, Column, Mismatch } from "./lib/types";
+import type { Card, Column, Family, FamilyInput, Mismatch } from "./lib/types";
 import { retryOnConflict } from "./lib/retry";
 import { STALE_BUILD_MS } from "./buildStore";
 import type { Settings } from "./settings";
@@ -281,6 +283,16 @@ async function runBuild(ctx: ActionCtx, buildId: Id<"builds">) {
   const overrides = await ctx.runQuery(internal.buildStore.listOverrides, {});
   const families = groupItems(items, overrides.items);
 
+  // The City's catalog: if it can't be read, last week's City families stay (swap would otherwise retire them).
+  let cityFamilies: Family[] = [];
+  let carried: FamilyInput[] = [];
+  try {
+    cityFamilies = groupCityItems(await fetchCityCatalog(), new Date());
+  } catch (e) {
+    notes.push(`City catalog unavailable, kept last week's City datasets: ${message(e)}`);
+    carried = await ctx.runQuery(internal.buildStore.cityFamilyInputs, {});
+  }
+
   let inventory: Inventory = { dictionaries: [], links: [], tabs: [] };
   try {
     inventory = readInventory(new Uint8Array(await (await fetchOk(INVENTORY_XLSX_URL, "Inventory sheet")).arrayBuffer()));
@@ -297,7 +309,7 @@ async function runBuild(ctx: ActionCtx, buildId: Id<"builds">) {
 
   const swap = await ctx.runMutation(internal.buildStore.swapCatalog, {
     buildId,
-    families: families.map((f) => toFamilyInput(f, byFamily[f.key] ?? null)),
+    families: [...families.map((f) => toFamilyInput(f, byFamily[f.key] ?? null)), ...cityFamilies.map((f) => toFamilyInput(f, null)), ...carried],
     dictionaries: inventory.dictionaries,
   });
   if (!swap.ok) throw new Error(swap.reason);
@@ -314,7 +326,7 @@ async function runBuild(ctx: ActionCtx, buildId: Id<"builds">) {
     hubIds: portraits.map((p) => p.hubId),
   });
   const portraitDelays = reportDelays(portraits, new Map(portraitStored.map((p) => [p.hubId, p.modified])), PORTRAIT_SPACING_MS);
-  const pending = families.length + reports.length + portraits.length;
+  const pending = families.length + cityFamilies.length + reports.length + portraits.length;
   await ctx.runMutation(internal.buildStore.setPending, {
     buildId,
     pending,
@@ -325,6 +337,9 @@ async function runBuild(ctx: ActionCtx, buildId: Id<"builds">) {
   });
   for (const [i, f] of families.entries()) {
     await ctx.scheduler.runAfter(i * 500, internal.build.processFamily, { buildId, familyKey: f.key });
+  }
+  for (const [i, f] of cityFamilies.entries()) {
+    await ctx.scheduler.runAfter((families.length + i) * 500, internal.build.processFamily, { buildId, familyKey: f.key });
   }
   for (const { hubId, delayMs } of delays) {
     await ctx.scheduler.runAfter(delayMs, internal.build.processReport, { buildId, hubId });

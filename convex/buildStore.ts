@@ -111,6 +111,22 @@ export const swapCatalog = internalMutation({
   },
 });
 
+// The City families now in the catalog, as swap input: carried forward when the City is down during a build.
+export const cityFamilyInputs = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const families = (await ctx.db.query("families").collect()).filter((f) => f.source === "city");
+    return Promise.all(
+      families.map(async ({ _id, _creationTime, code, searchText, ...f }) => ({
+        ...f,
+        members: (await ctx.db.query("members").withIndex("by_family", (q) => q.eq("familyKey", f.key)).collect()).map(
+          ({ _id: _m, _creationTime: _c, familyKey: _k, ...m }) => m,
+        ),
+      })),
+    );
+  },
+});
+
 async function ensureCode(ctx: MutationCtx, familyKey: string, letter: string, name: string): Promise<string> {
   const prior = await ctx.db.query("codes").withIndex("by_familyKey", (q) => q.eq("familyKey", familyKey)).first();
   if (prior) {

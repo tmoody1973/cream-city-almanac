@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 import { convexTest, type TestConvex } from "convex-test";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { cityCatalog } from "../tests/helpers/cityFixtures";
 import { installFakeFetch } from "../tests/helpers/fakeFetch";
 import { fixtureFamilies, hubCatalog } from "../tests/helpers/fixtures";
 import { internal } from "./_generated/api";
@@ -105,6 +106,27 @@ describe("weekly build", () => {
     },
     120_000,
   );
+
+  it("adds the City's families to the catalog with City codes", async () => {
+    const t = convexTest(schema, modules);
+    installFakeFetch({ cityCatalog: cityCatalog(), cityFields: [{ id: "Incident_Date", type: "text" }] });
+    const build = await run(t);
+    expect(build.status).toBe("completed");
+    const city = await t.run((ctx) => ctx.db.query("families").collect()).then((fs) => fs.filter((f) => f.source === "city"));
+    expect(city.map((f) => [f.key, f.code[0]]).sort()).toEqual([["city:election-2016-11-08", "B"], ["city:nibrs-crime-data", "P"]]);
+  }, 120_000);
+
+  it("keeps last week's City families when the City is down", async () => {
+    const t = convexTest(schema, modules);
+    installFakeFetch({ cityCatalog: cityCatalog() });
+    await run(t);
+    vi.unstubAllGlobals();
+    installFakeFetch({ cityStatus: 500 });
+    const build = await run(t);
+    expect(build.status).toBe("completed");
+    expect((await t.run((ctx) => ctx.db.query("families").collect())).filter((f) => f.source === "city")).toHaveLength(2);
+    expect(build.notes.join(" ")).toContain("City catalog unavailable");
+  }, 120_000);
 
   it("fails cleanly and keeps the catalog when the Hub feed is down", async () => {
     const t = convexTest(schema, modules);
