@@ -84,7 +84,8 @@ export function groupCityItems(items: HubItem[], now: Date): Family[] {
     const base = {
       key, name: g.name, kind: "dataset" as const, topic: cityTopic(g.items.flatMap((i) => i.groups ?? []), { organization: g.items.find((i) => i.organization)?.organization, title: g.name, formats: [...new Set(g.items.flatMap((i) => Object.keys(i.downloads)))] }),
       keywords: [...new Set(g.items.flatMap((i) => i.keywords))], places: ["City"], years: [...g.years].sort(),
-      latestModified: live ? newest((i) => i.created ?? i.modified) : newest((i) => i.modified),
+      // CKAN bumps metadata_modified daily even on static layers, so a City family is never ranked by it.
+      latestModified: newest((i) => i.created ?? i.modified),
       members, source: "city" as const, live,
     };
     return { ...base, baseSearchText: searchTextFor(base) };

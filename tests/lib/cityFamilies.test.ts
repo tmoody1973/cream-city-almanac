@@ -15,9 +15,15 @@ describe("City families", () => {
   it("dates a live family by its newest creation, not its daily refresh", () => {
     expect(fams.find((f) => f.key === "city:nibrs-crime-data")!.latestModified).toBe("2023-01-05T00:00:00.000000");
   });
+  it("dates a non-live family by its creation too: the City re-saves static map layers daily", () => {
+    const pkgs = cityPackages() as Array<Record<string, unknown>>;
+    const layer = { ...pkgs[2], id: "m1", name: "zoning", title: "Zoning", groups: [{ title: "Maps" }], metadata_modified: "2026-10-09T03:00:00.000000", metadata_created: "2018-04-02T00:00:00.000000" };
+    const f = groupCityItems(parseCkan([layer] as never), NOW)[0];
+    expect(f).toMatchObject({ live: false, latestModified: "2018-04-02T00:00:00.000000" });
+  });
   it("groups election files by election date", () => {
     const e = fams.find((f) => f.key === "city:election-2016-11-08")!;
-    expect(e).toMatchObject({ name: "Election results, Nov 8, 2016", topic: "Elections", years: [2016], live: false, latestModified: "2019-03-01T00:00:00.000000" });
+    expect(e).toMatchObject({ name: "Election results, Nov 8, 2016", topic: "Elections", years: [2016], live: false, latestModified: "2023-01-05T00:00:00.000000" });
   });
   it("maps City groups to topics and letters", () => {
     expect([cityTopic(["Public Safety"]), cityTopic(["Elections & Campaign"]), cityTopic(["City Services"]), cityTopic(["Maps"]), cityTopic(["Housing & Property "])]).toEqual(["Public Safety", "Elections", "City Services", "Maps", "Housing"]);
