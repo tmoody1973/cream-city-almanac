@@ -19,7 +19,8 @@ import {
 } from "./lib/card";
 import { groupCityItems } from "./lib/cityFamilies";
 import { chunkMarkdown } from "./lib/chunk";
-import { fetchCityCatalog } from "./lib/ckan";
+import { fetchCityCatalog, datastoreFields, datastoreSql } from "./lib/ckan";
+import { assembleProfile, planProfile, profileSql } from "./lib/cityProfile";
 import { HUB_FEED_URL, parseDcat } from "./lib/dcat";
 import { INVENTORY_XLSX_URL, isSuspectLink, mapDictionaries, readInventory, unlinkedTabs, type Inventory } from "./lib/dictionary";
 import { groupItems, hubCounts, isPdfFamily, isSpreadsheetFamily, reportDelays, toFamilyInput } from "./lib/families";
@@ -60,6 +61,23 @@ export const processFamily = internalAction({
   },
 });
 
+// Live City dataset: read its columns and build the counting menu. A failed query keeps last week's profile.
+async function profileCity(ctx: ActionCtx, familyKey: string, rid: string): Promise<Column[]> {
+  const fields = await datastoreFields(rid);
+  const plan = planProfile(fields);
+  const q = profileSql(rid, plan);
+  try {
+    const [count] = await datastoreSql<{ n: string }>(q.count);
+    const [range] = q.range ? await datastoreSql<{ lo: string | null; hi: string | null }>(q.range) : [undefined];
+    const tops = [];
+    for (const t of q.tops) tops.push({ column: t.column, rows: await datastoreSql<{ v: string | null; n: string }>(t.sql) });
+    await ctx.runMutation(internal.buildStore.replaceCityProfile, { profile: assembleProfile(familyKey, rid, fields, plan, count, range, tops, Date.now()) });
+  } catch (e) {
+    console.error(`City profile failed for ${familyKey}: ${message(e)}`);
+  }
+  return fields.map((f) => ({ name: f.id, alias: f.id, type: f.type }));
+}
+
 async function writeCard(ctx: ActionCtx, buildId: Id<"builds">, familyKey: string): Promise<Result> {
   const data = await ctx.runQuery(internal.buildStore.familyContext, { familyKey });
   if (!data) return { outcome: "skipped", note: `${familyKey}: no longer in catalog` };
@@ -68,7 +86,10 @@ async function writeCard(ctx: ActionCtx, buildId: Id<"builds">, familyKey: strin
   const rep = members
     .filter((m) => m.featureServerUrl)
     .sort((a, b) => b.modified.localeCompare(a.modified))[0];
-  const columns: Column[] = rep?.featureServerUrl ? await fetchColumns(rep.featureServerUrl) : [];
+  const cityRep = members.filter((m) => m.datastoreId).sort((a, b) => b.modified.localeCompare(a.modified))[0];
+  const columns: Column[] = cityRep?.datastoreId
+    ? await profileCity(ctx, familyKey, cityRep.datastoreId)
+    : rep?.featureServerUrl ? await fetchColumns(rep.featureServerUrl) : [];
   const inputHash = await hashInputs({
     v: PROMPT_VERSION,
     members: members.map((m) => [m.hubId, m.modified]).sort(),

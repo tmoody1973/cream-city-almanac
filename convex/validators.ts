@@ -104,3 +104,21 @@ export const vPortraitTable = v.object({
   ),
   issues: v.array(v.string()),
 });
+
+// A live City dataset's counting menu (see lib/cityProfile.ts).
+export const vCityProfile = v.object({
+  familyKey: v.string(),
+  resourceId: v.string(),
+  columns: v.array(v.object({ name: v.string(), type: v.string() })),
+  dateColumn: v.union(v.string(), v.null()),
+  districtColumns: v.array(v.string()),
+  categories: v.array(
+    v.object({ column: v.string(), values: v.array(v.object({ value: v.string(), count: v.number() })) }),
+  ),
+  rowCount: v.number(),
+  minDate: v.union(v.string(), v.null()),
+  maxDate: v.union(v.string(), v.null()),
+  namesPeople: v.boolean(),
+  signature: v.string(),
+  updatedAt: v.number(),
+});

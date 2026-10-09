@@ -1,6 +1,6 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
-import { vDictionaryField, vGlossaryEntry, vKind, vMember, vMismatch, vProvenance, vPortraitTable } from "./validators";
+import { vCityProfile, vDictionaryField, vGlossaryEntry, vKind, vMember, vMismatch, vProvenance, vPortraitTable } from "./validators";
 
 export default defineSchema({
   families: defineTable({
@@ -29,6 +29,8 @@ export default defineSchema({
   members: defineTable({ familyKey: v.string(), ...vMember.fields })
     .index("by_family", ["familyKey"])
     .index("by_hubId", ["hubId"]),
+
+  cityProfiles: defineTable(vCityProfile.fields).index("by_family", ["familyKey"]),
 
   cards: defineTable({
     familyKey: v.string(),

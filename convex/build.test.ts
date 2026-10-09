@@ -3,9 +3,12 @@ import { convexTest, type TestConvex } from "convex-test";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_SETTINGS } from "./settings";
 import { installFakeFetch } from "../tests/helpers/fakeFetch";
+import { cityPackages } from "../tests/helpers/cityFixtures";
 import { fixtureFamilies } from "../tests/helpers/fixtures";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
+import { groupCityItems } from "./lib/cityFamilies";
+import { parseCkan } from "./lib/ckan";
 import { toFamilyInput } from "./lib/families";
 import schema from "./schema";
 
@@ -172,5 +175,64 @@ describe("finish", () => {
     expect(build!.status).toBe("completed");
     expect(build!.orphanChunksDeleted).toBe(1);
     expect(build!.report).toContain("Cost: $");
+  });
+});
+
+const CRIME = "city:nibrs-crime-data";
+
+async function seedCity(t: TestConvex<typeof schema>) {
+  await t.run((ctx) => ctx.db.insert("settings", { ...DEFAULT_SETTINGS }));
+  const buildId = await t.mutation(internal.buildStore.beginBuild, {});
+  const families = groupCityItems(parseCkan(cityPackages() as never), new Date("2026-10-09T12:00:00Z")).map((f) => toFamilyInput(f, null));
+  await t.mutation(internal.buildStore.swapCatalog, { buildId, families, dictionaries: [] });
+  await t.mutation(internal.buildStore.setPending, {
+    buildId,
+    pending: families.length,
+    hubCounts: { rawData: 0, reports: 0, visualizations: 0 },
+    pdfReports: 0,
+    notes: [],
+    mismatch: { unlinkedTabs: [], suspectLinks: [], unmatchedHomeTitles: [], typoFixes: [] },
+  });
+  return buildId;
+}
+
+const crimeFake = () =>
+  installFakeFetch({
+    cityFields: [{ id: "Incident_Date", type: "text" }, { id: "Police_District", type: "text" }, { id: "Offense_All", type: "text" }],
+    citySql: (sql) =>
+      sql.startsWith("SELECT COUNT(*)") ? [{ n: "110461" }]
+        : sql.includes("MIN(") ? [{ lo: "2024-01-01T00:00:00", hi: "2026-10-08T00:00:00" }]
+        : sql.includes('"Offense_All" AS v') ? [{ v: "240", n: "13619" }]
+        : [{ v: "6", n: "500" }],
+  });
+const crimeFamily = (t: TestConvex<typeof schema>) =>
+  t.run((ctx) => ctx.db.query("families").withIndex("by_key", (q) => q.eq("key", CRIME)).first());
+
+describe("City profiles", () => {
+  it("profiles a live City family without re-dating a first-ever profile", async () => {
+    const t = convexTest(schema, modules);
+    const buildId = await seedCity(t);
+    const before = (await crimeFamily(t))!.latestModified;
+    crimeFake();
+    await t.action(internal.build.processFamily, { buildId, familyKey: CRIME });
+    const p = await t.run((ctx) => ctx.db.query("cityProfiles").withIndex("by_family", (q) => q.eq("familyKey", CRIME)).first());
+    expect(p).toMatchObject({ rowCount: 110461, dateColumn: "Incident_Date", districtColumns: ["Police_District"] });
+    expect((await crimeFamily(t))!.latestModified).toBe(before);
+  });
+
+  it("re-dates a City family whose columns changed since the last profile", async () => {
+    const t = convexTest(schema, modules);
+    const buildId = await seedCity(t);
+    const before = (await crimeFamily(t))!.latestModified;
+    await t.run((ctx) =>
+      ctx.db.insert("cityProfiles", {
+        familyKey: CRIME, resourceId: "old", columns: [], dateColumn: null, districtColumns: [], categories: [],
+        rowCount: 1, minDate: null, maxDate: null, namesPeople: false, signature: "Old_Column", updatedAt: 1,
+      }),
+    );
+    crimeFake();
+    await t.action(internal.build.processFamily, { buildId, familyKey: CRIME });
+    expect(before < "2026-01-01").toBe(true);
+    expect((await crimeFamily(t))!.latestModified > "2026-01-01").toBe(true);
   });
 });

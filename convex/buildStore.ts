@@ -8,7 +8,7 @@ import { renderReport } from "./lib/report";
 import type { FamilyInput } from "./lib/types";
 import { readSettings } from "./settings";
 import { vCard, vOutcome, vPortraitTable } from "./validators";
-import { vDictionary, vFamilyInput, vMismatch } from "./validators";
+import { vCityProfile, vDictionary, vFamilyInput, vMismatch } from "./validators";
 
 export const STALE_BUILD_MS = 2 * 60 * 60 * 1000;
 // A feed may not shrink the live catalog (families or items) by more than 10% in one run.
@@ -200,6 +200,7 @@ export const familyContext = internalQuery({
         modified: m.modified,
         description: m.description,
         featureServerUrl: m.featureServerUrl,
+        datastoreId: m.datastoreId ?? null,
       })),
       dictionary: dictionary ? { tab: dictionary.tab, dataSource: dictionary.dataSource, fields: dictionary.fields } : null,
       sources: sources.map((s) => ({ name: s.name, summary: s.summary, limits: s.limits })),
@@ -398,5 +399,21 @@ export const replacePortrait = internalMutation({
     }
     for (const table of tables) await ctx.db.insert("portraitTables", { hubId, modified, ...table });
     for (const c of chunks) await ctx.db.insert("docChunks", { hubId, modified, ...c });
+  },
+});
+
+// One profile per City family. The family is re-dated (so it shows in "Updated this season") only when it already
+// had a profile and its column list has changed since. A first-ever profile never re-dates it, and daily row
+// refreshes never do either, so a daily feed can't flood that list.
+export const replaceCityProfile = internalMutation({
+  args: { profile: vCityProfile },
+  handler: async (ctx, { profile }) => {
+    const old = await ctx.db.query("cityProfiles").withIndex("by_family", (q) => q.eq("familyKey", profile.familyKey)).first();
+    if (old) await ctx.db.replace(old._id, profile);
+    else await ctx.db.insert("cityProfiles", profile);
+    if (old && old.signature !== profile.signature) {
+      const fam = await ctx.db.query("families").withIndex("by_key", (q) => q.eq("key", profile.familyKey)).first();
+      if (fam) await ctx.db.patch(fam._id, { latestModified: new Date(profile.updatedAt).toISOString() });
+    }
   },
 });
