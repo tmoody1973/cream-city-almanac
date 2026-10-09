@@ -54,6 +54,18 @@ function Note({ message, messages = [] }: { message: Msg & { toolCalls?: unknown
   );
 }
 
+function StatusLine({ left, limit }: { left: number; limit: number }) {
+  return (
+    <p className={styles.status}>
+      {left} of {limit} questions left today · Don&apos;t paste private source info ·{" "}
+      {/* Stay on this view after signing out (Clerk's default sends people home). */}
+      <SignOutButton redirectUrl={typeof window === "undefined" ? "/ask" : `${window.location.pathname}${window.location.search}`}>
+        <button type="button" className={styles.textButton}>Sign out</button>
+      </SignOutButton>
+    </p>
+  );
+}
+
 export function AskPanel({ onOpen }: { onOpen?: (search: string) => void }) {
   return (
     <section className={styles.panel} aria-label="Ask">
@@ -92,19 +104,15 @@ function AskChat({ onOpen }: { onOpen?: (search: string) => void }) {
           className: blocked ? styles.hidden : styles.input,
           textArea: { maxLength: MAX_QUESTION } as never,
           sendButton: { "aria-label": "Send question" } as never,
-          disclaimer: (() => null) as never, // our status line carries the note; unverified marks carry the warning
+          // Our status line sits under the field (with it, above a phone's tab bar); unverified marks carry the warning.
+          disclaimer: (() => <StatusLine left={status.left} limit={status.limit} />) as never,
+          addMenuButton: (() => null) as never, // no attachments in Ask
         }}
         onError={() => setUnavailable(true)}
       />
       {unavailable && <p role="status" className={styles.blocked}>Ask is unavailable right now. Search still works.</p>}
       {blocked && <p role="status" className={styles.blocked}>{blocked}</p>}
-      <p className={styles.status}>
-        {status.left} of {status.limit} questions left today · Don&apos;t paste private source info ·{" "}
-        {/* Stay on this view after signing out (Clerk's default sends people home). */}
-        <SignOutButton redirectUrl={typeof window === "undefined" ? "/ask" : `${window.location.pathname}${window.location.search}`}>
-          <button type="button" className={styles.textButton}>Sign out</button>
-        </SignOutButton>
-      </p>
+      {blocked && <StatusLine left={status.left} limit={status.limit} />}
     </CopilotKitProvider>
   );
 }

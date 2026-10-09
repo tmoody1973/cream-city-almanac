@@ -41,7 +41,13 @@ export function PortraitTables({ index, focus: requested }: { index: Index; focu
   const shown = useRef<HTMLDivElement>(null);
   // Bring a row Ask pointed at into view once its table has rendered.
   useEffect(() => {
-    if (marked) document.querySelector("[data-row-marked]")?.scrollIntoView({ block: "center" });
+    const row = marked ? document.querySelector<HTMLElement>("[data-row-marked]") : null;
+    if (!row) return;
+    // In the laptop pane, scroll the pane only (the page and its masthead stay put); on a sheet page, the page.
+    const pane = row.closest<HTMLElement>("#sheet-pane");
+    if (!pane) return row.scrollIntoView({ block: "center" });
+    const offset = row.getBoundingClientRect().top - pane.getBoundingClientRect().top;
+    pane.scrollTo({ top: pane.scrollTop + offset - pane.clientHeight / 2 });
   }, [marked, tables]);
   const topics = portraitTopics(tables);
 

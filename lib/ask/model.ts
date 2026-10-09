@@ -32,15 +32,22 @@ export function useFakeModel(request: Request, env: Record<string, string | unde
 
 const usage = { inputTokens: { total: 10, noCache: 10, cacheRead: 0, cacheWrite: 0 }, outputTokens: { total: 5, text: 5, reasoning: 0 } };
 const finish = (reason: "tool-calls" | "stop") => ({ type: "finish" as const, finishReason: { unified: reason, raw: reason }, usage });
-const text = (s: string) => [{ type: "text-start" as const, id: "t" }, { type: "text-delta" as const, id: "t", delta: s }, { type: "text-end" as const, id: "t" }];
-const call = (toolName: string, input: object) => ({ type: "tool-call" as const, toolCallId: `call-${toolName}`, toolName, input: JSON.stringify(input) });
+// Real models give every text block and tool call its own id; reused ids make the chat merge separate replies.
+let seq = 0;
+const nextId = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${++seq}`;
+const text = (s: string) => {
+  const id = nextId("text");
+  return [{ type: "text-start" as const, id }, { type: "text-delta" as const, id, delta: s }, { type: "text-end" as const, id }];
+};
+const call = (toolName: string, input: object) => ({ type: "tool-call" as const, toolCallId: nextId(`call-${toolName}`), toolName, input: JSON.stringify(input) });
 
 // A scripted model: the first step calls the tool the question's keyword names; the next step replies.
 // "poverty" → getNumber (Harambee); "air" → previewData V02; "report" → readReport; "unverified" → a reply with a figure; else searchCatalog.
 export function fakeAskModel(): LanguageModel {
   return new MockLanguageModelV3({
     doStream: async ({ prompt }) => {
-      const answered = prompt.some((m) => m.role === "tool");
+      // This turn has a tool result once the newest message is one (earlier turns' results don't count).
+      const answered = prompt.at(-1)?.role === "tool";
       const question = JSON.stringify(prompt.filter((m) => m.role === "user").at(-1) ?? "").toLowerCase();
       if (!answered && question.includes("fail")) throw new Error("fake failure");
       const chunks = answered

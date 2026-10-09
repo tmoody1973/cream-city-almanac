@@ -158,7 +158,7 @@ export function SearchHome({ rundown, status }: { rundown: ResultRow[]; status: 
         }
         showDate={!searching}
         sideClassName={searching ? undefined : styles.sideRundown}
-        nav={<SiteNav placement="masthead" current="search" />}
+        nav={<SiteNav placement="masthead" current={laptop && askOpen ? "ask" : "search"} />}
       />
       <div className={styles.split} ref={split} style={laptop && askOpen ? { position: "relative" } : undefined}>
         {laptop && askOpen && <AskLeader container={split} />}

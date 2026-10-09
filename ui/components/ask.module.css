@@ -1,11 +1,13 @@
 /* Ask: margin notes (comps ask-laptop / ask-a-phone). The Rundown: paper, ink, band, hairlines; no radii, no shadows. */
-.panel { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.panel { display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; }
 .intro { margin: 0; }
 .signIn { min-height: 44px; padding: 0 16px; border: var(--hair); background: var(--paper); color: var(--ink); font: inherit; font-weight: 700; cursor: pointer; }
 .textButton { min-height: 44px; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-decoration: underline; cursor: pointer; }
 .hidden { display: none; }
 
-.chat { display: flex; flex-direction: column; gap: 0; min-width: 0; }
+.chat { display: flex; flex-direction: column; gap: 0; min-width: 0; flex: 1; min-height: 0; }
+/* CopilotKit's chat is [notes, field]; its stylesheet isn't loaded, so the notes scroll and the field stays at the foot here. */
+.chat > :first-child { flex: 1; min-height: 0; overflow-y: auto; }
 .chat * { border-radius: 0; box-shadow: none; }
 
 /* The person's question: a gray band in bold body type. */
@@ -48,8 +50,14 @@
 
 .busy, .failed { margin: 8px 0 0; color: var(--muted); font-size: var(--fs-small); }
 
-/* The question field at the column foot under a 2px rule. */
-.input { margin-top: 16px; padding-top: 12px; border-top: var(--rule); }
+/* The question field at the column foot under a 2px rule: the box and its send button on one line.
+   CopilotKit lays these out with its own utility classes; Ask doesn't load its stylesheet (radii, shadows). */
+.input { margin-top: 16px; padding-top: 12px; border-top: var(--rule); background: var(--paper); }
+.input :global(.copilotKitInput) > div { display: flex; align-items: stretch; gap: 8px; }
+.input :global(.copilotKitInput) > div > * { min-width: 0; }
+.input :global(.copilotKitInput) > div > *:has(textarea) { flex: 1; }
+.input textarea { width: 100%; }
+.input textarea:focus-visible { outline: none; border: 2px solid var(--ink); padding: 9px 11px; }
 .input textarea { width: 100%; min-height: 44px; padding: 10px 12px; border: var(--hair); background: var(--paper); color: var(--ink); font: inherit; resize: vertical; }
 .input button { min-width: 44px; min-height: 44px; border: var(--hair); background: var(--paper); color: var(--ink); }
 .blocked { margin: 12px 0 0; padding: 10px 12px; border: var(--hair); }
@@ -59,6 +67,9 @@
 .leader { position: absolute; inset: 0; pointer-events: none; overflow: visible; z-index: 2; }
 
 @media (min-width: 1100px) and (orientation: landscape) {
+  /* Laptop: the notes column holds still beside the pane, a window tall, like the pane. */
+  /* ponytail: 120px is the laptop masthead plus a margin, so the field shows on arrival; measure it if the masthead changes. */
+  .panel { position: sticky; top: 12px; height: calc(100vh - 120px); }
   .question, .reference, .rows, .passage, .status, .busy, .failed { font-size: clamp(14px, 1.05vw, 16px); }
   .noteText { font-size: clamp(16px, 1.2vw, 18px); }
 }
@@ -67,3 +78,8 @@
 .screen { max-width: min(1280px, 100%); min-height: 100vh; margin: 0 auto; padding-inline: var(--gutter); display: flex; flex-direction: column; }
 .screenMain { flex: 1; padding-bottom: 16px; }
 .side { text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 0.2em; }
+
+/* Phone: one viewport tall; the notes scroll between the masthead and the field, which sits above the tab bar. */
+.screen { height: 100dvh; min-height: 0; }
+.screenMain { display: flex; flex-direction: column; min-height: 0; padding-bottom: 8px; }
+.screenMain > .panel { flex: 1; }

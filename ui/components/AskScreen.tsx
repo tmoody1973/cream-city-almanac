@@ -3,7 +3,6 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { LAPTOP_QUERY } from "@/ui/lib/selection";
 import { AskPanel } from "./AskPanel";
-import { CreditFooter } from "./CreditFooter";
 import { Masthead } from "./Masthead";
 import { SiteNav } from "./SiteNav";
 import styles from "./ask.module.css";
@@ -21,9 +20,9 @@ export function AskScreen() {
       <main className={styles.screenMain}>
         <AskPanel />
       </main>
+      {/* Comp ask-a-phone: only the tab bar under the question field. */}
       <div className={rundown.dock}>
         <SiteNav placement="dock" current="ask" />
-        <CreditFooter />
       </div>
     </div>
   );
