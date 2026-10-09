@@ -3,9 +3,9 @@ import { expect, test } from "./fixtures";
 test("home shows today's rundown with live codes and the catalog line", async ({ page }, info) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1, name: /cream city almanac/i })).toBeVisible();
-  // Laptops (comp B) trade the masthead's "TODAY'S RUNDOWN" for the site links.
+  // Laptops (comp B) trade the masthead's "TODAY'S RUNDOWN" for the site links; phones show MENU over today's date.
   if (info.project.name === "desktop") await expect(page.getByRole("navigation", { name: "Site" })).toBeVisible();
-  else await expect(page.getByText("TODAY'S RUNDOWN")).toBeVisible();
+  else await expect(page.getByRole("button", { name: "MENU", exact: true })).toBeVisible();
   await expect(page.getByText(/Catalog as of \w{3} \d{1,2} · \d+ raw data · \d+ reports · \d+ visualizations/)).toBeVisible();
   await expect(page.getByLabel("SLUG:")).toHaveAttribute("placeholder", "What are you reporting on?");
   await expect(page.getByRole("heading", { name: "UPDATED THIS SEASON" })).toBeVisible();
@@ -23,7 +23,7 @@ test("searching by meaning finds a dataset and opens it in place", async ({ page
   await expect(page).toHaveURL(/\?q=asthma/);
   const row = page.locator("[data-code='W01']");
   await expect(row).toBeVisible();
-  await expect(page.getByText(/RUNDOWN · \d+ results/)).toBeVisible();
+  await expect(page.locator("header").getByText(/\d+ results/).filter({ visible: true })).toBeVisible();
   await row.getByRole("button").click();
   if (info.project.name === "desktop") {
     await expect(page.locator("#sheet-pane")).toContainText("W01");
