@@ -43,6 +43,13 @@ describe("proseSegments", () => {
     expect(flagged("53212 people lived there.")).toEqual(["53212"]);
     expect(flagged("There were 12 North Side shootings.")).toEqual(["12"]);
   });
+  it("allows a duration only when the data itself says that duration (a rule or lag the dataset documents)", () => {
+    const data = JSON.stringify({ caveat: "A property can take up to 72 hours to appear.", period: "Oct 9, 2025 \u2013 Oct 9, 2026 (last 12 months)", explainer: "left vacant for 30 days or more" });
+    const check = (t: string) => proseSegments(t, data).filter((s) => s.unverified).map((s) => s.text);
+    expect(check("New cases can take up to 72 hours; the card covers the last 12 months; vacant for 30 days or more.")).toEqual([]);
+    expect(check("Cases take 48 hours, and 12 days later.")).toEqual(["48", "12"]);
+    expect(flagged("New cases can take up to 72 hours.")).toEqual(["72"]);
+  });
   it("treats digits glued to letters as identifiers, not figures", () => {
     expect(flagged("Census tables B17001, S1501 and DP04 cover it, with PM2.5 readings.")).toEqual([]);
     expect(flagged("Adults over 18.")).toEqual(["18"]);

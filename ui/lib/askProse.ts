@@ -32,9 +32,17 @@ function quotedFromData(text: string, data: string): [number, number][] {
   return spans;
 }
 
+// "72 hours", "30 days", "12 months": a rule or lag the dataset documents, allowed only when the data says the same.
+const DURATION = /\b\d+\s+(?:hours?|days?|weeks?|months?)\b/gi;
+const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").replace(/s$/, "");
+function documentedDurations(text: string, data: string): [number, number][] {
+  const said = new Set([...data.matchAll(DURATION)].map((m) => norm(m[0])));
+  return [...text.matchAll(DURATION)].filter((m) => said.has(norm(m[0]))).map((m): [number, number] => [m.index, m.index + m[0].length]);
+}
+
 function allowedSpans(text: string, data: string): [number, number][] {
   const defined = DEFINITIONS.flatMap((re) => [...text.matchAll(re)]).map((m): [number, number] => [m.index, m.index + m[0].length]);
-  return [...quotedFromData(text, data), ...defined];
+  return [...quotedFromData(text, data), ...defined, ...documentedDurations(text, data)];
 }
 
 // `data` is what the conversation's tools returned (their results as text); quoted labels must come from it.
