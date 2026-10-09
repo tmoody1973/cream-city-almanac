@@ -33,8 +33,8 @@ for (const [i, item] of ASK_QUESTIONS.entries()) {
   spent += (r.totalUsage.inputTokens ?? 0) * PRICE.in + (r.totalUsage.outputTokens ?? 0) * PRICE.out;
   const calls = r.steps.flatMap((s) => s.toolResults);
   // A retry after a "pick from this list" reply is the tool working as designed: grade the best call.
-  const tools = [item.tool].flat();
-  const hits = calls.filter((c) => tools.includes(c.toolName as never));
+  const expectedTools = [item.tool].flat();
+  const hits = calls.filter((c) => expectedTools.includes(c.toolName as never));
   const hit = hits.find((c) => Object.values(item.expect).every((v) => JSON.stringify(c.output).includes(String(v))));
   const fieldsOk = Boolean(hit);
   const flaggedWords = proseSegments(r.text).filter((s) => s.unverified).map((s) => s.text);
