@@ -2,7 +2,8 @@
 .panel { display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; }
 .intro { margin: 0; }
 .signIn { min-height: 44px; padding: 0 16px; border: var(--hair); background: var(--paper); color: var(--ink); font: inherit; font-weight: 700; cursor: pointer; }
-.textButton { min-height: 44px; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-decoration: underline; cursor: pointer; }
+/* A 44px tap area from padding that doesn't stretch the line it sits in. */
+.textButton { display: inline; padding: 12px 0; margin: -12px 0; border: 0; background: none; color: inherit; font: inherit; text-decoration: underline; cursor: pointer; }
 .hidden { display: none; }
 
 .chat { display: flex; flex-direction: column; gap: 0; min-width: 0; flex: 1; min-height: 0; }
@@ -11,10 +12,12 @@
 .chat * { border-radius: 0; box-shadow: none; }
 
 /* The person's question: a gray band in bold body type. */
-.question { margin: 16px 0 0; padding: 8px 14px; background: var(--band); font-weight: 700; font-size: var(--fs-small); overflow-wrap: anywhere; }
+.question { position: relative; margin: 32px 0 0; padding: 8px 14px; background: var(--band); font-weight: 700; font-size: var(--fs-small); overflow-wrap: anywhere; }
+/* A hairline closes the note above, with room before the next question (the first one sits under the column's rule). */
+.question::before { content: ""; position: absolute; left: 0; right: 0; top: -16px; border-top: var(--hair); }
 
 /* A margin note: a large condensed numeral, then the note's words. */
-.note { display: grid; grid-template-columns: 2.2em minmax(0, 1fr); column-gap: 12px; padding: 14px 0; border-bottom: var(--hair); }
+.note { display: grid; grid-template-columns: 2.2em minmax(0, 1fr); column-gap: 12px; padding: 14px 0 0; }
 .noteResults { padding: 0 0 0 calc(2.2em + 12px); }
 .noteNumber { grid-row: 1 / span 2; font-family: var(--font-caps); font-weight: 900; font-size: clamp(40px, 4vw, 56px); line-height: 0.9; font-variant-numeric: lining-nums; }
 .noteText { margin: 0; overflow-wrap: anywhere; }
@@ -29,23 +32,25 @@
 .referenceLine { margin: 0; }
 .open { white-space: nowrap; text-decoration: underline; text-underline-offset: 3px; }
 .code { font-family: var(--font-caps); font-weight: 700; font-variant-numeric: lining-nums tabular-nums; }
+.open { font-family: var(--font-caps); font-weight: 700; letter-spacing: 0.01em; }
 
 .rows { margin: 8px 0 0; padding: 0; list-style: none; border-top: var(--hair); font-size: var(--fs-small); }
 .rows li { padding: 8px 0; border-bottom: var(--hair); }
 
-.passage { margin: 8px 0 0; padding-left: 12px; border-left: var(--rule); font-size: var(--fs-small); }
+.passage { margin: 8px 0 0; padding: 10px 12px; border: var(--hair); font-size: var(--fs-small); }
 .passage blockquote { margin: 0 0 4px; }
 .passage figcaption { color: var(--muted); }
 
 /* Phone: the table excerpt under the note, its row outlined in ink. */
 .excerpt { margin: 12px 0 0; padding: 10px; border: var(--hair); font-size: var(--fs-small); }
-.excerptTitle { margin: -10px -10px 8px; padding: 6px 10px; background: var(--band); font-family: var(--font-caps); font-weight: 700; }
+.excerptTitle { margin: -10px -10px 8px; padding: 6px 10px; background: var(--band); font-family: var(--font-caps); font-weight: 700; font-size: var(--fs-body); }
 .excerptTable { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 .excerptTable th, .excerptTable td { padding: 6px 8px; border: var(--hair); text-align: right; }
 .excerptTable th[scope="row"] { text-align: left; font-weight: 400; }
-.excerptTable thead th { font-weight: 700; }
+.excerptTable thead th { font-weight: 400; background: var(--band); }
+.excerptTable thead th, .excerptTable td { white-space: nowrap; }
 .markedRow { outline: 2px solid var(--ink); outline-offset: -2px; }
-.markedRow th[scope="row"] { font-weight: 700; }
+.markedRow th, .markedRow td { font-weight: 700; }
 .source { margin: 8px 0 4px; }
 
 .busy, .failed { margin: 8px 0 0; color: var(--muted); font-size: var(--fs-small); }
@@ -59,7 +64,7 @@
 .input textarea { width: 100%; }
 .input textarea:focus-visible { outline: none; border: 2px solid var(--ink); padding: 9px 11px; }
 .input textarea { width: 100%; min-height: 44px; padding: 10px 12px; border: var(--hair); background: var(--paper); color: var(--ink); font: inherit; resize: vertical; }
-.input button { min-width: 44px; min-height: 44px; border: var(--hair); background: var(--paper); color: var(--ink); }
+.input :global(.copilotKitInput) button { min-width: 44px; min-height: 44px; border: var(--hair); background: var(--paper); color: var(--ink); }
 .blocked { margin: 12px 0 0; padding: 10px 12px; border: var(--hair); }
 .status { margin: 8px 0 0; color: var(--muted); font-size: var(--fs-small); }
 
@@ -83,3 +88,7 @@
 .screen { height: 100dvh; min-height: 0; }
 .screenMain { display: flex; flex-direction: column; min-height: 0; padding-bottom: 8px; }
 .screenMain > .panel { flex: 1; }
+
+.excerpt { position: relative; margin-top: 36px; }
+.drop { position: absolute; left: 18px; top: -32px; color: var(--ink); }
+.status { white-space: normal; }

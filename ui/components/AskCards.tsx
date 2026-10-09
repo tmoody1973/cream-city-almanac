@@ -33,11 +33,12 @@ function useOpenOnce(key: string | null, search: string | null, onOpen: Open) {
   }, [key, search, onOpen]);
 }
 
-function OpenLink({ code, query = "", onOpen, label }: { code: string; query?: string; onOpen: Open; label?: string }) {
+function OpenLink({ code, query = "", onOpen, label, anchor }: { code: string; query?: string; onOpen: Open; label?: string; anchor?: boolean }) {
   const params = `open=${code}${query ? `&${query}` : ""}`;
   return (
     <a
       className={styles.open}
+      data-leader-anchor={anchor || undefined}
       href={onOpen ? `/?ask=1&${params}` : `/d/${code}${query ? `?${query}` : ""}`}
       onClick={onOpen ? (e) => { e.preventDefault(); onOpen(params); } : undefined}
     >
@@ -57,13 +58,17 @@ function NumberCard({ r, onOpen, callKey }: { r: NumberResult; onOpen: Open; cal
   if (onOpen) {
     // Laptop: the table is open in the pane with this row outlined; the note keeps a reference the leader starts from.
     return (
-      <p className={styles.reference} data-card="number" data-leader-anchor>
-        {title} · {r.label} <ProvenanceTag source="DYCU" /> <OpenLink code={r.code} query={query} onOpen={onOpen} />
+      <p className={styles.reference} data-card="number">
+        {title} · {r.label} <ProvenanceTag source="DYCU" /> <OpenLink code={r.code} query={query} onOpen={onOpen} anchor />
       </p>
     );
   }
   return (
     <figure className={styles.excerpt} data-card="number">
+      {/* The note's short ink leader into its excerpt (comp ask-a-phone). */}
+      <svg className={styles.drop} viewBox="0 0 12 28" width="12" height="28" aria-hidden="true">
+        <path d="M6 0 V26 M1.5 21 L6 26.5 L10.5 21" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="square" />
+      </svg>
       <figcaption className={styles.excerptTitle}>{title} <ProvenanceTag source="DYCU" /></figcaption>
       <table className={styles.excerptTable}>
         <thead>
@@ -100,9 +105,9 @@ function NumberCard({ r, onOpen, callKey }: { r: NumberResult; onOpen: Open; cal
 function SheetCard({ code, name, onOpen, callKey, preview }: { code: string; name: string; onOpen: Open; callKey: string; preview?: { members: { place: string | null; yearLabel: string | null; featureServerUrl: string | null }[]; fields: string[] } }) {
   useOpenOnce(callKey, `open=${code}`, onOpen);
   return (
-    <div className={styles.reference} data-card={preview ? "preview" : "dataset"} data-leader-anchor={onOpen ? true : undefined}>
+    <div className={styles.reference} data-card={preview ? "preview" : "dataset"}>
       <p className={styles.referenceLine}>
-        {code} · {name} {preview && <ProvenanceTag source="HUB" />} <OpenLink code={code} onOpen={onOpen} />
+        <span className={styles.code}>{code}</span> · {name} {preview && <ProvenanceTag source="HUB" />} <OpenLink code={code} onOpen={onOpen} anchor={Boolean(onOpen)} />
       </p>
       {preview && !onOpen && <LivePreview members={preview.members} fields={preview.fields} chartOnly />}
     </div>

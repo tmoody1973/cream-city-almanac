@@ -51,6 +51,7 @@ export function AskLeader({ container }: { container: RefObject<HTMLElement | nu
           <path d="M1 1 L9 5 L1 9" fill="none" stroke="var(--ink)" strokeWidth="1.5" strokeLinecap="square" />
         </marker>
       </defs>
+      <circle cx={line.x1} cy={line.y1} r="2.5" fill="var(--ink)" />
       <path
         d={`M${line.x1} ${line.y1} C ${line.x1 + 40} ${line.y1}, ${line.x2 - 40} ${line.y2}, ${line.x2} ${line.y2}`}
         fill="none"

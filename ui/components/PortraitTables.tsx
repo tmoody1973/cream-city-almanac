@@ -46,8 +46,11 @@ export function PortraitTables({ index, focus: requested }: { index: Index; focu
     // In the laptop pane, scroll the pane only (the page and its masthead stay put); on a sheet page, the page.
     const pane = row.closest<HTMLElement>("#sheet-pane");
     if (!pane) return row.scrollIntoView({ block: "center" });
-    const offset = row.getBoundingClientRect().top - pane.getBoundingClientRect().top;
-    pane.scrollTo({ top: pane.scrollTop + offset - pane.clientHeight / 2 });
+    // Only as far as needed: leave the sheet heading in view when the row already shows; else the row in the lower third.
+    const r = row.getBoundingClientRect();
+    const p = pane.getBoundingClientRect();
+    if (r.bottom <= p.bottom - 16) return;
+    pane.scrollTo({ top: pane.scrollTop + (r.top - p.top) - pane.clientHeight * 0.66 });
   }, [marked, tables]);
   const topics = portraitTopics(tables);
 
