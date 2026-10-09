@@ -16,6 +16,8 @@ test("lowercase codes work and opening a sheet ticks it on the rundown", async (
   await page.goto("/d/v02");
   await expect(page.getByRole("heading", { level: 2, name: /Daily Air Quality/ })).toBeVisible();
   await page.goto("/");
+  // "Updated this season" is the ten newest families and the City's daily datasets now fill it, so find V02 by search.
+  await page.getByLabel("TOPIC:").fill("Daily Air Quality");
   await expect(page.locator("[data-code='V02']").getByText("opened before")).toBeAttached();
 });
 
