@@ -145,3 +145,4 @@
 /* A row Ask pointed at (row= in the address): a 2px ink outline, never red. */
 .markedRow { outline: 2px solid var(--ink); outline-offset: -2px; }
 .markedRow th, .markedRow td, .portraitTable .markedRow th[scope="row"] { font-weight: 700; }
+.note { margin: 0 0 12px; color: var(--muted); font-size: var(--fs-small); }

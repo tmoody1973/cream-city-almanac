@@ -2,6 +2,7 @@ import type { FunctionReturnType } from "convex/server";
 import Link from "next/link";
 import type { api } from "@/convex/_generated/api";
 import { shortDate, subline, yearSpan } from "@/ui/lib/format";
+import { CityPreview } from "./CityPreview";
 import { LivePreview } from "./LivePreview";
 import { PlaceYearGrid } from "./PlaceYearGrid";
 import type { PortraitFocus } from "@/ui/lib/portrait";
@@ -25,7 +26,7 @@ export function SheetBody({ sheet, headingId, focus }: { sheet: SheetData; headi
         <h2 className={styles.name} id={headingId} tabIndex={headingId ? -1 : undefined}>
           {family.name}
         </h2>
-        <p className={styles.sub}>{subline(family)}</p>
+        <p className={styles.sub}>{subline(family)}{family.source === "city" && <> <ProvenanceTag source="CITY" /></>}</p>
       </header>
       {family.kind === "page" ? (
         <section className={styles.section}>
@@ -85,6 +86,19 @@ export function SheetBody({ sheet, headingId, focus }: { sheet: SheetData; headi
             </section>
           )}
 
+          {!(card && card.glossary.length > 0) && sheet.city && sheet.city.columns.length > 0 && (
+            <section className={styles.section}>
+              <h3 className={styles.heading}>COLUMN GUIDE</h3>
+              <table className={styles.glossary} aria-label="Column guide">
+                <tbody>
+                  {sheet.city.columns.map((c) => (
+                    <tr key={c}><th scope="row"><code>{breakable(c)}</code></th></tr>
+                  ))}
+                </tbody>
+              </table>
+            </section>
+          )}
+
           {card && card.caveats.length > 0 && (
             <section className={styles.section}>
               <h3 className={styles.heading}>CAVEATS</h3>
@@ -96,6 +110,14 @@ export function SheetBody({ sheet, headingId, focus }: { sheet: SheetData; headi
             <section className={styles.section}>
               <h3 className={styles.heading}>LIVE PREVIEW</h3>
               <LivePreview members={members} fields={card?.glossary.map((g) => g.field) ?? []} />
+            </section>
+          )}
+
+          {sheet.city?.datastoreId && (
+            <section className={styles.section}>
+              <h3 className={styles.heading}>LIVE PREVIEW</h3>
+              {sheet.city.namesPeople && <p className={styles.note}>Names private individuals. Shown as the City publishes it.</p>}
+              <CityPreview datastoreId={sheet.city.datastoreId} dateColumn={sheet.city.dateColumn} />
             </section>
           )}
 
