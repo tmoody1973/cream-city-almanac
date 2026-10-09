@@ -197,6 +197,7 @@ export const familyContext = internalQuery({
       family: { key: family.key, name: family.name, kind: family.kind, places: family.places, years: family.years },
       members: members.map((m) => ({
         hubId: m.hubId,
+        title: m.title,
         modified: m.modified,
         description: m.description,
         featureServerUrl: m.featureServerUrl,

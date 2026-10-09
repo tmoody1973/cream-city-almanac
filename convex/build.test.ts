@@ -3,7 +3,7 @@ import { convexTest, type TestConvex } from "convex-test";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_SETTINGS } from "./settings";
 import { installFakeFetch } from "../tests/helpers/fakeFetch";
-import { cityPackages } from "../tests/helpers/cityFixtures";
+import { cityPackages, CRIME_CURRENT_RID } from "../tests/helpers/cityFixtures";
 import { fixtureFamilies } from "../tests/helpers/fixtures";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
@@ -180,10 +180,10 @@ describe("finish", () => {
 
 const CRIME = "city:nibrs-crime-data";
 
-async function seedCity(t: TestConvex<typeof schema>) {
+async function seedCity(t: TestConvex<typeof schema>, packages = cityPackages()) {
   await t.run((ctx) => ctx.db.insert("settings", { ...DEFAULT_SETTINGS }));
   const buildId = await t.mutation(internal.buildStore.beginBuild, {});
-  const families = groupCityItems(parseCkan(cityPackages() as never), new Date("2026-10-09T12:00:00Z")).map((f) => toFamilyInput(f, null));
+  const families = groupCityItems(parseCkan(packages as never), new Date("2026-10-09T12:00:00Z")).map((f) => toFamilyInput(f, null));
   await t.mutation(internal.buildStore.swapCatalog, { buildId, families, dictionaries: [] });
   await t.mutation(internal.buildStore.setPending, {
     buildId,
@@ -218,6 +218,15 @@ describe("City profiles", () => {
     const p = await t.run((ctx) => ctx.db.query("cityProfiles").withIndex("by_family", (q) => q.eq("familyKey", CRIME)).first());
     expect(p).toMatchObject({ rowCount: 110461, dateColumn: "Incident_Date", districtColumns: ["Police_District"] });
     expect((await crimeFamily(t))!.latestModified).toBe(before);
+  });
+
+  it("profiles the (Current) resource even when Historical comes first and ties on modified", async () => {
+    const t = convexTest(schema, modules);
+    const buildId = await seedCity(t, [...cityPackages()].reverse());
+    crimeFake();
+    await t.action(internal.build.processFamily, { buildId, familyKey: CRIME });
+    const p = await t.run((ctx) => ctx.db.query("cityProfiles").withIndex("by_family", (q) => q.eq("familyKey", CRIME)).first());
+    expect(p!.resourceId).toBe(CRIME_CURRENT_RID);
   });
 
   it("re-dates a City family whose columns changed since the last profile", async () => {
