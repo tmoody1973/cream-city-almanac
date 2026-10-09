@@ -24,12 +24,24 @@ export function matchTopic(name: string): (typeof TOPICS)[number] | null {
   return TOPICS.find((t) => [t.topic, t.slug, ...(t.aliases ?? [])].some((x) => norm(x) === n)) ?? null;
 }
 
-// An exact label wins; otherwise one partial match; several partial matches are returned for the model to choose from.
-export function pickRow<R extends { label: string }>(rows: R[], wanted: string): { row: R } | { choose: string[] } {
+// An exact label wins; otherwise one partial match; several are returned for the model to choose from.
+// Some tables repeat a label under different sections ("30.0 to 34.9%" with and without a mortgage), so a repeated
+// label is offered as "Section › Label", and that form picks exactly one row. Rows come back with their index.
+export function pickRow<R extends { label: string; heading?: boolean }>(rows: R[], wanted: string): { row: R; index: number } | { choose: string[] } {
+  let section = "";
+  const named = rows.map((row, index) => {
+    if (row.heading) section = row.label;
+    return { row, index, full: section && !row.heading ? `${section} › ${row.label}` : row.label };
+  });
   const w = norm(wanted);
-  const exact = rows.find((r) => norm(r.label) === w);
-  if (exact) return { row: exact };
-  const partial = rows.filter((r) => norm(r.label).includes(w));
-  if (partial.length === 1) return { row: partial[0] };
-  return { choose: (partial.length ? partial : rows).map((r) => r.label) };
+  const qualified = named.filter((n) => norm(n.full) === w);
+  if (qualified.length === 1) return { row: qualified[0].row, index: qualified[0].index };
+  const exact = named.filter((n) => norm(n.row.label) === w);
+  if (exact.length === 1) return { row: exact[0].row, index: exact[0].index };
+  if (exact.length > 1) return { choose: exact.map((n) => n.full) };
+  const partial = named.filter((n) => norm(n.row.label).includes(w));
+  if (partial.length === 1) return { row: partial[0].row, index: partial[0].index };
+  const options = partial.length ? partial : named;
+  const repeated = (label: string) => options.filter((o) => o.row.label === label).length > 1;
+  return { choose: options.map((n) => (repeated(n.row.label) ? n.full : n.row.label)) };
 }

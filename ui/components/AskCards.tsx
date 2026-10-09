@@ -12,7 +12,7 @@ type Open = ((search: string) => void) | undefined;
 type Value = { estimate: string; moe: string | null } | null;
 type NumberResult = {
   status: string; code: string; neighborhood: string; place: string; year: number | null; topic: string; slug: string;
-  tableIdText: string; label: string; values: Value[]; groups: string[]; nearby: { label: string; values: Value[]; marked: boolean }[];
+  tableIdText: string; label: string; rowIndex: number; values: Value[]; groups: string[]; nearby: { label: string; values: Value[]; marked: boolean }[];
 };
 
 const parse = <T,>(result: unknown): T | null => {
@@ -49,7 +49,7 @@ function OpenLink({ code, query = "", onOpen, label, anchor }: { code: string; q
 
 const Busy = () => <p className={styles.busy} aria-busy="true">Looking it up…</p>;
 const Failed = () => <p className={styles.failed}>This didn&apos;t load. Ask again to retry.</p>;
-const rowQuery = (r: NumberResult) => new URLSearchParams({ place: r.place, ...(r.year ? { year: String(r.year) } : {}), topic: r.slug, row: r.label }).toString();
+const rowQuery = (r: NumberResult) => new URLSearchParams({ place: r.place, ...(r.year ? { year: String(r.year) } : {}), topic: r.slug, row: String(r.rowIndex) }).toString();
 
 function NumberCard({ r, onOpen, callKey }: { r: NumberResult; onOpen: Open; callKey: string }) {
   const query = rowQuery(r);

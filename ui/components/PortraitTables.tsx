@@ -24,7 +24,7 @@ export function PortraitTables({ index, focus: requested }: { index: Index; focu
   const [focus, setFocus] = useState<Focus>(() => resolvePortraitFocus(index, new URLSearchParams(), SLUGS));
   // The address picks the table, unless a search result in the laptop pane asks for one; the pickers change it after.
   const requestedQuery = portraitFocusQuery(requested);
-  // A row Ask pointed at (row=label), outlined until the reader picks another table.
+  // A row Ask pointed at (row=its position in the table), outlined until the reader picks another table.
   const [marked, setMarked] = useState<string | null>(null);
   useEffect(() => {
     const params = new URLSearchParams(requestedQuery || window.location.search);
@@ -39,6 +39,7 @@ export function PortraitTables({ index, focus: requested }: { index: Index; focu
   const tables = isInitial ? index.initial!.tables : loaded;
   const table = useMemo(() => tables?.find((t) => t.slug === focus.topic) ?? tables?.[0], [tables, focus.topic]);
   const shown = useRef<HTMLDivElement>(null);
+  const isMarked = (r: PortraitRow) => marked !== null && table !== undefined && String(table.rows.indexOf(r)) === marked;
   // Bring a row Ask pointed at into view once its table has rendered.
   useEffect(() => {
     const row = marked ? document.querySelector<HTMLElement>("[data-row-marked]") : null;
@@ -191,13 +192,13 @@ export function PortraitTables({ index, focus: requested }: { index: Index; focu
                 <tbody key={si}>
                   {rows.map((r, i) =>
                     r.heading ? (
-                      <tr key={i} data-row-marked={r.label === marked || undefined} className={r.label === marked ? styles.markedRow : undefined}>
+                      <tr key={i} data-row-marked={isMarked(r) || undefined} className={isMarked(r) ? styles.markedRow : undefined}>
                         <th scope="rowgroup" colSpan={1 + table.groups.length * 2}>
                           {r.label}
                         </th>
                       </tr>
                     ) : (
-                      <tr key={i} data-row-marked={r.label === marked || undefined} className={r.label === marked ? styles.markedRow : undefined}>
+                      <tr key={i} data-row-marked={isMarked(r) || undefined} className={isMarked(r) ? styles.markedRow : undefined}>
                         <th scope="row">{r.label}</th>
                         {r.values.map((v, j) => (
                           <Fragment key={j}>

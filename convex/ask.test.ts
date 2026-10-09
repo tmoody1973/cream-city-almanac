@@ -135,10 +135,25 @@ describe("matching helpers", () => {
   });
   it("asks which row when a label matches several", () => {
     const rows = poverty("h").rows;
-    expect(pickRow(rows, "under 5 years")).toEqual({ row: rows[2] });
-    expect(pickRow(rows, "5 years")).toEqual({ row: rows[3] }); // an exact label wins over a partial one
+    expect(pickRow(rows, "under 5 years")).toEqual({ row: rows[2], index: 2 });
+    expect(pickRow(rows, "5 years")).toEqual({ row: rows[3], index: 3 }); // an exact label wins over a partial one
     expect(pickRow(rows, "years")).toEqual({ choose: ["Under 5 years", "5 years"] });
-    expect(pickRow(rows, "income")).toEqual({ row: rows[1] });
+    expect(pickRow(rows, "income")).toEqual({ row: rows[1], index: 1 });
+  });
+});
+
+describe("repeated row labels", () => {
+  const costs = [
+    { label: "With a mortgage", heading: true, values: [null] },
+    { label: "30.0 to 34.9%", heading: false, values: [{ estimate: "100", moe: "10" }] },
+    { label: "Without a mortgage", heading: true, values: [null] },
+    { label: "30.0 to 34.9%", heading: false, values: [{ estimate: "40", moe: "8" }] },
+  ];
+  it("offers each repeated label with its section instead of picking the first", () => {
+    expect(pickRow(costs, "30.0 to 34.9%")).toEqual({ choose: ["With a mortgage › 30.0 to 34.9%", "Without a mortgage › 30.0 to 34.9%"] });
+  });
+  it("picks a repeated label by its section", () => {
+    expect(pickRow(costs, "Without a mortgage › 30.0 to 34.9%")).toEqual({ row: costs[3], index: 3 });
   });
 });
 
@@ -148,7 +163,7 @@ describe("getNumber", () => {
     await seed(t);
     await t.run((ctx) => ctx.db.insert("portraitTables", poverty(harambee(2024).hubId)));
     const r = await t.query(api.ask.getNumber, { neighborhood: "harambee", topic: "Poverty Status by Age", row: "Under 5 years" });
-    expect(r).toMatchObject({ status: "ok", neighborhood: "Harambee", year: 2024, slug: "poverty-status-by-age", tableIdText: "B17001", label: "Under 5 years", values: [{ estimate: "608", moe: "252" }] });
+    expect(r).toMatchObject({ status: "ok", neighborhood: "Harambee", year: 2024, slug: "poverty-status-by-age", tableIdText: "B17001", label: "Under 5 years", rowIndex: 2, values: [{ estimate: "608", moe: "252" }] });
     expect(r.status === "ok" && r.issues.length).toBe(1);
   });
   it("returns the row with its neighbors, the asked-for one marked, for the phone excerpt", async () => {

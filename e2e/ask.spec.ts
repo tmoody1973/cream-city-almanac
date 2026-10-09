@@ -22,9 +22,11 @@ test.describe("signed in", () => {
     // Only our route gets the header; sent everywhere it breaks Clerk's cross-origin requests.
     await page.route("**/api/copilotkit/**", (route) => route.continue({ headers: { ...route.request().headers(), "x-ask-fake": "1" } }));
     // Sign in on the page under test, then reload: Clerk navigates on its own after signing in.
-    await page.goto(info.project.name === "phone" ? "/ask" : "/?ask=1");
+    const target = info.project.name === "phone" ? "/ask" : "/?ask=1";
+    await page.goto(target);
     await clerk.signIn({ page, emailAddress: process.env.E2E_CLERK_USER_EMAIL! });
-    await page.reload();
+    // Clerk may still be redirecting after sign-in; a canceled reload just means load the page fresh.
+    await page.reload().catch(() => page.goto(target));
   });
 
   // The chat accepts a question once it has connected; retry Enter until the box empties (the question was sent).
@@ -44,10 +46,10 @@ test.describe("signed in", () => {
       const card = page.locator("[data-card=number]");
       await expect(card.locator("[data-row-marked]")).toContainText("Under 5 years");
       await expect(card).toContainText("±");
-      await expect(card.getByRole("link", { name: /Open the full table/ })).toHaveAttribute("href", /\/d\/N03\?place=harambee&year=\d{4}&topic=poverty-status-by-age&row=Under\+5\+years/);
+      await expect(card.getByRole("link", { name: /Open the full table/ })).toHaveAttribute("href", /\/d\/N03\?place=harambee&year=\d{4}&topic=poverty-status-by-age&row=2/);
     } else {
       await expect(page.locator("#sheet-pane [data-row-marked]")).toContainText("Under 5 years", { timeout: 20_000 });
-      await expect(page).toHaveURL(/ask=1.*open=N03.*row=Under\+5\+years/);
+      await expect(page).toHaveURL(/ask=1.*open=N03.*row=2/);
       await expect(page.locator("svg[data-leader] path").first()).toBeAttached();
     }
   });
@@ -81,6 +83,7 @@ test.describe("signed in", () => {
 });
 
 test("a table address with row= outlines that row", async ({ page }) => {
-  await page.goto("/d/N03?place=harambee&year=2024&topic=poverty-status-by-age&row=Under+5+years");
+  // row is the row's position in the table (labels repeat across sections in some tables); 2 is "Under 5 years".
+  await page.goto("/d/N03?place=harambee&year=2024&topic=poverty-status-by-age&row=2");
   await expect(page.locator("[data-row-marked]")).toContainText("Under 5 years");
 });
