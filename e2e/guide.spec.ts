@@ -34,3 +34,9 @@ test("no sideways scroll on a phone", async ({ page }, info) => {
   await page.goto("/ask/guide");
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
 });
+
+test("Start here and the footer link to the guide", async ({ page }) => {
+  await page.goto("/start-here");
+  await expect(page.locator("main").getByRole("link", { name: /How to use Ask/i })).toHaveAttribute("href", "/ask/guide");
+  await expect(page.locator("footer").getByRole("link", { name: "How to use Ask" })).toHaveAttribute("href", "/ask/guide");
+});
