@@ -64,6 +64,15 @@ describe("Ask route gate", () => {
   it("turns CopilotKit's telemetry off before its runtime loads", () => {
     expect(process.env.COPILOTKIT_TELEMETRY_DISABLED).toBe("true");
   });
+  it("answers a malformed request with 400, not a server error", async () => {
+    expect((await run("{not json")).status).toBe(400);
+    expect(convex.begin).not.toHaveBeenCalled();
+  });
+  it("measures the size cap in bytes, so multi-byte text can't slip past it", async () => {
+    // 22k three-byte characters in an earlier reply: ~22k characters, ~66 KB on the wire; the question itself is short.
+    const body = { ...question("hi"), messages: [{ id: "a0", role: "assistant", content: "€".repeat(22_000) }, { id: "m1", role: "user", content: "hi" }] };
+    expect((await run(body)).status).toBe(413);
+  });
   it("refuses a question over 500 characters", async () => {
     expect((await run(question("x".repeat(501)))).status).toBe(413);
   });

@@ -44,10 +44,15 @@ const handler = createCopilotRuntimeHandler({
       if (route.method === "agent/suggest") throw new Response("Not found", { status: 404 });
       if (route.method !== RUN_ROUTE) return;
       const body = await request.clone().text();
-      if (body.length > MAX_BODY_BYTES) throw new Response(JSON.stringify({ reason: "too-long" }), { status: 413 });
+      if (new TextEncoder().encode(body).length > MAX_BODY_BYTES) throw new Response(JSON.stringify({ reason: "too-long" }), { status: 413 });
       const token = await convexToken();
       if (!token) throw new Response(JSON.stringify({ reason: "signed-out" }), { status: 401 });
-      const messages: { role?: string; content?: unknown }[] = JSON.parse(body).messages ?? [];
+      let messages: { role?: string; content?: unknown }[];
+      try {
+        messages = JSON.parse(body).messages ?? [];
+      } catch {
+        throw new Response(JSON.stringify({ reason: "bad-request" }), { status: 400 });
+      }
       const asked = messages.filter((m) => m.role === "user");
       // Questions are plain text only: a document, image or file link would be fetched and read by the model.
       if (asked.some((m) => typeof m.content !== "string")) throw new Response(JSON.stringify({ reason: "text-only" }), { status: 400 });
