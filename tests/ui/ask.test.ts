@@ -43,6 +43,14 @@ describe("proseSegments", () => {
     expect(flagged("district 6.5% of homes")).toEqual(["6.5%"]);
     expect(flagged("Police district 6, District 3 had fewer, and ward 12.")).toEqual([]);
   });
+  it("a month-day, district or ward can't swallow a count that follows it (m6)", () => {
+    expect(flagged("In March 31 robberies were reported.")).toEqual(["31"]);
+    expect(flagged("In ward 120 requests were filed.")).toEqual(["120"]);
+    expect(flagged("District 412 robberies were reported.")).toEqual(["412"]);
+    expect(flagged("Police district 6 calls rose.")).toEqual(["6"]);
+    expect(flagged("March 31, 2025 is the last day; on March 31 the file closed, and Mar 3 2024 too.")).toEqual([]);
+    expect(flagged("Ward 12 has fewer; district 5 and district 7 were busier than district 3.")).toEqual([]);
+  });
   it("still flags a bare count next to those words", () => {
     expect(flagged("There were 31 robberies.")).toEqual(["31"]);
     expect(flagged("There were 31 robberies in district 6.")).toEqual(["31"]);

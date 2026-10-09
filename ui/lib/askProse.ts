@@ -8,16 +8,21 @@
 // "2263 N Lake Dr", "December 31, 2023".
 const NUMBER = /\b[A-Z]\d{2}\b|(?<![A-Za-z\d.])\d+(?:,\d{3})*(?:\.\d+)?%?/g;
 const QUOTE_MARK = /["“”]/g;
+// A district, ward or month-day number is a name only when what follows can't be the thing counted: punctuation (not
+// a digit group, so "district 1,200 homes" and "district 6.5%" stay counts), the end, a year, or a small word.
+// "In ward 120 requests were filed" and "In March 31 robberies were reported" are counts.
+const NAME_ENDS = String.raw`(?=[;:!?)\]]|[,.](?!\d)|\s*$|\s*[–—]|\s+(?:(?:19|20)\d{2}\b|(?:and|or|nor|but|to|through|until|is|was|were|are|has|had|have|in|on|at|of|for|the|this|that|when|with|from|by|as|than|while)\b))`;
+const named = (re: RegExp) => new RegExp(re.source + NAME_ENDS, re.flags);
 const DEFINITIONS = [
   /\b(?:ages?|aged)\s+\d+(?:\s*(?:to|–|-)\s*\d+)?/gi,
   /\b\d+(?:\s*(?:to|–|-)\s*\d+)?\s+(?:years?\s+)?(?:and|or)\s+(?:older|over)\b/gi,
   /\b\d+-(?:year|month|week|day)\b/gi,
   /\btable\s+\d+\b/gi,
-  /\b(?:(?:police|aldermanic|council|school)\s+)?district\s+\d{1,3}(?!\d|[,.]\d)/gi, // not "district 1,200 homes" or "district 6.5%": a following digit group makes it a count
-  /\bward\s+\d{1,3}(?!\d|[,.]\d)/gi,
+  named(/\b(?:(?:police|aldermanic|council|school)\s+)?district\s+\d{1,3}/gi),
+  named(/\bward\s+\d{1,3}/gi),
   /\bzip(?:\s+code)?\s+\d{5}\b/gi,
   /\b\d{1,5}\s+[NSEW]\.?\s+[A-Z][a-z]+/g, // a street address; the direction is what tells it from a count
-  /\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|June?|July?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\.?\s+\d{1,2}\b/g,
+  named(/\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|June?|July?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\.?\s+\d{1,2}/g),
 ];
 
 // Every pair of quote marks is tried, so a stray inch mark (5") can't shift which quote closes which.
