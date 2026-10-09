@@ -43,7 +43,7 @@ describe("beginBuild", () => {
 describe("swapCatalog", () => {
   it("writes 49 families, 382 members and unique permanent codes", async () => {
     const t = convexTest(schema, modules);
-    expect(await swap(t)).toEqual({ ok: true });
+    expect(await swap(t)).toEqual({ ok: true, cityKept: false });
     const families = await t.run((ctx) => ctx.db.query("families").collect());
     const members = await t.run((ctx) => ctx.db.query("members").collect());
     expect(families).toHaveLength(49);
@@ -60,6 +60,41 @@ describe("swapCatalog", () => {
     const result = await swap(t, inputs().slice(0, 30));
     expect(result.ok).toBe(false);
     expect(await t.run((ctx) => ctx.db.query("families").collect())).toHaveLength(49);
+  });
+
+  // City families made from a DYCU fixture: one member each, tagged City.
+  const cityInputs = (n: number) =>
+    Array.from({ length: n }, (_, i) => ({ ...inputs()[0], key: `city:c${i}`, name: `City ${i}`, source: "city" as const, members: inputs()[0].members.slice(0, 1).map((m) => ({ ...m, hubId: `city:m${i}`, source: "city" as const })) }));
+  const bySource = async (t: TestConvex<typeof schema>) => {
+    const fams = await t.run((ctx) => ctx.db.query("families").collect());
+    return { dycu: fams.filter((f) => f.source !== "city").length, city: fams.filter((f) => f.source === "city").length };
+  };
+
+  it("guards DYCU on its own: City families can't hide a DYCU shrink (I3)", async () => {
+    const t = convexTest(schema, modules);
+    await swap(t, [...inputs(), ...cityInputs(100)]);
+    // Six of 49 DYCU families gone (over 10%), but only a few items: the old all-sources guard let this through.
+    const smallest = new Set([...inputs()].sort((a, b) => a.members.length - b.members.length).slice(0, 6).map((f) => f.key));
+    const result = await swap(t, [...inputs().filter((f) => !smallest.has(f.key)), ...cityInputs(100)]);
+    expect(result.ok).toBe(false);
+    expect(await bySource(t)).toEqual({ dycu: 49, city: 100 });
+  });
+
+  it("treats a City-only shrink as a City outage: keeps last week's City families, updates DYCU, notes it (I3)", async () => {
+    const t = convexTest(schema, modules);
+    await swap(t, [...inputs(), ...cityInputs(20)]);
+    const result = await swap(t, [...inputs().filter((f) => f.key !== "dataset:access-to-parks"), ...cityInputs(5)]);
+    expect(result).toMatchObject({ ok: true, cityKept: true });
+    if (!result.ok) throw new Error("expected ok");
+    expect(result.note).toContain("City catalog shrank from 20 to 5 datasets");
+    expect(await bySource(t)).toEqual({ dycu: 48, city: 20 });
+  });
+
+  it("still takes a City catalog that grows or barely shrinks (I3)", async () => {
+    const t = convexTest(schema, modules);
+    await swap(t, [...inputs(), ...cityInputs(20)]);
+    expect(await swap(t, [...inputs(), ...cityInputs(19)])).toEqual({ ok: true, cityKept: false });
+    expect(await bySource(t)).toEqual({ dycu: 49, city: 19 });
   });
 
   it("refuses a feed that keeps every family but drops many items", async () => {
@@ -91,7 +126,7 @@ describe("swapCatalog", () => {
     await swap(t);
     const parks = (await t.run((ctx) => ctx.db.query("families").collect())).find((f) => f.key === "dataset:access-to-parks")!;
     const withoutParks = inputs().filter((f) => f.key !== "dataset:access-to-parks");
-    expect(await swap(t, withoutParks)).toEqual({ ok: true });
+    expect(await swap(t, withoutParks)).toEqual({ ok: true, cityKept: false });
     const retired = await t.run((ctx) => ctx.db.query("codes").collect());
     expect(retired.find((c) => c.code === parks.code)!.retiredAt).not.toBeNull();
 

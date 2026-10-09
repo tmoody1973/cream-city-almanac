@@ -143,6 +143,19 @@ describe("weekly build", () => {
     expect(build.notes.join(" ")).toContain("City catalog unavailable");
   }, 120_000);
 
+  it("keeps last week's City families when the City catalog shrinks sharply, and still updates DYCU (I3)", async () => {
+    const t = convexTest(schema, modules);
+    installFakeFetch({ cityCatalog: cityCatalog() });
+    await run(t);
+    vi.unstubAllGlobals();
+    // A self-consistent but much smaller catalog: only the election file is left.
+    installFakeFetch({ cityCatalog: cityCatalog(cityCatalog().result.results.filter((p) => p.id === "b1")) });
+    const build = await run(t);
+    expect(build.status).toBe("completed");
+    expect((await t.run((ctx) => ctx.db.query("families").collect())).filter((f) => f.source === "city")).toHaveLength(2);
+    expect(build.notes.join(" ")).toContain("City catalog shrank from 2 to 1 datasets");
+  }, 120_000);
+
   it("fails cleanly and keeps the catalog when the Hub feed is down", async () => {
     const t = convexTest(schema, modules);
     installFakeFetch({ hubStatus: 500 });

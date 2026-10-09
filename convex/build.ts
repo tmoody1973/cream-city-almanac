@@ -338,6 +338,11 @@ async function runBuild(ctx: ActionCtx, buildId: Id<"builds">) {
     dictionaries: inventory.dictionaries,
   });
   if (!swap.ok) throw new Error(swap.reason);
+  if (swap.cityKept) {
+    // Last week's City families stayed (like an outage), so none of this week's are processed.
+    if (swap.note) notes.push(swap.note);
+    cityFamilies = [];
+  }
 
   await refreshSources(ctx, buildId, settings, notes);
 
