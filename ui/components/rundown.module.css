@@ -881,3 +881,83 @@
 .themeSwitch { margin-top: 6px; }
 .themeButton { min-height: 24px; padding: 0 4px; border: 0; background: none; font: inherit; color: inherit; cursor: pointer; }
 .themeButton[aria-pressed="true"] { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+
+/* Masthead: the wordmark is the way home. */
+.wordmarkLink { color: inherit; text-decoration: none; }
+
+/* Phones and tablets: MENU stands where the page name was (the menu marks the current page instead); a note such as
+   a result count stays under it. Laptops show the page name and their masthead links, never MENU. */
+.sideName { display: none; }
+.sideNote { display: block; margin-top: 0.3em; font-family: var(--font-body); font-weight: 400; font-size: var(--fs-small); text-transform: none; color: var(--muted); }
+.menuButton {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 14px;
+  border: var(--hair);
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+/* The menu: a full-screen sheet of ruled rows in the masthead's capitals, on a native modal <dialog>. */
+.menu {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0 var(--gutter) env(safe-area-inset-bottom);
+  border: 0;
+  background: var(--paper);
+  color: var(--ink);
+  overflow-y: auto;
+  /* It sits inside the masthead's right corner: reset what that corner sets. */
+  text-align: left;
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: var(--fs-body);
+  line-height: 1.3;
+  text-transform: none;
+}
+.menu::backdrop { background: var(--paper); }
+.menuHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 72px;
+  border-bottom: var(--rule);
+  font-family: var(--font-caps);
+  font-weight: 700;
+  font-size: var(--fs-masthead-side);
+}
+.menuClose { min-height: 44px; padding: 0 4px; border: 0; background: none; color: var(--ink); font: inherit; cursor: pointer; }
+.menuList { list-style: none; margin: 0 0 28px; padding: 0; }
+.menuItem {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 60px;
+  padding: 0;
+  border: 0;
+  border-bottom: var(--hair);
+  background: none;
+  color: var(--ink);
+  font-family: var(--font-caps);
+  font-weight: 700;
+  font-size: var(--fs-tab);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.menuItem[aria-current="page"] { text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 0.2em; }
+.menuTheme { padding-bottom: 32px; font-size: var(--fs-small); color: var(--muted); }
+
+@media (min-width: 1100px) and (orientation: landscape) {
+  .sideName { display: inline; }
+  .sideNote,
+  .menuButton { display: none; }
+}

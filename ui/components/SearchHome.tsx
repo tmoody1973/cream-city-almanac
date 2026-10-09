@@ -162,6 +162,7 @@ export function SearchHome({ rundown, status }: { rundown: ResultRow[]; status: 
           )
         }
         showDate={!searching}
+        note={searching ? `${response?.results.length ?? 0} results` : undefined}
         sideClassName={searching ? undefined : styles.sideRundown}
         nav={<SiteNav placement="masthead" current={laptop && askOpen ? "ask" : "search"} />}
       />
