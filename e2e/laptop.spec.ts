@@ -40,7 +40,7 @@ test("a sheet address opens the two-pane view with that dataset selected", async
 
 test("searching opens the top result", async ({ page }) => {
   await page.goto("/");
-  await page.getByLabel("SLUG:").fill("asthma");
+  await page.getByLabel("TOPIC:").fill("asthma");
   await expect(pane(page)).toContainText("W01");
 });
 
@@ -101,7 +101,7 @@ test("after a keyboard selection, typing a new search stays in the search box", 
   await page.locator("li[data-code='W01'] button").focus();
   await page.keyboard.press("Enter");
   await expect(page.locator("#sheet-heading")).toBeFocused();
-  const slug = page.getByLabel("SLUG:");
+  const slug = page.getByLabel("TOPIC:");
   await slug.click();
   await slug.selectText();
   // Type, pause long enough for results (and a new top result in the pane) to arrive, then keep typing.

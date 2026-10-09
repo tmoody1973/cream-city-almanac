@@ -34,8 +34,8 @@ test("the search works from the keyboard alone", async ({ page }, info) => {
   // SEARCH, ASK, START HERE, HOW IT WORKS, or the phone's MENU; then the band's link). Some browsers skip links when
   // tabbing, so allow up to six stops before it.
   await page.keyboard.press("Tab");
-  for (let i = 0; i < 6 && !(await page.getByLabel("SLUG:").evaluate((el) => el === document.activeElement)); i++) await page.keyboard.press("Tab");
-  await expect(page.getByLabel("SLUG:")).toBeFocused();
+  for (let i = 0; i < 6 && !(await page.getByLabel("TOPIC:").evaluate((el) => el === document.activeElement)); i++) await page.keyboard.press("Tab");
+  await expect(page.getByLabel("TOPIC:")).toBeFocused();
   await page.keyboard.type("asthma");
   await expect(page.locator("[data-code='W01']")).toBeVisible();
   await page.locator("[data-code='W01'] button").focus();
