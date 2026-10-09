@@ -15,6 +15,7 @@ export interface HubItem {
   downloads: Record<string, string>;
   source?: Source; // absent: Data You Can Use
   datastoreId?: string | null; // City: the CKAN resource that can be queried live
+  datastoreName?: string | null; // City: that resource's name, when the package has several live files
   created?: string;
   groups?: string[];
   organization?: string; // City: the publishing department
@@ -43,6 +44,7 @@ export interface Member {
   keywords: string[];
   source?: Source; // absent: Data You Can Use
   datastoreId?: string | null; // City: the CKAN resource that can be queried live
+  datastoreName?: string | null; // City: that resource's name, when the package has several live files
 }
 
 export interface Family {

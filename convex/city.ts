@@ -25,7 +25,12 @@ export const countContext = internalQuery({
 });
 
 export type CountResult =
-  | { status: "ok"; code: string; name: string; count: number; groups: { label: string; count: number }[]; other: number; otherLabel: "Earlier" | "Other" | null; overlap: boolean; period: string; filters: string[]; futureExcluded: number; caveat: string | null; coverage: { min: string | null; max: string | null } }
+  | {
+      status: "ok"; code: string; name: string; count: number; groups: { label: string; count: number }[]; other: number; otherLabel: "Earlier" | "Other" | null;
+      overlap: boolean; period: string; filters: string[]; futureExcluded: number; caveat: string | null;
+      dateColumn: string | null; coverage: string | null; resourceName: string | null;
+    }
+  | { status: "outside-coverage"; code: string; name: string; coverage: string }
   | { status: "choose"; code: string; name: string; column: string; asked: string; choices: string[] }
   | { status: "bad-column"; code: string; name: string; column: string; columns: string[] }
   | { status: "bad-dates"; code: string; name: string; from: string; to: string }
@@ -76,7 +81,7 @@ export const countRecords = action({
         other: capped ? Math.max(0, count - shown) : 0,
         otherLabel: capped ? (byDate ? "Earlier" : "Other") : null, overlap: built.overlap,
         period: built.period, filters: built.filterLabels, futureExcluded: Number(future?.n ?? 0),
-        caveat: data.caveat, coverage: { min: profile.minDate, max: profile.maxDate },
+        caveat: data.caveat, dateColumn: built.dateColumn, coverage: built.coverage, resourceName: profile.resourceName ?? null,
       };
     } catch (e) {
       console.error(`City count failed for ${data.code}: ${e instanceof Error ? e.message : String(e)}`);

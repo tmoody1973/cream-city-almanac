@@ -96,11 +96,39 @@ describe("count query builder", () => {
     expect(() => buildCount({ ...P, resourceId: 'x"; DROP' }, {}, TODAY)).toThrow();
   });
   it("defaults from to a year before a given to-date", () => {
-    const b = buildCount(P, { to: "2020-01-01" }, TODAY);
+    const b = buildCount({ ...P, minDate: "2010-01-01" }, { to: "2020-01-01" }, TODAY);
     if (!b.ok) throw new Error("expected ok");
     expect(b.totalSql).toContain(`"Incident_Date" >= '2019-01-01' AND "Incident_Date" < '2020-01-02'`);
     expect(b.period).toBe("Jan 1, 2019 – Jan 1, 2020");
     expect(b.futureSql).toBeNull();
+  });
+  it("names the column it dates by and the data's coverage (C2, I2)", () => {
+    const b = buildCount(P, {}, TODAY);
+    if (!b.ok) throw new Error("expected ok");
+    expect(b).toMatchObject({ dateColumn: "Incident_Date", coverage: "Jan 1, 2024 – Oct 9, 2026" });
+    const none = buildCount({ ...P, dateColumn: null }, {}, TODAY);
+    expect(none).toMatchObject({ ok: true, dateColumn: null, coverage: null });
+  });
+  it("says a period entirely outside the data's coverage is outside it, with no query (C2)", () => {
+    expect(buildCount(P, { from: "2019-01-01", to: "2020-01-01" }, TODAY)).toEqual({ ok: false, status: "outside-coverage", coverage: "Jan 1, 2024 – Oct 9, 2026" });
+    // A static dataset that ended in 2021: its coverage stops at its last record, not today.
+    const ended = { ...P, minDate: "2019-01-01", maxDate: "2021-12-31", updatedAt: Date.parse("2026-10-05T12:00:00Z") };
+    expect(buildCount(ended, { from: "2023-01-01" }, TODAY)).toEqual({ ok: false, status: "outside-coverage", coverage: "Jan 1, 2019 – Dec 31, 2021" });
+  });
+  it("clamps a period that overlaps the coverage, and says so (C2)", () => {
+    const b = buildCount(P, { from: "2023-06-01", to: "2024-03-31" }, TODAY);
+    if (!b.ok) throw new Error("expected ok");
+    expect(b.totalSql).toContain(`"Incident_Date" >= '2024-01-01' AND "Incident_Date" < '2024-04-01'`);
+    expect(b.period).toBe("Jan 1, 2024 – Mar 31, 2024 (clamped to the data's range)");
+    const ended = { ...P, minDate: "2019-01-01", maxDate: "2021-12-31", updatedAt: Date.parse("2026-10-05T12:00:00Z") };
+    const late = buildCount(ended, { from: "2021-06-01" }, TODAY);
+    if (!late.ok) throw new Error("expected ok");
+    expect(late.totalSql).toContain(`"Incident_Date" >= '2021-06-01' AND "Incident_Date" < '2022-01-01'`);
+    expect(late.period).toBe("Jun 1, 2021 – Dec 31, 2021 (clamped to the data's range)");
+    expect(late.futureSql).toBeNull();
+    const latest = buildCount(ended, {}, TODAY);
+    if (!latest.ok) throw new Error("expected ok");
+    expect(latest.period).toBe("Dec 31, 2020 – Dec 31, 2021 (the data's latest 12 months)");
   });
   it("refuses a from-date after the to-date", () => {
     expect(buildCount(P, { from: "2026-09-01", to: "2026-01-01" }, TODAY)).toMatchObject({ ok: false, status: "bad-dates", from: "2026-09-01", to: "2026-01-01" });

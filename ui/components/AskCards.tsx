@@ -2,6 +2,7 @@
 import { useRenderTool } from "@copilotkit/react-core/v2";
 import { Fragment, useEffect } from "react";
 import { z } from "zod";
+import { countCoverage, outsideCoverage } from "@/ui/lib/askCount";
 import { passageBlocks } from "@/ui/lib/askPassage";
 import { formatPortraitMargin, formatPortraitNumber } from "@/ui/lib/portrait";
 import type { CountResult } from "@/lib/ask/tools";
@@ -147,8 +148,10 @@ function SheetCard({ code, name, onOpen, callKey, preview, source = "HUB" }: { c
   );
 }
 
-// A City count: the number lives here, never in the model's words. Filters in plain words, the period, and caveats.
+// A City count: the number lives here, never in the model's words. Filters in plain words, the period, what the
+// data covers, and caveats.
 function CountCard({ r, onOpen }: { r: CountOk; onOpen: Open }) {
+  const covers = countCoverage(r);
   return (
     <figure className={styles.excerpt} data-card="count">
       <figcaption className={styles.excerptTitle}>
@@ -166,6 +169,7 @@ function CountCard({ r, onOpen }: { r: CountOk; onOpen: Open }) {
         </table>
       )}
       {r.overlap && r.groups.length > 0 && <p className={styles.source}>An incident can count in more than one group.</p>}
+      {covers && <p className={styles.source} data-coverage>{covers}</p>}
       {r.futureExcluded > 0 && <p className={styles.source}>{r.futureExcluded.toLocaleString("en-US")} records dated in the future were left out.</p>}
       {r.caveat && <p className={styles.source}>{r.caveat} <ProvenanceTag source="AI" /></p>}
       <OpenLink code={r.code} onOpen={onOpen} label="Open the data" />
@@ -220,6 +224,7 @@ export function AskCards({ onOpen }: { onOpen?: (search: string) => void }) {
     const r = parse<CountResult>(props.result);
     if (!r) return <Failed />;
     if (r.status === "ok") return <CountCard r={r} onOpen={onOpen} />;
+    if (r.status === "outside-coverage") return <p className={styles.failed} data-card="count-outside">{outsideCoverage(r)} <OpenLink code={r.code} onOpen={onOpen} /></p>;
     if (r.status === "unavailable") return <p className={styles.failed}>The City&apos;s data didn&apos;t respond. Try again shortly.</p>;
     if (r.status === "not-live") return <p className={styles.failed}>{r.name} can&apos;t be counted live. <OpenLink code={r.code} onOpen={onOpen} /></p>;
     if (r.status === "busy") return <p className={styles.failed}>City counts are busy for your account; try again shortly.</p>;

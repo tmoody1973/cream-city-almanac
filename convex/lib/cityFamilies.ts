@@ -77,7 +77,7 @@ export function groupCityItems(items: HubItem[], now: Date): Family[] {
       hubId: i.hubId, kind: i.kind, title: i.title, landingPage: i.landingPage, place: "City",
       years: [...g.years], yearLabel: g.years.size ? [...g.years].join(", ") : null, modified: i.modified,
       featureServerUrl: null, downloads: i.downloads, description: i.description, keywords: i.keywords,
-      source: "city", datastoreId: i.datastoreId ?? null,
+      source: "city", datastoreId: i.datastoreId ?? null, datastoreName: i.datastoreName ?? null,
     }));
     const live = g.items.some((i) => i.datastoreId && i.modified >= liveSince);
     const newest = (pick: (i: HubItem) => string) => g.items.reduce((max, i) => (pick(i) > max ? pick(i) : max), "");

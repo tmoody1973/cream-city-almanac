@@ -62,7 +62,7 @@ export const processFamily = internalAction({
 });
 
 // Live City dataset: read its columns and build the counting menu. A failed query keeps last week's profile.
-async function profileCity(ctx: ActionCtx, familyKey: string, rid: string): Promise<Column[]> {
+async function profileCity(ctx: ActionCtx, familyKey: string, rid: string, resourceName: string | null): Promise<Column[]> {
   const fields = await datastoreFields(rid);
   const plan = planProfile(fields);
   const q = profileSql(rid, plan);
@@ -74,7 +74,8 @@ async function profileCity(ctx: ActionCtx, familyKey: string, rid: string): Prom
       const rows = await datastoreSql<{ v: string | null; n: string }>(t.sql);
       tops.push(isMultiValued(rows) ? { column: t.column, rows: await datastoreSql<{ v: string | null; n: string }>(t.multiSql), multi: true } : { column: t.column, rows });
     }
-    await ctx.runMutation(internal.buildStore.replaceCityProfile, { profile: assembleProfile(familyKey, rid, fields, plan, count, range, tops, Date.now()) });
+    const profile = { ...assembleProfile(familyKey, rid, fields, plan, count, range, tops, Date.now()), resourceName };
+    await ctx.runMutation(internal.buildStore.replaceCityProfile, { profile });
   } catch (e) {
     console.error(`City profile failed for ${familyKey}: ${message(e)}`);
   }
@@ -91,7 +92,7 @@ async function writeCard(ctx: ActionCtx, buildId: Id<"builds">, familyKey: strin
     .sort((a, b) => b.modified.localeCompare(a.modified))[0];
   const cityRep = cityRepresentative(members);
   const columns: Column[] = cityRep?.datastoreId
-    ? await profileCity(ctx, familyKey, cityRep.datastoreId)
+    ? await profileCity(ctx, familyKey, cityRep.datastoreId, cityRep.datastoreName ?? null)
     : rep?.featureServerUrl ? await fetchColumns(rep.featureServerUrl) : [];
   const inputHash = await hashInputs({
     v: PROMPT_VERSION,

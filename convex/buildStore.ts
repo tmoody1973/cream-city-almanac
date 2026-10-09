@@ -194,7 +194,7 @@ export const familyContext = internalQuery({
     const card = await ctx.db.query("cards").withIndex("by_family", (q) => q.eq("familyKey", familyKey)).first();
     const sources = await ctx.db.query("sources").collect();
     return {
-      family: { key: family.key, name: family.name, kind: family.kind, places: family.places, years: family.years },
+      family: { key: family.key, name: family.name, kind: family.kind, places: family.places, years: family.years, source: family.source ?? null },
       members: members.map((m) => ({
         hubId: m.hubId,
         title: m.title,
@@ -202,6 +202,7 @@ export const familyContext = internalQuery({
         description: m.description,
         featureServerUrl: m.featureServerUrl,
         datastoreId: m.datastoreId ?? null,
+        datastoreName: m.datastoreName ?? null,
       })),
       dictionary: dictionary ? { tab: dictionary.tab, dataSource: dictionary.dataSource, fields: dictionary.fields } : null,
       sources: sources.map((s) => ({ name: s.name, summary: s.summary, limits: s.limits })),

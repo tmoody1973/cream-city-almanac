@@ -29,6 +29,7 @@ export const vMember = v.object({
   keywords: v.array(v.string()),
   source: v.optional(v.literal("city")),
   datastoreId: v.optional(v.union(v.string(), v.null())),
+  datastoreName: v.optional(v.union(v.string(), v.null())),
 });
 
 export const vFamilyInput = v.object({
@@ -119,6 +120,7 @@ export const vCityProfile = v.object({
   minDate: v.union(v.string(), v.null()),
   maxDate: v.union(v.string(), v.null()),
   namesPeople: v.boolean(),
+  resourceName: v.optional(v.union(v.string(), v.null())),
   signature: v.string(),
   updatedAt: v.number(),
 });

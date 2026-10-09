@@ -8,14 +8,23 @@ const PAGE = 1000;
 const CATALOG_TIMEOUT_MS = 30_000;
 const QUERY_TIMEOUT_MS = 10_000;
 
-interface CkanResource { id: string; format?: string; url?: string; datastore_active?: boolean }
+interface CkanResource { id: string; name?: string; format?: string; url?: string; datastore_active?: boolean; last_modified?: string | null; created?: string }
 export interface CkanPackage {
   id: string; name: string; title: string; notes?: string | null; metadata_modified: string; metadata_created: string;
   tags?: { name: string }[]; groups?: { title: string }[]; organization?: { title: string } | null; resources: CkanResource[];
 }
 
+// The file counts read from: one titled "(Current)", else the newest (by last change, then creation, then name).
+// Its name is kept only when the package offers several live files, so the card can say which one was counted.
+function liveResource(resources: CkanResource[]): { id: string | null; name: string | null } {
+  const live = resources.filter((r) => r.datastore_active);
+  const stamp = (r: CkanResource) => `${r.last_modified ?? r.created ?? ""}|${r.name ?? ""}`;
+  const pick = live.find((r) => /\(current\)/i.test(r.name ?? "")) ?? [...live].sort((a, b) => stamp(b).localeCompare(stamp(a)))[0];
+  return { id: pick?.id ?? null, name: live.length > 1 ? pick.name?.trim() || null : null };
+}
+
 export function parseCkan(packages: CkanPackage[]): HubItem[] {
-  return packages.map((p) => ({
+  return packages.map((p) => ({ p, live: liveResource(p.resources) })).map(({ p, live }) => ({
     hubId: `city:${p.id}`,
     kind: "dataset",
     title: p.title.trim(),
@@ -26,7 +35,8 @@ export function parseCkan(packages: CkanPackage[]): HubItem[] {
     featureServerUrl: null,
     downloads: Object.fromEntries(p.resources.filter((r) => r.url && r.format).map((r) => [r.format!.toUpperCase(), r.url!])),
     source: "city",
-    datastoreId: p.resources.find((r) => r.datastore_active)?.id ?? null,
+    datastoreId: live.id,
+    datastoreName: live.name,
     created: p.metadata_created,
     groups: (p.groups ?? []).map((g) => g.title.trim()),
     organization: p.organization?.title?.trim() || undefined,

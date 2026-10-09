@@ -233,6 +233,18 @@ describe("City profiles", () => {
     expect(p!.resourceId).toBe(CRIME_CURRENT_RID);
   });
 
+  it("counts the newest of several live files and names it on the profile (C2)", async () => {
+    const t = convexTest(schema, modules);
+    const [crime, ...rest] = cityPackages();
+    const file = (id: string, name: string, last_modified: string) => ({ id, name, format: "CSV", url: `https://x/${name}.csv`, datastore_active: true, last_modified });
+    const yearly = { ...crime, title: "NIBRS Crime Data", resources: [file("22222222-2222-2222-2222-222222222222", "2024", "2025-01-02T00:00:00"), file(CRIME_CURRENT_RID, "2025", "2026-01-02T00:00:00")] };
+    const buildId = await seedCity(t, [yearly, ...rest.filter((p) => !/Historical/.test(p.title))]);
+    crimeFake();
+    await t.action(internal.build.processFamily, { buildId, familyKey: CRIME });
+    const p = await t.run((ctx) => ctx.db.query("cityProfiles").withIndex("by_family", (q) => q.eq("familyKey", CRIME)).first());
+    expect(p).toMatchObject({ resourceId: CRIME_CURRENT_RID, resourceName: "2025" });
+  });
+
   it("re-dates a City family whose columns changed since the last profile", async () => {
     const t = convexTest(schema, modules);
     const buildId = await seedCity(t);

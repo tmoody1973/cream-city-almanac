@@ -16,7 +16,8 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 
 export interface CountArgs { from?: string; to?: string; filters?: { column: string; values: string[] }[]; groupBy?: string }
 export type Built =
-  | { ok: true; totalSql: string; groupSql: string | null; futureSql: string | null; period: string; filterLabels: string[]; groupLabel: string | null; overlap: boolean }
+  | { ok: true; totalSql: string; groupSql: string | null; futureSql: string | null; period: string; filterLabels: string[]; groupLabel: string | null; overlap: boolean; dateColumn: string | null; coverage: string | null }
+  | { ok: false; status: "outside-coverage"; coverage: string }
   | { ok: false; status: "choose"; column: string; asked: string; choices: string[] }
   | { ok: false; status: "bad-column"; column: string; columns: string[] }
   | { ok: false; status: "bad-dates"; from: string; to: string };
@@ -32,6 +33,15 @@ const isDay = (s: string) => {
   return Number.isFinite(t) && isoDay(new Date(t)) === s;
 };
 const absent = (s: string | undefined) => !s || !s.trim();
+
+// The days the data covers. The profile is a week old at most, so a feed whose newest record was within a month of
+// profiling is treated as running to today; one that had stopped well before then ends at its last record.
+// ponytail: a 31-day heuristic; a live MAX() per count would be exact at the cost of one more City query.
+function dataSpan(p: CityProfile, today: string): { min: string; max: string } | null {
+  if (!p.minDate || !p.maxDate) return null;
+  const ongoing = p.maxDate >= addDays(isoDay(new Date(p.updatedAt)), -31);
+  return { min: p.minDate, max: ongoing || p.maxDate > today ? today : p.maxDate };
+}
 
 export const groupLabelFor = (column: string, value: string) => (isOffenseColumn(column) ? offenseName(value) : value);
 const filterLabel = (column: string, value: string, districts: string[]) =>
@@ -80,16 +90,29 @@ export function buildCount(p: CityProfile, a: CountArgs, today: string): Built {
 
   let period = "all records";
   let futureSql: string | null = null;
+  let coverage: string | null = null;
   if (p.dateColumn) {
     const askedTo = absent(a.to) ? undefined : a.to;
     const askedFrom = absent(a.from) ? undefined : a.from;
-    const to = askedTo && askedTo < today ? askedTo : today;
-    const from = askedFrom ?? addDays(to, -365);
+    const span = dataSpan(p, today);
+    // With no dates asked, the window is the 12 months up to the data's end (today, for a feed still updating).
+    let to = askedTo ? (askedTo < today ? askedTo : today) : askedFrom || !span ? today : span.max;
+    let from = askedFrom ?? addDays(to, -365);
     if (from > to) return { ok: false, status: "bad-dates", from, to };
+    const notes = askedFrom || askedTo ? [] : [to === today ? "last 12 months" : "the data's latest 12 months"];
+    if (span) {
+      coverage = `${human(span.min)} – ${human(span.max)}`;
+      if (to < span.min || from > span.max) return { ok: false, status: "outside-coverage", coverage };
+      if (from < span.min || to > span.max) {
+        from = from < span.min ? span.min : from;
+        to = to > span.max ? span.max : to;
+        notes.push("clamped to the data's range");
+      }
+    }
     const d = quoteId(p.dateColumn);
     const others = where.join(" AND ");
     where.unshift(`${d} >= ${lit(from)} AND ${d} < ${lit(addDays(to, 1))}`);
-    period = `${human(from)} – ${human(to)}${!askedFrom && !askedTo ? " (last 12 months)" : ""}`;
+    period = `${human(from)} – ${human(to)}${notes.length ? ` (${notes.join("; ")})` : ""}`;
     if (to === today) futureSql = `SELECT COUNT(*) AS n FROM ${table} WHERE ${d} > ${lit(addDays(today, 1))}${others ? ` AND ${others}` : ""}`;
   }
   const whereSql = where.length ? ` WHERE ${where.join(" AND ")}` : "";
@@ -111,5 +134,5 @@ export function buildCount(p: CityProfile, a: CountArgs, today: string): Built {
     groupLabel = cat.column;
     overlap = Boolean(cat.multi);
   }
-  return { ok: true, totalSql, groupSql, futureSql, period, filterLabels, groupLabel, overlap };
+  return { ok: true, totalSql, groupSql, futureSql, period, filterLabels, groupLabel, overlap, dateColumn: p.dateColumn, coverage };
 }

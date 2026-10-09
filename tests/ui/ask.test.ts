@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { proseSegments } from "../../ui/lib/askProse";
+import { countCoverage, outsideCoverage } from "../../ui/lib/askCount";
 import { askTools, type AskBackend } from "../../lib/ask/tools";
 import { ASK_PROMPT } from "../../lib/ask/prompt";
 import { fakeAskModel, meteredModel, useFakeModel } from "../../lib/ask/model";
@@ -206,5 +207,18 @@ describe("countRecords tool", () => {
     const second = await run([user, tool]);
     expect(second[0].toolName).toBe("countRecords");
     expect(JSON.parse(second[0].input)).toMatchObject({ code: "P07", groupBy: "month" });
+  });
+});
+
+describe("count card coverage (C2, I2)", () => {
+  it("says which date the count is by, what the data covers, and which file", () => {
+    expect(countCoverage({ dateColumn: "EXP_DATE", coverage: "Jan 1, 2024 – Oct 9, 2026", resourceName: "2025" })).toBe("Counted by EXP_DATE. The City's data here covers Jan 1, 2024 – Oct 9, 2026, from the City's '2025' file.");
+    expect(countCoverage({ dateColumn: "Incident_Date", coverage: "Jan 1, 2024 – Oct 9, 2026", resourceName: null })).toBe("Counted by Incident_Date. The City's data here covers Jan 1, 2024 – Oct 9, 2026.");
+    expect(countCoverage({ dateColumn: null, coverage: null, resourceName: "2025" })).toBe("From the City's '2025' file.");
+    expect(countCoverage({ dateColumn: null, coverage: null, resourceName: null })).toBeNull();
+  });
+  it("says a period outside the coverage has nothing to count, with no number", () => {
+    const t = outsideCoverage({ name: "NIBRS Crime Data", coverage: "Jan 1, 2024 – Oct 9, 2026" });
+    expect(t).toBe("NIBRS Crime Data: the City's data here covers Jan 1, 2024 – Oct 9, 2026, so there is nothing to count for that period.");
   });
 });

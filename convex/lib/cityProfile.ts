@@ -49,6 +49,7 @@ export interface CityProfile {
   familyKey: string; resourceId: string; columns: { name: string; type: string }[]; dateColumn: string | null;
   districtColumns: string[]; categories: { column: string; values: { value: string; count: number }[]; multi?: boolean }[];
   rowCount: number; minDate: string | null; maxDate: string | null; namesPeople: boolean; signature: string; updatedAt: number;
+  resourceName?: string | null; // the file counted, when the City offers several live files
 }
 
 export function assembleProfile(
