@@ -7,14 +7,14 @@ export function SlugBar({ value, onChange, showTags }: { value: string; onChange
     <>
       <form className={styles.slugForm} role="search" onSubmit={(e) => e.preventDefault()}>
         <label className={styles.slugLabel} htmlFor="slug">
-          SLUG:
+          TOPIC:
         </label>
         <input
           id="slug"
           className={styles.slugInput}
           type="search"
           autoComplete="off"
-          placeholder="What are you reporting on?"
+          placeholder="What are you looking into?"
           value={value}
           onChange={(e) => onChange(e.target.value)}
         />

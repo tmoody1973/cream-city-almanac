@@ -227,11 +227,11 @@ Charts encode with ink strength, so in dark mode a higher reading is brighter; c
 ### Hierarchy
 - **Display** (Saira 900, width 50%, clamp(30px, 9.6vw, 98px), line-height 0.9, uppercase): the "Cream City Almanac" wordmark only, set on one line.
 - **Headline** (Saira Extra Condensed 700, clamp(26px, 5.86vw, 60px), line-height 1): section titles such as UPDATED THIS SEASON, and the family name at the head of a dataset sheet.
-- **Code** (Saira Extra Condensed 700, clamp(22px, 5.76vw, 59px), line-height 1, lining tabular figures): permanent row codes (V02, F02), the SLUG: label, and the code on a sheet header. On the compact results rows the code drops to clamp(18px, 3.5vw, 36px).
+- **Code** (Saira Extra Condensed 700, clamp(22px, 5.76vw, 59px), line-height 1, lining tabular figures): permanent row codes (V02, F02), the TOPIC: label, and the code on a sheet header. On the compact results rows the code drops to clamp(18px, 3.5vw, 36px).
 - **Title** (Saira Extra Condensed 700, clamp(17px, 3.4vw, 35px), line-height 1.05): family titles on search-result rows; the open row's title steps up to clamp(20px, 4.3vw, 44px).
 - **Tab** (Saira Extra Condensed 700, clamp(16px, 3.9vw, 40px)): SEARCH / ASK / SAVED.
 - **Masthead side** (Saira Extra Condensed 700, clamp(15px, 3.9vw, 40px), line-height 1.1, uppercase): TODAY'S RUNDOWN, or RUNDOWN with a result count, beside the wordmark.
-- **Label** (Saira Extra Condensed 700, clamp(14px, 3.03vw, 31px)): column heads (CODE / SLUG / UPDATED), ruled buttons, sheet section headings, sheet download links.
+- **Label** (Saira Extra Condensed 700, clamp(14px, 3.03vw, 31px)): column heads (CODE / DATASET / UPDATED), ruled buttons, sheet section headings, sheet download links.
 - **Body** (Vazirmatn 400, clamp(16px, 2.93vw, 30px), line-height 1.3): row names and sublines, dates, the slug input, suggestion tags, explainers. Vazirmatn 500 sets the place-by-year grid and the column guide's field names; 700 marks the name of the open rundown row.
 - **Body small** (Vazirmatn 400, clamp(14px, 2.54vw, 26px), line-height 1.3): the catalog line, search notices, grid cells, sheet sublines, glossary and preview tables.
 - **Caption** (Vazirmatn 400, clamp(13px, 1.76vw, 18px)): the credit footer.
@@ -266,7 +266,7 @@ Vertical rhythm comes from the comp's measured paddings, not a stepped scale. Tw
 ### Laptop two-pane
 A laptop is a screen at least 1100px wide in landscape (`(min-width: 1100px) and (orientation: landscape)`). That one query is shared, character for character, by every stylesheet and by the script that decides click behavior; it is never retuned per component. There the page drops its 1280px cap and splits into three columns: the list (39%), the selected dataset's full sheet (the remainder), and a narrow Ask rail (6%).
 
-- **List:** the same rundown and results, re-measured from the laptop comp. Rows hold at least 96px, banding starts on the first row, the CODE / SLUG / UPDATED heads and the tab bar are gone, and the date hugs the row's right edge with 44px kept clear for the pencil's "new". The slug entry and each suggestion tag become hairline boxes; the 2px rules under the slug line and over the section title drop away.
+- **List:** the same rundown and results, re-measured from the laptop comp. Rows hold at least 96px, banding starts on the first row, the CODE / DATASET / UPDATED heads and the tab bar are gone, and the date hugs the row's right edge with 44px kept clear for the pencil's "new". The slug entry and each suggestion tag become hairline boxes; the 2px rules under the slug line and over the section title drop away.
 - **Sheet pane:** sticky at the top of the window, at most the window's height, scrolling on its own, divided from the list by a hairline. The download bar pins to the pane's bottom edge.
 - **Ask rail:** a hairline-outlined strip that stays beside the pane (sticky 12px from the top, the window's height less 24px). ASK in condensed capitals opens Ask in the list's column (`?ask=1`); open, it shows a drawn cross over a small condensed CLOSE that brings the list back.
 - **Selection:** the newest item in the list opens in the pane on arrival. Choosing a row replaces it and records the choice in the address (`?q=…&open=CODE`), so a link, a reload, or Back and Forward restore the same view; choosing the already-open row adds no Back step. On a phone, a laptop link to an item that is not in the list opens that item's own sheet page.
@@ -310,7 +310,7 @@ Ruled and flat, like a box drawn on the sheet with a marker.
 There are none. An opened row's preview is an indented region closed by a hairline, on the row's own ground. Dataset sheet sections are ruled blocks separated by hairlines, each led by a label-voice capital heading.
 
 ### Inputs / Fields
-- **Slug entry:** the SLUG: label in code-voice capitals, then a borderless, transparent input on the same baseline, in body type, 44px minimum height, with a graphite placeholder ("What are you reporting on?") and an ink caret. The line is closed below by the 2px rule.
+- **Topic entry:** the TOPIC: label in code-voice capitals, then a borderless, transparent input on the same baseline, in body type, 44px minimum height, with a graphite placeholder ("What are you looking into?") and an ink caret. The line is closed below by the 2px rule.
 - **Neighborhood / Year selects:** native selects in a square 1px ink hairline box, 44px tall, body type on paper, with the chevron drawn as a 2px ink stroke; the label sits inline before it in bold body type with a colon. A select is capped at 17.5em; at 480px and narrower each label sits above a full-width select.
 - **Focus:** the system focus ring (3px ink outline, 2px offset).
 

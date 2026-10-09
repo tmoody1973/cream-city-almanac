@@ -7,7 +7,7 @@ test("home shows today's rundown with live codes and the catalog line", async ({
   if (info.project.name === "desktop") await expect(page.getByRole("navigation", { name: "Site" })).toBeVisible();
   else await expect(page.getByRole("button", { name: "MENU", exact: true })).toBeVisible();
   await expect(page.getByText(/Catalog as of \w{3} \d{1,2} · \d+ raw data · \d+ reports · \d+ visualizations/)).toBeVisible();
-  await expect(page.getByLabel("SLUG:")).toHaveAttribute("placeholder", "What are you reporting on?");
+  await expect(page.getByLabel("TOPIC:")).toHaveAttribute("placeholder", "What are you looking into?");
   await expect(page.getByRole("heading", { name: "UPDATED THIS SEASON" })).toBeVisible();
   const rows = page.locator("li[data-code]");
   await expect(rows).toHaveCount(10);
@@ -19,7 +19,7 @@ test("home shows today's rundown with live codes and the catalog line", async ({
 
 test("searching by meaning finds a dataset and opens it in place", async ({ page }, info) => {
   await page.goto("/");
-  await page.getByLabel("SLUG:").fill("asthma");
+  await page.getByLabel("TOPIC:").fill("asthma");
   await expect(page).toHaveURL(/\?q=asthma/);
   const row = page.locator("[data-code='W01']");
   await expect(row).toBeVisible();
@@ -41,7 +41,7 @@ test("a suggestion tag runs a search and clearing returns to the rundown", async
   await page.goto("/");
   await page.getByRole("button", { name: "food insecurity" }).click();
   await expect(page.locator("[data-code='F02']")).toBeVisible();
-  await page.getByLabel("SLUG:").fill("");
+  await page.getByLabel("TOPIC:").fill("");
   await expect(page.getByRole("heading", { name: "UPDATED THIS SEASON" })).toBeVisible();
 });
 
@@ -57,7 +57,7 @@ test("a dropped connection ends in the failure notice, not endless loading", asy
   await page.goto("/");
   await expect(page.locator("li[data-code]").first()).toBeVisible();
   await context.setOffline(true);
-  await page.getByLabel("SLUG:").fill("asthma");
+  await page.getByLabel("TOPIC:").fill("asthma");
   await expect(page.getByRole("status")).toContainText("Search failed", { timeout: 20_000 });
   await context.setOffline(false);
 });
@@ -92,11 +92,18 @@ test("the home page explains itself in one line and links to How it works", asyn
   });
   expect(lines).toBe(1);
   await expect(page.getByRole("link", { name: "How it works" }).first()).toHaveAttribute("href", "/how-it-works");
-  await page.getByLabel("SLUG:").fill("asthma");
+  await page.getByLabel("TOPIC:").fill("asthma");
   await expect(band).toBeHidden();
 });
 
 test("every page's footer links to How it works", async ({ page }) => {
   await page.goto("/d/W01");
   await expect(page.getByRole("contentinfo").getByRole("link", { name: "How it works" })).toHaveAttribute("href", "/how-it-works");
+});
+
+test("the rundown's column heads use plain words", async ({ page }) => {
+  await page.goto("/");
+  await page.locator("li[data-code]").first().waitFor();
+  expect(await page.getByText("DATASET", { exact: true }).count()).toBeGreaterThan(0); // hidden on laptops
+  await expect(page.getByText("SLUG", { exact: true })).toHaveCount(0);
 });

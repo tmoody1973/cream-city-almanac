@@ -26,7 +26,7 @@ export function RundownList({
       {title && <h2 className={styles.sectionTitle}>{title}</h2>}
       <div className={styles.colHeads} aria-hidden="true">
         <span>CODE</span>
-        <span>SLUG</span>
+        <span>DATASET</span>
         <span>{mode === "rundown" ? "UPDATED" : "YEARS"}</span>
       </div>
       <ol className={mode === "results" ? `${styles.rows} ${styles.rowsResults}` : styles.rows}>
