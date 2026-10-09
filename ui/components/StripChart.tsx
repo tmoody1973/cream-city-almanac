@@ -10,7 +10,8 @@ const DAYS = 366;
 type Series = { label: string; values: number[]; days?: number[] };
 
 // `unit` names what one dot is: one area for tract and neighborhood data.
-// Daily readings (series with days) run January to December, one mark per day, darker for a higher reading:
+// Daily readings (series with days) run January to December, one mark per day, stronger ink for a higher reading
+// ("stronger", not "darker": in dark mode the ink is light):
 // a year of days can't be told apart as dots placed by value, and 366 dots overlap at any screen width.
 // The drawing is as wide as its box (one unit = one pixel), so labels keep their size on every screen.
 export function StripChart({ field, series, scale, unit = "area" }: { field: string; series: Series[]; scale: { min: number; max: number }; unit?: string }) {
@@ -31,7 +32,7 @@ export function StripChart({ field, series, scale, unit = "area" }: { field: str
   const xDay = (d: number) => labelW + (d - 1) * step;
   const range = `${formatScale(scale.min)} to ${formatScale(scale.max)}`;
   const description = daily
-    ? `Each mark is one day, January to December. Darker means a higher reading, on one shared scale from ${range}`
+    ? `Each mark is one day, January to December. A stronger mark means a higher reading, on one shared scale from ${range}`
     : `Each dot is one ${unit}'s ${field}, by year, on one shared scale from ${range}`;
   return (
     <figure className={styles.chart} ref={box}>
@@ -52,7 +53,7 @@ export function StripChart({ field, series, scale, unit = "area" }: { field: str
       </svg>
       <figcaption>
         {daily
-          ? `Each mark is one day, January to December. Darker means a higher reading (${range}); every row shares one scale.`
+          ? `Each mark is one day, January to December. A stronger mark means a higher reading (${range}); every row shares one scale.`
           : `Each dot is one ${unit}. Every row shares one scale.`}
       </figcaption>
     </figure>

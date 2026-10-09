@@ -16,11 +16,25 @@ export const metadata: Metadata = {
   description: "Find, understand, and download Milwaukee's public data. Unofficial; built on Data You Can Use's public data.",
 };
 
-export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#ffffff" };
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#141413" },
+  ],
+};
+
+// Applies a remembered Light or Dark choice (ThemeSwitch) while the page is still parsing, so it never flashes
+// the other theme. Auto leaves the choice to the device's setting.
+const THEME_SCRIPT = `try{var t=localStorage.getItem("theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}`;
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${wordmark.variable} ${caps.variable} ${body.variable} ${note.variable}`}>
+    <html lang="en" className={`${wordmark.variable} ${caps.variable} ${body.variable} ${note.variable}`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       <body>
         <ClerkProvider>
           <ConvexClientProvider>{children}</ConvexClientProvider>

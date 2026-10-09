@@ -198,12 +198,22 @@ Monochrome ink on white paper, with one hand-drawn red that never enters the sty
 - **Rundown Band** (#ededea): the alternate-row band on the rundown, the search results, and the sheet's live-preview table; the guide lines of the sheet's strip chart; heading bands, meaning the laptop column guide's header row and, on How it works, the annotated sheet's header and its part headings. Never a panel or card ground.
 - **Graphite** (#5c5c5c): secondary text only. The catalog line, the slug placeholder, inactive and coming-soon tabs and site links, Ask's status line, sheet sublines and "updated" dates, the credit line, and unavailable grid cells. It holds 6.7:1 on paper and 5.7:1 on the band (WCAG AA).
 
+### Night edition (dark mode)
+The same five tokens, redefined; nothing else in the stylesheet changes. Dark applies when the device asks for it and the reader hasn't picked Light in the footer's Theme switch, or when the reader picks Dark (remembered on that browser, applied before the page draws).
+- **Night Paper** (#141413): the page ground. Near-black, not black.
+- **Night Ink** (#ecebe6): text, rules, filled cells, focus. Stops short of white to cut glare: 15.4:1 on Night Paper.
+- **Night Band** (#242422): banding and heading bands. Graphite on it holds 6.1:1.
+- **Night Graphite** (#a3a29c): secondary text, 7.2:1 on Night Paper.
+- **Night Pencil** (#ff6b5e): the teaching notes' text only (6.6:1). The red plates stay raster red: 3.7:1 on Night Paper and 3.1:1 on Night Band, above the 3:1 graphics need.
+
+Charts encode with ink strength, so in dark mode a higher reading is brighter; captions say "stronger", never "darker". Clerk's windows take the tokens through `--clerk-color-*` in `app/globals.css`. Every page is checked with axe in both themes.
+
 ### Named Rules
 **The Grease Pencil Rule.** Red is the producer's hand only: the raster plates (circle = updated, tick = opened by the reader, arrow + swash = open or selected now) and the hand-lettered teaching notes on How it works. It is never a border, fill, hover, focus ring, vector icon, or any other text.
 
 **The Red Number Rule.** A red number means saved. Teaching notes are never numbered, and no other red mark carries a figure.
 
-**The Ink-and-Paper Rule.** Everything structural and interactive is ink on white: text, rules, buttons, the active tab, filled cells, focus. Gray is for banding, chart guides, and secondary text, never for rules or borders.
+**The Ink-and-Paper Rule.** Everything structural and interactive is ink on paper (white, or near-black at night): text, rules, buttons, the active tab, filled cells, focus. Gray is for banding, chart guides, and secondary text, never for rules or borders.
 
 ## Typography
 
@@ -306,7 +316,7 @@ There are none. An opened row's preview is an indented region closed by a hairli
 
 ### Navigation
 - **Tab bar (phones only):** three equal cells between two hairlines, tab-voice capitals, compact row height. Inactive and coming-soon tabs are graphite; the active tab is ink with a 6px ink bar drawn across its cell near the bottom edge (inset clamp(4px, 1.7vw, 17px)). ASK and SAVED are non-link placeholders titled "Coming soon" until their phases ship. On How it works no tab is active. Laptops never show it.
-- **Masthead site links (laptops):** SEARCH / ASK / SAVED, then START HERE and HOW IT WORKS, in site-link capitals to the right of the wordmark, clamp(20px, 2.6vw, 40px) apart. Inactive and coming-soon links are graphite; the current page is ink, underlined by a 4px ink bar 6px below the words. START HERE and HOW IT WORKS are always ink, each set apart by a short hairline drawn outside the link, so the current-page bar underlines only its words. On phones, How it works marks itself instead by underlining the masthead's side label (3px, 0.2em offset).
+- **Masthead site links (laptops):** SEARCH / ASK / SAVED, then START HERE and HOW IT WORKS, in site-link capitals to the right of the wordmark, clamp(20px, 2.6vw, 40px) apart. Inactive and coming-soon links are graphite; the current page is ink, underlined by a 4px ink bar 6px below the words. START HERE and HOW IT WORKS are always ink, each set apart by a short hairline drawn outside the link, so the current-page bar underlines only its words. On phones, How it works marks itself instead by underlining the masthead's side label (3px, 0.2em offset). Signed in, ACCOUNT and SIGN OUT follow as one ink pair behind a single hairline, set smaller (16–22px) as utility, and the spacing tightens to clamp(12px, 1.5vw, 40px) so every label stays on one line from 1100px; on phones the pair lives in the footer.
 - **Back link (sheet):** the mirrored drawn arrow and "Rundown" in small body type, above a hairline.
 - **Explainer band (home):** one line, "Milwaukee data in plain English." then a "How it works" link with the drawn arrow, kept on one line. On phones it is small body type closed by a hairline; on laptops it sits at body size with no rule. Hidden while searching.
 - **Credit footer:** centered caption-size graphite links, "Built on Data You Can Use's public data · How it works", padded for the safe-area inset on phones.

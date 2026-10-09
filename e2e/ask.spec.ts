@@ -121,6 +121,29 @@ test.describe("signed in", () => {
     await expect(page.locator(".cl-userProfile-root")).toBeVisible({ timeout: 15_000 });
   });
 
+  test("signed in, the laptop masthead keeps every label on one line and START HERE keeps its rule", async ({ page }, info) => {
+    test.skip(info.project.name !== "desktop");
+    for (const path of ["/start-here", "/?ask=1"])
+      for (const width of [1100, 1180, 1280, 1440, 1536, 1920]) {
+        await page.setViewportSize({ width, height: 900 });
+        await page.goto(path);
+        await page.getByRole("button", { name: /^account$/i }).first().waitFor();
+        const r = await page.evaluate(() => {
+          const nav = document.querySelector("nav[aria-label=Site]")!;
+          const items = [...nav.children] as HTMLElement[];
+          const start = items.find((e) => e.textContent === "START HERE")!;
+          return {
+            broken: items.filter((e) => e.getClientRects().length > 1 || e.getBoundingClientRect().height > parseFloat(getComputedStyle(e).fontSize) * 1.6).map((e) => e.textContent),
+            past: Math.round(nav.getBoundingClientRect().right - innerWidth),
+            startRule: getComputedStyle(start, "::before").borderLeftWidth,
+            rules: items.filter((e) => getComputedStyle(e, "::before").borderLeftWidth === "1px").map((e) => e.textContent),
+          };
+        });
+        expect({ path, width, ...r }).toEqual({ path, width, broken: [], past: expect.any(Number), startRule: "1px", rules: ["START HERE", "HOW IT WORKS", "ACCOUNT"] });
+        expect(r.past, `${path} at ${width}`).toBeLessThanOrEqual(0);
+      }
+  });
+
   test("SIGN OUT on every page signs you out and keeps the page", async ({ page }) => {
     await page.goto("/start-here");
     await page.getByRole("button", { name: /^sign out$/i }).filter({ visible: true }).first().click();
