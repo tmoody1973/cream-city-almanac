@@ -22,12 +22,19 @@ export function AskLeader({ container }: { container: RefObject<HTMLElement | nu
         const to = pane?.querySelector("[data-row-marked]") ?? pane?.querySelector("h1, h2");
         if (!from || !to || !pane) return setLine(null);
         const box = root.getBoundingClientRect();
-        const a = from.getBoundingClientRect();
         const b = to.getBoundingClientRect();
         const p = pane.getBoundingClientRect();
+        // Leave the reference from the end of its line nearest the target, so the leader never crosses its words.
+        const ref = from.closest("p") ?? from;
+        const range = document.createRange();
+        range.selectNodeContents(ref);
+        const lines = [...range.getClientRects()].filter((r) => r.width > 0);
+        const target = b.top + b.height / 2;
+        const a = lines.reduce((best, r) => (Math.abs(r.top + r.height / 2 - target) < Math.abs(best.top + best.height / 2 - target) ? r : best), lines[0] ?? from.getBoundingClientRect());
+        const lineEnd = Math.max(...lines.filter((r) => Math.abs(r.top - a.top) < 2).map((r) => r.right), a.right);
         // Hide the leader when either end has scrolled out of view.
         if (a.bottom < box.top || a.top > window.innerHeight || b.bottom < p.top || b.top > p.bottom) return setLine(null);
-        setLine({ x1: a.right - box.left + 6, y1: a.top + a.height / 2 - box.top, x2: b.left - box.left - 4, y2: b.top + b.height / 2 - box.top });
+        setLine({ x1: lineEnd - box.left + 8, y1: a.top + a.height / 2 - box.top, x2: b.left - box.left - 4, y2: target - box.top });
       });
     };
     measure();

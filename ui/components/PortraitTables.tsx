@@ -46,11 +46,15 @@ export function PortraitTables({ index, focus: requested }: { index: Index; focu
     // In the laptop pane, scroll the pane only (the page and its masthead stay put); on a sheet page, the page.
     const pane = row.closest<HTMLElement>("#sheet-pane");
     if (!pane) return row.scrollIntoView({ block: "center" });
-    // Only as far as needed: leave the sheet heading in view when the row already shows; else the row in the lower third.
-    const r = row.getBoundingClientRect();
+    // Only as far as needed: if the row already shows, leave the sheet as it is; otherwise bring the table's own
+    // caption to the pane's top so nothing is cut, and if the row is still below, put it in the lower third.
     const p = pane.getBoundingClientRect();
-    if (r.bottom <= p.bottom - 16) return;
-    pane.scrollTo({ top: pane.scrollTop + (r.top - p.top) - pane.clientHeight * 0.66 });
+    if (row.getBoundingClientRect().bottom <= p.bottom - 16) return;
+    const table = row.closest("table");
+    const toCaption = table ? pane.scrollTop + (table.getBoundingClientRect().top - p.top) - 12 : null;
+    const toRow = pane.scrollTop + (row.getBoundingClientRect().top - p.top) - pane.clientHeight * 0.66;
+    const rowFitsUnderCaption = table && row.getBoundingClientRect().bottom - table.getBoundingClientRect().top < pane.clientHeight - 40;
+    pane.scrollTo({ top: rowFitsUnderCaption && toCaption !== null ? toCaption : toRow });
   }, [marked, tables]);
   const topics = portraitTopics(tables);
 

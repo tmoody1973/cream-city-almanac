@@ -15,6 +15,8 @@
 .question { position: relative; margin: 32px 0 0; padding: 8px 14px; background: var(--band); font-weight: 700; font-size: var(--fs-small); overflow-wrap: anywhere; }
 /* A hairline closes the note above, with room before the next question (the first one sits under the column's rule). */
 .question::before { content: ""; position: absolute; left: 0; right: 0; top: -16px; border-top: var(--hair); }
+.firstQuestion { margin-top: 0; }
+.firstQuestion::before { content: none; }
 
 /* A margin note: a large condensed numeral, then the note's words. */
 .note { display: grid; grid-template-columns: 2.2em minmax(0, 1fr); column-gap: 12px; padding: 14px 0 0; }
@@ -50,7 +52,7 @@
 .excerptTable thead th { font-weight: 400; background: var(--band); }
 .excerptTable thead th, .excerptTable td { white-space: nowrap; }
 .markedRow { outline: 2px solid var(--ink); outline-offset: -2px; }
-.markedRow th, .markedRow td { font-weight: 700; }
+.markedRow th, .markedRow td, .excerptTable .markedRow th[scope="row"] { font-weight: 700; }
 .source { margin: 8px 0 4px; }
 
 .busy, .failed { margin: 8px 0 0; color: var(--muted); font-size: var(--fs-small); }

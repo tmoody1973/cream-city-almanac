@@ -2,7 +2,7 @@
 import { Show, SignInButton, SignOutButton } from "@clerk/nextjs";
 import { CopilotChat, CopilotChatToolCallsView, CopilotKitProvider } from "@copilotkit/react-core/v2";
 import { useQuery } from "convex/react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { noteNumbers, noteOrder } from "@/ui/lib/askNotes";
 import { proseSegments } from "@/ui/lib/askProse";
@@ -12,9 +12,20 @@ import styles from "./ask.module.css";
 const MAX_QUESTION = 500;
 type Msg = { id: string; role: string; content?: unknown };
 
-// The person's question: a gray band, as the comps draw it.
+// The person's question: a gray band, as the comps draw it. A hairline above it closes the note before;
+// the first question has no note before it, so no rule (CopilotKit's wrappers hide which row is first from CSS).
 function Question({ message }: { message: { content?: unknown } }) {
-  return <p className={styles.question}>{typeof message.content === "string" ? message.content : ""}</p>;
+  const ref = useRef<HTMLParagraphElement>(null);
+  const [first, setFirst] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    setFirst(Boolean(el && el.closest("section")?.querySelector("[data-ask-question]") === el));
+  });
+  return (
+    <p ref={ref} data-ask-question className={first ? `${styles.question} ${styles.firstQuestion}` : styles.question}>
+      {typeof message.content === "string" ? message.content : ""}
+    </p>
+  );
 }
 
 // The model's words. A figure in them is marked unverified: the cards and the open sheet carry every number.
