@@ -16,6 +16,7 @@ export interface PortraitFocus {
   place: string;
   year: number | null;
   topic: string;
+  row?: string | null; // a row Ask pointed at, outlined in the table
 }
 
 
@@ -30,7 +31,7 @@ export function resolvePortraitFocus(index: PortraitIndex, params: URLSearchPara
 
 export function portraitFocusQuery(focus?: PortraitFocus | null): string {
   if (!focus) return "";
-  const p = new URLSearchParams({ place: focus.place, ...(focus.year ? { year: String(focus.year) } : {}), topic: focus.topic });
+  const p = new URLSearchParams({ place: focus.place, ...(focus.year ? { year: String(focus.year) } : {}), topic: focus.topic, ...(focus.row ? { row: focus.row } : {}) });
   return `?${p}`;
 }
 

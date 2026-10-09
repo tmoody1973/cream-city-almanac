@@ -18,10 +18,59 @@ test.describe("signed in", () => {
   test.beforeEach(async ({ page }, info) => {
     const { clerk, setupClerkTestingToken } = await import("@clerk/testing/playwright");
     await setupClerkTestingToken({ page });
+    // The scripted test model (lib/ask/model.ts): no real AI calls, no cost, not counted against the account.
+    // Only our route gets the header; sent everywhere it breaks Clerk's cross-origin requests.
+    await page.route("**/api/copilotkit/**", (route) => route.continue({ headers: { ...route.request().headers(), "x-ask-fake": "1" } }));
     // Sign in on the page under test, then reload: Clerk navigates on its own after signing in.
     await page.goto(info.project.name === "phone" ? "/ask" : "/?ask=1");
     await clerk.signIn({ page, emailAddress: process.env.E2E_CLERK_USER_EMAIL! });
     await page.reload();
+  });
+
+  // The chat accepts a question once it has connected; retry Enter until the box empties (the question was sent).
+  const ask = async (page: import("@playwright/test").Page, q: string) => {
+    const box = page.getByPlaceholder("Ask about Milwaukee data");
+    await box.fill(q);
+    await expect(async () => {
+      if ((await box.inputValue()) !== "") await box.press("Enter");
+      await expect(box).toHaveValue("", { timeout: 2_000 });
+    }).toPass({ timeout: 20_000 });
+  };
+
+  test("a poverty question opens the Harambee table with the row marked (laptop) or excerpted (phone)", async ({ page }, info) => {
+    await ask(page, "How many kids under 5 are in poverty in Harambee?");
+    await expect(page.getByText("Here is what the data shows.")).toBeVisible({ timeout: 30_000 });
+    if (info.project.name === "phone") {
+      const card = page.locator("[data-card=number]");
+      await expect(card.locator("[data-row-marked]")).toContainText("Under 5 years");
+      await expect(card).toContainText("±");
+      await expect(card.getByRole("link", { name: /Open the full table/ })).toHaveAttribute("href", /\/d\/N03\?place=harambee&year=\d{4}&topic=poverty-status-by-age&row=Under\+5\+years/);
+    } else {
+      await expect(page.locator("#sheet-pane [data-row-marked]")).toContainText("Under 5 years", { timeout: 20_000 });
+      await expect(page).toHaveURL(/ask=1.*open=N03.*row=Under\+5\+years/);
+      await expect(page.locator("svg[data-leader] path").first()).toBeAttached();
+    }
+  });
+
+  test("an air question shows the live preview", async ({ page }) => {
+    await ask(page, "What has the air been like?");
+    await expect(page.locator("[data-card=preview]")).toContainText("Daily Air Quality", { timeout: 30_000 });
+  });
+
+  test("a figure in the model's words is marked unverified", async ({ page }) => {
+    await ask(page, "unverified please");
+    await expect(page.locator("mark[data-unverified]")).toContainText("608", { timeout: 30_000 });
+  });
+
+  test("when the model fails, Ask says it's unavailable and search still works", async ({ page }) => {
+    await ask(page, "fail please");
+    await expect(page.getByText("Ask is unavailable right now. Search still works.")).toBeVisible({ timeout: 30_000 });
+  });
+
+  test("closing Ask brings the list back on a laptop", async ({ page }, info) => {
+    test.skip(info.project.name === "phone", "laptop only");
+    await page.getByRole("link", { name: "Close Ask" }).click();
+    await expect(page.getByText("UPDATED THIS SEASON")).toBeVisible();
   });
 
   test("shows today's count and a way to sign out", async ({ page }) => {

@@ -9,6 +9,7 @@ import { SEARCH_TIMEOUT_MS, searchNotice, withTimeout, type SearchState } from "
 import { portraitFocusQuery, portraitParams, type PortraitFocus } from "@/ui/lib/portrait";
 import { LAPTOP_QUERY, parseSelection, selectionSearch } from "@/ui/lib/selection";
 import { useLaptop } from "@/ui/lib/useLaptop";
+import { AskLeader } from "./AskLeader";
 import { AskPanel } from "./AskPanel";
 import { CatalogLine, type CatalogStatus } from "./CatalogLine";
 import { CreditFooter } from "./CreditFooter";
@@ -36,6 +37,7 @@ export function SearchHome({ rundown, status }: { rundown: ResultRow[]; status: 
   const [state, setState] = useState<SearchState>("idle");
   const [marks, setMarks] = useState({ circled: new Set<string>(), opened: new Set<string>() });
   const requestId = useRef(0);
+  const split = useRef<HTMLDivElement>(null);
 
   // The address is the source of truth on load and on Back / Forward.
   useEffect(() => {
@@ -113,6 +115,18 @@ export function SearchHome({ rundown, status }: { rundown: ResultRow[]; status: 
     else window.history.pushState(null, "", url);
   };
 
+  // Ask (laptop): a note's result opens the pane beside it, keeping Ask open and the address shareable.
+  const openFromAsk = (search: string) => {
+    const p = new URLSearchParams(search);
+    const code = p.get("open");
+    if (!code) return;
+    const place = p.get("place");
+    const focus = place ? { place, year: Number(p.get("year")) || null, topic: p.get("topic") ?? "", row: p.get("row") } : null;
+    setOpen(code);
+    setPicked(focus);
+    window.history.pushState(null, "", `${window.location.pathname}${selectionSearch({ q: query, open: code, ask: true })}${focus ? `&${portraitFocusQuery(focus).slice(1)}` : ""}`);
+  };
+
   const showNewest = () => {
     setOpen(null);
     window.history.replaceState(null, "", `${window.location.pathname}${selectionSearch({ q: query, open: null, ask: askOpen })}`);
@@ -146,10 +160,11 @@ export function SearchHome({ rundown, status }: { rundown: ResultRow[]; status: 
         sideClassName={searching ? undefined : styles.sideRundown}
         nav={<SiteNav placement="masthead" current="search" />}
       />
-      <div className={styles.split}>
+      <div className={styles.split} ref={split} style={laptop && askOpen ? { position: "relative" } : undefined}>
+        {laptop && askOpen && <AskLeader container={split} />}
         {laptop && askOpen ? (
           <div className={styles.main}>
-            <AskPanel />
+            <AskPanel onOpen={openFromAsk} />
           </div>
         ) : (
         <main className={styles.main}>

@@ -1,6 +1,69 @@
-/* Ask: the laptop notes column and the phone /ask screen. Values from the approved comps arrive in Task 7. */
+/* Ask: margin notes (comps ask-laptop / ask-a-phone). The Rundown: paper, ink, band, hairlines; no radii, no shadows. */
 .panel { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .intro { margin: 0; }
-.signIn { min-height: 44px; padding: 0 16px; border: 1px solid var(--ink); background: var(--paper); color: var(--ink); font: inherit; font-weight: 700; cursor: pointer; }
-.note { margin: 0; color: var(--muted); font-size: var(--fs-small); }
+.signIn { min-height: 44px; padding: 0 16px; border: var(--hair); background: var(--paper); color: var(--ink); font: inherit; font-weight: 700; cursor: pointer; }
 .textButton { min-height: 44px; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-decoration: underline; cursor: pointer; }
+.hidden { display: none; }
+
+.chat { display: flex; flex-direction: column; gap: 0; min-width: 0; }
+.chat * { border-radius: 0; box-shadow: none; }
+
+/* The person's question: a gray band in bold body type. */
+.question { margin: 16px 0 0; padding: 8px 14px; background: var(--band); font-weight: 700; font-size: var(--fs-small); overflow-wrap: anywhere; }
+
+/* A margin note: a large condensed numeral, then the note's words. */
+.note { display: grid; grid-template-columns: 2.2em minmax(0, 1fr); column-gap: 12px; padding: 14px 0; border-bottom: var(--hair); }
+.noteResults { padding: 0 0 0 calc(2.2em + 12px); }
+.noteNumber { grid-row: 1 / span 2; font-family: var(--font-caps); font-weight: 900; font-size: clamp(40px, 4vw, 56px); line-height: 0.9; font-variant-numeric: lining-nums; }
+.noteText { margin: 0; overflow-wrap: anywhere; }
+.results { grid-column: 2; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.results:empty { display: none; }
+
+.unverified { background: none; color: inherit; text-decoration: underline dotted; text-underline-offset: 3px; }
+.unverifiedTag { margin-left: 4px; padding: 0 4px; border: var(--hair); color: var(--muted); font-size: 0.7em; text-transform: uppercase; vertical-align: 0.15em; }
+
+/* Laptop: the reference a leader starts from; the answer itself is open in the pane. */
+.reference { margin: 8px 0 0; font-size: var(--fs-small); }
+.referenceLine { margin: 0; }
+.open { white-space: nowrap; text-decoration: underline; text-underline-offset: 3px; }
+.code { font-family: var(--font-caps); font-weight: 700; font-variant-numeric: lining-nums tabular-nums; }
+
+.rows { margin: 8px 0 0; padding: 0; list-style: none; border-top: var(--hair); font-size: var(--fs-small); }
+.rows li { padding: 8px 0; border-bottom: var(--hair); }
+
+.passage { margin: 8px 0 0; padding-left: 12px; border-left: var(--rule); font-size: var(--fs-small); }
+.passage blockquote { margin: 0 0 4px; }
+.passage figcaption { color: var(--muted); }
+
+/* Phone: the table excerpt under the note, its row outlined in ink. */
+.excerpt { margin: 12px 0 0; padding: 10px; border: var(--hair); font-size: var(--fs-small); }
+.excerptTitle { margin: -10px -10px 8px; padding: 6px 10px; background: var(--band); font-family: var(--font-caps); font-weight: 700; }
+.excerptTable { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.excerptTable th, .excerptTable td { padding: 6px 8px; border: var(--hair); text-align: right; }
+.excerptTable th[scope="row"] { text-align: left; font-weight: 400; }
+.excerptTable thead th { font-weight: 700; }
+.markedRow { outline: 2px solid var(--ink); outline-offset: -2px; }
+.markedRow th[scope="row"] { font-weight: 700; }
+.source { margin: 8px 0 4px; }
+
+.busy, .failed { margin: 8px 0 0; color: var(--muted); font-size: var(--fs-small); }
+
+/* The question field at the column foot under a 2px rule. */
+.input { margin-top: 16px; padding-top: 12px; border-top: var(--rule); }
+.input textarea { width: 100%; min-height: 44px; padding: 10px 12px; border: var(--hair); background: var(--paper); color: var(--ink); font: inherit; resize: vertical; }
+.input button { min-width: 44px; min-height: 44px; border: var(--hair); background: var(--paper); color: var(--ink); }
+.blocked { margin: 12px 0 0; padding: 10px 12px; border: var(--hair); }
+.status { margin: 8px 0 0; color: var(--muted); font-size: var(--fs-small); }
+
+/* Laptop: the ink leader from the newest note's reference into the pane. */
+.leader { position: absolute; inset: 0; pointer-events: none; overflow: visible; z-index: 2; }
+
+@media (min-width: 1100px) and (orientation: landscape) {
+  .question, .reference, .rows, .passage, .status, .busy, .failed { font-size: clamp(14px, 1.05vw, 16px); }
+  .noteText { font-size: clamp(16px, 1.2vw, 18px); }
+}
+
+/* Phone screen frame, as Start here's. */
+.screen { max-width: min(1280px, 100%); min-height: 100vh; margin: 0 auto; padding-inline: var(--gutter); display: flex; flex-direction: column; }
+.screenMain { flex: 1; padding-bottom: 16px; }
+.side { text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 0.2em; }
