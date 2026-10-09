@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ASK_ROLES, examplesFor } from "@/lib/ask/examples";
-import { SAMPLE_QUESTION } from "@/ui/lib/askGuide";
+import { DEFAULT_SETTINGS } from "@/convex/settings";
+import { limitLine, SAMPLE_QUESTION } from "@/ui/lib/askGuide";
 import { askHref } from "@/ui/lib/askPrompt";
 import { NumberCard, type NumberResult } from "./AskCards";
 import { CreditFooter } from "./CreditFooter";
@@ -54,7 +55,7 @@ export function AskGuide({ sample }: { sample: NumberResult | null }) {
                 <mark className={ask.unverified} data-unverified>
                   1,234<span className={ask.unverifiedTag}>unverified</span>
                 </mark>{" "}
-                children.
+                homes.
               </p>
             </div>
           </div>
@@ -83,7 +84,7 @@ export function AskGuide({ sample }: { sample: NumberResult | null }) {
         <section className={styles.section} aria-labelledby="wont-heading">
           <h3 id="wont-heading" className={start.who}>WHAT ASK WON&apos;T DO</h3>
           <ul className={styles.wont}>{WONT.map((w) => <li key={w}>{w}</li>)}</ul>
-          <p>You need to sign in to ask. Each account gets 200 questions a day.</p>
+          <p>{limitLine(DEFAULT_SETTINGS)}</p>
         </section>
       </main>
       <CreditFooter />

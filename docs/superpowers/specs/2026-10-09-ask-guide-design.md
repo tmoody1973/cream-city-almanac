@@ -37,7 +37,7 @@ Masthead side "HOW TO USE ASK"; heading "HOW TO USE ASK".
    - **A NONPROFIT**: grant-ready figures for a neighborhood, what a table covers, a report's key takeaways.
    - **A CITIZEN**: the air lately, what data exists on a topic, how old the homes are, how to read the tables.
 4. **What Ask won't do**: guess or forecast figures; give opinions; reach data outside DYCU's catalog; remember a
-   conversation after the tab closes. 200 questions a day per account; sign-in required.
+   conversation after the tab closes. 30 questions a day per account, 200 with a newsroom email (convex/settings.ts); sign-in required.
 5. Footer as on every page.
 
 ## 5. The live sample

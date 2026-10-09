@@ -10,3 +10,7 @@ export async function loadSample<T extends { status: string }>(fetch: (args: typ
     return null;
   }
 }
+
+// The guide states Ask's real daily limits (convex/settings.ts): everyone's, and the newsroom accounts' higher one.
+export const limitLine = (s: { askDailyLimit: number; askNewsroomLimit: number }) =>
+  `You need to sign in to ask. Each account gets ${s.askDailyLimit} questions a day, or ${s.askNewsroomLimit} with a newsroom email.`;

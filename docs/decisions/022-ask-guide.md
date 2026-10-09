@@ -11,7 +11,7 @@
 
 For showing an answer: a live sample built from Ask's real parts; words only; or a screenshot (which goes stale and freezes numbers into a picture).
 
-**What we chose and why:** Option 1 with the live sample (Tarik, on Claude's recommendations). A page can teach reading an answer properly; the live sample always matches the app because it is the app's own card filled from the same public lookup, and it costs no AI call. Examples open Ask pre-filled rather than sent so nobody spends one of their 200 daily questions by accident. Sharing one list between the page and the report card means an example can't drift from what's tested: all 12 passed against the real model (39¢) before the page shipped.
+**What we chose and why:** Option 1 with the live sample (Tarik, on Claude's recommendations). A page can teach reading an answer properly; the live sample always matches the app because it is the app's own card filled from the same public lookup, and it costs no AI call. Examples open Ask pre-filled rather than sent so nobody spends one of their daily questions by accident (30 a day, 200 for newsroom emails). Sharing one list between the page and the report card means an example can't drift from what's tested: all 12 passed against the real model (39¢) before the page shipped.
 
 **What we gave up:** Upkeep: the examples need re-grading whenever Ask's instructions or tools change. The unverified-mark example uses a made-up figure, labeled as such; a careless reader could still notice a number that isn't real. The sample is one fixed question (Harambee, under 5, poverty), so it shows one kind of answer, not report passages or story angles.
 
