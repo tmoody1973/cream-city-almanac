@@ -1,10 +1,12 @@
 // A live City dataset's menu for counting: which column is the date, which are districts, the top values of each
 // category column (offense codes, request types), its row count and date range. Only what's here can be counted.
+// The City's SQL refuses casts and NULLIF, so dates are read as ISO text ("2026-06-16 14:51:00"), which sorts correctly.
 const DATE_NAMES = ["incident_date", "creationdate", "casedate", "date", "issue_date", "dateissued", "reportdate", "calldate"];
 const DISTRICT = /^(police_?district|ald(erman(ic)?)?_?(dist(rict)?)?|aldermanic_?district|ward|zip(_?code)?|zipcode)$/i;
 const PEOPLE = /owner_?name|owner_?mail|taxpayer|first_?name|last_?name|^name$|mail(ing)?_?addr/i;
 const NOT_CATEGORY = /(number|_nr|_num|key|_id|^id$|addr|address|location|lat|long|desc|name|comment|narrative|^x$|^y$)/i;
 const MAX_CATEGORIES = 6;
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}/;
 
 export interface ProfilePlan { dateColumn: string | null; districtColumns: string[]; categoryColumns: string[]; namesPeople: boolean }
 
@@ -20,13 +22,14 @@ export function planProfile(fields: { id: string; type: string }[]): ProfilePlan
 }
 
 export const quoteId = (s: string) => `"${s.replace(/"/g, '""')}"`;
-export const dateExpr = (col: string) => `NULLIF(${quoteId(col)},'')::timestamp`;
 
 export function profileSql(rid: string, plan: ProfilePlan) {
   const t = quoteId(rid);
   return {
     count: `SELECT COUNT(*) AS n FROM ${t}`,
-    range: plan.dateColumn ? `SELECT MIN(${dateExpr(plan.dateColumn)}) AS lo, MAX(${dateExpr(plan.dateColumn)}) AS hi FROM ${t}` : null,
+    range: plan.dateColumn
+      ? `SELECT MIN(${quoteId(plan.dateColumn)}) AS lo, MAX(${quoteId(plan.dateColumn)}) AS hi FROM ${t} WHERE ${quoteId(plan.dateColumn)} <> ''`
+      : null,
     tops: [...plan.districtColumns, ...plan.categoryColumns].map((c) => ({
       column: c,
       sql: `SELECT ${quoteId(c)} AS v, COUNT(*) AS n FROM ${t} GROUP BY ${quoteId(c)} ORDER BY n DESC LIMIT 200`,
@@ -45,11 +48,15 @@ export function assembleProfile(
   count: { n: number | string } | undefined, range: { lo: string | null; hi: string | null } | undefined,
   tops: { column: string; rows: { v: string | null; n: number | string }[] }[], now: number,
 ): CityProfile {
+  const iso = (d: string | null | undefined) => (d && ISO_DATE.test(d) ? d.slice(0, 10) : null);
+  const minDate = iso(range?.lo);
+  const maxDate = iso(range?.hi);
+  const hasDates = minDate !== null && maxDate !== null;
   return {
-    familyKey, resourceId, columns: fields.map((f) => ({ name: f.id, type: f.type })), dateColumn: plan.dateColumn,
+    familyKey, resourceId, columns: fields.map((f) => ({ name: f.id, type: f.type })), dateColumn: hasDates ? plan.dateColumn : null,
     districtColumns: plan.districtColumns,
     categories: tops.map((t) => ({ column: t.column, values: t.rows.filter((r) => r.v !== null && String(r.v).trim() !== "").map((r) => ({ value: String(r.v), count: Number(r.n) })) })),
-    rowCount: Number(count?.n ?? 0), minDate: range?.lo?.slice(0, 10) ?? null, maxDate: range?.hi?.slice(0, 10) ?? null,
+    rowCount: Number(count?.n ?? 0), minDate: hasDates ? minDate : null, maxDate: hasDates ? maxDate : null,
     namesPeople: plan.namesPeople, signature: fields.map((f) => f.id).sort().join(","), updatedAt: now,
   };
 }
