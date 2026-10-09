@@ -61,6 +61,14 @@ test.describe("signed in", () => {
     await expect(page.locator("[data-card=preview]")).toContainText("Daily Air Quality", { timeout: 30_000 });
   });
 
+  test("a report passage reads as lines, lists and tables, not one run of text", async ({ page }) => {
+    await ask(page, "What did the Harambee report say?");
+    const passage = page.locator("[data-card=passage]").first();
+    await expect(passage).toBeVisible({ timeout: 30_000 });
+    expect(await passage.locator("p, li, tr").count()).toBeGreaterThan(1);
+    await expect(passage).not.toContainText("| --- |");
+  });
+
   test("a figure in the model's words is marked unverified", async ({ page }) => {
     await ask(page, "unverified please");
     await expect(page.locator("mark[data-unverified]")).toContainText("608", { timeout: 30_000 });

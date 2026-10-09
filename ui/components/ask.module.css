@@ -41,6 +41,14 @@
 
 .passage { margin: 8px 0 0; padding: 10px 12px; border: var(--hair); font-size: var(--fs-small); }
 .passage blockquote { margin: 0 0 4px; }
+.passageText p, .passageText ul { margin: 0 0 6px; }
+.passageText ul { padding-left: 1.2em; }
+.passageText hr { margin: 8px 0; border: 0; border-top: var(--hair); }
+.passageScroll { overflow-x: auto; margin: 4px 0 8px; }
+.passageScroll table { border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.passageScroll th, .passageScroll td { padding: 4px 8px; border: var(--hair); white-space: nowrap; text-align: right; }
+.passageScroll th[scope="row"] { text-align: left; font-weight: 400; white-space: normal; min-width: 10em; }
+.passageScroll tr:first-child td, .passageScroll tr:first-child th { background: var(--band); }
 .passage figcaption { color: var(--muted); }
 
 /* Phone: the table excerpt under the note, its row outlined in ink. */

@@ -2,6 +2,7 @@
 import { useRenderTool } from "@copilotkit/react-core/v2";
 import { Fragment, useEffect } from "react";
 import { z } from "zod";
+import { passageBlocks } from "@/ui/lib/askPassage";
 import { formatPortraitMargin, formatPortraitNumber } from "@/ui/lib/portrait";
 import { LivePreview } from "./LivePreview";
 import { ProvenanceTag } from "./ProvenanceTag";
@@ -46,6 +47,33 @@ function OpenLink({ code, query = "", onOpen, label, anchor }: { code: string; q
     >
       {label ?? `Open ${code}`} →
     </a>
+  );
+}
+
+// A report passage as DYCU wrote it: paragraphs, bullet lists, tables and rules (Firecrawl's markdown, rendered).
+function PassageText({ text }: { text: string }) {
+  return (
+    <div className={styles.passageText}>
+      {passageBlocks(text).map((b, i) =>
+        b.kind === "p" ? (
+          <p key={i}>{b.text}</p>
+        ) : b.kind === "list" ? (
+          <ul key={i}>{b.items.map((item, j) => <li key={j}>{item}</li>)}</ul>
+        ) : b.kind === "rule" ? (
+          <hr key={i} />
+        ) : (
+          <div key={i} className={styles.passageScroll} tabIndex={0} role="region" aria-label="Table from the report, scroll sideways for more">
+            <table>
+              <tbody>
+                {b.rows.map((row, j) => (
+                  <tr key={j}>{row.map((cell, k) => (k === 0 ? <th key={k} scope="row">{cell}</th> : <td key={k}>{cell}</td>))}</tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ),
+      )}
+    </div>
   );
 }
 
@@ -167,7 +195,7 @@ export function AskCards({ onOpen }: { onOpen?: (search: string) => void }) {
       <>
         {r.passages.map((p) => (
           <figure key={p.quote} className={styles.passage} data-card="passage">
-            <blockquote>{p.quote}</blockquote>
+            <blockquote><PassageText text={p.quote} /></blockquote>
             <figcaption>
               {p.report}, <i>{p.section}</i> <OpenLink code={p.code} onOpen={onOpen} />
             </figcaption>
