@@ -29,10 +29,10 @@ function Question({ message }: { message: { content?: unknown } }) {
 }
 
 // The model's words. A figure in them is marked unverified: the cards and the open sheet carry every number.
-function Prose({ text }: { text: string }) {
+function Prose({ text, data }: { text: string; data: string }) {
   return (
     <p className={styles.noteText}>
-      {proseSegments(text).map((s, i) =>
+      {proseSegments(text, data).map((s, i) =>
         s.unverified ? (
           <mark key={i} className={styles.unverified} data-unverified title="This number didn't come from the data">
             {s.text}
@@ -50,12 +50,14 @@ function Prose({ text }: { text: string }) {
 function Note({ message, messages = [] }: { message: Msg & { toolCalls?: unknown[] }; messages?: Msg[] }) {
   const text = typeof message.content === "string" ? message.content.trim() : "";
   const n = noteNumbers(messages).get(message.id);
+  // What the tools returned in this conversation: a quoted label in the note must come from it.
+  const data = messages.filter((m) => m.role === "tool").map((m) => (typeof m.content === "string" ? m.content : "")).join("\n");
   return (
     <div className={text ? styles.note : styles.noteResults}>
       {text && (
         <>
           <span className={styles.noteNumber} aria-hidden="true">{n}</span>
-          <Prose text={text} />
+          <Prose text={text} data={data} />
         </>
       )}
       <div className={styles.results}>

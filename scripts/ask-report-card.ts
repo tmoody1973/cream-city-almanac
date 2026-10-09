@@ -37,7 +37,7 @@ for (const [i, item] of ASK_QUESTIONS.entries()) {
   const hits = calls.filter((c) => expectedTools.includes(c.toolName as never));
   const hit = hits.find((c) => Object.values(item.expect).every((v) => JSON.stringify(c.output).includes(String(v))));
   const fieldsOk = Boolean(hit);
-  const flaggedWords = proseSegments(r.text).filter((s) => s.unverified).map((s) => s.text);
+  const flaggedWords = proseSegments(r.text, JSON.stringify(calls.map((c) => c.output))).filter((s) => s.unverified).map((s) => s.text);
   const unverified = flaggedWords.length;
   const ok = fieldsOk && unverified === 0;
   if (ok) passed++;

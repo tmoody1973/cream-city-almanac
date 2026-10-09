@@ -22,10 +22,12 @@ describe("proseSegments", () => {
     expect(flagged("It covers 2023, 2024 and 2025.")).toEqual([]);
     expect(flagged("About 6,520 people.")).toEqual(["6,520"]);
   });
-  it("allows numbers inside a quoted row label, not a quoted figure", () => {
-    expect(flagged('Harambee\'s "Under 5 years" row is below.')).toEqual([]);
-    expect(flagged("The \u201cIncome in the past 12 months\u201d row.")).toEqual([]);
-    expect(flagged('The estimate is "608".')).toEqual(["608"]);
+  it("allows numbers inside a quoted row label the data returned, not a quoted figure", () => {
+    const data = JSON.stringify(["Under 5 years", "Income in the past 12 months"]);
+    const check = (t: string) => proseSegments(t, data).filter((s) => s.unverified).map((s) => s.text);
+    expect(check('Harambee\'s "Under 5 years" row is below.')).toEqual([]);
+    expect(check("The \u201cIncome in the past 12 months\u201d row.")).toEqual([]);
+    expect(check('The estimate is "608".')).toEqual(["608"]);
   });
   it("treats digits glued to letters as identifiers, not figures", () => {
     expect(flagged("Census tables B17001, S1501 and DP04 cover it, with PM2.5 readings.")).toEqual([]);
@@ -40,6 +42,13 @@ describe("proseSegments", () => {
   it("still flags figures that sit near those words", () => {
     expect(flagged("18% of adults and 6,520 people aged 20 to 64.")).toEqual(["18%", "6,520"]);
     expect(flagged("608 children under 5 years.")).toEqual(["608", "5"]);
+  });
+  it("trusts a quoted label only when the data returned it word for word", () => {
+    const data = JSON.stringify({ label: "Under 5 years", rows: ["Income in the past 12 months below poverty level"] });
+    const check = (t: string) => proseSegments(t, data).filter((s) => s.unverified).map((s) => s.text);
+    expect(check('The "Under 5 years" row is open.')).toEqual([]);
+    expect(check('Harambee has "608 children under 5" in poverty.')).toEqual(["608", "5"]);
+    expect(check('A 5" sign and 42% are poor in "Under 5 years".')).toEqual(["5", "42%"]);
   });
   it("keeps the text intact", () => {
     const t = "Between 2021 and 2023 it rose by 4 points.";
