@@ -25,7 +25,7 @@ export const countContext = internalQuery({
 });
 
 export type CountResult =
-  | { status: "ok"; code: string; name: string; count: number; groups: { label: string; count: number }[]; other: number; otherLabel: "Earlier" | "Other" | null; period: string; filters: string[]; futureExcluded: number; caveat: string | null; coverage: { min: string | null; max: string | null } }
+  | { status: "ok"; code: string; name: string; count: number; groups: { label: string; count: number }[]; other: number; otherLabel: "Earlier" | "Other" | null; overlap: boolean; period: string; filters: string[]; futureExcluded: number; caveat: string | null; coverage: { min: string | null; max: string | null } }
   | { status: "choose"; code: string; name: string; column: string; asked: string; choices: string[] }
   | { status: "bad-column"; code: string; name: string; column: string; columns: string[] }
   | { status: "bad-dates"; code: string; name: string; from: string; to: string }
@@ -69,11 +69,12 @@ export const countRecords = action({
       const [future] = built.futureSql ? await datastoreSql<{ n: string }>(built.futureSql) : [{ n: "0" }];
       const count = Number(total?.n ?? 0);
       const shown = groups.reduce((s, g) => s + g.count, 0);
-      const capped = rows.length === MAX_GROUPS;
+      // Overlapping groups (an incident with two offenses is in both) can't be summed, so no remainder is shown.
+      const capped = rows.length === MAX_GROUPS && !built.overlap;
       return {
         status: "ok" as const, code: data.code, name, count, groups,
         other: capped ? Math.max(0, count - shown) : 0,
-        otherLabel: capped ? (byDate ? "Earlier" : "Other") : null,
+        otherLabel: capped ? (byDate ? "Earlier" : "Other") : null, overlap: built.overlap,
         period: built.period, filters: built.filterLabels, futureExcluded: Number(future?.n ?? 0),
         caveat: data.caveat, coverage: { min: profile.minDate, max: profile.maxDate },
       };

@@ -20,7 +20,7 @@ import {
 import { cityRepresentative, groupCityItems } from "./lib/cityFamilies";
 import { chunkMarkdown } from "./lib/chunk";
 import { fetchCityCatalog, datastoreFields, datastoreSql } from "./lib/ckan";
-import { assembleProfile, planProfile, profileSql } from "./lib/cityProfile";
+import { assembleProfile, isMultiValued, planProfile, profileSql } from "./lib/cityProfile";
 import { HUB_FEED_URL, parseDcat } from "./lib/dcat";
 import { INVENTORY_XLSX_URL, isSuspectLink, mapDictionaries, readInventory, unlinkedTabs, type Inventory } from "./lib/dictionary";
 import { groupItems, hubCounts, isPdfFamily, isSpreadsheetFamily, reportDelays, toFamilyInput } from "./lib/families";
@@ -70,7 +70,10 @@ async function profileCity(ctx: ActionCtx, familyKey: string, rid: string): Prom
     const [count] = await datastoreSql<{ n: string }>(q.count);
     const [range] = q.range ? await datastoreSql<{ lo: string | null; hi: string | null }>(q.range) : [undefined];
     const tops = [];
-    for (const t of q.tops) tops.push({ column: t.column, rows: await datastoreSql<{ v: string | null; n: string }>(t.sql) });
+    for (const t of q.tops) {
+      const rows = await datastoreSql<{ v: string | null; n: string }>(t.sql);
+      tops.push(isMultiValued(rows) ? { column: t.column, rows: await datastoreSql<{ v: string | null; n: string }>(t.multiSql), multi: true } : { column: t.column, rows });
+    }
     await ctx.runMutation(internal.buildStore.replaceCityProfile, { profile: assembleProfile(familyKey, rid, fields, plan, count, range, tops, Date.now()) });
   } catch (e) {
     console.error(`City profile failed for ${familyKey}: ${message(e)}`);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assembleProfile, planProfile, profileSql } from "../../convex/lib/cityProfile";
+import { assembleProfile, isMultiValued, planProfile, profileSql } from "../../convex/lib/cityProfile";
 
 const FIELDS = [
   { id: "Case_Number", type: "text" }, { id: "Incident_Date", type: "text" }, { id: "Police_District", type: "text" },
@@ -46,6 +46,19 @@ describe("City column profiles", () => {
     expect(p).toMatchObject({ rowCount: 3, minDate: "2024-01-01", maxDate: "2026-10-08", categories: [{ column: "Police_District", values: [{ value: "6", count: 2 }] }, { column: "Offense_All", values: [{ value: "240", count: 3 }] }] });
     expect(p.dateColumn).toBe("Incident_Date");
     expect(p.signature).toBe("Address_Latitude,Case_Number,Incident_Date,Location_All,Offense_All,Police_District");
+  });
+  it("has an unnest query to profile a ';'-separated column by single codes (C1)", () => {
+    const q = profileSql("87843297-a6fa-46d4-ba5d-cb342fb2d3bb", plan);
+    expect(q.tops[1].multiSql).toBe(`SELECT unnest(string_to_array("Offense_All", ';')) AS v, COUNT(*) AS n FROM "87843297-a6fa-46d4-ba5d-cb342fb2d3bb" GROUP BY v ORDER BY n DESC LIMIT 200`);
+    expect(isMultiValued([{ v: "240", n: 1 }, { v: "13A;120", n: 1 }])).toBe(true);
+    expect(isMultiValued([{ v: "240", n: 1 }, { v: null, n: 1 }])).toBe(false);
+  });
+  it("marks a multi-valued category in the assembled profile (C1)", () => {
+    const p = assembleProfile("city:x", "rid", FIELDS, plan, { n: 3 }, undefined, [
+      { column: "Police_District", rows: [{ v: "6", n: 2 }] }, { column: "Offense_All", rows: [{ v: "13A", n: 2 }, { v: "120", n: 1 }], multi: true },
+    ], 1000);
+    expect(p.categories[0]).not.toHaveProperty("multi");
+    expect(p.categories[1]).toEqual({ column: "Offense_All", values: [{ value: "13A", count: 2 }, { value: "120", count: 1 }], multi: true });
   });
   it("drops the date column when the range is not ISO text", () => {
     const p = assembleProfile("city:x", "rid", FIELDS, plan, { n: 3 }, { lo: "10/08/2026", hi: "10/09/2026" }, [], 1000);

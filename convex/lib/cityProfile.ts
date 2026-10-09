@@ -36,20 +36,25 @@ export function profileSql(rid: string, plan: ProfilePlan) {
     tops: [...plan.districtColumns, ...plan.categoryColumns].map((c) => ({
       column: c,
       sql: `SELECT ${quoteId(c)} AS v, COUNT(*) AS n FROM ${t} GROUP BY ${quoteId(c)} ORDER BY n DESC LIMIT 200`,
+      // For a ';'-separated column ("13A;120" is one incident with two offenses): its single values.
+      multiSql: `SELECT unnest(string_to_array(${quoteId(c)}, ';')) AS v, COUNT(*) AS n FROM ${t} GROUP BY v ORDER BY n DESC LIMIT 200`,
     })),
   };
 }
 
+// A column holds several values per record when any of its top values is ';'-separated.
+export const isMultiValued = <R extends { v: string | null }>(rows: R[]) => rows.some((r) => String(r.v ?? "").includes(";"));
+
 export interface CityProfile {
   familyKey: string; resourceId: string; columns: { name: string; type: string }[]; dateColumn: string | null;
-  districtColumns: string[]; categories: { column: string; values: { value: string; count: number }[] }[];
+  districtColumns: string[]; categories: { column: string; values: { value: string; count: number }[]; multi?: boolean }[];
   rowCount: number; minDate: string | null; maxDate: string | null; namesPeople: boolean; signature: string; updatedAt: number;
 }
 
 export function assembleProfile(
   familyKey: string, resourceId: string, fields: { id: string; type: string }[], plan: ProfilePlan,
   count: { n: number | string } | undefined, range: { lo: string | null; hi: string | null } | undefined,
-  tops: { column: string; rows: { v: string | null; n: number | string }[] }[], now: number,
+  tops: { column: string; rows: { v: string | null; n: number | string }[]; multi?: boolean }[], now: number,
 ): CityProfile {
   const iso = (d: string | null | undefined) => (d && ISO_DATE.test(d) ? d.slice(0, 10) : null);
   const minDate = iso(range?.lo);
@@ -58,7 +63,11 @@ export function assembleProfile(
   return {
     familyKey, resourceId, columns: fields.map((f) => ({ name: f.id, type: f.type })), dateColumn: hasDates ? plan.dateColumn : null,
     districtColumns: plan.districtColumns,
-    categories: tops.map((t) => ({ column: t.column, values: t.rows.filter((r) => r.v !== null && String(r.v).trim() !== "").map((r) => ({ value: String(r.v), count: Number(r.n) })) })),
+    categories: tops.map((t) => ({
+      column: t.column,
+      values: t.rows.filter((r) => r.v !== null && String(r.v).trim() !== "").map((r) => ({ value: String(r.v), count: Number(r.n) })),
+      ...(t.multi ? { multi: true } : {}),
+    })),
     rowCount: Number(count?.n ?? 0), minDate: hasDates ? minDate : null, maxDate: hasDates ? maxDate : null,
     namesPeople: plan.namesPeople, signature: fields.map((f) => f.id).sort().join(","), updatedAt: now,
   };

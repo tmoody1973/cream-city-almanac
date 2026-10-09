@@ -165,6 +165,7 @@ function CountCard({ r, onOpen }: { r: CountOk; onOpen: Open }) {
           </tbody>
         </table>
       )}
+      {r.overlap && r.groups.length > 0 && <p className={styles.source}>An incident can count in more than one group.</p>}
       {r.futureExcluded > 0 && <p className={styles.source}>{r.futureExcluded.toLocaleString("en-US")} records dated in the future were left out.</p>}
       {r.caveat && <p className={styles.source}>{r.caveat} <ProvenanceTag source="AI" /></p>}
       <OpenLink code={r.code} onOpen={onOpen} label="Open the data" />

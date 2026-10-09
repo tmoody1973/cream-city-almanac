@@ -113,7 +113,7 @@ export const vCityProfile = v.object({
   dateColumn: v.union(v.string(), v.null()),
   districtColumns: v.array(v.string()),
   categories: v.array(
-    v.object({ column: v.string(), values: v.array(v.object({ value: v.string(), count: v.number() })) }),
+    v.object({ column: v.string(), values: v.array(v.object({ value: v.string(), count: v.number() })), multi: v.optional(v.boolean()) }),
   ),
   rowCount: v.number(),
   minDate: v.union(v.string(), v.null()),

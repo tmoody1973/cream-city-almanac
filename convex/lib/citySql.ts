@@ -8,11 +8,13 @@ import { isOffenseColumn, offenseCodes, offenseName } from "./nibrs";
 // ("2026-06-16 14:51:00"), which sorts correctly as text, so the period filter is a plain text comparison.
 export const MAX_GROUPS = 24;
 const RID = /^[0-9a-f-]{36}$/;
+// Only a plain code ("120", "23H") goes inside a LIKE pattern, so no value can carry a wildcard or a quote into it.
+const LIKE_SAFE = /^[0-9A-Z]{2,4}$/;
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 export interface CountArgs { from?: string; to?: string; filters?: { column: string; values: string[] }[]; groupBy?: string }
 export type Built =
-  | { ok: true; totalSql: string; groupSql: string | null; futureSql: string | null; period: string; filterLabels: string[]; groupLabel: string | null }
+  | { ok: true; totalSql: string; groupSql: string | null; futureSql: string | null; period: string; filterLabels: string[]; groupLabel: string | null; overlap: boolean }
   | { ok: false; status: "choose"; column: string; asked: string; choices: string[] }
   | { ok: false; status: "bad-column"; column: string; columns: string[] }
   | { ok: false; status: "bad-dates"; from: string; to: string };
@@ -50,6 +52,9 @@ export function buildCount(p: CityProfile, a: CountArgs, today: string): Built {
       const exact = known.get(asked.trim().toLowerCase());
       const viaOffense = isOffenseColumn(cat.column) ? offenseCodes(asked).filter((c) => known.has(c.toLowerCase())) : [];
       const hits = exact ? [exact] : viaOffense;
+      if (cat.multi && hits.some((h) => !LIKE_SAFE.test(h))) {
+        return { ok: false, status: "choose", column: cat.column, asked, choices: cat.values.filter((v) => LIKE_SAFE.test(v.value)).slice(0, 8).map((v) => groupLabelFor(cat.column, v.value)) };
+      }
       if (hits.length === 0) {
         const word = asked.trim().toLowerCase();
         const near = word ? cat.values.filter((v) => groupLabelFor(cat.column, v.value).toLowerCase().includes(word)).map((v) => groupLabelFor(cat.column, v.value)) : [];
@@ -58,7 +63,10 @@ export function buildCount(p: CityProfile, a: CountArgs, today: string): Built {
       picked.push(...hits);
     }
     const uniq = [...new Set(picked)];
-    where.push(`${quoteId(cat.column)} IN (${uniq.map(lit).join(", ")})`);
+    // A ';'-separated column ("13A;120") matches a record holding the code anywhere in its list.
+    where.push(cat.multi
+      ? `(${uniq.map((v) => `';' || ${quoteId(cat.column)} || ';' LIKE ${lit(`%;${v};%`)}`).join(" OR ")})`
+      : `${quoteId(cat.column)} IN (${uniq.map(lit).join(", ")})`);
     filterLabels.push(...uniq.map((v) => filterLabel(cat.column, v, p.districtColumns)));
   }
 
@@ -81,6 +89,7 @@ export function buildCount(p: CityProfile, a: CountArgs, today: string): Built {
 
   let groupSql: string | null = null;
   let groupLabel: string | null = null;
+  let overlap = false;
   if (a.groupBy === "month" || a.groupBy === "year") {
     if (p.dateColumn) {
       groupSql = `SELECT left(${quoteId(p.dateColumn)}, ${a.groupBy === "month" ? 7 : 4}) AS g, COUNT(*) AS n FROM ${table}${whereSql} GROUP BY g ORDER BY g DESC LIMIT ${MAX_GROUPS}`;
@@ -89,8 +98,11 @@ export function buildCount(p: CityProfile, a: CountArgs, today: string): Built {
   } else if (a.groupBy) {
     const cat = menu.get(a.groupBy.toLowerCase());
     if (!cat) return { ok: false, status: "bad-column", column: a.groupBy, columns: ["month", "year", ...p.categories.map((c) => c.column)] };
-    groupSql = `SELECT ${quoteId(cat.column)} AS g, COUNT(*) AS n FROM ${table}${whereSql} GROUP BY g ORDER BY n DESC LIMIT ${MAX_GROUPS}`;
+    // A record with several values counts once in each of its groups, so the groups overlap.
+    const g = cat.multi ? `unnest(string_to_array(${quoteId(cat.column)}, ';'))` : quoteId(cat.column);
+    groupSql = `SELECT ${g} AS g, COUNT(*) AS n FROM ${table}${whereSql} GROUP BY g ORDER BY n DESC LIMIT ${MAX_GROUPS}`;
     groupLabel = cat.column;
+    overlap = Boolean(cat.multi);
   }
-  return { ok: true, totalSql, groupSql, futureSql, period, filterLabels, groupLabel };
+  return { ok: true, totalSql, groupSql, futureSql, period, filterLabels, groupLabel, overlap };
 }

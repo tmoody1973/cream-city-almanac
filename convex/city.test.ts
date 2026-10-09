@@ -17,7 +17,7 @@ async function seed(withProfile = true) {
   await t.run(async (ctx) => {
     await ctx.db.insert("families", { key: "city:nibrs-crime-data", code: "P01", name: "NIBRS Crime Data", kind: "dataset", topic: "Public Safety", keywords: [], places: ["City"], years: [], latestModified: "2023-01-05", baseSearchText: "", searchText: "", dictionaryTab: null, source: "city", live: true });
     await ctx.db.insert("cards", { familyKey: "city:nibrs-crime-data", inputHash: "h", explainer: "x", explainerProvenance: "AI", hubSummary: "", glossary: [], caveats: ["These are reported incidents, not all crime."], storyAngles: [], basic: false, embedding: new Array(1536).fill(0) });
-    if (withProfile) await ctx.db.insert("cityProfiles", { familyKey: "city:nibrs-crime-data", resourceId: RID, columns: [], dateColumn: "Incident_Date", districtColumns: ["Police_District"], categories: [{ column: "Police_District", values: [{ value: "6", count: 5 }] }, { column: "Offense_All", values: [{ value: "120", count: 5 }] }], rowCount: 10, minDate: "2024-01-01", maxDate: "2026-10-08", namesPeople: false, signature: "s", updatedAt: 0 });
+    if (withProfile) await ctx.db.insert("cityProfiles", { familyKey: "city:nibrs-crime-data", resourceId: RID, columns: [], dateColumn: "Incident_Date", districtColumns: ["Police_District"], categories: [{ column: "Police_District", values: [{ value: "6", count: 5 }] }, { column: "Offense_All", values: [{ value: "120", count: 5 }, { value: "13A", count: 3 }], multi: true }], rowCount: 10, minDate: "2024-01-01", maxDate: "2026-10-08", namesPeople: false, signature: "s", updatedAt: 0 });
   });
   return t;
 }
@@ -37,6 +37,17 @@ describe("countRecords", () => {
     const cols = Array.from({ length: 24 }, () => ({ g: "6", n: "1" }));
     installFakeFetch({ citySql: (sql) => sql.includes("AS g") ? cols : sql.includes("> '") ? [{ n: "0" }] : [{ n: "40" }] });
     expect(await t.withIdentity(reader).action(api.city.countRecords, { code: "P01", groupBy: "Police_District" })).toMatchObject({ status: "ok", other: 16, otherLabel: "Other" });
+  });
+  it("counts a multi-offense incident under each of its offenses, and never sums an 'Other' for overlapping groups (C1)", async () => {
+    const t = await seed();
+    // One incident, "13A;120": a robbery filter matches it, and grouping by offense lists both of its codes.
+    installFakeFetch({ citySql: (sql) => (sql.includes("unnest(") ? Array.from({ length: 24 }, (_, i) => ({ g: i === 0 ? "13A" : i === 1 ? "120" : `9${i}`, n: "1" })) : sql.includes("> '") ? [{ n: "0" }] : sql.includes("LIKE '%;120;%'") ? [{ n: "1" }] : [{ n: "0" }]) });
+    const robbery = await t.withIdentity(reader).action(api.city.countRecords, { code: "P01", filters: [{ column: "Offense_All", values: ["robbery"] }] });
+    expect(robbery).toMatchObject({ status: "ok", count: 1 });
+    const grouped = await t.withIdentity(reader).action(api.city.countRecords, { code: "P01", filters: [{ column: "Offense_All", values: ["robbery"] }], groupBy: "Offense_All" });
+    expect(grouped).toMatchObject({ status: "ok", count: 1, other: 0, otherLabel: null, overlap: true });
+    if (grouped.status !== "ok") throw new Error("expected ok");
+    expect(grouped.groups.slice(0, 2)).toEqual([{ label: "Aggravated Assault", count: 1 }, { label: "Robbery", count: 1 }]);
   });
   it("offers choices instead of guessing", async () => {
     const t = await seed();

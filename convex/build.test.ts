@@ -202,7 +202,8 @@ const crimeFake = () =>
     citySql: (sql) =>
       sql.startsWith("SELECT COUNT(*)") ? [{ n: "110461" }]
         : sql.includes("MIN(") ? [{ lo: "2024-01-01T00:00:00", hi: "2026-10-08T00:00:00" }]
-        : sql.includes('"Offense_All" AS v') ? [{ v: "240", n: "13619" }]
+        : sql.includes("unnest(") ? [{ v: "13A", n: "9" }, { v: "120", n: "4" }]
+        : sql.includes('"Offense_All" AS v') ? [{ v: "240", n: "13619" }, { v: "13A;120", n: "4" }]
         : [{ v: "6", n: "500" }],
   });
 const crimeFamily = (t: TestConvex<typeof schema>) =>
@@ -217,6 +218,9 @@ describe("City profiles", () => {
     await t.action(internal.build.processFamily, { buildId, familyKey: CRIME });
     const p = await t.run((ctx) => ctx.db.query("cityProfiles").withIndex("by_family", (q) => q.eq("familyKey", CRIME)).first());
     expect(p).toMatchObject({ rowCount: 110461, dateColumn: "Incident_Date", districtColumns: ["Police_District"] });
+    // "13A;120" is one incident with two offenses: the menu holds single codes, profiled through unnest (C1).
+    expect(p!.categories.find((c) => c.column === "Offense_All")).toEqual({ column: "Offense_All", values: [{ value: "13A", count: 9 }, { value: "120", count: 4 }], multi: true });
+    expect(p!.categories.find((c) => c.column === "Police_District")).not.toHaveProperty("multi");
     expect((await crimeFamily(t))!.latestModified).toBe(before);
   });
 
