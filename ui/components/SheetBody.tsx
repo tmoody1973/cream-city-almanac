@@ -113,10 +113,15 @@ export function SheetBody({ sheet, headingId, focus }: { sheet: SheetData; headi
             </section>
           )}
 
+          {sheet.city?.namesPeople && (
+            <section className={styles.section}>
+              <p className={styles.note}>Names private individuals. Shown as the City publishes it.</p>
+            </section>
+          )}
+
           {sheet.city?.datastoreId && (
             <section className={styles.section}>
               <h3 className={styles.heading}>LIVE PREVIEW</h3>
-              {sheet.city.namesPeople && <p className={styles.note}>Names private individuals. Shown as the City publishes it.</p>}
               <CityPreview datastoreId={sheet.city.datastoreId} dateColumn={sheet.city.dateColumn} />
             </section>
           )}
