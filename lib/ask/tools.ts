@@ -37,13 +37,13 @@ export function askTools(b: AskBackend): AskTool[] {
     },
     {
       name: "showDataset",
-      description: "Show one dataset's sheet: what it measures, where and when, and its caveats.",
+      description: "Show one dataset's sheet: what it measures, where and when, its caveats, and the story angles on its sheet. Use it before suggesting story angles that draw on a dataset.",
       parameters: z.object({ code }),
       execute: async ({ code: c }: { code: string }) => {
         const wanted = c.trim().toUpperCase();
         const s = await b.sheet(wanted);
         if (!s) return { status: "not-found", code: wanted };
-        return { status: "ok", code: s.family.code, name: s.family.name, places: s.family.places, years: s.family.years, explainer: s.card?.explainer ?? null, caveats: s.card?.caveats ?? [] };
+        return { status: "ok", code: s.family.code, name: s.family.name, places: s.family.places, years: s.family.years, explainer: s.card?.explainer ?? null, caveats: s.card?.caveats ?? [], storyAngles: s.card?.storyAngles ?? [] };
       },
     },
     {

@@ -93,7 +93,18 @@ Leaders and outlines are ink, never red (red is DYCU's teaching voice, not the A
 
 ## 8. The prose number check
 
-The model is instructed never to write figures in its own sentences ("Harambee's poverty-by-age table is below"), because the cards carry every number. A check on each answer marks any number in the model's text as unverified (dotted underline and an "unverified" tag) unless it is a four-digit year (1900–2099) or a dataset code (a letter and two digits, like N03). It does not try to match numbers against data: under this rule, any other number in prose is already wrong.
+The model is instructed never to write figures in its own sentences ("Harambee's poverty-by-age table is open, with your row marked"), because the cards and the open sheet carry every number. A check on each answer marks any number in the model's text as unverified (dotted underline and an "unverified" tag) unless it is:
+
+- a four-digit year (1900–2099) or a dataset code (a letter and two digits, like N03);
+- an identifier with letters glued to its digits (Census table B17001, PM2.5);
+- inside a quoted row label ("Under 5 years"); a quoted bare figure ("608") still flags;
+- a definition (Tarik, 2026-10-08): an age band ("ages 20 to 64", "18 and older"), a survey period ("5-year"), or a table number ("Table 11").
+
+It does not match numbers against data: under this rule, any other number in prose is wrong.
+
+## 8a. Story angles (Tarik, 2026-10-08; decision 020)
+
+Ask also helps reporters find stories. Asked for angles, it reads the datasets first (`showDataset` returns each one's caveats and the story angles on its sheet), then suggests up to three angles of its own as questions, names the datasets each draws on by code, uses their caveats to avoid comparisons the data can't support, and labels them as suggestions to check, not findings. Angles follow every number rule. They are the one list a reply may contain.
 
 ## 9. When things break
 

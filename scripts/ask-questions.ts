@@ -25,4 +25,7 @@ export const ASK_QUESTIONS: AskQuestion[] = [
   { q: "Which neighborhood has the most renters?", tool: "searchCatalog", expect: {} },
   { q: "Educational attainment in Harambee", tool: "getNumber", expect: { slug: "educational-attainment" } },
   { q: "Race and ethnicity in Lincoln Park", tool: "getNumber", expect: { slug: "race-and-ethnicity" } },
+  // Story angles: grounded in the datasets' sheets (showDataset), naming the codes they draw on, no figures.
+  { q: "Give me story angles about old housing and health in Milwaukee", tool: "showDataset", expect: { code: "H05" } },
+  { q: "What stories could I do with the daily air quality data?", tool: "showDataset", expect: { code: "V02" } },
 ];

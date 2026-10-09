@@ -27,7 +27,17 @@ describe("proseSegments", () => {
   });
   it("treats digits glued to letters as identifiers, not figures", () => {
     expect(flagged("Census tables B17001, S1501 and DP04 cover it, with PM2.5 readings.")).toEqual([]);
-    expect(flagged("Adults 18 and older.")).toEqual(["18"]);
+    expect(flagged("Adults over 18.")).toEqual(["18"]);
+  });
+  it("allows definitions: age bands, survey periods and table numbers", () => {
+    expect(flagged("Adults 18 and older, ages 20 to 64, people aged 65 and over.")).toEqual([]);
+    expect(flagged("Ages 20\u201364 and ages 5-17.")).toEqual([]);
+    expect(flagged("American Community Survey 5-year estimates, a 12-month window.")).toEqual([]);
+    expect(flagged("See Table 11 and table 3.")).toEqual([]);
+  });
+  it("still flags figures that sit near those words", () => {
+    expect(flagged("18% of adults and 6,520 people aged 20 to 64.")).toEqual(["18%", "6,520"]);
+    expect(flagged("608 children under 5 years.")).toEqual(["608", "5"]);
   });
   it("keeps the text intact", () => {
     const t = "Between 2021 and 2023 it rose by 4 points.";
@@ -51,6 +61,11 @@ describe("Ask tools", () => {
     const r = (await tool("searchCatalog").execute({ query: "asthma" })) as { rows: unknown[] };
     expect(r.rows).toHaveLength(5);
     expect(r.rows[0]).toEqual({ code: "W00", name: "Set 0", places: ["City"], years: [2023] });
+  });
+  it("gives the model a dataset's caveats and its sheet's story angles to ground new angles", async () => {
+    const angles = { ...backend, sheet: async () => ({ family: { code: "H05", name: "Housing Built Before 1950", places: ["County"], years: [2024] }, members: [], card: { explainer: "e", caveats: ["County only."], storyAngles: ["Which tracts have the oldest housing?"], glossary: [] } }) as never };
+    const r = await askTools(angles).find((t) => t.name === "showDataset")!.execute({ code: "h05" });
+    expect(r).toMatchObject({ status: "ok", code: "H05", caveats: ["County only."], storyAngles: ["Which tracts have the oldest housing?"] });
   });
   it("says when a dataset code is unknown", async () => {
     expect(await tool("showDataset").execute({ code: "zz9" })).toEqual({ status: "not-found", code: "ZZ9" });
