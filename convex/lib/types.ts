@@ -1,6 +1,8 @@
 export type HubKind = "dataset" | "document" | "app" | "page";
 export type Provenance = "HUB" | "DYCU" | "SOURCE_SITE" | "AI";
 
+export type Source = "city";
+
 export interface HubItem {
   hubId: string;
   kind: HubKind;
@@ -11,6 +13,10 @@ export interface HubItem {
   landingPage: string;
   featureServerUrl: string | null;
   downloads: Record<string, string>;
+  source?: Source; // absent: Data You Can Use
+  datastoreId?: string | null; // City: the CKAN resource that can be queried live
+  created?: string;
+  groups?: string[];
 }
 
 export interface ParsedTitle {
@@ -34,6 +40,8 @@ export interface Member {
   downloads: Record<string, string>;
   description: string;
   keywords: string[];
+  source?: Source; // absent: Data You Can Use
+  datastoreId?: string | null; // City: the CKAN resource that can be queried live
 }
 
 export interface Family {
@@ -47,6 +55,8 @@ export interface Family {
   latestModified: string;
   baseSearchText: string;
   members: Member[];
+  source?: Source;
+  live?: boolean;
 }
 
 export interface FamilyInput extends Family {

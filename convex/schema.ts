@@ -16,6 +16,8 @@ export default defineSchema({
     baseSearchText: v.string(),
     searchText: v.string(),
     dictionaryTab: v.union(v.string(), v.null()),
+    source: v.optional(v.literal("city")),
+    live: v.optional(v.boolean()),
   })
     .index("by_key", ["key"])
     .index("by_code", ["code"])

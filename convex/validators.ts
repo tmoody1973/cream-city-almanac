@@ -27,6 +27,8 @@ export const vMember = v.object({
   downloads: v.record(v.string(), v.string()),
   description: v.string(),
   keywords: v.array(v.string()),
+  source: v.optional(v.literal("city")),
+  datastoreId: v.optional(v.union(v.string(), v.null())),
 });
 
 export const vFamilyInput = v.object({
@@ -41,6 +43,8 @@ export const vFamilyInput = v.object({
   baseSearchText: v.string(),
   dictionaryTab: v.union(v.string(), v.null()),
   members: v.array(vMember),
+  source: v.optional(v.literal("city")),
+  live: v.optional(v.boolean()),
 });
 
 export const vDictionaryField = v.object({
