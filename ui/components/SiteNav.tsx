@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AccountLink } from "./AccountLink";
 import styles from "./rundown.module.css";
 
 type Placement = "dock" | "masthead";
@@ -27,6 +28,7 @@ export function SiteNav({ placement, current }: { placement: Placement; current:
           HOW IT WORKS
         </Link>
       )}
+      {!dock && <AccountLink className={`${cls(false)} ${styles.navButton}`} />}
     </nav>
   );
 }

@@ -8,6 +8,12 @@ test("signed out, Ask offers sign-in and search stays public", async ({ page }, 
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 });
 
+test("signed out, there is no ACCOUNT", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("link", { name: "ASK" }).first()).toBeVisible();
+  await expect(page.getByRole("button", { name: /^account$/i })).toHaveCount(0);
+});
+
 test("the masthead ASK is a link", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("link", { name: "ASK" }).first()).toHaveAttribute("href", "/ask");
@@ -109,9 +115,22 @@ test.describe("signed in", () => {
     await expect(page.getByText("UPDATED THIS SEASON")).toBeVisible();
   });
 
+  test("ACCOUNT on every page opens Clerk's account window", async ({ page }) => {
+    await page.goto("/start-here");
+    await page.getByRole("button", { name: /^account$/i }).filter({ visible: true }).first().click();
+    await expect(page.locator(".cl-userProfile-root")).toBeVisible({ timeout: 15_000 });
+  });
+
+  test("SIGN OUT on every page signs you out and keeps the page", async ({ page }) => {
+    await page.goto("/start-here");
+    await page.getByRole("button", { name: /^sign out$/i }).filter({ visible: true }).first().click();
+    await expect(page.getByRole("button", { name: /^account$/i })).toHaveCount(0, { timeout: 15_000 });
+    await expect(page).toHaveURL(/\/start-here/);
+  });
+
   test("shows today's count and a way to sign out", async ({ page }) => {
     await expect(page.getByText(/of \d+ questions left today/)).toBeVisible({ timeout: 20_000 });
-    await page.getByRole("button", { name: "Sign out" }).click();
+    await page.getByTestId("copilot-input-overlay").getByRole("button", { name: "Sign out" }).click();
     await expect(page.getByRole("button", { name: "Sign in to ask" })).toBeVisible();
   });
 });
