@@ -36,6 +36,12 @@ describe("proseSegments", () => {
     expect(flagged("I can't look up 2263 N Lake Dr, or 410 E. Wells St.")).toEqual([]);
     expect(flagged("The data ends December 31, 2023, and Dec 31 is the last day. Sep. 5 and Mar 3, 2025 too.")).toEqual([]);
   });
+  it("a district or ward number can't swallow a count that follows it", () => {
+    expect(flagged("In the district 1,200 homes were vacant.")).toEqual(["1,200"]);
+    expect(flagged("Ward 6,520 voters")).toEqual(["6,520"]);
+    expect(flagged("district 6.5% of homes")).toEqual(["6.5%"]);
+    expect(flagged("Police district 6, District 3 had fewer, and ward 12.")).toEqual([]);
+  });
   it("still flags a bare count next to those words", () => {
     expect(flagged("There were 31 robberies.")).toEqual(["31"]);
     expect(flagged("There were 31 robberies in district 6.")).toEqual(["31"]);

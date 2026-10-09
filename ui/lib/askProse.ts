@@ -13,8 +13,8 @@ const DEFINITIONS = [
   /\b\d+(?:\s*(?:to|–|-)\s*\d+)?\s+(?:years?\s+)?(?:and|or)\s+(?:older|over)\b/gi,
   /\b\d+-(?:year|month|week|day)\b/gi,
   /\btable\s+\d+\b/gi,
-  /\b(?:(?:police|aldermanic|council|school)\s+)?district\s+\d+\b/gi,
-  /\bward\s+\d+\b/gi,
+  /\b(?:(?:police|aldermanic|council|school)\s+)?district\s+\d{1,3}(?!\d|[,.]\d)/gi, // not "district 1,200 homes" or "district 6.5%": a following digit group makes it a count
+  /\bward\s+\d{1,3}(?!\d|[,.]\d)/gi,
   /\bzip(?:\s+code)?\s+\d{5}\b/gi,
   /\b\d{1,5}\s+[NSEW]\.?\s+[A-Z][a-z]+/g, // a street address; the direction is what tells it from a count
   /\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|June?|July?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\.?\s+\d{1,2}\b/g,
