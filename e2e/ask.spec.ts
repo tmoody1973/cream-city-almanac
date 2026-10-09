@@ -171,6 +171,17 @@ test.describe("signed in", () => {
     await expect(page.getByPlaceholder("Ask about Milwaukee data")).toHaveValue("", { timeout: 20_000 });
   });
 
+  test("a City count arrives as a card with the count, its filters in words and the CITY tag", async ({ page }) => {
+    test.skip(!(await page.request.get("https://data.milwaukee.gov/api/3/action/status_show").then((r) => r.ok()).catch(() => false)), "City API unreachable");
+    await ask(page, "How many thefts by month?");
+    const card = page.locator("[data-card=count]").first();
+    await expect(card).toBeVisible({ timeout: 40_000 });
+    await expect(card).toContainText("All Other Larceny");
+    await expect(card.locator("[data-count]")).toHaveText(/^\d{1,3}(,\d{3})*$/);
+    await expect(card.getByTitle("From the City of Milwaukee's open data")).toBeVisible();
+    await expect(card.getByRole("link", { name: /open the data/i })).toBeVisible();
+  });
+
   test("shows today's count and a way to sign out", async ({ page }) => {
     await expect(page.getByText(/of \d+ questions left today/)).toBeVisible({ timeout: 20_000 });
     await page.getByTestId("copilot-input-overlay").getByRole("button", { name: "Sign out" }).click();
