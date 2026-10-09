@@ -1,4 +1,4 @@
-import { type Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 import { test } from "./fixtures";
 
 // Marks appear after hydration reads storage and then load an image; capture only once all of that has landed.
@@ -124,5 +124,35 @@ test.describe("@capture", () => {
     await page.goto("/start-here");
     await settle(page);
     await page.screenshot({ path: ".impeccable/review/mobile.png", fullPage: true });
+  });
+
+  // Signed in with the scripted test model; no fixed clock (Clerk's short-lived tokens need real time).
+  test("Ask at the comp sizes", async ({ page }) => {
+    test.skip(!process.env.E2E_CLERK_USER_EMAIL || !process.env.CLERK_SECRET_KEY, "needs a Clerk test user");
+    const { clerk, setupClerkTestingToken } = await import("@clerk/testing/playwright");
+    await setupClerkTestingToken({ page });
+    await page.route("**/api/copilotkit/**", (route) => route.fallback({ headers: { ...route.request().headers(), "x-ask-fake": "1" } }));
+    for (const [width, height, path, start] of [
+      [1536, 1024, ".impeccable/review/ask-laptop-repro.png", "/?ask=1"],
+      [390, 844, ".impeccable/review/ask-phone-repro.png", "/ask"],
+    ] as const) {
+      await page.setViewportSize({ width, height });
+      await page.goto(start);
+      if (width > 1000) {
+        await clerk.signIn({ page, emailAddress: process.env.E2E_CLERK_USER_EMAIL! });
+        await page.reload();
+      }
+      const box = page.getByPlaceholder("Ask about Milwaukee data");
+      for (const q of ["Where can I find daily air readings?", "What about poverty by age in Harambee?"]) {
+        await box.fill(q);
+        await expect(async () => {
+          if ((await box.inputValue()) !== "") await box.press("Enter");
+          await expect(box).toHaveValue("", { timeout: 2_000 });
+        }).toPass({ timeout: 20_000 });
+        await page.getByText("Here is what the data shows.").last().waitFor({ timeout: 30_000 });
+      }
+      await page.waitForTimeout(1500); // the pane opens and the leader draws
+      await page.screenshot({ path }); // the viewport: sticky parts drawn where a person sees them
+    }
   });
 });

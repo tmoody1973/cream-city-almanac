@@ -6,16 +6,18 @@ const CODE = /^[A-Za-z]\d{2,3}$/;
 export interface Selection {
   q: string;
   open: string | null;
+  ask?: boolean; // the laptop's Ask column is open (ask=1)
 }
 
 export function parseSelection(search: string): Selection {
   const params = new URLSearchParams(search);
   const open = params.get("open")?.trim() ?? "";
-  return { q: params.get("q")?.trim() ?? "", open: CODE.test(open) ? open.toUpperCase() : null };
+  return { q: params.get("q")?.trim() ?? "", open: CODE.test(open) ? open.toUpperCase() : null, ...(params.get("ask") === "1" && { ask: true }) };
 }
 
-export function selectionSearch({ q, open }: Selection): string {
+export function selectionSearch({ q, open, ask }: Selection): string {
   const params = new URLSearchParams();
+  if (ask) params.set("ask", "1");
   if (q.trim()) params.set("q", q.trim());
   if (open) params.set("open", open);
   const s = params.toString();

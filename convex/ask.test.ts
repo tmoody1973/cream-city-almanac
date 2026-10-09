@@ -1,0 +1,269 @@
+/// <reference types="vite/client" />
+import { convexTest } from "convex-test";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { api } from "./_generated/api";
+import { chicagoDay, costUsd, dailyLimit } from "./lib/ask";
+import { DEFAULT_SETTINGS } from "./settings";
+import schema from "./schema";
+import { fixtureFamilies } from "../tests/helpers/fixtures";
+import { fakeEmbedding, installFakeFetch } from "../tests/helpers/fakeFetch";
+import rateLimiterTest from "@convex-dev/rate-limiter/test";
+import { internal } from "./_generated/api";
+import { toFamilyInput } from "./lib/families";
+import { isContentsPassage, matchTopic, pickRow } from "./lib/ask";
+import type { TestConvex } from "convex-test";
+
+const modules = import.meta.glob("./**/*.*s");
+const reader = { email: "pat@example.com", emailVerified: true };
+const reporter = { email: "lee@radiomilwaukee.org", emailVerified: true };
+
+beforeEach(() => vi.stubEnv("ASK_METER_SECRET", "meter-test"));
+afterEach(() => {
+  vi.unstubAllEnvs();
+  vi.useRealTimers();
+});
+
+describe("ask helpers", () => {
+  it("counts by the America/Chicago day", () => {
+    // 2026-10-09 04:59 UTC is 23:59 on Oct 8 in Chicago (CDT, UTC-5); 05:01 UTC is 00:01 on Oct 9.
+    expect(chicagoDay(Date.UTC(2026, 9, 9, 4, 59))).toBe("2026-10-08");
+    expect(chicagoDay(Date.UTC(2026, 9, 9, 5, 1))).toBe("2026-10-09");
+  });
+  it("gives verified newsroom emails the newsroom limit", () => {
+    expect(dailyLimit(reader, DEFAULT_SETTINGS)).toBe(30);
+    expect(dailyLimit(reporter, DEFAULT_SETTINGS)).toBe(200);
+    expect(dailyLimit({ ...reporter, emailVerified: false }, DEFAULT_SETTINGS)).toBe(30);
+    expect(dailyLimit({ email: "x@RadioMilwaukee.org", emailVerified: true }, DEFAULT_SETTINGS)).toBe(200);
+  });
+  it("prices usage from settings", () => {
+    expect(costUsd({ inputTokens: 10_000, outputTokens: 500 }, DEFAULT_SETTINGS)).toBeCloseTo(0.025);
+  });
+});
+
+describe("gatekeeper", () => {
+  it("is null when signed out and refuses to begin", async () => {
+    const t = convexTest(schema, modules);
+    rateLimiterTest.register(t);
+    expect(await t.query(api.ask.status, {})).toBeNull();
+    expect(await t.mutation(api.ask.begin, {})).toEqual({ ok: false, reason: "signed-out" });
+  });
+  it("counts questions down to the limit, then refuses", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(Date.UTC(2026, 9, 8, 15, 0));
+    const t = convexTest(schema, modules);
+    rateLimiterTest.register(t);
+    const me = t.withIdentity(reader);
+    // Questions a person actually asks, half a minute apart (bursts are their own test).
+    for (let i = 0; i < 30; i++) {
+      expect(await me.mutation(api.ask.begin, {})).toEqual({ ok: true });
+      vi.advanceTimersByTime(31_000);
+    }
+    expect(await me.mutation(api.ask.begin, {})).toEqual({ ok: false, reason: "limit" });
+    expect(await me.query(api.ask.status, {})).toMatchObject({ limit: 30, left: 0, paused: false, newsroom: false });
+    // Another account is unaffected.
+    expect(await t.withIdentity({ ...reader, email: "sam@example.com", subject: "sam" }).mutation(api.ask.begin, {})).toEqual({ ok: true });
+  });
+  it("pauses everyone once today's spend reaches the cap", async () => {
+    const t = convexTest(schema, modules);
+    rateLimiterTest.register(t);
+    const me = t.withIdentity(reader);
+    await me.mutation(api.ask.recordUsage, { secret: "meter-test", inputTokens: 4_000_000, outputTokens: 200_000 }); // $10
+    expect(await me.mutation(api.ask.begin, {})).toEqual({ ok: false, reason: "paused" });
+    expect(await me.query(api.ask.status, {})).toMatchObject({ paused: true });
+  });
+  it("refuses a burst of questions started at once from one account", async () => {
+    const t = convexTest(schema, modules);
+    rateLimiterTest.register(t);
+    const me = t.withIdentity(reader);
+    const results = await Promise.all(Array.from({ length: 8 }, () => me.mutation(api.ask.begin, {})));
+    expect(results.filter((r) => r.ok)).toHaveLength(5);
+    expect(results.filter((r) => !r.ok && r.reason === "busy")).toHaveLength(3);
+    // The burst didn't spend daily questions it was refused.
+    expect(await me.query(api.ask.status, {})).toMatchObject({ left: 25 });
+  });
+  it("caps questions starting at once across the whole site", async () => {
+    const t = convexTest(schema, modules);
+    rateLimiterTest.register(t);
+    const people = Array.from({ length: 30 }, (_, i) => t.withIdentity({ ...reader, subject: `p${i}`, email: `p${i}@example.com` }));
+    const results = await Promise.all(people.map((p) => p.mutation(api.ask.begin, {})));
+    expect(results.filter((r) => r.ok)).toHaveLength(20);
+  });
+  it("refuses usage without the meter secret", async () => {
+    const t = convexTest(schema, modules);
+    await expect(t.withIdentity(reader).mutation(api.ask.recordUsage, { secret: "guess", inputTokens: 1e6, outputTokens: 1e6 })).rejects.toThrow();
+  });
+  it("starts a fresh count on the next Chicago day", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(Date.UTC(2026, 9, 9, 4, 30)); // 11:30 pm Oct 8 in Chicago
+    const t = convexTest(schema, modules);
+    rateLimiterTest.register(t);
+    const me = t.withIdentity(reader);
+    for (let i = 0; i < 30; i++) {
+      await me.mutation(api.ask.begin, {});
+      vi.advanceTimersByTime(31_000);
+    }
+    expect(await me.mutation(api.ask.begin, {})).toEqual({ ok: false, reason: "limit" });
+    vi.setSystemTime(Date.UTC(2026, 9, 9, 5, 1));
+    expect(await me.mutation(api.ask.begin, {})).toEqual({ ok: true });
+  });
+});
+
+async function seed(t: TestConvex<typeof schema>) {
+  const buildId = await t.mutation(internal.buildStore.beginBuild, {});
+  await t.mutation(internal.buildStore.swapCatalog, { buildId, families: fixtureFamilies().map((f) => toFamilyInput(f, null)), dictionaries: [] });
+}
+const harambee = (year: number) =>
+  fixtureFamilies().find((f) => f.key === "document:neighborhood-portrait-spreadsheet")!.members.find((m) => m.place === "Harambee" && m.years[0] === year)!;
+const poverty = (hubId: string) => ({
+  hubId, modified: "m", slug: "poverty-status-by-age", topic: "Poverty Status by Age", tab: "Poverty Status by Age", order: 2,
+  tableIds: ["B17001"], tableIdText: "B17001", vintage: "2019-2023", groups: [""],
+  rows: [
+    { label: "Total", heading: false, values: [{ estimate: "18894", moe: "1504" }] },
+    { label: "Income in the past 12 months below poverty level", heading: true, values: [{ estimate: "6520", moe: "790" }] },
+    { label: "Under 5 years", heading: false, values: [{ estimate: "608", moe: "252" }] },
+    { label: "5 years", heading: false, values: [{ estimate: "120", moe: "60" }] },
+  ],
+  issues: ["Percentages and precision columns have formula errors in DYCU's file, so they aren't shown."],
+});
+
+describe("matching helpers", () => {
+  it("matches topics by name, slug or alias, any case", () => {
+    expect(matchTopic("poverty status by age")!.slug).toBe("poverty-status-by-age");
+    expect(matchTopic("rent-paid")!.slug).toBe("rent-paid");
+    expect(matchTopic("Bedroom and Year")!.slug).toBe("bedrooms-and-year");
+    expect(matchTopic("weather")).toBeNull();
+  });
+  it("asks which row when a label matches several", () => {
+    const rows = poverty("h").rows;
+    expect(pickRow(rows, "under 5 years")).toEqual({ row: rows[2], index: 2 });
+    expect(pickRow(rows, "5 years")).toEqual({ row: rows[3], index: 3 }); // an exact label wins over a partial one
+    expect(pickRow(rows, "years")).toEqual({ choose: ["Under 5 years", "5 years"] });
+    expect(pickRow(rows, "income")).toEqual({ row: rows[1], index: 1 });
+  });
+});
+
+describe("repeated row labels", () => {
+  const costs = [
+    { label: "With a mortgage", heading: true, values: [null] },
+    { label: "30.0 to 34.9%", heading: false, values: [{ estimate: "100", moe: "10" }] },
+    { label: "Without a mortgage", heading: true, values: [null] },
+    { label: "30.0 to 34.9%", heading: false, values: [{ estimate: "40", moe: "8" }] },
+  ];
+  it("offers each repeated label with its section instead of picking the first", () => {
+    expect(pickRow(costs, "30.0 to 34.9%")).toEqual({ choose: ["With a mortgage › 30.0 to 34.9%", "Without a mortgage › 30.0 to 34.9%"] });
+  });
+  it("picks a repeated label by its section", () => {
+    expect(pickRow(costs, "Without a mortgage › 30.0 to 34.9%")).toEqual({ row: costs[3], index: 3 });
+  });
+});
+
+describe("getNumber", () => {
+  it("reads one row of the newest Harambee table", async () => {
+    const t = convexTest(schema, modules);
+    await seed(t);
+    await t.run((ctx) => ctx.db.insert("portraitTables", poverty(harambee(2024).hubId)));
+    const r = await t.query(api.ask.getNumber, { neighborhood: "harambee", topic: "Poverty Status by Age", row: "Under 5 years" });
+    expect(r).toMatchObject({ status: "ok", neighborhood: "Harambee", year: 2024, slug: "poverty-status-by-age", tableIdText: "B17001", label: "Under 5 years", rowIndex: 2, values: [{ estimate: "608", moe: "252" }] });
+    expect(r.status === "ok" && r.issues.length).toBe(1);
+  });
+  it("returns the row with its neighbors, the asked-for one marked, for the phone excerpt", async () => {
+    const t = convexTest(schema, modules);
+    await seed(t);
+    await t.run((ctx) => ctx.db.insert("portraitTables", poverty(harambee(2024).hubId)));
+    const r = await t.query(api.ask.getNumber, { neighborhood: "Harambee", topic: "Poverty Status by Age", row: "Under 5 years" });
+    expect(r.status === "ok" && r.nearby.map((x) => [x.label, x.marked])).toEqual([
+      ["Income in the past 12 months below poverty level", false],
+      ["Under 5 years", true],
+      ["5 years", false],
+    ]);
+    const first = await t.query(api.ask.getNumber, { neighborhood: "Harambee", topic: "Poverty Status by Age", row: "Total" });
+    expect(first.status === "ok" && first.nearby.map((x) => x.label)).toEqual(["Total", "Income in the past 12 months below poverty level"]);
+  });
+  it("uses the asked-for year when it has the table, else the newest that does", async () => {
+    const t = convexTest(schema, modules);
+    await seed(t);
+    await t.run(async (ctx) => {
+      await ctx.db.insert("portraitTables", poverty(harambee(2022).hubId));
+      await ctx.db.insert("portraitTables", poverty(harambee(2024).hubId));
+    });
+    expect(await t.query(api.ask.getNumber, { neighborhood: "Harambee", topic: "poverty status by age", year: 2022, row: "Total" })).toMatchObject({ year: 2022 });
+    expect(await t.query(api.ask.getNumber, { neighborhood: "Harambee", topic: "poverty status by age", year: 1999, row: "Total" })).toMatchObject({ year: 2024 });
+  });
+  it("offers neighborhoods when the name is unknown", async () => {
+    const t = convexTest(schema, modules);
+    await seed(t);
+    const r = await t.query(api.ask.getNumber, { neighborhood: "Narnia", topic: "Rent Paid", row: "Total" });
+    expect(r.status).toBe("no-neighborhood");
+    expect(r.status === "no-neighborhood" && r.neighborhoods).toContain("Harambee");
+  });
+  it("offers topics and rows instead of guessing", async () => {
+    const t = convexTest(schema, modules);
+    await seed(t);
+    await t.run((ctx) => ctx.db.insert("portraitTables", poverty(harambee(2024).hubId)));
+    expect((await t.query(api.ask.getNumber, { neighborhood: "Harambee", topic: "weather", row: "Total" })).status).toBe("no-topic");
+    expect(await t.query(api.ask.getNumber, { neighborhood: "Harambee", topic: "Poverty Status by Age", row: "years" })).toEqual({ status: "choose-row", rows: ["Under 5 years", "5 years"] });
+    expect((await t.query(api.ask.getNumber, { neighborhood: "Harambee", topic: "Rent Paid", row: "Total" })).status).toBe("no-table");
+  });
+});
+
+describe("tables of contents", () => {
+  it("spots a contents passage by its section or its page numbers", () => {
+    expect(isContentsPassage("Table of Contents", "Introduction and Background\nPopulation by Race")).toBe(true);
+    expect(isContentsPassage("Report", "Introduction\nPopulation by Race\nHousing\n2\n3\n4")).toBe(true);
+    expect(isContentsPassage("Key Takeaways", "21% have one bedroom.\nOver half were built before 1939.")).toBe(false);
+  });
+});
+
+describe("readReport", () => {
+  afterEach(() => vi.unstubAllGlobals());
+  it("needs a signed-in account", async () => {
+    const t = convexTest(schema, modules);
+    rateLimiterTest.register(t);
+    await expect(t.action(api.ask.readReport, { question: "Harambee housing" })).rejects.toThrow(/Sign in/);
+  });
+  it("returns up to three passages with report, section and code", async () => {
+    vi.stubEnv("AI_GATEWAY_API_KEY", "test-key");
+    installFakeFetch();
+    const t = convexTest(schema, modules);
+    rateLimiterTest.register(t);
+    await seed(t);
+    const hubId = harambee(2024).hubId;
+    // fakeEmbedding is one-hot on the first word, so passages starting "Harambee" match the question "Harambee …".
+    await t.run(async (ctx) => {
+      for (let i = 0; i < 5; i++) {
+        await ctx.db.insert("docChunks", { hubId, modified: "m", section: `Housing ${i}`, text: `Harambee homes ${i}`, embedding: fakeEmbedding("Harambee") });
+      }
+    });
+    const r = await t.withIdentity(reader).action(api.ask.readReport, { question: "Harambee housing" });
+    expect(r.status).toBe("ok");
+    expect(r.passages).toHaveLength(3);
+    expect(r.passages[0]).toMatchObject({ section: expect.stringMatching(/^Housing/), code: expect.any(String), report: expect.any(String) });
+    const filtered = await t.withIdentity(reader).action(api.ask.readReport, { question: "Harambee housing", familyCode: "ZZ9" });
+    expect(filtered.passages).toEqual([]);
+  });
+  it("never returns a table of contents as a passage", async () => {
+    vi.stubEnv("AI_GATEWAY_API_KEY", "test-key");
+    installFakeFetch();
+    const t = convexTest(schema, modules);
+    rateLimiterTest.register(t);
+    await seed(t);
+    const hubId = harambee(2024).hubId;
+    await t.run(async (ctx) => {
+      await ctx.db.insert("docChunks", { hubId, modified: "m", section: "Table of Contents", text: "Harambee contents\nPopulation by Race\n2\n3", embedding: fakeEmbedding("Harambee") });
+      await ctx.db.insert("docChunks", { hubId, modified: "m", section: "Housing", text: "Harambee homes are old.", embedding: fakeEmbedding("Harambee") });
+    });
+    const r = await t.withIdentity(reader).action(api.ask.readReport, { question: "Harambee housing" });
+    expect(r.passages.map((p) => p.section)).toEqual(["Housing"]);
+  });
+  it("rate-limits report reads per account", async () => {
+    vi.stubEnv("AI_GATEWAY_API_KEY", "test-key");
+    installFakeFetch();
+    const t = convexTest(schema, modules);
+    rateLimiterTest.register(t);
+    const me = t.withIdentity(reader);
+    const results = [];
+    for (let i = 0; i < 21; i++) results.push((await me.action(api.ask.readReport, { question: "Harambee" })).status);
+    expect(results.slice(0, 20).every((s) => s === "ok")).toBe(true);
+    expect(results[20]).toBe("busy");
+  });
+});

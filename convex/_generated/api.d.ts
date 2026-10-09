@@ -8,12 +8,14 @@
  * @module
  */
 
+import type * as ask from "../ask.js";
 import type * as build from "../build.js";
 import type * as buildStore from "../buildStore.js";
 import type * as catalog from "../catalog.js";
 import type * as crons from "../crons.js";
 import type * as evals from "../evals.js";
 import type * as lib_arcgis from "../lib/arcgis.js";
+import type * as lib_ask from "../lib/ask.js";
 import type * as lib_card from "../lib/card.js";
 import type * as lib_chunk from "../lib/chunk.js";
 import type * as lib_codes from "../lib/codes.js";
@@ -47,12 +49,14 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  ask: typeof ask;
   build: typeof build;
   buildStore: typeof buildStore;
   catalog: typeof catalog;
   crons: typeof crons;
   evals: typeof evals;
   "lib/arcgis": typeof lib_arcgis;
+  "lib/ask": typeof lib_ask;
   "lib/card": typeof lib_card;
   "lib/chunk": typeof lib_chunk;
   "lib/codes": typeof lib_codes;

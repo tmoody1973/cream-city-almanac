@@ -1,0 +1,48 @@
+// Ask's model must not write figures; any number in its words is marked unverified,
+// except a year (1900–2099), a dataset code like N03, an identifier with letters glued to its digits
+// (Census table B17001, PM2.5), or a number inside a quoted label that the data itself returned word for word
+// ("Under 5 years"). Quoted text the data never said ("608 children under 5") is the model's own, and flags.
+// Definitions are not figures either (Tarik, 2026-10-08):
+// age bands ("ages 20 to 64", "18 and older"), survey periods ("5-year"), and table numbers ("Table 11").
+const NUMBER = /\b[A-Z]\d{2}\b|(?<![A-Za-z\d.])\d+(?:,\d{3})*(?:\.\d+)?%?/g;
+const QUOTE_MARK = /["“”]/g;
+const DEFINITIONS = [
+  /\b(?:ages?|aged)\s+\d+(?:\s*(?:to|–|-)\s*\d+)?/gi,
+  /\b\d+(?:\s*(?:to|–|-)\s*\d+)?\s+(?:years?\s+)?(?:and|or)\s+(?:older|over)\b/gi,
+  /\b\d+-(?:year|month|week|day)\b/gi,
+  /\btable\s+\d+\b/gi,
+];
+
+// Every pair of quote marks is tried, so a stray inch mark (5") can't shift which quote closes which.
+function quotedFromData(text: string, data: string): [number, number][] {
+  const marks = [...text.matchAll(QUOTE_MARK)].map((m) => m.index);
+  const spans: [number, number][] = [];
+  for (let i = 0; i < marks.length; i++)
+    for (let j = i + 1; j < marks.length; j++) {
+      const inner = text.slice(marks[i] + 1, marks[j]);
+      if (/[a-z]/i.test(inner) && data.includes(inner)) spans.push([marks[i], marks[j] + 1]);
+    }
+  return spans;
+}
+
+function allowedSpans(text: string, data: string): [number, number][] {
+  const defined = DEFINITIONS.flatMap((re) => [...text.matchAll(re)]).map((m): [number, number] => [m.index, m.index + m[0].length]);
+  return [...quotedFromData(text, data), ...defined];
+}
+
+// `data` is what the conversation's tools returned (their results as text); quoted labels must come from it.
+export function proseSegments(text: string, data = ""): { text: string; unverified: boolean }[] {
+  const allowed = allowedSpans(text, data);
+  const out: { text: string; unverified: boolean }[] = [];
+  let last = 0;
+  for (const m of text.matchAll(NUMBER)) {
+    const token = m[0];
+    const ok = /^[A-Z]\d{2}$/.test(token) || /^(19|20)\d{2}$/.test(token) || allowed.some(([a, b]) => m.index >= a && m.index < b);
+    if (ok) continue;
+    if (m.index > last) out.push({ text: text.slice(last, m.index), unverified: false });
+    out.push({ text: token, unverified: true });
+    last = m.index + token.length;
+  }
+  if (last < text.length) out.push({ text: text.slice(last), unverified: false });
+  return out;
+}

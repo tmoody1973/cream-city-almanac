@@ -24,10 +24,13 @@ export function PortraitTables({ index, focus: requested }: { index: Index; focu
   const [focus, setFocus] = useState<Focus>(() => resolvePortraitFocus(index, new URLSearchParams(), SLUGS));
   // The address picks the table, unless a search result in the laptop pane asks for one; the pickers change it after.
   const requestedQuery = portraitFocusQuery(requested);
-  useEffect(
-    () => setFocus(resolvePortraitFocus(index, new URLSearchParams(requestedQuery || window.location.search), SLUGS)),
-    [index, requestedQuery],
-  );
+  // A row Ask pointed at (row=its position in the table), outlined until the reader picks another table.
+  const [marked, setMarked] = useState<string | null>(null);
+  useEffect(() => {
+    const params = new URLSearchParams(requestedQuery || window.location.search);
+    setFocus(resolvePortraitFocus(index, params, SLUGS));
+    setMarked(params.get("row"));
+  }, [index, requestedQuery]);
 
   const place = index.neighborhoods.find((n) => n.key === focus.place) ?? index.neighborhoods[0];
   const file = place.files.find((f) => f.hubId === focus.hubId) ?? place.files[0];
@@ -36,11 +39,31 @@ export function PortraitTables({ index, focus: requested }: { index: Index; focu
   const tables = isInitial ? index.initial!.tables : loaded;
   const table = useMemo(() => tables?.find((t) => t.slug === focus.topic) ?? tables?.[0], [tables, focus.topic]);
   const shown = useRef<HTMLDivElement>(null);
+  const isMarked = (r: PortraitRow) => marked !== null && table !== undefined && String(table.rows.indexOf(r)) === marked;
+  // Bring a row Ask pointed at into view once its table has rendered.
+  useEffect(() => {
+    const row = marked ? document.querySelector<HTMLElement>("[data-row-marked]") : null;
+    if (!row) return;
+    // In the laptop pane, scroll the pane only (the page and its masthead stay put); on a sheet page, the page.
+    const pane = row.closest<HTMLElement>("#sheet-pane");
+    if (!pane) return row.scrollIntoView({ block: "center" });
+    // Only as far as needed: if the row already shows, leave the sheet as it is; otherwise bring the table's own
+    // caption to the pane's top so nothing is cut, and if the row is still below, put it in the lower third.
+    const p = pane.getBoundingClientRect();
+    if (row.getBoundingClientRect().bottom <= p.bottom - 16) return;
+    const table = row.closest("table");
+    const toCaption = table ? pane.scrollTop + (table.getBoundingClientRect().top - p.top) - 12 : null;
+    const toRow = pane.scrollTop + (row.getBoundingClientRect().top - p.top) - pane.clientHeight * 0.66;
+    const rowFitsUnderCaption = table && row.getBoundingClientRect().bottom - table.getBoundingClientRect().top < pane.clientHeight - 40;
+    pane.scrollTo({ top: rowFitsUnderCaption && toCaption !== null ? toCaption : toRow });
+  }, [marked, tables]);
   const topics = portraitTopics(tables);
 
   const go = (next: Focus) => {
     setFocus(next);
+    setMarked(null);
     const params = new URLSearchParams(window.location.search);
+    params.delete("row");
     const year = index.neighborhoods.find((n) => n.key === next.place)?.files.find((f) => f.hubId === next.hubId)?.year;
     params.set("place", next.place);
     if (year) params.set("year", String(year));
@@ -169,13 +192,13 @@ export function PortraitTables({ index, focus: requested }: { index: Index; focu
                 <tbody key={si}>
                   {rows.map((r, i) =>
                     r.heading ? (
-                      <tr key={i}>
+                      <tr key={i} data-row-marked={isMarked(r) || undefined} className={isMarked(r) ? styles.markedRow : undefined}>
                         <th scope="rowgroup" colSpan={1 + table.groups.length * 2}>
                           {r.label}
                         </th>
                       </tr>
                     ) : (
-                      <tr key={i}>
+                      <tr key={i} data-row-marked={isMarked(r) || undefined} className={isMarked(r) ? styles.markedRow : undefined}>
                         <th scope="row">{r.label}</th>
                         {r.values.map((v, j) => (
                           <Fragment key={j}>

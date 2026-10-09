@@ -14,7 +14,8 @@
     "build": "next build",
     "start": "next start",
     "e2e": "playwright test --grep-invert @capture",
-    "capture": "playwright test --grep @capture --project=desktop"
+    "capture": "playwright test --grep @capture --project=desktop",
+    "ask:card": "tsx scripts/ask-report-card.ts"
   },
   "keywords": [],
   "author": "",
@@ -22,7 +23,11 @@
   "type": "module",
   "private": true,
   "dependencies": {
+    "@clerk/nextjs": "^7.9.13",
     "@convex-dev/rate-limiter": "^0.4.1",
+    "@copilotkit/react-core": "^1.77.2",
+    "@copilotkit/runtime": "^1.77.2",
+    "ai": "^6.0.302",
     "convex": "^1.46.0",
     "fflate": "^0.8.3",
     "next": "^16.4.0",
@@ -32,13 +37,20 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
+    "@clerk/testing": "^2.2.44",
     "@edge-runtime/vm": "^5.0.0",
     "@playwright/test": "^1.63.0",
     "@types/node": "^24.19.1",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "convex-test": "^0.0.60",
+    "tsx": "^4.23.15",
     "typescript": "^6.0.3",
     "vitest": "^5.0.3"
+  },
+  "overrides": {
+    "@copilotkit/channels-core": {
+      "vitest": "$vitest"
+    }
   }
 }

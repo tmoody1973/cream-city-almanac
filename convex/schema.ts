@@ -121,5 +121,17 @@ export default defineSchema({
     cardInputUsdPerToken: v.number(),
     cardOutputUsdPerToken: v.number(),
     embedUsdPerToken: v.number(),
+    // Ask's settings arrived after the first settings row; readSettings fills missing ones from defaults.
+    askModel: v.optional(v.string()),
+    askInputUsdPerToken: v.optional(v.number()),
+    askOutputUsdPerToken: v.optional(v.number()),
+    askDailyCapUsd: v.optional(v.number()),
+    askDailyLimit: v.optional(v.number()),
+    askNewsroomLimit: v.optional(v.number()),
+    askNewsroomDomains: v.optional(v.array(v.string())),
   }),
+
+  // Ask keeps only counts: questions per account per day, and the site's spend per day (America/Chicago).
+  askCounts: defineTable({ day: v.string(), user: v.string(), questions: v.number() }).index("by_day_user", ["day", "user"]),
+  askSpend: defineTable({ day: v.string(), usd: v.number() }).index("by_day", ["day"]),
 });

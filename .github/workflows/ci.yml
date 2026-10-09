@@ -22,6 +22,7 @@ jobs:
       - run: npm run build
         env:
           NEXT_PUBLIC_CONVEX_URL: ${{ vars.NEXT_PUBLIC_CONVEX_URL }}
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
 
   report-card:
     # Grades search on 26 reporter-style questions against the live production deployment

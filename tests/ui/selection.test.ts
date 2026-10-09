@@ -19,3 +19,12 @@ describe("selection in the address", () => {
     expect(LAPTOP_QUERY).toBe("(min-width: 1100px) and (orientation: landscape)");
   });
 });
+
+describe("the Ask column in the address", () => {
+  it("reads and writes ask=1 alongside the search and the open item", () => {
+    expect(parseSelection("?ask=1&q=rent&open=n03")).toEqual({ q: "rent", open: "N03", ask: true });
+    expect(parseSelection("?q=rent").ask).toBeFalsy();
+    expect(selectionSearch({ q: "rent", open: "N03", ask: true })).toBe("?ask=1&q=rent&open=N03");
+    expect(selectionSearch({ q: "", open: null, ask: false })).toBe("");
+  });
+});

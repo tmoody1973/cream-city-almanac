@@ -172,7 +172,7 @@ components:
 
 The almanac is laid out like a radio newsroom's show rundown: one white sheet, a heavy condensed masthead, and every dataset family set as a single slugged row with a permanent code. Structure comes from ruled ink lines and alternating gray bands, never from cards; the only boxes are 1px hairline ones around things you enter or pick (the slug entry, tags, the spreadsheet section's selects and topic chips), its problem notes, and the ruled data table. The only color on the sheet is a producer's red grease pencil, drawn by hand onto the paper to say what changed since your last visit, what you have already opened, and which row you have open now; on How it works the same pencil writes the teaching notes in the margins of a real sheet.
 
-Density is set for a reporter on a phone on deadline. Rows are tall enough to tap one-handed, codes are big enough to scan, and the first viewport carries the masthead, the slug entry, the newest rows, and the tab bar together. Between phone and laptop the layout stays deliberately compact: the same column, capped at 1280px, with type that stops growing at the approved comp's 1024px sizes. A laptop is its own layout, not a phone blown up: the rundown on the left, the selected dataset's full sheet beside it, and a narrow rail held for Ask, all measured from the approved laptop comp at 1536px.
+Density is set for a reporter on a phone on deadline. Rows are tall enough to tap one-handed, codes are big enough to scan, and the first viewport carries the masthead, the slug entry, the newest rows, and the tab bar together. Between phone and laptop the layout stays deliberately compact: the same column, capped at 1280px, with type that stops growing at the approved comp's 1024px sizes. A laptop is its own layout, not a phone blown up: the rundown on the left, the selected dataset's full sheet beside it, and a narrow rail that opens Ask in the list's place, all measured from the approved laptop comp at 1536px.
 
 The world refuses the category default for data catalogs: card grids with rounded tag chips and dashboards of charts. It also refuses shadows, corner radii, gradients, and cards. Hierarchy is carried by rule weight, type voice, and banding alone.
 
@@ -196,7 +196,7 @@ Monochrome ink on white paper, with one hand-drawn red that never enters the sty
 - **Rundown Paper** (#ffffff): the page ground, and the solid ground under anything pinned (the tab-bar dock, the sheet's download bar) so rows scroll cleanly beneath it. Also the selection text color.
 - **Press Ink** (#111111): all primary text, every rule and hairline, ruled-button borders, the active tab's bar, filled place-by-year cells, the focus outline, the caret, and the selection background.
 - **Rundown Band** (#ededea): the alternate-row band on the rundown, the search results, and the sheet's live-preview table; the guide lines of the sheet's strip chart; heading bands, meaning the laptop column guide's header row and, on How it works, the annotated sheet's header and its part headings. Never a panel or card ground.
-- **Graphite** (#5c5c5c): secondary text only. The catalog line, the slug placeholder, inactive and coming-soon tabs and site links, the Ask rail's "coming soon", sheet sublines and "updated" dates, the credit line, and unavailable grid cells. It holds 6.7:1 on paper and 5.7:1 on the band (WCAG AA).
+- **Graphite** (#5c5c5c): secondary text only. The catalog line, the slug placeholder, inactive and coming-soon tabs and site links, Ask's status line, sheet sublines and "updated" dates, the credit line, and unavailable grid cells. It holds 6.7:1 on paper and 5.7:1 on the band (WCAG AA).
 
 ### Named Rules
 **The Grease Pencil Rule.** Red is the producer's hand only: the raster plates (circle = updated, tick = opened by the reader, arrow + swash = open or selected now) and the hand-lettered teaching notes on How it works. It is never a border, fill, hover, focus ring, vector icon, or any other text.
@@ -258,7 +258,7 @@ A laptop is a screen at least 1100px wide in landscape (`(min-width: 1100px) and
 
 - **List:** the same rundown and results, re-measured from the laptop comp. Rows hold at least 96px, banding starts on the first row, the CODE / SLUG / UPDATED heads and the tab bar are gone, and the date hugs the row's right edge with 44px kept clear for the pencil's "new". The slug entry and each suggestion tag become hairline boxes; the 2px rules under the slug line and over the section title drop away.
 - **Sheet pane:** sticky at the top of the window, at most the window's height, scrolling on its own, divided from the list by a hairline. The download bar pins to the pane's bottom edge.
-- **Ask rail:** a hairline-outlined strip that stays beside the pane (sticky 12px from the top, the window's height less 24px), holding the place for the Phase 3 chat.
+- **Ask rail:** a hairline-outlined strip that stays beside the pane (sticky 12px from the top, the window's height less 24px). ASK in condensed capitals opens Ask in the list's column (`?ask=1`); open, it shows a drawn cross over a small condensed CLOSE that brings the list back.
 - **Selection:** the newest item in the list opens in the pane on arrival. Choosing a row replaces it and records the choice in the address (`?q=…&open=CODE`), so a link, a reload, or Back and Forward restore the same view; choosing the already-open row adds no Back step. On a phone, a laptop link to an item that is not in the list opens that item's own sheet page.
 - **Site links** move into the masthead; the bottom tab bar is phone-only and the dock holds only the credit line, in flow at the page end.
 
@@ -333,8 +333,15 @@ The selected dataset's full sheet, the same content as its own page, re-set for 
 - **Downloads:** ruled buttons under the 2px rule, pinned to the pane's bottom edge.
 - **States:** "Loading…" while the sheet arrives, a plain can't-reach-the-catalog line if it stalls, and for an unknown code a note with a "Show the newest" ruled button. Escape returns focus to the selected row.
 
-### Ask Rail (laptop placeholder)
-A narrow hairline-outlined strip at the right edge: ASK in ink condensed capitals (clamp(24px, 2.1vw, 32px)) over "coming soon" in graphite small body type, centered. It reserves the Phase 3 chat's place and does nothing yet.
+### Ask (margin notes)
+The almanac's reference desk, from the approved comps `.impeccable/mocks/ask-laptop.webp` and `ask-a-phone.webp`. The AI annotates the almanac rather than talking over it: each question sits in a gray band in bold body type, and each answer is a short numbered note (a large Saira Extra Condensed 900 numeral beside plain-sans words) that points at the real sheet or row. A hairline closes each note before the next question. The model's words carry no figures; the sheet or excerpt carries every number.
+- **Laptops:** Ask takes the list's column (39%), a window tall less the masthead, sticky like the pane; the notes scroll and the question field sits at the column's foot under the 2px rule. A number answer opens its table in the pane with the row outlined by a 2px ink rule and its figures in bold, and an ink leader (1px, with an origin dot and an open arrowhead) runs from the note's condensed "Open CODE →" link into that row; a dataset answer points the leader at the sheet's heading. The pane scrolls only as far as the row needs.
+- **Phones:** `/ask` is one viewport tall: the masthead, the scrolling notes, the field, and the tab bar (no credit line). A number answer shows a three-row excerpt of the real table under its note, the asked row outlined, the header row on the band, a short ink drop arrow from the note, then "Census table" and "Open the full table →".
+- **Results inside notes:** search results as compact ruled rows with Open links; report passages as quotes in a hairline frame with report name and section; the live chart for daily readings on phones.
+- **Unverified figures:** a number in the model's words that is not a year, a dataset code, an identifier, a quoted row label or a definition (age band, survey period, table number) gets a dotted underline and a small boxed "unverified" tag in graphite. Never red.
+- **Status line:** one graphite line under the field: "N of M questions left today · Don't paste private source info · Sign out", Sign out an underlined text button.
+- **Signed out:** a one-line invitation and a ruled "Sign in to ask" button (Clerk's modal).
+- Leaders and outlines are ink, never red: red is DYCU's teaching voice, not the AI's.
 
 ### Annotated Sheet (signature, How it works)
 A real dataset sheet, cut to its four teaching parts and marked up by the grease pencil like a page from the producer's desk.

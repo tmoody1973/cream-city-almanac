@@ -85,3 +85,11 @@ describe("portraitParams", () => {
     expect(portraitParams("?open=N03")).toBe("");
   });
 });
+
+describe("a marked row in the address", () => {
+  it("survives a laptop redirect with the table choice", () => {
+    expect(portraitParams("?open=N03&place=harambee&year=2024&topic=poverty-status-by-age&row=Under+5+years")).toBe(
+      "place=harambee&year=2024&topic=poverty-status-by-age&row=Under+5+years",
+    );
+  });
+});
