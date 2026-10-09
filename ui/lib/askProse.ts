@@ -4,6 +4,8 @@
 // ("Under 5 years"). Quoted text the data never said ("608 children under 5") is the model's own, and flags.
 // Definitions are not figures either (Tarik, 2026-10-08):
 // age bands ("ages 20 to 64", "18 and older"), survey periods ("5-year"), and table numbers ("Table 11").
+// Names and dates the person asked about are not figures either: "police district 6", "ward 12", "ZIP 53212",
+// "2263 N Lake Dr", "December 31, 2023".
 const NUMBER = /\b[A-Z]\d{2}\b|(?<![A-Za-z\d.])\d+(?:,\d{3})*(?:\.\d+)?%?/g;
 const QUOTE_MARK = /["“”]/g;
 const DEFINITIONS = [
@@ -11,6 +13,11 @@ const DEFINITIONS = [
   /\b\d+(?:\s*(?:to|–|-)\s*\d+)?\s+(?:years?\s+)?(?:and|or)\s+(?:older|over)\b/gi,
   /\b\d+-(?:year|month|week|day)\b/gi,
   /\btable\s+\d+\b/gi,
+  /\b(?:(?:police|aldermanic|council|school)\s+)?district\s+\d+\b/gi,
+  /\bward\s+\d+\b/gi,
+  /\bzip(?:\s+code)?\s+\d{5}\b/gi,
+  /\b\d{1,5}\s+[NSEW]\.?\s+[A-Z][a-z]+/g, // a street address; the direction is what tells it from a count
+  /\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|June?|July?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\.?\s+\d{1,2}\b/g,
 ];
 
 // Every pair of quote marks is tried, so a stray inch mark (5") can't shift which quote closes which.

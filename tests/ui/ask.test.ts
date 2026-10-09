@@ -30,6 +30,19 @@ describe("proseSegments", () => {
     expect(check("The \u201cIncome in the past 12 months\u201d row.")).toEqual([]);
     expect(check('The estimate is "608".')).toEqual(["608"]);
   });
+  it("allows places and dates the person named: districts, wards, ZIPs, street addresses, calendar dates", () => {
+    expect(flagged("Police district 6, aldermanic District 12 and ward 12.")).toEqual([]);
+    expect(flagged("Everything in ZIP 53212 and ZIP code 53206.")).toEqual([]);
+    expect(flagged("I can't look up 2263 N Lake Dr, or 410 E. Wells St.")).toEqual([]);
+    expect(flagged("The data ends December 31, 2023, and Dec 31 is the last day. Sep. 5 and Mar 3, 2025 too.")).toEqual([]);
+  });
+  it("still flags a bare count next to those words", () => {
+    expect(flagged("There were 31 robberies.")).toEqual(["31"]);
+    expect(flagged("There were 31 robberies in district 6.")).toEqual(["31"]);
+    expect(flagged("About 94 incidents in ward 12 on Dec 31.")).toEqual(["94"]);
+    expect(flagged("53212 people lived there.")).toEqual(["53212"]);
+    expect(flagged("There were 12 North Side shootings.")).toEqual(["12"]);
+  });
   it("treats digits glued to letters as identifiers, not figures", () => {
     expect(flagged("Census tables B17001, S1501 and DP04 cover it, with PM2.5 readings.")).toEqual([]);
     expect(flagged("Adults over 18.")).toEqual(["18"]);
