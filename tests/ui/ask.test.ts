@@ -188,6 +188,13 @@ describe("countRecords tool", () => {
     const b = { ...fakeBackend(), sheet: async () => ({ family: { code: "P01", name: "NIBRS Crime Data", source: "city" }, members: [], card: null, city: { columns: ["Incident_Date"], namesPeople: false, coverage: { min: "2024-01-01", max: "2026-10-08" }, datastoreId: "rid" } }) } as never;
     expect(await askTools(b).find((x) => x.name === "previewData")!.execute({ code: "P01" } as never)).toMatchObject({ status: "ok", city: true, fields: ["Incident_Date"] });
   });
+  it("tells the model a City dataset names people, on its sheet and its preview (m1)", async () => {
+    const mprop = { family: { code: "H09", name: "Master Property File", places: ["City"], years: [], source: "city" }, members: [], card: { explainer: "e", caveats: [], storyAngles: [], glossary: [] }, city: { columns: ["OWNER_NAME_1"], namesPeople: true, coverage: { min: null, max: null }, datastoreId: "rid" } };
+    const b = { ...fakeBackend(), sheet: async () => mprop } as never;
+    expect(await askTools(b).find((x) => x.name === "showDataset")!.execute({ code: "H09" } as never)).toMatchObject({ status: "ok", namesPeople: true });
+    expect(await askTools(b).find((x) => x.name === "previewData")!.execute({ code: "H09" } as never)).toMatchObject({ status: "ok", city: true, namesPeople: true });
+    expect(await tool("showDataset").execute({ code: "V02" })).not.toHaveProperty("namesPeople");
+  });
   it("tells the model to count only through countRecords and never repeat a person's record", () => {
     expect(ASK_PROMPT).toContain("countRecords");
     expect(ASK_PROMPT).toMatch(/never repeat or look up an individual/i);

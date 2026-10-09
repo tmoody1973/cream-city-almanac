@@ -45,7 +45,7 @@ export function askTools(b: AskBackend): AskTool[] {
         const wanted = c.trim().toUpperCase();
         const s = await b.sheet(wanted);
         if (!s) return { status: "not-found", code: wanted };
-        return { status: "ok", code: s.family.code, name: s.family.name, places: s.family.places, years: s.family.years, explainer: s.card?.explainer ?? null, caveats: s.card?.caveats ?? [], storyAngles: s.card?.storyAngles ?? [] };
+        return { status: "ok", code: s.family.code, name: s.family.name, places: s.family.places, years: s.family.years, explainer: s.card?.explainer ?? null, caveats: s.card?.caveats ?? [], storyAngles: s.card?.storyAngles ?? [], ...(s.city ? { namesPeople: s.city.namesPeople } : {}) };
       },
     },
     {
@@ -56,7 +56,7 @@ export function askTools(b: AskBackend): AskTool[] {
         const wanted = c.trim().toUpperCase();
         const s = await b.sheet(wanted);
         if (!s) return { status: "not-found", code: wanted };
-        if (s.family.source === "city") return s.city?.datastoreId ? { status: "ok", city: true, code: s.family.code, name: s.family.name, members: [], fields: s.city.columns } : { status: "no-feed", code: wanted };
+        if (s.family.source === "city") return s.city?.datastoreId ? { status: "ok", city: true, code: s.family.code, name: s.family.name, members: [], fields: s.city.columns, namesPeople: s.city.namesPeople } : { status: "no-feed", code: wanted };
         const members = s.members.filter((m) => m.featureServerUrl).map(({ place, yearLabel, featureServerUrl }) => ({ place, yearLabel, featureServerUrl }));
         if (members.length === 0) return { status: "no-feed", code: wanted };
         return { status: "ok", code: s.family.code, name: s.family.name, members, fields: s.card?.glossary.map((g) => g.field) ?? [] };
