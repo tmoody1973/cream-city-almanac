@@ -11,7 +11,8 @@ test("home shows today's rundown with live codes and the catalog line", async ({
   await expect(page.getByRole("heading", { name: "UPDATED THIS SEASON" })).toBeVisible();
   const rows = page.locator("li[data-code]");
   await expect(rows).toHaveCount(10);
-  await expect(rows.first()).toContainText("V02");
+  // The rundown is newest-first and DYCU's own updates reorder it; the City-flood regression is pinned by tests/lib/cityFamilies.test.ts.
+  await expect(rows.first()).toHaveAttribute("data-code", /^[A-Z]\d{2,3}$/);
   await expect(page.getByText("updated since your last visit").first()).toBeAttached();
   await expect(page.getByRole("link", { name: "SEARCH" })).toHaveAttribute("aria-current", "page");
   await expect(page.getByText("Built on Data You Can Use's public data")).toBeVisible();
