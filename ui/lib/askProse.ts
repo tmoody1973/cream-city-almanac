@@ -66,3 +66,47 @@ export function proseSegments(text: string, data = ""): { text: string; unverifi
   if (last < text.length) out.push({ text: text.slice(last), unverified: false });
   return out;
 }
+
+// The model's reply as blocks: a blank line starts a paragraph, "- " (or "* ", "• ", "1. ") lines make a list, and a
+// single line break inside a paragraph is a space. Bold and heading marks it slips in are dropped; replies are plain.
+export type ProseBlock = { kind: "p"; text: string } | { kind: "list"; items: string[] };
+const ITEM = /^\s*(?:[-*•]|\d+[.)])\s+/;
+
+export function proseBlocks(text: string): ProseBlock[] {
+  const blocks: ProseBlock[] = [];
+  let para: string[] = [];
+  let list: string[] = [];
+  const endPara = () => para.length && (blocks.push({ kind: "p", text: para.join(" ") }), (para = []));
+  const endList = () => list.length && (blocks.push({ kind: "list", items: list }), (list = []));
+  const plain = text.replace(/\*\*(.+?)\*\*|__(.+?)__/g, "$1$2").replace(/^\s*#+\s+/gm, "");
+  for (const raw of plain.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line) {
+      endPara();
+      endList();
+    } else if (ITEM.test(line)) {
+      endPara();
+      list.push(line.replace(ITEM, ""));
+    } else {
+      endList();
+      para.push(line);
+    }
+  }
+  endPara();
+  endList();
+  return blocks;
+}
+
+// What breaks the reply rules in lib/ask/prompt.ts (one to three sentences, at most three "- " angles, no headings or
+// numbered points). The report card grades it; the app shows replies as written. Sentence ends are counted roughly.
+export function replyProblems(text: string): string[] {
+  const problems: string[] = [];
+  const blocks = proseBlocks(text);
+  const sentences = blocks.filter((b) => b.kind === "p").reduce((n, b) => n + Math.max(1, (b.text.match(/[.!?](?=\s|$)/g) ?? []).length), 0);
+  const angles = blocks.reduce((n, b) => (b.kind === "list" ? n + b.items.length : n), 0);
+  if (sentences > 3) problems.push(`${sentences} sentences`);
+  if (angles > 3) problems.push(`${angles} angles`);
+  if (/^\s*#+\s/m.test(text)) problems.push("heading");
+  if (/^\s*\d+[.)]\s/m.test(text)) problems.push("numbered list");
+  return problems;
+}

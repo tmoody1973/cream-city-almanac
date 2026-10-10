@@ -61,7 +61,8 @@ const text = (s: string) => {
 const call = (toolName: string, input: object) => ({ type: "tool-call" as const, toolCallId: nextId(`call-${toolName}`), toolName, input: JSON.stringify(input) });
 
 // A scripted model: the first step calls the tool the question's keyword names; the next step replies.
-// "poverty" → getNumber (Harambee); "air" → previewData V02; "report" → readReport; "unverified" → a reply with a figure; "thefts" and "robberies" → searchCatalog, then countRecords (robberies: a broad count, then robbery in Harambee); else searchCatalog.
+// "poverty" → getNumber (Harambee); "air" → previewData V02; "twice" → showDataset and previewData V02 in one step;
+// "angles" → a reply with two paragraphs and three story angles; "report" → readReport; "unverified" → a reply with a figure; "thefts" and "robberies" → searchCatalog, then countRecords (robberies: a broad count, then robbery in Harambee); else searchCatalog.
 export function fakeAskModel(): LanguageModel {
   return new MockLanguageModelV3({
     doStream: async ({ prompt }) => {
@@ -96,19 +97,21 @@ export function fakeAskModel(): LanguageModel {
         return { stream: simulateReadableStream({ chunks: [{ type: "stream-start" as const, warnings: [] }, ...stream] }) };
       }
       const chunks = answered
-        ? [...text("Here is what the data shows."), finish("stop")]
+        ? [...text(question.includes("angles") ? "The asthma sheets are listed.\n\nStory angles:\n- Where it is highest\n- How it changed\n- Who is working on it" : "Here is what the data shows."), finish("stop")]
         : question.includes("unverified")
           ? [...text("There are 608 children."), finish("stop")]
           : [
-              question.includes("thefts") || question.includes("robberies")
+              ...[question.includes("thefts") || question.includes("robberies")
                 ? call("searchCatalog", { query: "NIBRS crime" })
                 : question.includes("poverty")
                 ? call("getNumber", { neighborhood: "Harambee", topic: "Poverty Status by Age", row: "Under 5 years" })
+                : question.includes("twice")
+                ? [call("showDataset", { code: "V02" }), call("previewData", { code: "V02" })]
                 : question.includes("air")
                   ? call("previewData", { code: "V02" })
                   : question.includes("report")
                     ? call("readReport", { question: "Harambee housing" })
-                    : call("searchCatalog", { query: "asthma" }),
+                    : call("searchCatalog", { query: "asthma" })].flat(),
               finish("tool-calls"),
             ];
       return { stream: simulateReadableStream({ chunks: [{ type: "stream-start" as const, warnings: [] }, ...chunks] }) };

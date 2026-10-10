@@ -52,3 +52,31 @@ export function lastCountId(messages: CallMsg[]): string | null {
   for (const m of messages) for (const c of m.toolCalls ?? []) if (c.function?.name === "countRecords") last = c.id;
   return last;
 }
+
+// The model often opens one dataset twice in an answer (showDataset, then previewData for its rows); each call would
+// draw the same sheet card. One card per dataset per question: the last call keeps it (it carries the preview).
+const SHEET_TOOLS = new Set(["showDataset", "previewData"]);
+const codeOf = (args: unknown) => {
+  try {
+    const code = (JSON.parse(String(args)) as { code?: unknown }).code;
+    return typeof code === "string" ? code.trim().toUpperCase() : null;
+  } catch {
+    return null;
+  }
+};
+
+export function earlierSheetIds(messages: (Msg & { toolCalls?: { id: string; function?: { name?: string; arguments?: unknown } }[] })[]): Set<string> {
+  const earlier = new Set<string>();
+  let last = new Map<string, string>();
+  for (const m of messages) {
+    if (m.role === "user") last = new Map();
+    for (const c of m.toolCalls ?? []) {
+      const code = SHEET_TOOLS.has(c.function?.name ?? "") ? codeOf(c.function?.arguments) : null;
+      if (!code) continue;
+      const before = last.get(code);
+      if (before) earlier.add(before);
+      last.set(code, c.id);
+    }
+  }
+  return earlier;
+}

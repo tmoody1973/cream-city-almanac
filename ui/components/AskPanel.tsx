@@ -5,10 +5,10 @@ import { useQuery } from "convex/react";
 import Link from "next/link";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
-import { earlierCountIds, lastCountId, noteNumbers, noteOrder } from "@/ui/lib/askNotes";
+import { earlierCountIds, earlierSheetIds, lastCountId, noteNumbers, noteOrder } from "@/ui/lib/askNotes";
 import { readPrompt, withoutPrompt } from "@/ui/lib/askPrompt";
-import { proseSegments } from "@/ui/lib/askProse";
-import { AskCards, EarlierCounts, MapPick, NewestCount } from "./AskCards";
+import { proseBlocks, proseSegments } from "@/ui/lib/askProse";
+import { AskCards, EarlierCounts, EarlierSheets, MapPick, NewestCount } from "./AskCards";
 import styles from "./ask.module.css";
 
 const MAX_QUESTION = 500;
@@ -32,21 +32,34 @@ function Question({ message }: { message: { content?: unknown } }) {
   );
 }
 
-// The model's words. A figure in them is marked unverified: the cards and the open sheet carry every number.
+// The model's words, as paragraphs and a list (ui/lib/askProse.ts proseBlocks). A figure in them is marked
+// unverified: the cards and the open sheet carry every number.
+function Words({ text, data }: { text: string; data: string }) {
+  return proseSegments(text, data).map((s, i) =>
+    s.unverified ? (
+      <mark key={i} className={styles.unverified} data-unverified title="This number didn't come from the data">
+        {s.text}
+        <span className={styles.unverifiedTag}>unverified</span>
+      </mark>
+    ) : (
+      <span key={i}>{s.text}</span>
+    ),
+  );
+}
+
 function Prose({ text, data }: { text: string; data: string }) {
   return (
-    <p className={styles.noteText}>
-      {proseSegments(text, data).map((s, i) =>
-        s.unverified ? (
-          <mark key={i} className={styles.unverified} data-unverified title="This number didn't come from the data">
-            {s.text}
-            <span className={styles.unverifiedTag}>unverified</span>
-          </mark>
+    <div className={styles.noteText} data-ask-prose>
+      {proseBlocks(text).map((b, i) =>
+        b.kind === "p" ? (
+          <p key={i}><Words text={b.text} data={data} /></p>
         ) : (
-          <span key={i}>{s.text}</span>
+          <ul key={i} className={styles.noteList}>
+            {b.items.map((item, j) => <li key={j}><Words text={item} data={data} /></li>)}
+          </ul>
         ),
       )}
-    </p>
+    </div>
   );
 }
 
@@ -71,7 +84,9 @@ function Note({ message, messages = [] }: { message: Msg & { toolCalls?: unknown
       <div className={styles.results}>
         <NewestCount.Provider value={lastCountId(messages)}>
           <EarlierCounts.Provider value={earlierCountIds(messages)}>
-            <CopilotChatToolCallsView message={message as never} messages={messages as never} />
+            <EarlierSheets.Provider value={earlierSheetIds(messages as never)}>
+              <CopilotChatToolCallsView message={message as never} messages={messages as never} />
+            </EarlierSheets.Provider>
           </EarlierCounts.Provider>
         </NewestCount.Provider>
       </div>
