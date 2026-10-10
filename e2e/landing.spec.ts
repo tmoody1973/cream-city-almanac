@@ -51,3 +51,11 @@ test.describe("without JavaScript", () => {
     await expect(page).toHaveURL(/\/search\?q=kids/);
   });
 });
+
+test("the sample answer shows a real count or a link, never a made-up number", async ({ page }) => {
+  await page.goto("/");
+  const sample = page.locator("[data-landing-sample]");
+  await expect(sample).toContainText("How many robberies in Harambee this year?");
+  await expect(sample).toHaveAttribute("data-landing-sample", "done", { timeout: 30_000 });
+  await expect(sample.locator("[data-landing-sample-count], a", { hasText: /^\d[\d,]*$|See the count/ }).first()).toBeVisible({ timeout: 30_000 });
+});

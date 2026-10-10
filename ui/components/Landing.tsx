@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { FunctionReturnType } from "convex/server";
 import type { api } from "@/convex/_generated/api";
 import { CreditFooter } from "./CreditFooter";
+import { LandingAskSample } from "./LandingAskSample";
 import { Masthead } from "./Masthead";
 import { ProvenanceTag } from "./ProvenanceTag";
 import { SiteNav } from "./SiteNav";
@@ -90,7 +91,7 @@ export function Landing({ stats }: { stats: Stats }) {
           <section>
             <h3 className={styles.heading}>Ask a question</h3>
             <p>Ask in plain English; the answer shows the number and its source.</p>
-            {/* Task 4: <LandingAskSample code={stats.sampleCode} /> */}
+            <LandingAskSample code={stats.sampleCode} />
             <p className={styles.example}>
               Free with sign-in · 30 questions a day · <Link href="/ask/guide">How to use Ask&nbsp;→</Link>
             </p>

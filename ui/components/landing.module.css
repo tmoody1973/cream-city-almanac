@@ -235,3 +235,29 @@
     justify-content: start;
   }
 }
+
+/* The sample Ask answer: the one boxed thing besides the search entry (mockup .card-ask). */
+.sample {
+  border: var(--hair);
+  padding: 12px 14px;
+  margin-top: 10px;
+}
+
+.sampleQ {
+  font-weight: 700;
+  margin: 0;
+}
+
+.sampleFigure {
+  font-family: var(--font-caps);
+  font-weight: 700;
+  font-size: clamp(40px, 6vw, 64px);
+  line-height: 1;
+  margin: 6px 0;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.sampleCaption {
+  font-size: var(--fs-small);
+  margin: 6px 0 0;
+}
