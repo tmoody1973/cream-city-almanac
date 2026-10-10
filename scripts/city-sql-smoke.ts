@@ -57,3 +57,22 @@ for (const sql of [q.count, q.range, ...q.tops.flatMap((t) => [t.sql, t.multiSql
   const rows = await datastoreSql<Record<string, unknown>>(sql);
   console.log("OK", rows.length, "rows ·", sql.slice(0, 110));
 }
+
+// MFD Calls for Service Detail: the date is IncidentStarted, the type is IncidentType, points are plain lat/lon text.
+const MFD_RID = "cdf51c45-5fe3-415e-a08c-14ed134dcb64";
+const MFD = {
+  familyKey: "city:mfd-calls-for-service-detail", resourceId: MFD_RID, columns: [], dateColumn: "IncidentStarted", districtColumns: [],
+  categories: [{ column: "IncidentType", values: [{ value: "Fire/Rescue", count: 1 }, { value: "EMS", count: 1 }] }],
+  rowCount: 1, minDate: "2024-01-01", maxDate: today, namesPeople: false, signature: "", updatedAt: Date.now(),
+  latColumn: "latitude", lonColumn: "longitude",
+} satisfies CityProfile;
+const riverwest = { minLat: 43.06, maxLat: 43.09, minLon: -87.91, maxLon: -87.88 };
+const mfd = buildCount(MFD, { from: "2026-01-01", groupBy: "month", filters: [{ column: "IncidentType", values: ["Fire/Rescue"] }] }, today, riverwest);
+if (!mfd.ok || !mfd.points) throw new Error(JSON.stringify(mfd));
+for (const sql of [mfd.totalSql, mfd.groupSql].filter((s): s is string => !!s)) {
+  const rows = await datastoreSql<Record<string, unknown>>(sql);
+  console.log("OK MFD", rows.length, "rows ·", JSON.stringify(rows.slice(0, 3)), "·", sql.slice(0, 90));
+}
+const mfdPoints = await datastoreSql<Record<string, unknown>>(mfd.points.sql);
+const [mfdMissing] = await datastoreSql<{ n: string }>(mfd.points.missingSql);
+console.log("OK MFD", mfdPoints.length, "points ·", mfdMissing.n, "unplaced ·", mfd.points.sql.slice(0, 90));
