@@ -1,21 +1,26 @@
 "use client";
 import { useQuery } from "convex/react";
 // MapLibre 6 has no default export: named imports only.
-import { GeoJSONSource, Map as MapLibreMap, Popup } from "maplibre-gl";
+import { GeoJSONSource, Map as MapLibreMap, Popup, setWorkerUrl } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import type { MapData } from "@/convex/lib/cityMap";
 import { escapeHtml, fetchLayer, labelFields } from "@/ui/lib/arcgisLayer";
-import { cellsToGeoJSON, summarySentence } from "@/ui/lib/mapCells";
+import { cellPopupText, cellsToGeoJSON, SOLID_OPACITY, summarySentence } from "@/ui/lib/mapCells";
 import { useNight } from "@/ui/lib/useNight";
 import styles from "./map.module.css";
+
+// MapLibre 6 looks for its worker beside its own bundle, which Next relocates (404, so no layer ever drew): serve it from public/.
+// public/maplibre holds copies of the installed version's worker files; tests/ui/maplibreWorker.test.ts catches drift.
+setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
 
 const STYLE = { day: "https://tiles.openfreemap.org/styles/positron", night: "https://tiles.openfreemap.org/styles/dark" };
 const MILWAUKEE: [[number, number], [number, number]] = [[-88.07, 42.92], [-87.86, 43.2]];
 const INK = { day: "#111111", night: "#ecebe6" };
 const PENCIL = { day: "#d7261e", night: "#ff6b5e" };
 const LAYER_IDS = ["layer-fill", "layer-line", "layer-dot"];
+const CELL_IDS = ["b1", "b2", "b3"];
 
 // Hatching drawn in the edition's ink: 1–4 diagonal, 5–19 crossed. Patterns read without relying on faint shades.
 function pattern(color: string, crossed: boolean, size: number): ImageData {
@@ -33,6 +38,7 @@ type Props = { cells?: MapData | null; count?: number; boundary?: string | null;
 
 export default function CityMap({ cells = null, count = 0, boundary = null, layer = null, height = 260, after }: Props) {
   const box = useRef<HTMLDivElement>(null);
+  const fig = useRef<HTMLElement>(null); // carries data-drawn="day|night" once the cells and boundary are on the current style
   const map = useRef<MapLibreMap | null>(null);
   const loaded = useRef(false); // true while the current style is fully loaded (isStyleLoaded() also goes false while tiles load)
   const styleEdition = useRef<"day" | "night">("day"); // the edition the map's current style was requested for
@@ -71,7 +77,7 @@ export default function CityMap({ cells = null, count = 0, boundary = null, laye
         m.addSource("cells", { type: "geojson", data: cellsToGeoJSON(cells) });
         m.addLayer({ id: "b1", type: "fill", source: "cells", filter: ["==", ["get", "band"], 1], paint: { "fill-pattern": "hatch" } });
         m.addLayer({ id: "b2", type: "fill", source: "cells", filter: ["==", ["get", "band"], 2], paint: { "fill-pattern": "cross" } });
-        m.addLayer({ id: "b3", type: "fill", source: "cells", filter: ["==", ["get", "band"], 3], paint: { "fill-color": ink, "fill-opacity": 0.7 } });
+        m.addLayer({ id: "b3", type: "fill", source: "cells", filter: ["==", ["get", "band"], 3], paint: { "fill-color": ink, "fill-opacity": SOLID_OPACITY } });
         m.addLayer({ id: "edge", type: "line", source: "cells", paint: { "line-color": ink, "line-width": 1 } });
       }
       if (shape) {
@@ -79,16 +85,38 @@ export default function CityMap({ cells = null, count = 0, boundary = null, laye
         m.addLayer({ id: "boundary", type: "line", source: "boundary", paint: { "line-color": pen, "line-width": 3 } });
         m.fitBounds([[shape.bbox.minLon, shape.bbox.minLat], [shape.bbox.maxLon, shape.bbox.maxLat]], { padding: 24, duration: 0 });
       }
+      if (fig.current) fig.current.dataset.drawn = edition; // only after the layers above were added
     };
     if (styleEdition.current !== edition) {
       styleEdition.current = edition;
       loaded.current = false;
+      delete fig.current?.dataset.drawn; // the old style's drawing is gone until draw() runs again
       m.once("style.load", draw);
       m.setStyle(STYLE[edition]);
     } else if (loaded.current) draw();
     else m.once("style.load", draw);
     return () => { m.off("style.load", draw); };
   }, [cells, shape, edition]);
+
+  // A square says its count on hover (pointer) or tap: from 5 up the number, below that the "1–4" band. Never an address.
+  // Listeners bound to layer ids survive a style swap, so this is registered once for the map's life.
+  useEffect(() => {
+    const m = map.current;
+    if (!m) return;
+    const pop = new Popup({ closeButton: false, closeOnClick: false });
+    const show = (e: { features?: { properties?: Record<string, unknown> | null }[]; lngLat: { lng: number; lat: number } }) => {
+      const label = e.features?.[0]?.properties?.label;
+      if (typeof label === "string") pop.setLngLat(e.lngLat).setText(cellPopupText(label)).addTo(m);
+    };
+    const hide = () => pop.remove();
+    // A tap elsewhere on the map dismisses it (touch has no mouseleave).
+    const away = (e: { point: { x: number; y: number } }) => { if (m.getLayer("b1") && !m.queryRenderedFeatures(e.point as never, { layers: CELL_IDS.filter((id) => m.getLayer(id)) }).length) pop.remove(); };
+    m.on("mousemove", CELL_IDS, show);
+    m.on("click", CELL_IDS, show);
+    m.on("mouseleave", CELL_IDS, hide);
+    m.on("click", away);
+    return () => { m.off("mousemove", CELL_IDS, show); m.off("click", CELL_IDS, show); m.off("mouseleave", CELL_IDS, hide); m.off("click", away); pop.remove(); };
+  }, []);
 
   // City map layers: fetched by the browser for the visible area only.
   // Drawn after the style is ready, and again after a style swap (which drops them); the draw effect leaves them alone.
@@ -151,7 +179,7 @@ export default function CityMap({ cells = null, count = 0, boundary = null, laye
   }, [layer, edition]);
 
   return (
-    <figure className={styles.map} data-map>
+    <figure ref={fig} className={styles.map} data-map>
       <div ref={box} className={styles.canvas} style={{ height }} role="group" aria-label={summary ?? (layer ? `Map of ${layer.name}` : "Map of Milwaukee")} />
       {!tiles && <p className={styles.message} data-map-message>Street map unavailable.</p>}
       {layerNote && <p className={styles.message} data-map-message>{layerNote}</p>}
@@ -159,7 +187,7 @@ export default function CityMap({ cells = null, count = 0, boundary = null, laye
         <ul className={styles.key} aria-label="Map key">
           <li><span className={`${styles.swatch} ${styles.hatch}`} />1–4 in an area</li>
           <li><span className={`${styles.swatch} ${styles.cross}`} />5–19</li>
-          <li><span className={`${styles.swatch} ${styles.solid}`} />20 or more</li>
+          <li><span className={`${styles.swatch} ${styles.solid}`} style={{ opacity: SOLID_OPACITY }} />20 or more</li>
           {shape && <li><span className={`${styles.swatch} ${styles.line}`} />{shape.name} (City boundary)</li>}
         </ul>
       )}

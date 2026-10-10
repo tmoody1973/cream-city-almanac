@@ -21,3 +21,9 @@ export function summarySentence(d: MapData, count: number): string {
   const off = count - s.total;
   return off > 0 ? `${base} ${off.toLocaleString("en-US")} without a location aren't on the map.` : base;
 }
+
+// The 20-or-more band's opacity: the map layer and the key swatch both read this, so they can't drift apart.
+export const SOLID_OPACITY = 0.7;
+
+// What a square says when hovered or tapped: its count from 5 up, the "1–4" band below (the feature's label).
+export const cellPopupText = (label: string) => `${label} in this area`;

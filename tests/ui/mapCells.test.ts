@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { MapData } from "../../convex/lib/cityMap";
-import { cellsToGeoJSON, summarySentence } from "../../ui/lib/mapCells";
+import { cellPopupText, cellsToGeoJSON, SOLID_OPACITY, summarySentence } from "../../ui/lib/mapCells";
 
 const d: MapData = { size: { dLat: 0.0036, dLon: 0.0049 }, cells: [{ i: 10, j: -20, band: 1 }, { i: 11, j: -20, band: 2, n: 7 }], summary: { total: 10, areas: 2, fivePlus: 1, busiest: 7 }, area: "Harambee" };
 
@@ -19,5 +19,13 @@ describe("map cells for the browser", () => {
   it("leaves out the busiest clause when no area reached 5, so no small count is revealed", () => {
     const none: MapData = { ...d, cells: [{ i: 10, j: -20, band: 1 }], summary: { total: 3, areas: 1, fivePlus: 0, busiest: 0 } };
     expect(summarySentence(none, 3)).toBe("3 records in 1 quarter-mile areas; none had 5 or more.");
+  });
+  it("words a square's popup from its label: the count at 5 or more, the band below, never an address", () => {
+    const [small, big] = cellsToGeoJSON(d).features.map((f) => cellPopupText(f.properties.label));
+    expect(small).toBe("1–4 in this area");
+    expect(big).toBe("7 in this area");
+  });
+  it("draws the 20-or-more band at one opacity, shared by the map and its key", () => {
+    expect(SOLID_OPACITY).toBe(0.7);
   });
 });
