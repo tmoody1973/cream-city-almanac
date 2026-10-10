@@ -43,15 +43,17 @@ for (const [i, item] of ASK_QUESTIONS.entries()) {
   const hits = calls.filter((c) => expectedTools.includes(c.toolName as never));
   const hit = (item.final ? hits.slice(-1) : hits).find((c) => Object.values(item.expect).every((v) => JSON.stringify(c.output).includes(String(v))));
   const fieldsOk = Boolean(hit);
+  // The map can only ever show part of the count (records without a location are left out), never more.
+  const mapMismatch = calls.some((c) => c.toolName === "countRecords" && (c.output as { status?: string; count?: number; map?: { summary: { total: number } } | null })?.status === "ok" && ((c.output as { map?: { summary: { total: number } } | null }).map?.summary.total ?? 0) > ((c.output as { count?: number }).count ?? 0));
   const flaggedWords = proseSegments(r.text, JSON.stringify(calls.map((c) => c.output))).filter((s) => s.unverified).map((s) => s.text);
   const unverified = flaggedWords.length;
-  const ok = fieldsOk && unverified === 0;
+  const ok = fieldsOk && unverified === 0 && !mapMismatch;
   graded++;
   if (ok) passed++;
   if (VERBOSE) {
     for (const c of calls) console.log(`   ${c.toolName}(${JSON.stringify(c.input)}) → ${JSON.stringify(c.output).slice(0, 220)}`);
     console.log(`   TEXT: ${r.text}`);
   }
-  console.log(`${ok ? "PASS" : "MISS"} ${item.q} → ${calls.map((c) => c.toolName).join(", ") || "no tools"}${unverified ? ` (${unverified} unverified: ${flaggedWords.join(" | ")})` : ""}`);
+  console.log(`${ok ? "PASS" : "MISS"} ${item.q} → ${calls.map((c) => c.toolName).join(", ") || "no tools"}${unverified ? ` (${unverified} unverified: ${flaggedWords.join(" | ")})` : ""}${mapMismatch ? " (MAP>COUNT)" : ""}`);
 }
 console.log(`\n${passed}/${graded} passed · $${spent.toFixed(3)} spent · $${(spent / Math.max(graded, 1)).toFixed(4)} per question`);
