@@ -82,7 +82,15 @@ async function profileCity(ctx: ActionCtx, familyKey: string, rid: string, resou
       const rows = await datastoreSql<{ v: string | null; n: string }>(t.sql);
       tops.push(isMultiValued(rows) ? { column: t.column, rows: await datastoreSql<{ v: string | null; n: string }>(t.multiSql), multi: true } : { column: t.column, rows });
     }
-    const points = q.points ? await datastoreSql<{ lat: unknown; lon: unknown }>(q.points) : [];
+    // The location check is optional: if the sample fails, the profile is still stored, just without point columns.
+    let points: { lat: unknown; lon: unknown }[] = [];
+    if (q.points) {
+      try {
+        points = await datastoreSql<{ lat: unknown; lon: unknown }>(q.points);
+      } catch (e) {
+        console.error(`City point sample failed for ${familyKey}: ${message(e)}`);
+      }
+    }
     const profile = { ...assembleProfile(familyKey, rid, fields, plan, count, range, tops, Date.now(), points), resourceName };
     await ctx.runMutation(internal.buildStore.replaceCityProfile, { profile });
   } catch (e) {

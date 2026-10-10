@@ -51,7 +51,7 @@ export function profileSql(rid: string, plan: ProfilePlan) {
       multiSql: `SELECT unnest(string_to_array(${quoteId(c)}, ';')) AS v, COUNT(*) AS n FROM ${t} GROUP BY v ORDER BY n DESC LIMIT 200`,
     })),
     points: plan.latColumn && plan.lonColumn
-      ? `SELECT ${quoteId(plan.latColumn)} AS lat, ${quoteId(plan.lonColumn)} AS lon FROM ${t} WHERE ${quoteId(plan.latColumn)} IS NOT NULL AND ${quoteId(plan.lonColumn)} IS NOT NULL LIMIT 50`
+      ? `SELECT ${quoteId(plan.latColumn)} AS lat, ${quoteId(plan.lonColumn)} AS lon FROM ${t} WHERE ${quoteId(plan.latColumn)} IS NOT NULL AND ${quoteId(plan.lonColumn)} IS NOT NULL AND ${quoteId(plan.latColumn)} <> '' AND ${quoteId(plan.lonColumn)} <> '' LIMIT 50`
       : null,
   };
 }

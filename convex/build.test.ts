@@ -196,15 +196,16 @@ async function seedCity(t: TestConvex<typeof schema>, packages = cityPackages())
   return buildId;
 }
 
+const crimeSql = (sql: string) =>
+  sql.startsWith("SELECT COUNT(*)") ? [{ n: "110461" }]
+    : sql.includes("MIN(") ? [{ lo: "2024-01-01T00:00:00", hi: "2026-10-08T00:00:00" }]
+    : sql.includes("unnest(") ? [{ v: "13A", n: "9" }, { v: "120", n: "4" }]
+    : sql.includes('"Offense_All" AS v') ? [{ v: "240", n: "13619" }, { v: "13A;120", n: "4" }]
+    : [{ v: "6", n: "500" }];
 const crimeFake = () =>
   installFakeFetch({
     cityFields: [{ id: "Incident_Date", type: "text" }, { id: "Police_District", type: "text" }, { id: "Offense_All", type: "text" }],
-    citySql: (sql) =>
-      sql.startsWith("SELECT COUNT(*)") ? [{ n: "110461" }]
-        : sql.includes("MIN(") ? [{ lo: "2024-01-01T00:00:00", hi: "2026-10-08T00:00:00" }]
-        : sql.includes("unnest(") ? [{ v: "13A", n: "9" }, { v: "120", n: "4" }]
-        : sql.includes('"Offense_All" AS v') ? [{ v: "240", n: "13619" }, { v: "13A;120", n: "4" }]
-        : [{ v: "6", n: "500" }],
+    citySql: crimeSql,
   });
 const crimeFamily = (t: TestConvex<typeof schema>) =>
   t.run((ctx) => ctx.db.query("families").withIndex("by_key", (q) => q.eq("key", CRIME)).first());
@@ -284,5 +285,22 @@ describe("City profiles", () => {
     crimeFake();
     await t.action(internal.build.processFamily, { buildId, familyKey: CRIME });
     expect((await crimeFamily(t))!.latestModified).toBe(before);
+  });
+
+  it("still stores the profile when the point sample fails, with no point columns", async () => {
+    const t = convexTest(schema, modules);
+    const buildId = await seedCity(t);
+    installFakeFetch({
+      cityFields: [
+        { id: "Incident_Date", type: "text" }, { id: "Police_District", type: "text" }, { id: "Offense_All", type: "text" },
+        { id: "Address_Latitude", type: "numeric" }, { id: "Address_Longitude", type: "numeric" },
+      ],
+      citySql: (sql) => {
+        if (sql.includes(" AS lat")) throw new Error("sample refused");
+        return crimeSql(sql);
+      },
+    });
+    await t.action(internal.build.processFamily, { buildId, familyKey: CRIME });
+    expect(await profileOf(t, CRIME)).toMatchObject({ rowCount: 110461, dateColumn: "Incident_Date", latColumn: null, lonColumn: null });
   });
 });

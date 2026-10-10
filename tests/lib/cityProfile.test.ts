@@ -78,7 +78,7 @@ describe("point columns", () => {
   });
   it("samples non-null pairs", () => {
     expect(profileSql("87843297-a6fa-46d4-ba5d-cb342fb2d3bb", planProfile(f("lat", "lon"))).points).toBe(
-      `SELECT "lat" AS lat, "lon" AS lon FROM "87843297-a6fa-46d4-ba5d-cb342fb2d3bb" WHERE "lat" IS NOT NULL AND "lon" IS NOT NULL LIMIT 50`,
+      `SELECT "lat" AS lat, "lon" AS lon FROM "87843297-a6fa-46d4-ba5d-cb342fb2d3bb" WHERE "lat" IS NOT NULL AND "lon" IS NOT NULL AND "lat" <> '' AND "lon" <> '' LIMIT 50`,
     );
   });
   it("keeps the columns only when at least 90% of the sample is in Milwaukee", () => {
