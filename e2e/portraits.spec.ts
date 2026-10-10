@@ -103,3 +103,16 @@ test("changing the neighborhood keeps the year when the new one has it", async (
   await section(page).getByLabel("Neighborhood").selectOption("burnham-park-layton-park-silver-city");
   await expect(section(page).locator("caption")).toHaveText(/, 2023: Race and Ethnicity$/i);
 });
+
+test("on a laptop, a wide place-by-year grid never squeezes What it measures to a sliver", async ({ page }, info) => {
+  test.skip(info.project.name !== "desktop", "laptop two-pane only");
+  // 1440 stacks; from about 1500 the pane is wide enough to set the grid beside the explainer.
+  for (const width of [1440, 1500, 1700, 1920]) {
+    await page.setViewportSize({ width, height: 900 });
+    await open(page, info.project.name);
+    const explainer = page.getByRole("heading", { name: "WHAT IT MEASURES" }).locator("xpath=..");
+    await expect(explainer).toBeVisible();
+    const box = await explainer.boundingBox();
+    expect(box?.width ?? 0, `at ${width}px`).toBeGreaterThanOrEqual(240);
+  }
+});
