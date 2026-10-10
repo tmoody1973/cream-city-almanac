@@ -145,3 +145,33 @@ test("a City map-layer sheet draws its layer, and asks to zoom in on parcels", a
   await page.goto(`/d/${parcels}`);
   await expect(page.locator("[data-sheet-layers] [data-map-message]")).toContainText("Zoom in to see", { timeout: 30_000 });
 });
+
+test("a map label is readable in both editions (ink on paper, not ink on MapLibre's white)", async ({ page }) => {
+  test.skip(!(await cityUp(page)), "City API unreachable");
+  const code = await nibrsCode(page);
+  await page.goto(`/d/${code}`);
+  await expect(page.locator("[data-sheet-where] [data-map][data-drawn]")).toBeVisible({ timeout: 30_000 });
+  for (const theme of ["light", "dark"]) {
+    await page.evaluate((t) => (document.documentElement.dataset.theme = t), theme);
+    // A real label is a MapLibre popup inside the map's box; build the same markup and read its computed colors.
+    const ratio = await page.evaluate(() => {
+      const box = document.querySelector("[data-sheet-where] [data-map] [role=group]")!;
+      const popup = document.createElement("div");
+      popup.className = "maplibregl-popup";
+      popup.innerHTML = '<div class="maplibregl-popup-content">10 in this area</div>';
+      box.appendChild(popup);
+      const s = getComputedStyle(popup.firstElementChild!);
+      const lum = (c: string) => {
+        const [r, g, b] = c.match(/\d+(\.\d+)?/g)!.slice(0, 3).map(Number).map((v) => {
+          const x = v / 255;
+          return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4;
+        });
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+      };
+      const [a, b] = [lum(s.color), lum(s.backgroundColor)].sort((x, y) => y - x);
+      popup.remove();
+      return (a + 0.05) / (b + 0.05);
+    });
+    expect(ratio, theme).toBeGreaterThanOrEqual(4.5);
+  }
+});
