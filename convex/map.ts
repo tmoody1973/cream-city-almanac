@@ -1,34 +1,49 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { action, internalMutation, internalQuery, query } from "./_generated/server";
-import { runCount, type CountResult } from "./city";
+import { askCity, planCount, type CountResult } from "./city";
 import { chicagoDay } from "./lib/ask";
 import { hashInputs } from "./lib/hash";
 import { nameKey } from "./lib/neighborhoodNames";
 import { rateLimiter } from "./limits";
 
-const TTL_MS = 10 * 60_000;
+export const MAP_TTL_MS = 10 * 60_000;
 const vFilter = v.object({ column: v.string(), values: v.array(v.string()) });
+type MapArgs = { code: string; from?: string; to?: string; filters?: { column: string; values: string[] }[]; neighborhood?: string };
+
+// The cache key for one map question: same normalized arguments, same Chicago day. Ask's countRecords stores its
+// map under the key its card's mapCells call will compute, so that call is a cache hit.
+export async function mapKey(args: MapArgs) {
+  const input = {
+    code: args.code.trim().toUpperCase(),
+    from: args.from || undefined,
+    to: args.to || undefined,
+    filters: (args.filters ?? []).map((f) => ({ column: f.column, values: [...f.values].sort() })).sort((a, b) => a.column.localeCompare(b.column)),
+    neighborhood: args.neighborhood?.trim() ? nameKey(args.neighborhood) : undefined,
+  };
+  return { input, key: await hashInputs({ ...input, day: chicagoDay(Date.now()) }) };
+}
+
+// Anyone can call this, so sizes are bounded before any lookup (the sheet's own controls stay well inside them).
+const oversize = (a: MapArgs) =>
+  a.code.length > 16 || (a.from?.length ?? 0) > 10 || (a.to?.length ?? 0) > 10 || (a.neighborhood?.length ?? 0) > 80 ||
+  (a.filters?.length ?? 0) > 4 || (a.filters ?? []).some((f) => f.column.length > 120 || f.values.length > 10 || f.values.some((x) => x.length > 120));
 
 // The sheet's map: anyone can use it. Identical requests (same day) come from the cache; new ones spend the
-// site-wide City budget. Same logic, refusals and privacy as Ask's count — cells only, never coordinates.
+// site-wide City budget, and only when a City query will actually run (refusals are free). Same logic, refusals and
+// privacy as Ask's count — cells only, never coordinates.
 export const mapCells = action({
   args: { code: v.string(), from: v.optional(v.string()), to: v.optional(v.string()), filters: v.optional(v.array(vFilter)), neighborhood: v.optional(v.string()) },
   handler: async (ctx, args): Promise<CountResult> => {
-    const input = {
-      code: args.code.trim().toUpperCase(),
-      from: args.from || undefined,
-      to: args.to || undefined,
-      filters: (args.filters ?? []).map((f) => ({ column: f.column, values: [...f.values].sort() })).sort((a, b) => a.column.localeCompare(b.column)),
-      neighborhood: args.neighborhood?.trim() ? nameKey(args.neighborhood) : undefined,
-    };
-    const key = await hashInputs({ ...input, day: chicagoDay(Date.now()) });
+    if (oversize(args)) return { status: "bad-input" as const };
+    const { input, key } = await mapKey(args);
     const hit: string | null = await ctx.runQuery(internal.map.cached, { key, now: Date.now() });
     if (hit) return JSON.parse(hit) as CountResult;
-    if (!(await rateLimiter.limit(ctx, "mapCity")).ok) return { status: "busy" as const };
-    const result = await runCount(ctx, { ...input, neighborhood: args.neighborhood });
+    const plan = await planCount(ctx, { ...input, neighborhood: args.neighborhood });
+    if (!("status" in plan) && !(await rateLimiter.limit(ctx, "mapCity")).ok) return { status: "busy" as const };
+    const result = "status" in plan ? plan : await askCity(plan);
     if (result.status !== "unavailable" && result.status !== "busy") {
-      await ctx.runMutation(internal.map.remember, { key, result: JSON.stringify(result), expiresAt: Date.now() + TTL_MS });
+      await ctx.runMutation(internal.map.remember, { key, result: JSON.stringify(result), expiresAt: Date.now() + MAP_TTL_MS });
     }
     return result;
   },
@@ -49,7 +64,7 @@ export const remember = internalMutation({
     const old = await ctx.db.query("mapCache").withIndex("by_key", (q) => q.eq("key", row.key)).first();
     if (old) await ctx.db.replace(old._id, row);
     else await ctx.db.insert("mapCache", row);
-    for (const stale of await ctx.db.query("mapCache").withIndex("by_expires", (q) => q.lt("expiresAt", Date.now())).take(20)) await ctx.db.delete(stale._id);
+    for (const stale of await ctx.db.query("mapCache").withIndex("by_expiresAt", (q) => q.lt("expiresAt", Date.now())).take(20)) await ctx.db.delete(stale._id);
   },
 });
 

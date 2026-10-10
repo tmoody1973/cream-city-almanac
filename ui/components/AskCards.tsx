@@ -1,11 +1,13 @@
 "use client";
 import { useRenderTool } from "@copilotkit/react-core/v2";
-import { createContext, Fragment, useContext, useEffect } from "react";
+import { useAction } from "convex/react";
+import { createContext, Fragment, useContext, useEffect, useState } from "react";
 import { z } from "zod";
 import { countCoverage, outsideCoverage } from "@/ui/lib/askCount";
 import { passageBlocks } from "@/ui/lib/askPassage";
 import { formatPortraitMargin, formatPortraitNumber } from "@/ui/lib/portrait";
-import type { CountResult } from "@/lib/ask/tools";
+import { api } from "@/convex/_generated/api";
+import { countParams, type CountForModel, type CountResult } from "@/lib/ask/tools";
 import { CityMap } from "./CityMapLoader";
 import { LivePreview } from "./LivePreview";
 import { ProvenanceTag } from "./ProvenanceTag";
@@ -19,7 +21,8 @@ export type NumberResult = {
   tableIdText: string; definition: string | null; label: string; rowIndex: number; values: Value[]; groups: string[]; nearby: { label: string; values: Value[]; marked: boolean }[];
 };
 
-type CountOk = Extract<CountResult, { status: "ok" }>;
+type CountOk = Extract<CountForModel, { status: "ok" }>;
+type CountArgs = z.infer<typeof countParams>;
 
 const parse = <T,>(result: unknown): T | null => {
   try {
@@ -159,22 +162,44 @@ export const EarlierCounts = createContext<Set<string>>(new Set());
 export const NewestCount = createContext<string | null>(null);
 export const MapPick = createContext<{ picked: { id: string; newest: string | null } | null; pick: (id: string, newest: string | null) => void }>({ picked: null, pick: () => {} });
 
-function CountMap({ r, id }: { r: CountOk; id?: string }) {
+function CountMap({ r, id, args }: { r: CountOk; id?: string; args?: CountArgs }) {
   const newest = useContext(NewestCount);
   const { picked, pick } = useContext(MapPick);
-  if (!r.map) return <p className={styles.source} data-map-message>No map: this dataset doesn&apos;t record locations.</p>;
+  if (!r.map) return <p className={styles.source} data-map-message>{r.mapError ? "No map for this count." : "No map: this dataset doesn't record locations."}</p>;
   // A pick lasts until a newer count arrives; then the newest card is live again.
   const live = picked && picked.newest === newest ? picked.id === id : id === newest;
   if (!live) return <button type="button" className={styles.textButton} onClick={() => id && pick(id, newest)} data-show-map>Show map</button>;
   // A grouped count ("by month") maps all of its groups together.
   const months = /^[A-Z][a-z]{2} \d{4}$|^\d{4}$/.test(r.groups[0]?.label ?? "");
   const together = r.groups.length > 0 ? `Counts cover all ${months ? "months" : "types"} together.` : undefined;
-  return <CityMap cells={r.map} count={r.count} boundary={r.map.area} after={together} />;
+  return args ? <LiveCountMap args={args} count={r.count} boundary={r.map.area} after={together} /> : null;
 }
 
-function CountOrEarlier({ r, id, onOpen }: { r: CountOk; id?: string; onOpen: Open }) {
+// The conversation holds no cells (lib/ask/tools.ts withoutCells): they come from the map cache countRecords just
+// filled, a free hit. After 10 minutes they're recomputed under the public map's limit.
+function LiveCountMap({ args, count, boundary, after }: { args: CountArgs; count: number; boundary: string | null; after?: string }) {
+  const run = useAction(api.map.mapCells);
+  const [got, setGot] = useState<{ ask: string; r: CountResult } | null>(null);
+  const { groupBy: _groupBy, ...where } = args; // groups don't change the cells; countRecords stored them ungrouped
+  const ask = JSON.stringify(where);
+  useEffect(() => {
+    let gone = false;
+    run(JSON.parse(ask)).then(
+      (r) => { if (!gone) setGot({ ask, r }); },
+      () => { if (!gone) setGot({ ask, r: { status: "unavailable" } as CountResult }); },
+    );
+    return () => { gone = true; };
+  }, [run, ask]);
+  const r = got?.ask === ask ? got.r : null;
+  if (!r) return <p className={styles.source} data-map-message aria-busy="true">Loading map…</p>;
+  if (r.status === "busy") return <p className={styles.source} data-map-message>The map is busy; try again in a minute.</p>;
+  if (r.status !== "ok" || !r.map) return <p className={styles.source} data-map-message>The City&apos;s data didn&apos;t respond. Try again shortly.</p>;
+  return <CityMap cells={r.map} count={count} boundary={boundary} after={after} />;
+}
+
+function CountOrEarlier({ r, id, onOpen, args }: { r: CountOk; id?: string; onOpen: Open; args?: CountArgs }) {
   const earlier = useContext(EarlierCounts);
-  if (!id || !earlier.has(id)) return <CountCard r={r} id={id} onOpen={onOpen} />;
+  if (!id || !earlier.has(id)) return <CountCard r={r} id={id} onOpen={onOpen} args={args} />;
   return (
     <details className={styles.earlierCount} data-earlier-count>
       <summary>Earlier count: {[r.name, r.area, ...r.filters, r.period].filter(Boolean).join(" · ")}</summary>
@@ -185,7 +210,7 @@ function CountOrEarlier({ r, id, onOpen }: { r: CountOk; id?: string; onOpen: Op
 
 // A City count: the number lives here, never in the model's words. Filters in plain words, the period, what the
 // data covers, and caveats.
-function CountCard({ r, id, onOpen, noMap }: { r: CountOk; id?: string; onOpen: Open; noMap?: boolean }) {
+function CountCard({ r, id, onOpen, noMap, args }: { r: CountOk; id?: string; onOpen: Open; noMap?: boolean; args?: CountArgs }) {
   const covers = countCoverage(r);
   return (
     <figure className={styles.excerpt} data-card="count">
@@ -207,7 +232,7 @@ function CountCard({ r, id, onOpen, noMap }: { r: CountOk; id?: string; onOpen: 
       {covers && <p className={styles.source} data-coverage>{covers}</p>}
       {r.area && <p className={styles.source} data-area>In {r.area}</p>}
       {r.noLocation > 0 && <p className={styles.source} data-no-location>{r.noLocation.toLocaleString("en-US")} matching records citywide have no location and aren&apos;t included.</p>}
-      {!noMap && <CountMap r={r} id={id} />}
+      {!noMap && <CountMap r={r} id={id} args={args} />}
       {r.futureExcluded > 0 && <p className={styles.source}>{r.futureExcluded.toLocaleString("en-US")} records dated in the future were left out.</p>}
       {r.caveat && <p className={styles.source}>{r.caveat} <ProvenanceTag source="AI" /></p>}
       <OpenLink code={r.code} onOpen={onOpen} label="Open the data" />
@@ -257,11 +282,11 @@ export function AskCards({ onOpen }: { onOpen?: (search: string) => void }) {
     return <NumberCard r={r} onOpen={onOpen} callKey={key("getNumber", props as never)} />;
   } }, [onOpen]);
 
-  useRenderTool({ name: "countRecords", parameters: z.object({ code: z.string() }), render: (props) => {
+  useRenderTool({ name: "countRecords", parameters: countParams, render: (props) => {
     if (props.status !== "complete") return <Busy />;
-    const r = parse<CountResult>(props.result);
+    const r = parse<CountForModel>(props.result);
     if (!r) return <Failed />;
-    if (r.status === "ok") return <CountOrEarlier r={r} id={props.toolCallId} onOpen={onOpen} />;
+    if (r.status === "ok") return <CountOrEarlier r={r} id={props.toolCallId} onOpen={onOpen} args={props.parameters} />;
     if (r.status === "outside-coverage") return <p className={styles.failed} data-card="count-outside">{outsideCoverage(r)} <OpenLink code={r.code} onOpen={onOpen} /></p>;
     if (r.status === "unavailable") return <p className={styles.failed}>The City&apos;s data didn&apos;t respond. Try again shortly.</p>;
     if (r.status === "not-live") return <p className={styles.failed}>{r.name} can&apos;t be counted live.{r.note ? ` ${r.note}` : ""} <OpenLink code={r.code} onOpen={onOpen} /></p>;

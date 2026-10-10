@@ -10,6 +10,7 @@ import { buildCount, groupLabelFor, MAX_GROUPS } from "./lib/citySql";
 import type { Bbox, Geometry } from "./lib/geo";
 import { matchName } from "./lib/neighborhoodNames";
 import { rateLimiter } from "./limits";
+import { MAP_TTL_MS, mapKey } from "./map";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const vFilter = v.object({ column: v.string(), values: v.array(v.string()) });
@@ -64,7 +65,7 @@ export type CountResult =
       status: "ok"; code: string; name: string; count: number; groups: { label: string; count: number }[]; other: number; otherLabel: "Earlier" | "Other" | null;
       overlap: boolean; period: string; filters: string[]; futureExcluded: number; caveat: string | null;
       dateColumn: string | null; coverage: string | null; resourceName: string | null; namesPeople: boolean;
-      area: string | null; noLocation: number; map: MapData | null;
+      area: string | null; noLocation: number; map: MapData | null; mapError?: true;
     }
   | { status: "outside-coverage"; code: string; name: string; coverage: string }
   | { status: "choose"; code: string; name: string; column: string; asked: string; choices: string[] }
@@ -77,7 +78,8 @@ export type CountResult =
   | { status: "not-city"; code: string; name: string }
   | { status: "not-live"; code: string; name: string; note?: string }
   | { status: "unavailable"; code: string; name: string }
-  | { status: "busy" };
+  | { status: "busy" }
+  | { status: "bad-input" };
 
 // Date groups arrive as "2026-08" (month) or "2026" (year) text; column groups are named like the profile names them.
 const groupName = (label: string | null, g: unknown) => {
@@ -97,12 +99,30 @@ export const countRecords = action({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Sign in to ask");
     if (!(await rateLimiter.limit(ctx, "askCity", { key: identity.tokenIdentifier })).ok) return { status: "busy" as const };
-    return runCount(ctx, args);
+    const result = await runCount(ctx, args);
+    // Ask's card draws this map by calling api.map.mapCells with the same arguments; leave the answer where that
+    // call looks, so the cells never ride in the conversation and the card's fetch is a free cache hit. Groups don't
+    // change the cells, so a grouped count is stored as the ungrouped question the card asks.
+    if (result.status === "ok" && result.map) {
+      const { groupBy: _groupBy, ...where } = args;
+      const { key } = await mapKey(where);
+      await ctx.runMutation(internal.map.remember, { key, result: JSON.stringify({ ...result, groups: [], other: 0, otherLabel: null }), expiresAt: Date.now() + MAP_TTL_MS });
+    }
+    return result;
   },
 });
 
 // Everything a count does after sign-in and the rate limit; the public map action reuses it.
-export async function runCount(ctx: ActionCtx, { code, neighborhood, ...args }: CountInput): Promise<CountResult> {
+export async function runCount(ctx: ActionCtx, input: CountInput): Promise<CountResult> {
+  const plan = await planCount(ctx, input);
+  return "status" in plan ? plan : askCity(plan);
+}
+
+type Plan = { data: NonNullable<CountContext>; profile: Doc<"cityProfiles">; found: Extract<Found, { kind: "one" }> | null; built: Extract<ReturnType<typeof buildCount>, { ok: true }> };
+
+// The checks that need no City query (unknown code, bad column or dates, unknown neighborhood, …): a refusal, or
+// a plan ready to send. The public map spends its City budget only on a plan.
+export async function planCount(ctx: ActionCtx, { code, neighborhood, ...args }: CountInput): Promise<CountResult | Plan> {
   const wanted = code.trim().toUpperCase();
   const data: CountContext = await ctx.runQuery(internal.city.countContext, { code: wanted });
   if (!data) return { status: "not-found" as const, code: wanted };
@@ -125,6 +145,11 @@ export async function runCount(ctx: ActionCtx, { code, neighborhood, ...args }: 
   }
   // A named neighborhood must never fall through to the citywide count (e.g. its boundary row has no rectangle).
   if (found && !built.points) return { status: "unavailable" as const, code: data.code, name };
+  return { data, profile, found, built };
+}
+
+export async function askCity({ data, profile, found, built }: Plan): Promise<CountResult> {
+  const { name } = data;
   try {
     if (found && built.points) {
       const area = `${found.name} (City of Milwaukee boundary)`;
@@ -154,10 +179,15 @@ export async function runCount(ctx: ActionCtx, { code, neighborhood, ...args }: 
     const futureExcluded = cityCount(future);
     let map: MapData | null = null;
     if (built.gridSql) {
-      const page = await datastoreSqlPage<{ i: unknown; j: unknown; n: unknown }>(built.gridSql);
-      // Rows missing a cell or count are skipped, so a malformed City row can't draw a NaN cell.
-      // A cut-off grid would under-draw the map; leave it out rather than draw part of it.
-      if (!page.truncated && page.records.length < POINTS_CAP) map = toMapData(new Map(page.records.filter((c) => [c.i, c.j, c.n].every((x) => Number.isFinite(Number(x)))).map((c) => [`${Number(c.i)},${Number(c.j)}`, Number(c.n)])), null);
+      // The map has its own try: a failed grid query loses the map, never the count.
+      try {
+        const page = await datastoreSqlPage<{ i: unknown; j: unknown; n: unknown }>(built.gridSql);
+        // Rows missing a cell or count are skipped, so a malformed City row can't draw a NaN cell.
+        // A cut-off grid would under-draw the map; leave it out rather than draw part of it.
+        if (!page.truncated && page.records.length < POINTS_CAP) map = toMapData(new Map(page.records.filter((c) => [c.i, c.j, c.n].every((x) => Number.isFinite(Number(x)))).map((c) => [`${Number(c.i)},${Number(c.j)}`, Number(c.n)])), null);
+      } catch (e) {
+        console.error(`City map grid failed for ${data.code}: ${e instanceof Error ? e.message : String(e)}`);
+      }
     }
     const shown = groups.reduce((s, g) => s + g.count, 0);
     // Overlapping groups (an incident with two offenses is in both) can't be summed, so no remainder is shown.
@@ -169,6 +199,8 @@ export async function runCount(ctx: ActionCtx, { code, neighborhood, ...args }: 
       period: built.period, filters: built.filterLabels, futureExcluded,
       caveat: data.caveat, dateColumn: built.dateColumn, coverage: built.coverage, resourceName: profile.resourceName ?? null, namesPeople: profile.namesPeople,
       area: null, noLocation: 0, map,
+      // The dataset records locations but this count has no map (the grid failed or was cut off): not "no locations".
+      ...(built.gridSql && !map ? { mapError: true as const } : {}),
     };
   } catch (e) {
     console.error(`City count failed for ${data.code}: ${e instanceof Error ? e.message : String(e)}`);

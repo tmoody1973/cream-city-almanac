@@ -8,6 +8,7 @@ import schema from "./schema";
 
 const modules = import.meta.glob("./**/*.*s");
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
+const reader = { subject: "u1", issuer: "test", tokenIdentifier: "test|u1" };
 const ring = [[-87.92, 43.06], [-87.9, 43.06], [-87.9, 43.08], [-87.92, 43.08], [-87.92, 43.06]];
 
 async function seed() {
@@ -53,6 +54,32 @@ describe("mapCells", () => {
     }
     expect(busy).toEqual({ status: "busy" });
     expect(await t.action(api.map.mapCells, { code: "P01" })).toEqual(cached);
+  });
+  it("serves Ask's count map from the cache countRecords leaves, without asking the City (C1)", async () => {
+    const t = await seed();
+    const fake = installFakeFetch({ citySql: (sql) => (sql.includes("GROUP BY i, j") ? [{ i: 1, j: 2, n: "6" }] : sql.includes("left(") ? [{ g: "2026-09", n: "6" }] : [{ n: "6" }]) });
+    const args = { code: "p01", from: "2025-01-01", filters: [{ column: "Offense_All", values: ["120"] }] };
+    const counted = await t.withIdentity(reader).action(api.city.countRecords, { ...args, groupBy: "month" });
+    expect(counted).toMatchObject({ status: "ok", count: 6 });
+    const before = fake.calls.length;
+    const r = await t.action(api.map.mapCells, args);
+    expect(fake.calls.length).toBe(before);
+    expect(r).toMatchObject({ status: "ok", count: 6, map: { cells: [{ i: 1, j: 2, band: 2, n: 6 }] } });
+  });
+  it("spends the site-wide budget only on real City queries: refusals are free (I1)", async () => {
+    const t = await seed();
+    const fake = installFakeFetch({ citySql: () => [{ n: "1" }] });
+    for (let k = 0; k < 30; k++) expect(await t.action(api.map.mapCells, { code: "P01", neighborhood: `Gotham ${k}` })).toMatchObject({ status: "no-neighborhood" });
+    expect(fake.calls.length).toBe(0);
+    expect(await t.action(api.map.mapCells, { code: "P01" })).toMatchObject({ status: "ok" });
+  });
+  it("refuses oversize input without asking the City (I1)", async () => {
+    const t = await seed();
+    const fake = installFakeFetch({ citySql: () => [{ n: "1" }] });
+    expect(await t.action(api.map.mapCells, { code: "P01", neighborhood: "x".repeat(81) })).toEqual({ status: "bad-input" });
+    expect(await t.action(api.map.mapCells, { code: "P01", filters: [{ column: "Offense_All", values: Array.from({ length: 11 }, (_, k) => String(k)) }] })).toEqual({ status: "bad-input" });
+    expect(await t.action(api.map.mapCells, { code: "P01", from: "2025-01-01T00:00" })).toEqual({ status: "bad-input" });
+    expect(fake.calls.length).toBe(0);
   });
   it("returns a City neighborhood's shape and the list of names", async () => {
     const t = await seed();

@@ -116,7 +116,7 @@ export default defineSchema({
   // Public sheet maps: an answer by its normalized arguments, kept 10 minutes.
   mapCache: defineTable({ key: v.string(), result: v.string(), expiresAt: v.number() })
     .index("by_key", ["key"])
-    .index("by_expires", ["expiresAt"]),
+    .index("by_expiresAt", ["expiresAt"]),
 
   itemOverrides: defineTable({
     hubId: v.string(),
