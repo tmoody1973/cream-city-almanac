@@ -14,3 +14,7 @@
 .filters { display: flex; flex-wrap: wrap; gap: 12px 18px; font-size: var(--fs-small); }
 .filters label { display: flex; flex-direction: column; gap: 4px; }
 .figure { font-family: var(--font-caps); font-size: var(--fs-label); margin: 12px 0 0; }
+/* Map labels (MapLibre popups): the site's paper and ink in both editions, a hairline box, no radius, shadow or tip. */
+.canvas :global(.maplibregl-popup-content) { background: var(--paper); color: var(--ink); border: var(--hair); border-radius: 0; box-shadow: none; padding: 6px 10px; font-size: var(--fs-small); }
+.canvas :global(.maplibregl-popup-tip) { display: none; }
+.canvas :global(.maplibregl-popup-close-button) { color: var(--ink); }
