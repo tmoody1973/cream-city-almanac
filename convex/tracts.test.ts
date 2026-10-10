@@ -4,6 +4,7 @@ import { convexTest } from "convex-test";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { installFakeFetch } from "../tests/helpers/fakeFetch";
 import { api } from "./_generated/api";
+import { rateLimiter } from "./limits";
 import schema from "./schema";
 
 const modules = import.meta.glob("./**/*.*s");
@@ -97,7 +98,7 @@ describe("rankTracts", () => {
     expect(r.unreliableCount).toBe(12);
     const stored = await t.query(api.tracts.tractDetail, { key: r.key, now: Date.now() });
     expect(stored).toMatchObject({ status: "ok", tieCount: 15, unreliableCount: 12 });
-    if (stored.status !== "ok") return;
+    if (stored.status !== "ok" || stored.tool !== "rank") throw new Error("expected a stored rank");
     expect(stored.ties).toHaveLength(15);
     expect(stored.unreliable).toHaveLength(12);
   });
@@ -117,7 +118,7 @@ describe("rankTracts", () => {
       const m = await ctx.db.query("members").withIndex("by_hubId", (q) => q.eq("hubId", "h1")).first();
       if (m) await ctx.db.patch(m._id, { yearLabel: "2018\u20132022" });
     });
-    expect(await t.withIdentity(reader).action(api.tracts.rankTracts, { code: "E02", column: "pov_rate", place: "City", year: "2018-2022", direction: "high" })).toMatchObject({ status: "ok" });
+    expect(await t.withIdentity(reader).action(api.tracts.rankTracts, { code: "E02", column: "pov_rate", place: "City", year: "2018-2022", direction: "high" })).toMatchObject({ status: "ok", header: { year: "2018\u20132022" } });
   });
   it("spends the person's allowance only when DYCU is about to be asked", async () => {
     const t = await seedTracts();
@@ -140,5 +141,146 @@ describe("rankTracts", () => {
     installFakeFetch({ columns: [...POV_FIELDS, { name: "Low_Confidence", type: "esriFieldTypeDouble" }, { name: "High_Confidence", type: "esriFieldTypeDouble" }], tractRows: povertyRows });
     const r = await t.withIdentity(reader).action(api.tracts.rankTracts, { code: "E02", column: "NAME", place: "City", year: "2022", direction: "high" });
     expect(JSON.stringify(r)).not.toContain("_Confidence");
+  });
+});
+
+const URL_F02 = "https://services.arcgis.com/x/arcgis/rest/services/FoodSecurity_MKE_2022/FeatureServer/0";
+const F02_FIELDS = [
+  { name: "GEOID", type: "esriFieldTypeString" },
+  { name: "per_insecure", type: "esriFieldTypeDouble" },
+  { name: "Low_Confidence_Limit", type: "esriFieldTypeDouble" },
+  { name: "High_Confidence_Limit", type: "esriFieldTypeDouble" },
+];
+
+async function seedPair() {
+  const t = await seedTracts();
+  await t.run(async (ctx) => {
+    await ctx.db.insert("families", { key: "f02", code: "F02", name: "Food Insecurity Prevalence", kind: "dataset", topic: "Health", keywords: [], places: ["City"], years: [2022], latestModified: "2024-01-01", baseSearchText: "", searchText: "", dictionaryTab: null });
+    await ctx.db.insert("members", { familyKey: "f02", hubId: "f1", title: "Food 2022", yearLabel: "2022", featureServerUrl: URL_F02, kind: "dataset", landingPage: "", place: "City", years: [2022], modified: "2024-01-01", downloads: {}, description: "", keywords: [] });
+    await ctx.db.insert("cards", { familyKey: "f02", inputHash: "h", explainer: "x", explainerProvenance: "AI", hubSummary: "", glossary: [{ field: "per_insecure", meaning: "Percent of adults food-insecure (model estimate).", provenance: "DYCU" }], caveats: ["Model-based estimates."], storyAngles: [], basic: false, embedding: new Array(1536).fill(0) });
+  });
+  return t;
+}
+
+// Food insecurity mirrors poverty, except Harambee's tract: high poverty, clearly low food insecurity. One F02 GEOID
+// arrives as a number and one as a bare 6-digit tract; both must still match.
+const foodRows = () => ({
+  features: [
+    ...Array.from({ length: 24 }, (_, i) => ({ attributes: { GEOID: i === 0 ? 55079100000 : i === 1 ? "100100" : `55079${String(100000 + i * 100).slice(-6)}`, per_insecure: 10 + i, Low_Confidence_Limit: 9.5 + i, High_Confidence_Limit: 10.5 + i } })),
+    { attributes: { GEOID: "55079186000", per_insecure: 8, Low_Confidence_Limit: 7, High_Confidence_Limit: 9 } },
+  ],
+});
+const routeRows = (url: string) => (url.includes("FoodSecurity") ? foodRows() : povertyRows());
+const routeFields = (url: string) => (url.includes("FoodSecurity") ? F02_FIELDS : POV_FIELDS);
+const relateArgs = { a: { code: "E02", column: "pov_rate" }, b: { code: "F02", column: "per_insecure" }, place: "City" as const, year: "2022" };
+
+describe("relateTracts", () => {
+  it("lines two datasets up by tract, words the relationship, and keeps points out of the model's answer", async () => {
+    const t = await seedPair();
+    installFakeFetch({ columnsFor: routeFields, tractRows: routeRows });
+    const r = await t.withIdentity(reader).action(api.tracts.relateTracts, { ...relateArgs, mode: "relate" });
+    expect(r).toMatchObject({ status: "ok", tool: "relate", n: 25, strength: "strong", direction: "higher", a: { confidence: "90% confidence (Census)" }, b: { confidence: "95% confidence (CDC)" } });
+    expect(r).not.toHaveProperty("points");
+    if (r.status !== "ok") return;
+    const stored = await t.query(api.tracts.tractDetail, { key: r.key, now: Date.now() });
+    expect(stored).toMatchObject({ status: "ok", tool: "relate" });
+    expect((stored as { points: unknown[] }).points).toHaveLength(25);
+  });
+  it("finds the tract that clearly breaks the pattern and names it", async () => {
+    const t = await seedPair();
+    installFakeFetch({ columnsFor: routeFields, tractRows: routeRows });
+    const r = await t.withIdentity(reader).action(api.tracts.relateTracts, { ...relateArgs, mode: "mismatch", aSide: "high", bSide: "low" });
+    expect(r).toMatchObject({ status: "ok", mode: "mismatch", fits: [{ a: { tract: "1860", neighborhood: "Harambee" } }] });
+  });
+  it("names the place/years two datasets share when asked for one they don't", async () => {
+    const t = await seedPair();
+    installFakeFetch({ columnsFor: routeFields, tractRows: routeRows });
+    expect(await t.withIdentity(reader).action(api.tracts.relateTracts, { ...relateArgs, place: "County", year: "2023", mode: "relate" }))
+      .toMatchObject({ status: "choose-year", shared: [{ place: "City", year: "2022" }] });
+  });
+  it("says too-few, with nothing to list, when fewer than 20 reliable pairs line up", async () => {
+    const t = await seedPair();
+    installFakeFetch({ columnsFor: routeFields, tractRows: (url) => { const r = routeRows(url); return { features: r.features.slice(0, 12) }; } });
+    const r = await t.withIdentity(reader).action(api.tracts.relateTracts, { ...relateArgs, mode: "mismatch", aSide: "high", bSide: "low" });
+    expect(r).toMatchObject({ status: "ok", n: 12, strength: "too-few", fits: [], close: [] });
+    expect(r).not.toHaveProperty("cutA");
+  });
+  it("spends the person's allowance once per call, however many datasets it reads", async () => {
+    const t = await seedPair();
+    installFakeFetch({ columnsFor: routeFields, tractRows: routeRows });
+    const as = t.withIdentity(reader);
+    // 19 single-dataset calls on distinct years of the same dataset would be needed to fill 19 buckets; spend them directly instead.
+    for (let i = 0; i < 19; i++) await as.run(async (ctx) => { await rateLimiter.limit(ctx, "askTracts", { key: reader.tokenIdentifier }); });
+    expect(await as.action(api.tracts.relateTracts, { ...relateArgs, mode: "relate" })).toMatchObject({ status: "ok" }); // 20th token, two datasets
+    expect(await as.action(api.tracts.relateTracts, { ...relateArgs, mode: "mismatch" })).toEqual({ status: "busy" });
+  });
+});
+
+describe("compareYears", () => {
+  async function seedTwoYears() {
+    const t = await seedTracts();
+    await t.run(async (ctx) => {
+      const m = (await ctx.db.query("members").collect()).find((x) => x.yearLabel === "2023")!;
+      await ctx.db.patch(m._id, { featureServerUrl: "https://services.arcgis.com/x/arcgis/rest/services/Poverty_MKE_2023/FeatureServer/0" });
+    });
+    return t;
+  }
+  const later = (change: (i: number) => { delta: number; moe?: number }) => () => ({
+    features: povertyRows().features.map((f, i) => { const c = change(i); return { attributes: { ...f.attributes, pov_rate: (f.attributes.pov_rate as number) + c.delta, ...(c.moe === undefined ? {} : { pov_rate_moe: c.moe }) } }; }),
+  });
+  const run = (t: Awaited<ReturnType<typeof seedTwoYears>>, y2023: () => ReturnType<typeof povertyRows>) => {
+    installFakeFetch({ columns: POV_FIELDS, tractRows: (url) => (url.includes("2023") ? y2023() : povertyRows()) });
+    return t.withIdentity(reader).action(api.tracts.compareYears, { code: "E02", column: "pov_rate", place: "City", from: "2022", to: "2023" });
+  };
+
+  it("counts clear increases and decreases against both years' margins", async () => {
+    const t = await seedTwoYears();
+    // +10 and -5 clear sqrt(1^2 + 1^2) = 1.41; +0.5 does not. Tract 1 (11) only drops to 6: still reliable.
+    const r = await run(t, later((i) => ({ delta: i === 0 ? 10 : i === 1 ? -5 : 0.5 })));
+    expect(r).toMatchObject({ status: "ok", tool: "change", increases: 1, decreases: 1, none: 23, unreliableCount: 0, header: { year: "2022–2023", n: 25 } });
+    if (r.status !== "ok") return;
+    expect(r.changes.map((c) => c.direction)).toEqual(["increase", "decrease"]);
+    expect(r.changes[0]).toMatchObject({ change: 10, from: { value: 10 }, to: { value: 20 } });
+  });
+  it("never lists a change as clear when either year's estimate is unreliable, and counts those apart", async () => {
+    const t = await seedTwoYears();
+    // Tract 1: 11 -> 1 (-10) with a margin of 1 is a "clear" drop by the Census test, but 1 +/- 1 is unreliable (CV 61%).
+    const r = await run(t, later((i) => ({ delta: i === 0 ? 10 : i === 1 ? -10 : 0.5 })));
+    expect(r).toMatchObject({ status: "ok", increases: 1, decreases: 0, none: 23, unreliableCount: 1 });
+    if (r.status !== "ok") return;
+    expect(r.changes).toHaveLength(1);
+    expect(r.highlighted).toHaveLength(1);
+  });
+  it("keeps the biggest ten in the answer and serves it by key", async () => {
+    const t = await seedTwoYears();
+    const r = await run(t, later(() => ({ delta: 8 }))); // 8 clears every tract, even Harambee's wider margin: sqrt(4^2 + 4^2) = 5.66
+    if (r.status !== "ok") throw new Error("expected ok");
+    expect(r.increases).toBe(25);
+    expect(r.changes).toHaveLength(10);
+    expect(await t.query(api.tracts.tractDetail, { key: r.key, now: Date.now() })).toMatchObject({ status: "ok", tool: "change", increases: 25 });
+  });
+});
+
+describe("tractDetail", () => {
+  it("never serves the cached DYCU rows", async () => {
+    const t = await seedTracts();
+    installFakeFetch({ columns: POV_FIELDS, tractRows: povertyRows });
+    await t.withIdentity(reader).action(api.tracts.rankTracts, { code: "E02", column: "pov_rate", place: "City", year: "2022", direction: "high" });
+    const rowsKey = await t.run(async (ctx) => (await ctx.db.query("mapCache").collect()).find((r) => r.key.startsWith("tractrows:"))?.key);
+    expect(rowsKey).toBeDefined();
+    expect(await t.query(api.tracts.tractDetail, { key: rowsKey!, now: Date.now() })).toEqual({ status: "expired" });
+  });
+});
+
+describe("the rows cache is best-effort", () => {
+  it("fetches again, and still answers, when a cached entry can't be read", async () => {
+    const t = await seedTracts();
+    let fetched = 0;
+    installFakeFetch({ columns: POV_FIELDS, tractRows: () => { fetched++; return povertyRows(); } });
+    const ask = () => t.withIdentity(reader).action(api.tracts.rankTracts, { code: "E02", column: "pov_rate", place: "City", year: "2022", direction: "high" });
+    await ask();
+    await t.run(async (ctx) => { for (const r of await ctx.db.query("mapCache").collect()) if (r.key.startsWith("tractrows:")) await ctx.db.patch(r._id, { result: "{not json" }); });
+    expect(await ask()).toMatchObject({ status: "ok" });
+    expect(fetched).toBe(2);
   });
 });

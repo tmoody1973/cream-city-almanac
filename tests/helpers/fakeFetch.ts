@@ -10,6 +10,7 @@ export interface FakeOptions {
   hubFeed?: unknown;
   hubStatus?: number;
   columns?: { name: string; alias?: string; type?: string }[];
+  columnsFor?: (url: string) => { name: string; alias?: string; type?: string }[];
   portraitBytes?: Uint8Array;
   portraitStatus?: number;
   cityCatalog?: unknown;
@@ -80,7 +81,7 @@ export function installFakeFetch(opts: FakeOptions = {}) {
       return json(opts.tractStatus ?? 200, opts.tractRows(url));
     if (url.includes("FeatureServer") && url.endsWith("?f=json"))
       return json(200, {
-        fields: opts.columns ?? [
+        fields: opts.columnsFor?.(url) ?? opts.columns ?? [
           { name: "OBJECTID", type: "esriFieldTypeOID" },
           { name: "GEOID", alias: "GEOID", type: "esriFieldTypeString" },
           { name: "per_obesity", alias: "per_obesity", type: "esriFieldTypeDouble" },
