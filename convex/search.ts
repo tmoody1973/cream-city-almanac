@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import { action, internalQuery, query, type ActionCtx, type QueryCtx } from "./_generated/server";
+import { retiredLast } from "./lib/cityFamilies";
 import { embed, gatewayKey } from "./lib/gateway";
 import { STALE_BUILD_MS } from "./buildStore";
 import { rateLimiter } from "./limits";
@@ -90,7 +91,7 @@ export async function runSearch(
     const row = byKey.get(r.familyKey);
     return row ? [{ ...row, snippet: r.snippet }] : [];
   });
-  return { mode: "search", degraded, results: applyFilters(results, args).slice(0, 20) };
+  return { mode: "search", degraded, results: retiredLast(applyFilters(results, args)).slice(0, 20) };
 }
 
 export const keywordHits = internalQuery({

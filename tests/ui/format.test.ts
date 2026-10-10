@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { asOfLabel, firstSentence, placeSummary, shortDate, shortExplainer, subline, todayLabel, yearShort, yearSpan } from "../../ui/lib/format";
+import { asOfLabel, firstSentence, placeSummary, shortDate, shortExplainer, subline, todayLabel, versionLabel, yearShort, yearSpan } from "../../ui/lib/format";
 
 describe("format", () => {
   it("formats dates the way the comp does", () => {
@@ -57,5 +57,18 @@ describe("format", () => {
     expect(shortExplainer("Estimated share of people who lack reliable access to enough food, by census tract.")).toBe(
       "Estimated share of people who lack reliable access to enough food, by census tract.",
     );
+  });
+});
+
+describe("versionLabel", () => {
+  const m = (title: string, place: string | null = "City", years: number[] = [], yearLabel: string | null = null) => ({ title, place, years, yearLabel });
+  it("names a City version by the City's own word, or its title", () => {
+    expect(versionLabel(m("NIBRS Crime Data (Current)"), true)).toBe("Current");
+    expect(versionLabel(m("NIBRS Crime Data (Historical) "), true)).toBe("Historical");
+    expect(versionLabel(m("2016 Nov 8, County Clerk"), true)).toBe("2016 Nov 8, County Clerk");
+  });
+  it("keeps place and years for DYCU versions", () => {
+    expect(versionLabel(m("Harambee 2023", "Harambee", [2023]), false)).toBe("Harambee · 2023");
+    expect(versionLabel(m("Air Quality", null, []), false)).toBe("Air Quality");
   });
 });

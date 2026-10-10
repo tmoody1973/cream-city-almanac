@@ -11,6 +11,17 @@ export const LIVE_DAYS = 7;
 export const REPLACED_BY: Record<string, string> = {
   "city:wibr-crime-monthly": "city:nibrs-crime-data", // WIBR → NIBRS (2024); its map layers stopped answering in 2025
 };
+
+// A line the sheet shows under a City dataset's name when something about it would otherwise confuse a reader.
+// ponytail: hand-kept; add a line when another City dataset needs one.
+export const CITY_NOTES: Record<string, string> = {
+  "city:nibrs-crime-data": "The City's file names still say WIBR (wibr.csv), the system Milwaukee police used before NIBRS.",
+};
+
+// Search lists a replaced dataset after everything else, so its successor is found first (Ask once counted WIBR
+// before NIBRS).
+const replaced = (key: string) => Object.hasOwn(REPLACED_BY, key);
+export const retiredLast = <R extends { key: string }>(rows: R[]): R[] => [...rows.filter((r) => !replaced(r.key)), ...rows.filter((r) => replaced(r.key))];
 const VERSION = /\s*\((current|historical)\)\s*$/i;
 const ELECTION = /^\s*(\d{4}) ([A-Z][a-z]{2}) (\d{1,2})\s*,/;
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];

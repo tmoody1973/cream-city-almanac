@@ -185,8 +185,11 @@ test.describe("signed in", () => {
   test("a neighborhood count names the City boundary it used", async ({ page }) => {
     test.skip(!(await page.request.get("https://data.milwaukee.gov/api/3/action/status_show").then((r) => r.ok()).catch(() => false)), "City API unreachable");
     await ask(page, "How many robberies in Harambee this year?");
-    const card = page.locator("[data-card=count]").first();
-    await expect(card).toBeVisible({ timeout: 40_000 });
+    // The broad first count folds to one line; the open card is the robbery count.
+    await expect(page.locator("[data-earlier-count]")).toHaveCount(1, { timeout: 40_000 });
+    const card = page.locator("[data-card=count]:visible");
+    await expect(card).toHaveCount(1);
+    await expect(card).toContainText("Robbery");
     await expect(card.locator("[data-area]")).toHaveText("In Harambee (City of Milwaukee boundary)");
     await expect(card.locator("[data-count]")).toHaveText(/^\d{1,3}(,\d{3})*$/);
   });

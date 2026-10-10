@@ -1,6 +1,6 @@
 "use client";
 import { useRenderTool } from "@copilotkit/react-core/v2";
-import { Fragment, useEffect } from "react";
+import { createContext, Fragment, useContext, useEffect } from "react";
 import { z } from "zod";
 import { countCoverage, outsideCoverage } from "@/ui/lib/askCount";
 import { passageBlocks } from "@/ui/lib/askPassage";
@@ -150,6 +150,21 @@ function SheetCard({ code, name, onOpen, callKey, preview, source = "HUB" }: { c
   );
 }
 
+// The count calls that came before a question's last count (ui/lib/askNotes.ts earlierCountIds); the Ask panel
+// provides them, and those cards fold to one line so a broad first count never reads as the answer.
+export const EarlierCounts = createContext<Set<string>>(new Set());
+
+function CountOrEarlier({ r, id, onOpen }: { r: CountOk; id?: string; onOpen: Open }) {
+  const earlier = useContext(EarlierCounts);
+  if (!id || !earlier.has(id)) return <CountCard r={r} onOpen={onOpen} />;
+  return (
+    <details className={styles.earlierCount} data-earlier-count>
+      <summary>Earlier count: {[r.name, r.area, ...r.filters, r.period].filter(Boolean).join(" · ")}</summary>
+      <CountCard r={r} onOpen={onOpen} />
+    </details>
+  );
+}
+
 // A City count: the number lives here, never in the model's words. Filters in plain words, the period, what the
 // data covers, and caveats.
 function CountCard({ r, onOpen }: { r: CountOk; onOpen: Open }) {
@@ -227,7 +242,7 @@ export function AskCards({ onOpen }: { onOpen?: (search: string) => void }) {
     if (props.status !== "complete") return <Busy />;
     const r = parse<CountResult>(props.result);
     if (!r) return <Failed />;
-    if (r.status === "ok") return <CountCard r={r} onOpen={onOpen} />;
+    if (r.status === "ok") return <CountOrEarlier r={r} id={props.toolCallId} onOpen={onOpen} />;
     if (r.status === "outside-coverage") return <p className={styles.failed} data-card="count-outside">{outsideCoverage(r)} <OpenLink code={r.code} onOpen={onOpen} /></p>;
     if (r.status === "unavailable") return <p className={styles.failed}>The City&apos;s data didn&apos;t respond. Try again shortly.</p>;
     if (r.status === "not-live") return <p className={styles.failed}>{r.name} can&apos;t be counted live.{r.note ? ` ${r.note}` : ""} <OpenLink code={r.code} onOpen={onOpen} /></p>;
