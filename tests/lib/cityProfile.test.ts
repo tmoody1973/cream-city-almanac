@@ -31,6 +31,13 @@ describe("City column profiles", () => {
     }
     expect(planProfile([{ id: "EXP_DATE", type: "text" }, { id: "PERMIT_DATE", type: "text" }]).dateColumn).toBe("PERMIT_DATE");
   });
+  it("reads MFD's incident timestamps as the date, not as categories, so IncidentType is profiled", () => {
+    const ids = ["IncidentNumber", "Operator", "IncidentStarted", "FirstUnitDispatched", "FirstUnitEnroute", "FirstUnitArrived", "IncidentClosed", "Location", "Apartment", "Municipality", "latitude", "longitude", "IncidentType"];
+    const p = planProfile(ids.map((id) => ({ id, type: "text" })));
+    expect(p).toMatchObject({ dateColumn: "IncidentStarted", latColumn: "latitude", lonColumn: "longitude" });
+    expect(p.categoryColumns).toContain("IncidentType");
+    for (const c of ["IncidentStarted", "FirstUnitDispatched", "FirstUnitEnroute", "FirstUnitArrived", "IncidentClosed"]) expect(p.categoryColumns).not.toContain(c);
+  });
   it("writes count, range and top-value queries that read dates as ISO text", () => {
     const q = profileSql("87843297-a6fa-46d4-ba5d-cb342fb2d3bb", plan);
     expect(q.count).toBe('SELECT COUNT(*) AS n FROM "87843297-a6fa-46d4-ba5d-cb342fb2d3bb"');
