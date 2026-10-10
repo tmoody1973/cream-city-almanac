@@ -280,7 +280,13 @@ export const finish = internalAction({
       deleted += page.deleted;
       cursor = page.isDone ? null : page.continueCursor;
     } while (cursor !== null);
-    const neighborhoodNotes: string[] = await ctx.runAction(internal.build.refreshNeighborhoods, {});
+    // A neighborhoods failure must not leave the build "running": it is noted and the build still completes.
+    let neighborhoodNotes: string[];
+    try {
+      neighborhoodNotes = await ctx.runAction(internal.build.refreshNeighborhoods, {});
+    } catch (e) {
+      neighborhoodNotes = [`Neighborhoods refresh failed: ${message(e)}`];
+    }
     await ctx.runMutation(internal.buildStore.completeBuild, { buildId, orphanChunksDeleted: deleted, notes: neighborhoodNotes });
   },
 });

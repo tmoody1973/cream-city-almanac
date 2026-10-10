@@ -3,10 +3,14 @@ import { convexTest } from "convex-test";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { installFakeFetch } from "../tests/helpers/fakeFetch";
 import { internal } from "./_generated/api";
+import * as sources from "./lib/neighborhoodSources";
 import schema from "./schema";
 
 const modules = import.meta.glob("./**/*.*s");
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
 
 const ring = [[-87.92, 43.06], [-87.9, 43.06], [-87.9, 43.08], [-87.92, 43.08], [-87.92, 43.06]];
 const layer = { type: "FeatureCollection", features: [{ properties: { NEIGHBORHD: "HARAMBEE" }, geometry: { type: "Polygon", coordinates: [ring] } }] };
@@ -53,5 +57,26 @@ describe("refreshNeighborhoods", () => {
     const notes = await t.action(internal.build.refreshNeighborhoods, {});
     expect((await rowsOf(t, "city")).map((r) => r.name)).toEqual(["Harambee"]);
     expect(notes[0]).toMatch(/^City neighborhoods unavailable, kept last week's/);
+  });
+});
+
+describe("finish", () => {
+  it("completes the build and notes the failure when the neighborhoods refresh throws", async () => {
+    const t = await seed();
+    const buildId = await t.run((ctx) =>
+      ctx.db.insert("builds", {
+        status: "running", startedAt: 0, finishedAt: null, pending: 0, done: 0, skipped: 0, failed: 0, costUsd: 0,
+        firecrawlCalls: 0, notes: ["earlier note"], mismatch: null, orphanChunksDeleted: 0, report: null,
+      }),
+    );
+    installFakeFetch({ cityNeighborhoods: layer });
+    vi.spyOn(sources, "buildDycuNeighborhoods").mockImplementation(() => {
+      throw new Error("boom");
+    });
+    await t.action(internal.build.finish, { buildId });
+    const b = await t.run((ctx) => ctx.db.get(buildId));
+    expect(b?.status).toBe("completed");
+    expect(b?.notes).toContain("earlier note");
+    expect(b?.notes.some((n) => n.startsWith("Neighborhoods refresh failed:") && n.includes("boom"))).toBe(true);
   });
 });
