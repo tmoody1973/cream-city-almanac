@@ -19,3 +19,17 @@ describe("scatter scales", () => {
     expect(Number.isFinite(s.y(0))).toBe(true);
   });
 });
+
+describe("scatter scales with unreliable points", () => {
+  it("sizes the plot from reliable points only and clamps the rest into the box", () => {
+    const pts = [
+      { a: [10, null, null], b: [10, null, null], unreliable: false },
+      { a: [20, null, null], b: [20, null, null], unreliable: false },
+      { a: [500, null, null], b: [-300, null, null], unreliable: true },
+    ] as Parameters<typeof scales>[0];
+    const s = scales(pts, 300, 200, 20);
+    expect(s.x(20)).toBeCloseTo(280);
+    expect(s.x(500)).toBeCloseTo(280);
+    expect(s.y(-300)).toBeCloseTo(180);
+  });
+});

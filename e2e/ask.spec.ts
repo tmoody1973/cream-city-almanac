@@ -217,7 +217,7 @@ test.describe("signed in", () => {
   const dycuUp = (page: import("@playwright/test").Page) =>
     page.request.get("https://services.arcgis.com/").then((r) => r.status() < 500).catch(() => false);
 
-  test("a ranking question draws a ranked tract table with ranges", async ({ page }) => {
+  test("a ranking question draws a ranked tract table with ranges", async ({ page }, info) => {
     test.skip(!(await dycuUp(page)), "DYCU unreachable");
     await ask(page, "rank tracts by poverty");
     const card = page.locator("[data-card=tract-rank]:visible");
@@ -225,6 +225,18 @@ test.describe("signed in", () => {
     await expect(card).toContainText("pov_rate");
     await expect(card).toContainText("90% confidence (Census)");
     await expect(card.locator("tbody tr").first().locator("td").first()).toHaveText("1");
+    // Units only where DYCU says percent; the meaning stops before its formula; extra ties fold away.
+    await expect(card.locator("tbody tr").first()).toContainText(/\d%/);
+    await expect(card).not.toContainText("Calculation:");
+    await expect(card.locator("details[data-ties]")).toHaveCount(1);
+    // The caveat link keeps the chat: a new tab on a phone, the side pane on a laptop.
+    const caveat = card.getByRole("link", { name: /E02/ });
+    if (info.project.name === "phone") await expect(caveat).toHaveAttribute("target", "_blank");
+    else {
+      await caveat.click();
+      await expect(page).toHaveURL(/\/search/);
+      await expect(page.getByText("rank tracts by poverty")).toBeVisible();
+    }
   });
 
   test("a growth question draws the counts line and only the clear changes", async ({ page }) => {
