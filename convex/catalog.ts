@@ -208,3 +208,21 @@ export const familyPreview = query({
     };
   },
 });
+
+// The landing page's live numbers: families per source (guide pages aren't families), City feeds updated daily, the
+// three newest rundown rows, and the crime dataset's code for the sample Ask answer (codes differ between deployments).
+export const landingStats = query({
+  args: {},
+  handler: async (ctx) => {
+    const families = (await ctx.db.query("families").collect()).filter((f) => f.kind !== "page");
+    const city = families.filter((f) => f.source === "city");
+    const newest = (await rundownRows(ctx)).slice(0, 3).map((r) => ({ code: r.code, name: r.name }));
+    return {
+      dycuFamilies: families.length - city.length,
+      cityFamilies: city.length,
+      cityLive: city.filter((f) => f.live).length,
+      newest,
+      sampleCode: families.find((f) => f.key === "city:nibrs-crime-data")?.code ?? null,
+    };
+  },
+});
