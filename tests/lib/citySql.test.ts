@@ -186,6 +186,17 @@ describe("neighborhood rectangle", () => {
     expect(b.points!.missingSql).toContain(`("Address_Latitude" IS NULL OR "Address_Longitude" IS NULL OR NOT ("Address_Latitude" ~ '^-?[0-9]+(\\.[0-9]+)?$' AND "Address_Longitude" ~ '^-?[0-9]+(\\.[0-9]+)?$'))`);
     expect(b.points!.sql).not.toContain("Case_Number");
   });
+  it("keeps the period and the filters in the neighborhood queries, as the citywide total has them", () => {
+    const args = { from: "2026-01-01", filters: [{ column: "Offense_All", values: ["robbery"] }, { column: "Police_District", values: ["6"] }] };
+    const total = buildCount(located, args, "2026-10-10");
+    const b = buildCount(located, args, "2026-10-10", area);
+    if (!total.ok || !b.ok || !b.points) throw new Error("expected ok");
+    const where = total.totalSql.split(" WHERE ")[1]; // the date window and every filter, as the citywide total has them
+    expect(where).toContain(`"Incident_Date" >= '2026-01-01'`);
+    expect(where).toContain(`"Police_District" IN ('6')`);
+    expect(where).toMatch(/"Offense_All"/);
+    for (const sql of [b.points.sql, b.points.missingSql]) expect(sql).toContain(where);
+  });
   it("has no points query without an area, and refuses an area for a dataset without locations", () => {
     const b = buildCount(located, {}, "2026-10-10");
     expect(b.ok && b.points).toBeNull();
