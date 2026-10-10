@@ -13,3 +13,9 @@ Dated entries, written by Tarik. Each answers three things: what did we expect, 
 <!-- Suggested entry (Tarik to write), 2026-10-09: we expected one City dataset per entry. The City publishes a Current file and a Historical file for the same data, updated the same day. An early version broke the tie in favor of the Historical file, whose crime data ends December 31, 2023, so a count for "this year" would have come back zero. Counts now always use the Current file. We now believe: when two sources tie, pick by what the title says, not by order. See decision 023. -->
 
 <!-- Suggested entry (Tarik to write), 2026-10-09: we expected "updated recently" to mean the City changed something; the City stamps every dataset, even static map layers (zoning, parcels), as modified daily, so ten map layers filled "Updated this season" and DYCU's datasets vanished from the home page. The end-to-end home test caught it. We now believe: rank by when something was created, and never trust a metadata date as news. See decision 023. -->
+
+<!-- Suggested entries (for Tarik to write in his own words), 2026-10-10, neighborhood counts. See decision 024.
+1. We expected the City's SQL to refuse casts, since it had already refused some functions (NULLIF and one other). What happened: `::float` works inside a numeric guard. What do we now believe?
+2. We expected a crime map to be the first neighborhood feature. What happened: a count by boundary came first, because a count is something a reporter can cite and a map is not. What do we now believe?
+3. We expected all 28 DYCU neighborhood definitions to parse from one sentence form. What happened: 25 of 28 parsed at first; decimal tracts (3.03), one sentence without the word "neighborhood", and three renamed neighborhoods (Layton Boulevard, Westside, Little Menomonee River) needed fixes; the final count is 27 distinct, because two spreadsheet spellings are one place. What do we now believe?
+-->
