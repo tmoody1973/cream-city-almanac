@@ -13,7 +13,7 @@ const isoToday = () => new Date().toLocaleDateString("en-CA", { timeZone: "Ameri
 // address so a map can be shared. Anyone can use it (the server caches and caps City queries).
 export function SheetWhere({ code, what }: { code: string; what: What }) {
   const run = useAction(api.map.mapCells);
-  const names = useQuery(api.map.cityNeighborhoodNames, {}) ?? [];
+  const names = useQuery(api.map.cityNeighborhoodNames, {});
   // The server renders the defaults (the sheet page is cached and has no address); the shared address is read once on mount.
   const [type, setType] = useState("");
   const [when, setWhen] = useState("12m");
@@ -24,11 +24,18 @@ export function SheetWhere({ code, what }: { code: string; what: What }) {
   const [pending, setPending] = useState(false);
   const [result, setResult] = useState<CountResult | null>(null);
   const seq = useRef(0);
+  // Only a whole neighborhood name is sent (a half-typed one would spend a request on a refusal); undefined while
+  // the list loads or when nothing matches.
+  const typed = area.trim().toLowerCase();
+  const place = typed ? names?.find((n) => n.toLowerCase() === typed) : "";
+  const unknownPlace = Boolean(typed) && names !== undefined && !place;
 
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
     const w = q.get("when");
-    setType(q.get("type") ?? "");
+    // A shared type that isn't one of What's options is dropped, so the select (All) and the request agree.
+    const shared = q.get("type") ?? "";
+    setType(what?.options.some((o) => o.value === shared) ? shared : "");
     setWhen(w === "year" || w === "custom" ? w : q.get("from") ? "custom" : "12m");
     setFrom(q.get("from") ?? "");
     setTo(q.get("to") ?? "");
@@ -44,6 +51,7 @@ export function SheetWhere({ code, what }: { code: string; what: What }) {
     // Only rewrite the address when a filter changed it: on a laptop this sheet's own address is about to be replaced by the two-pane view.
     if (q.toString() !== window.location.search.slice(1)) window.history.replaceState(null, "", `${window.location.pathname}${q.size ? `?${q}` : ""}`);
     const mine = ++seq.current;
+    if (place === undefined) { setPending(false); return; } // no request until the name is a whole one from the list
     setPending(true);
     const t = window.setTimeout(async () => {
       const year = isoToday().slice(0, 4);
@@ -54,7 +62,7 @@ export function SheetWhere({ code, what }: { code: string; what: What }) {
           from: when === "year" ? `${year}-01-01` : when === "custom" ? from || undefined : undefined,
           to: when === "custom" ? to || undefined : undefined,
           filters: type && what ? [{ column: what.column, values: [type] }] : undefined,
-          neighborhood: area || undefined,
+          neighborhood: place || undefined,
         });
       } catch {
         r = { status: "unavailable" } as CountResult;
@@ -64,7 +72,7 @@ export function SheetWhere({ code, what }: { code: string; what: What }) {
       setPending(false);
     }, 250);
     return () => window.clearTimeout(t);
-  }, [ready, code, type, when, from, to, area, run, what]);
+  }, [ready, code, type, when, from, to, area, place, run, what]);
 
   return (
     <div className={styles.where} data-sheet-where>
@@ -85,10 +93,10 @@ export function SheetWhere({ code, what }: { code: string; what: What }) {
         {when === "custom" && (<><label>From<input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></label><label>To<input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></label></>)}
         <label>Where
           <input list="city-neighborhoods" value={area} placeholder="Whole city" onChange={(e) => setArea(e.target.value)} data-filter="where" />
-          <datalist id="city-neighborhoods">{names.map((n) => <option key={n} value={n} />)}</datalist>
+          <datalist id="city-neighborhoods">{(names ?? []).map((n) => <option key={n} value={n} />)}</datalist>
         </label>
       </div>
-      <div aria-busy={pending}><WhereResult r={result} /></div>
+      <div aria-busy={pending}>{unknownPlace ? <p className={styles.message} data-map-message>Pick a neighborhood from the list.</p> : <WhereResult r={result} />}</div>
     </div>
   );
 }
@@ -100,7 +108,10 @@ function WhereResult({ r }: { r: CountResult | null }) {
   if (r.status === "too-broad") return <p className={styles.message} data-map-message>Too many records in this area; try a shorter period.</p>;
   if (r.status === "no-neighborhood") return <p className={styles.message} data-map-message>No City neighborhood is called &ldquo;{r.asked}&rdquo;.{r.nearest.length ? ` Nearest: ${r.nearest.join(", ")}.` : ""}</p>;
   if (r.status === "outside-coverage") return <p className={styles.message} data-map-message>Outside the data&apos;s range ({r.coverage}).</p>;
-  if (r.status !== "ok") return <p className={styles.message} data-map-message>Pick a neighborhood from the list.</p>;
+  if (r.status === "bad-dates") return <p className={styles.message} data-map-message>From must be on or before To.</p>;
+  if (r.status === "choose" && r.column === "neighborhood") return <p className={styles.message} data-map-message>Pick a neighborhood from the list.</p>;
+  if (r.status === "choose" || r.status === "bad-column") return <p className={styles.message} data-map-message>Pick a type from the list.</p>;
+  if (r.status !== "ok") return <p className={styles.message} data-map-message>This dataset can&apos;t be mapped.</p>;
   return (
     <>
       <p className={styles.figure} data-where-count>{r.count.toLocaleString("en-US")} records · {r.period}{r.area ? ` · In ${r.area}` : ""}</p>
