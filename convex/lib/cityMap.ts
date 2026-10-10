@@ -22,7 +22,8 @@ export function toMapData(counts: Map<string, number>, area: string | null): Map
     cells.push(n >= 5 ? { i, j, band: band(n), n } : { i, j, band: 1 });
     total += n;
     if (n >= 5) fivePlus++;
-    busiest = Math.max(busiest, n);
+    // busiest counts only areas of 5 or more: otherwise it would reveal an exact count under 5.
+    if (n >= 5) busiest = Math.max(busiest, n);
   }
   return { size: CELL, cells, summary: { total, areas: cells.length, fivePlus, busiest }, area };
 }
