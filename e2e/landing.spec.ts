@@ -10,7 +10,12 @@ test("a bare / is the landing page; a campaign tag keeps it", async ({ page }) =
 
 test("links from before the move land on the same search view", async ({ page }) => {
   // The redirect itself passes the address through unchanged...
-  const hop = await page.request.get("/?q=homicide&open=P14", { maxRedirects: 0 });
+  // page.request skips the context's routes, so on a protected preview it must carry the bypass header itself.
+  const bypass = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+  const hop = await page.request.get("/?q=homicide&open=P14", {
+    maxRedirects: 0,
+    headers: bypass ? { "x-vercel-protection-bypass": bypass, "x-vercel-skip-toolbar": "1" } : {},
+  });
   expect(hop.status()).toBe(307);
   expect(hop.headers().location).toBe("/search?q=homicide&open=P14");
   // ...then the search screen tidies the order of the parameters, so the page's own address is checked order-free.
