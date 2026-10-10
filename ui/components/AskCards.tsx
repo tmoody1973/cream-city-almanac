@@ -1,16 +1,17 @@
 "use client";
 import { useRenderTool } from "@copilotkit/react-core/v2";
 import { useAction } from "convex/react";
-import { createContext, Fragment, type ReactNode, useContext, useEffect, useState } from "react";
+import { createContext, Fragment, type ReactElement, type ReactNode, useContext, useEffect, useState } from "react";
 import { z } from "zod";
 import { countCoverage, outsideCoverage } from "@/ui/lib/askCount";
 import { passageBlocks } from "@/ui/lib/askPassage";
 import { formatPortraitMargin, formatPortraitNumber } from "@/ui/lib/portrait";
 import { api } from "@/convex/_generated/api";
-import { countParams, type CountForModel, type CountResult } from "@/lib/ask/tools";
+import { changeParams, countParams, rankParams, relateParams, type ChangeResult, type CountForModel, type CountResult, type RankResult, type RelateResult } from "@/lib/ask/tools";
 import { CityMap } from "./CityMapLoader";
 import { LivePreview } from "./LivePreview";
 import { ProvenanceTag } from "./ProvenanceTag";
+import { ChangeCard, RankCard, RelateCard } from "./TractCards";
 import styles from "./ask.module.css";
 
 // Laptop passes onOpen (the pane beside the notes shows the answer); a phone omits it (answers sit in the note).
@@ -304,6 +305,18 @@ export function AskCards({ onOpen }: { onOpen?: (search: string) => void }) {
     if (r.status === "too-broad") return <p className={styles.failed}>Too many {r.name} records in {r.area} to count at once; try a shorter period.</p>;
     return null; // choose / bad-column / bad-dates / not-found / not-city: the model asks or retries
   } }, [onOpen]);
+
+  // The three tract tools: the model handles refusals in words; only an unreachable DYCU gets a line of its own.
+  const tractCard = <T extends { status: string }>(result: unknown, card: (r: Extract<T, { status: "ok" }>) => ReactElement): ReactElement | null => {
+    const r = parse<T>(result);
+    if (!r) return <Failed />;
+    if (r.status === "unavailable") return <p className={styles.source}>DYCU&apos;s data didn&apos;t respond. Try again shortly.</p>;
+    if (r.status === "busy") return <p className={styles.failed}>Tract analyses are busy for your account; try again shortly.</p>;
+    return r.status === "ok" ? card(r as Extract<T, { status: "ok" }>) : null;
+  };
+  useRenderTool({ name: "rankTracts", parameters: rankParams, render: (props) => props.status !== "complete" ? <Busy /> : tractCard<RankResult>(props.result, (r) => <RankCard r={r} />) }, []);
+  useRenderTool({ name: "compareYears", parameters: changeParams, render: (props) => props.status !== "complete" ? <Busy /> : tractCard<ChangeResult>(props.result, (r) => <ChangeCard r={r} />) }, []);
+  useRenderTool({ name: "relateTracts", parameters: relateParams, render: (props) => props.status !== "complete" ? <Busy /> : tractCard<RelateResult>(props.result, (r) => <RelateCard r={r} />) }, []);
 
   useRenderTool({ name: "readReport", parameters: z.object({ question: z.string() }), render: (props) => {
     if (props.status !== "complete") return <Busy />;

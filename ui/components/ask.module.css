@@ -116,3 +116,42 @@
 .noteText > p { margin-bottom: 0; }
 .noteList { margin: 0; padding-left: 1.2em; }
 .noteList li + li { margin-top: 4px; }
+
+/* Tract cards (rank, change, relate): hairline box, ink, caps for names; no color scales, no red. */
+.tractCard { border: var(--hair); padding: 12px; min-width: 0; }
+.tractHead { font-family: var(--font-caps); font-weight: 700; text-transform: uppercase; font-size: var(--fs-label); margin: 0; }
+.tractMeta, .tractFine, .tractCounts { font-size: var(--fs-small); margin: 4px 0 8px; }
+.tractMeta { color: var(--muted); }
+.tractFine { border-top: var(--hair); padding-top: 8px; margin-top: 10px; color: var(--muted); }
+.tractFine a { text-decoration: underline; text-underline-offset: 3px; }
+.tractVerdict { font-family: var(--font-caps); font-weight: 700; text-transform: uppercase; font-size: var(--fs-label); margin: 6px 0 2px; }
+.tractScroll { overflow-x: auto; }
+.tractTable { width: 100%; border-collapse: collapse; font-size: var(--fs-small); font-variant-numeric: tabular-nums lining-nums; }
+.tractTable th, .tractTable td { text-align: left; padding: 6px 8px 6px 0; border-bottom: var(--hair); vertical-align: top; }
+.tractTable th { font-family: var(--font-caps); font-weight: 700; text-transform: uppercase; white-space: nowrap; }
+.tractTable .num { text-align: right; }
+.tractTable th:last-child { text-align: left; }
+.tractTable td:first-child, .tractTable td:last-child:not(.num) { white-space: nowrap; }
+.tractMore { margin: 8px 0 0; font-size: var(--fs-small); }
+.tractMore summary { cursor: pointer; color: var(--muted); }
+.tractNb { white-space: nowrap; }
+.tractTie td { color: var(--muted); }
+.tractUnreliable td { color: var(--muted); font-style: italic; }
+.tractMap:empty { display: none; }
+
+/* The relate card's scatter. Ink and paper only; marked tracts are solid (clearly fits) or ringed (close). */
+.tractScatter { display: block; width: 100%; max-width: 480px; height: auto; margin: 8px 0 4px; color: var(--ink); overflow: visible; }
+.tractFrame { fill: none; stroke: var(--ink); stroke-width: 1; }
+.tractCut { stroke: var(--ink); stroke-width: 1; stroke-dasharray: 3 3; }
+.tractSvgText { fill: var(--ink); font-size: 9px; font-family: var(--font-body, inherit); }
+.tractDot { fill: var(--ink); opacity: 0.45; }
+.tractFaint { fill: var(--ink); opacity: 0.18; }
+.tractBars { stroke: var(--ink); stroke-width: 0.75; opacity: 0.15; }
+.tractBarsInk { stroke: var(--ink); stroke-width: 1.2; }
+.tractFit { fill: var(--ink); stroke: var(--ink); }
+.tractClose { fill: var(--paper); stroke: var(--ink); stroke-width: 1.5; }
+.tractLegend { list-style: none; margin: 4px 0 8px; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: var(--fs-small); }
+.tractSw { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--ink); vertical-align: -1px; margin-right: 6px; }
+.tractSwFit { background: var(--ink); }
+.tractSwClose { background: var(--paper); }
+.tractSwDot { width: 6px; height: 6px; margin: 0 9px 0 3px; background: var(--ink); opacity: 0.45; border: 0; }

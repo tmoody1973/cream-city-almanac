@@ -213,6 +213,37 @@ test.describe("signed in", () => {
     await expect(page.locator("[data-map] canvas")).toHaveCount(1);
   });
 
+  // The tract tools call the real DYCU FeatureServer through dev Convex; skip when it can't be reached.
+  const dycuUp = (page: import("@playwright/test").Page) =>
+    page.request.get("https://services.arcgis.com/").then((r) => r.status() < 500).catch(() => false);
+
+  test("a ranking question draws a ranked tract table with ranges", async ({ page }) => {
+    test.skip(!(await dycuUp(page)), "DYCU unreachable");
+    await ask(page, "rank tracts by poverty");
+    const card = page.locator("[data-card=tract-rank]:visible");
+    await expect(card.locator("tbody tr").first()).toBeVisible({ timeout: 60_000 });
+    await expect(card).toContainText("pov_rate");
+    await expect(card).toContainText("90% confidence (Census)");
+    await expect(card.locator("tbody tr").first().locator("td").first()).toHaveText("1");
+  });
+
+  test("a growth question draws the counts line and only the clear changes", async ({ page }) => {
+    test.skip(!(await dycuUp(page)), "DYCU unreachable");
+    await ask(page, "where did poverty grow most");
+    const card = page.locator("[data-card=tract-change]:visible");
+    await expect(card).toContainText(/\d+ clear increases · \d+ clear decreases · \d+ no clear change/, { timeout: 60_000 });
+    await expect(card).toContainText("90% confidence (Census)");
+  });
+
+  test("a mismatch question draws the scatter and names what clearly fits or says none does", async ({ page }) => {
+    test.skip(!(await dycuUp(page)), "DYCU unreachable");
+    await ask(page, "food insecurity low despite high poverty");
+    const card = page.locator("[data-card=tract-relate]:visible");
+    await expect(card.locator("svg[role=img]")).toBeVisible({ timeout: 60_000 });
+    await expect(card).toContainText(/clearly fit|No tract clearly fits/);
+    await expect(card).toContainText("Related doesn't mean one causes the other.");
+  });
+
   test("shows today's count and a way to sign out", async ({ page }) => {
     await expect(page.getByText(/of \d+ questions left today/)).toBeVisible({ timeout: 20_000 });
     await page.getByTestId("copilot-input-overlay").getByRole("button", { name: "Sign out" }).click();
