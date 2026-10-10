@@ -20,6 +20,7 @@ import type * as lib_ask from "../lib/ask.js";
 import type * as lib_card from "../lib/card.js";
 import type * as lib_chunk from "../lib/chunk.js";
 import type * as lib_cityFamilies from "../lib/cityFamilies.js";
+import type * as lib_cityPoints from "../lib/cityPoints.js";
 import type * as lib_cityProfile from "../lib/cityProfile.js";
 import type * as lib_citySql from "../lib/citySql.js";
 import type * as lib_ckan from "../lib/ckan.js";
@@ -70,6 +71,7 @@ declare const fullApi: ApiFromModules<{
   "lib/card": typeof lib_card;
   "lib/chunk": typeof lib_chunk;
   "lib/cityFamilies": typeof lib_cityFamilies;
+  "lib/cityPoints": typeof lib_cityPoints;
   "lib/cityProfile": typeof lib_cityProfile;
   "lib/citySql": typeof lib_citySql;
   "lib/ckan": typeof lib_ckan;
