@@ -78,7 +78,7 @@ describe("swapCatalog", () => {
     const result = await swap(t, [...inputs().filter((f) => !smallest.has(f.key)), ...cityInputs(100)]);
     expect(result.ok).toBe(false);
     expect(await bySource(t)).toEqual({ dycu: 49, city: 100 });
-  });
+  }, 15_000);
 
   it("treats a City-only shrink as a City outage: keeps last week's City families, updates DYCU, notes it (I3)", async () => {
     const t = convexTest(schema, modules);

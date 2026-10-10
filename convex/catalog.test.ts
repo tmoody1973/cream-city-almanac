@@ -220,9 +220,25 @@ describe("City sheets", () => {
     });
     const wibr = (await t.query(api.catalog.familySheet, { code: "P38" }))!;
     expect(wibr.members[0].files).toEqual([{ name: "Homicides", format: "Esri REST", url: "https://maps.example/MapServer/0" }]);
+    expect(wibr.layers).toEqual([{ name: "Homicides", url: "https://maps.example/MapServer/0" }]);
     expect(wibr.city!.replacedBy).toEqual({ code: "P08", name: "NIBRS Crime Data" });
     expect((await t.query(api.catalog.familySheet, { code: "P08" }))!.city!.replacedBy).toBeNull();
     expect((await t.query(api.catalog.familySheet, { code: "P08" }))!.city!.note).toBe("The City's file names still say WIBR (wibr.csv), the system Milwaukee police used before NIBRS.");
     expect(wibr.city!.note).toBeNull();
+  });
+
+  it("offer a What menu and a map only where the dataset has locations", async () => {
+    const t = convexTest(schema, modules);
+    await t.run(async (ctx) => {
+      await ctx.db.insert("families", { key: "city:nibrs-crime-data", code: "P08", name: "NIBRS Crime Data", kind: "dataset", topic: "Public Safety", keywords: [], places: ["City"], years: [], latestModified: "2021-01-13", baseSearchText: "", searchText: "", dictionaryTab: null, source: "city", live: false });
+      await ctx.db.insert("cityProfiles", {
+        familyKey: "city:nibrs-crime-data", resourceId: "r1", columns: [{ name: "Offense_All", type: "text" }], dateColumn: null, districtColumns: [],
+        categories: [{ column: "Offense_All", values: [{ value: "120", count: 5 }] }], rowCount: 5, minDate: null, maxDate: null, namesPeople: false,
+        latColumn: "RoundedLatitude", lonColumn: "RoundedLongitude", signature: "s", updatedAt: 0,
+      });
+    });
+    const nibrs = (await t.query(api.catalog.familySheet, { code: "P08" }))!;
+    expect(nibrs.city!.located).toBe(true);
+    expect(nibrs.city!.what).toEqual({ column: "Offense_All", options: [{ value: "120", label: "Robbery" }] });
   });
 });

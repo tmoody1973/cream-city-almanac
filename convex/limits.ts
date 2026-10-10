@@ -15,10 +15,15 @@ export const ASK_CITY = { kind: "token bucket" as const, rate: 60, period: HOUR,
 export const ASK_RUNS = { kind: "token bucket" as const, rate: 120, period: HOUR, capacity: 5 };
 export const ASK_RUNS_ALL = { kind: "token bucket" as const, rate: 1200, period: HOUR, capacity: 20 };
 
+// Sheet maps are public: identical requests come from a 10-minute cache; this caps live map requests site-wide.
+// One token is one map request, which is 2–3 City queries (count, grid, future-dated) or 2 for a neighborhood.
+export const MAP_CITY = { kind: "token bucket" as const, rate: 60, period: 60_000, capacity: 20 };
+
 export const rateLimiter = new RateLimiter(components.rateLimiter, {
   searchEmbeds: SEARCH_EMBEDS,
   askEmbeds: ASK_EMBEDS,
   askCity: ASK_CITY,
   askRuns: ASK_RUNS,
   askRunsAll: ASK_RUNS_ALL,
+  mapCity: MAP_CITY,
 });

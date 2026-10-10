@@ -1,14 +1,16 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
-import { action, internalQuery } from "./_generated/server";
+import { action, internalQuery, type ActionCtx } from "./_generated/server";
 import { chicagoDay } from "./lib/ask";
 import { datastoreSql, datastoreSqlPage } from "./lib/ckan";
 import { POINTS_CAP, rankGroups, tallyPoints } from "./lib/cityPoints";
+import { toMapData, type MapData } from "./lib/cityMap";
 import { buildCount, groupLabelFor, MAX_GROUPS } from "./lib/citySql";
 import type { Bbox, Geometry } from "./lib/geo";
 import { matchName } from "./lib/neighborhoodNames";
 import { rateLimiter } from "./limits";
+import { MAP_TTL_MS, mapKey } from "./map";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const vFilter = v.object({ column: v.string(), values: v.array(v.string()) });
@@ -63,7 +65,7 @@ export type CountResult =
       status: "ok"; code: string; name: string; count: number; groups: { label: string; count: number }[]; other: number; otherLabel: "Earlier" | "Other" | null;
       overlap: boolean; period: string; filters: string[]; futureExcluded: number; caveat: string | null;
       dateColumn: string | null; coverage: string | null; resourceName: string | null; namesPeople: boolean;
-      area: string | null; noLocation: number;
+      area: string | null; noLocation: number; map: MapData | null; mapError?: true;
     }
   | { status: "outside-coverage"; code: string; name: string; coverage: string }
   | { status: "choose"; code: string; name: string; column: string; asked: string; choices: string[] }
@@ -76,7 +78,8 @@ export type CountResult =
   | { status: "not-city"; code: string; name: string }
   | { status: "not-live"; code: string; name: string; note?: string }
   | { status: "unavailable"; code: string; name: string }
-  | { status: "busy" };
+  | { status: "busy" }
+  | { status: "bad-input" };
 
 // Date groups arrive as "2026-08" (month) or "2026" (year) text; column groups are named like the profile names them.
 const groupName = (label: string | null, g: unknown) => {
@@ -88,75 +91,119 @@ const groupName = (label: string | null, g: unknown) => {
 
 // Counts City records live. Arguments are checked against the dataset's profile (convex/lib/citySql.ts); returns
 // counts only, never rows.
+export type CountInput = { code: string; neighborhood?: string; from?: string; to?: string; filters?: { column: string; values: string[] }[]; groupBy?: string };
+
 export const countRecords = action({
   args: { code: v.string(), neighborhood: v.optional(v.string()), from: v.optional(v.string()), to: v.optional(v.string()), filters: v.optional(v.array(vFilter)), groupBy: v.optional(v.string()) },
-  handler: async (ctx, { code, neighborhood, ...args }): Promise<CountResult> => {
+  handler: async (ctx, args): Promise<CountResult> => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Sign in to ask");
     if (!(await rateLimiter.limit(ctx, "askCity", { key: identity.tokenIdentifier })).ok) return { status: "busy" as const };
-    const wanted = code.trim().toUpperCase();
-    const data: CountContext = await ctx.runQuery(internal.city.countContext, { code: wanted });
-    if (!data) return { status: "not-found" as const, code: wanted };
-    const { name, profile } = data;
-    if (!data.city) return { status: "not-city" as const, code: data.code, name };
-    if (data.topic === "Elections") return { status: "not-live" as const, code: data.code, name, note: ELECTIONS_NOTE };
-    if (!profile || profile.rowCount === 0) return { status: "not-live" as const, code: data.code, name };
-    let found: Extract<Found, { kind: "one" }> | null = null;
-    if (neighborhood?.trim()) {
-      const f: Found = await ctx.runQuery(internal.city.findNeighborhood, { asked: neighborhood });
-      if (f.kind === "empty") return { status: "unavailable" as const, code: data.code, name };
-      if (f.kind === "choose") return { status: "choose" as const, code: data.code, name, column: "neighborhood", asked: neighborhood, choices: f.names };
-      if (f.kind === "none") return { status: "no-neighborhood" as const, code: data.code, name, asked: neighborhood, nearest: f.nearest };
-      found = f;
+    const result = await runCount(ctx, args);
+    // Ask's card draws this map by calling api.map.mapCells with the same arguments; leave the answer where that
+    // call looks, so the cells never ride in the conversation and the card's fetch is a free cache hit. Groups don't
+    // change the cells, so a grouped count is stored as the ungrouped question the card asks.
+    if (result.status === "ok" && result.map) {
+      const { groupBy: _groupBy, ...where } = args;
+      const { key } = await mapKey(where);
+      await ctx.runMutation(internal.map.remember, { key, result: JSON.stringify({ ...result, groups: [], other: 0, otherLabel: null }), expiresAt: Date.now() + MAP_TTL_MS });
     }
-    const built = buildCount(profile, args, chicagoDay(Date.now()), found?.bbox);
-    if (!built.ok) {
-      const { ok: _ok, ...refusal } = built;
-      return { ...refusal, code: data.code, name };
-    }
-    // A named neighborhood must never fall through to the citywide count (e.g. its boundary row has no rectangle).
-    if (found && !built.points) return { status: "unavailable" as const, code: data.code, name };
-    try {
-      if (found && built.points) {
-        const area = `${found.name} (City of Milwaukee boundary)`;
-        // The City's own flag says its row limit cut the page, whatever our cap is.
-        const { records: rows, truncated } = await datastoreSqlPage<{ lat: unknown; lon: unknown; g?: unknown }>(built.points.sql);
-        if (truncated || rows.length >= POINTS_CAP) return { status: "too-broad" as const, code: data.code, name, area };
-        const [missing] = await datastoreSql<{ n: string }>(built.points.missingSql);
-        const byDate = built.groupLabel === "month" || built.groupLabel === "year";
-        const tally = tallyPoints(rows, JSON.parse(found.geometry) as Geometry, built.overlap);
-        const ranked = rankGroups(tally.groups, byDate, built.overlap, MAX_GROUPS);
-        return {
-          status: "ok" as const, code: data.code, name, count: tally.count,
-          groups: built.groupLabel ? ranked.top.map(([g, n]) => ({ label: groupName(built.groupLabel, g), count: n })) : [],
-          other: ranked.other, otherLabel: ranked.capped ? (byDate ? "Earlier" : "Other") : null, overlap: built.overlap,
-          period: built.period, filters: built.filterLabels, futureExcluded: 0,
-          caveat: data.caveat, dateColumn: built.dateColumn, coverage: built.coverage, resourceName: profile.resourceName ?? null, namesPeople: profile.namesPeople,
-          area, noLocation: cityCount(missing),
-        };
-      }
-      const [total] = await datastoreSql<{ n: string }>(built.totalSql);
-      const count = cityCount(total);
-      const rows = built.groupSql ? await datastoreSql<{ g: unknown; n: string }>(built.groupSql) : [];
-      const byDate = built.groupLabel === "month" || built.groupLabel === "year";
-      // Date groups come newest first (so a cap keeps the recent months); show them oldest to newest.
-      const groups = (byDate ? [...rows].reverse() : rows).map((r) => ({ label: groupName(built.groupLabel, r.g), count: cityCount(r) }));
-      const [future] = built.futureSql ? await datastoreSql<{ n: string }>(built.futureSql) : [{ n: "0" }];
-      const futureExcluded = cityCount(future);
-      const shown = groups.reduce((s, g) => s + g.count, 0);
-      // Overlapping groups (an incident with two offenses is in both) can't be summed, so no remainder is shown.
-      const capped = rows.length === MAX_GROUPS && !built.overlap;
-      return {
-        status: "ok" as const, code: data.code, name, count, groups,
-        other: capped ? Math.max(0, count - shown) : 0,
-        otherLabel: capped ? (byDate ? "Earlier" : "Other") : null, overlap: built.overlap,
-        period: built.period, filters: built.filterLabels, futureExcluded,
-        caveat: data.caveat, dateColumn: built.dateColumn, coverage: built.coverage, resourceName: profile.resourceName ?? null, namesPeople: profile.namesPeople,
-        area: null, noLocation: 0,
-      };
-    } catch (e) {
-      console.error(`City count failed for ${data.code}: ${e instanceof Error ? e.message : String(e)}`);
-      return { status: "unavailable" as const, code: data.code, name };
-    }
+    return result;
   },
 });
+
+// Everything a count does after sign-in and the rate limit; the public map action reuses it.
+export async function runCount(ctx: ActionCtx, input: CountInput): Promise<CountResult> {
+  const plan = await planCount(ctx, input);
+  return "status" in plan ? plan : askCity(plan);
+}
+
+type Plan = { data: NonNullable<CountContext>; profile: Doc<"cityProfiles">; found: Extract<Found, { kind: "one" }> | null; built: Extract<ReturnType<typeof buildCount>, { ok: true }> };
+
+// The checks that need no City query (unknown code, bad column or dates, unknown neighborhood, …): a refusal, or
+// a plan ready to send. The public map spends its City budget only on a plan.
+export async function planCount(ctx: ActionCtx, { code, neighborhood, ...args }: CountInput): Promise<CountResult | Plan> {
+  const wanted = code.trim().toUpperCase();
+  const data: CountContext = await ctx.runQuery(internal.city.countContext, { code: wanted });
+  if (!data) return { status: "not-found" as const, code: wanted };
+  const { name, profile } = data;
+  if (!data.city) return { status: "not-city" as const, code: data.code, name };
+  if (data.topic === "Elections") return { status: "not-live" as const, code: data.code, name, note: ELECTIONS_NOTE };
+  if (!profile || profile.rowCount === 0) return { status: "not-live" as const, code: data.code, name };
+  let found: Extract<Found, { kind: "one" }> | null = null;
+  if (neighborhood?.trim()) {
+    const f: Found = await ctx.runQuery(internal.city.findNeighborhood, { asked: neighborhood });
+    if (f.kind === "empty") return { status: "unavailable" as const, code: data.code, name };
+    if (f.kind === "choose") return { status: "choose" as const, code: data.code, name, column: "neighborhood", asked: neighborhood, choices: f.names };
+    if (f.kind === "none") return { status: "no-neighborhood" as const, code: data.code, name, asked: neighborhood, nearest: f.nearest };
+    found = f;
+  }
+  const built = buildCount(profile, args, chicagoDay(Date.now()), found?.bbox);
+  if (!built.ok) {
+    const { ok: _ok, ...refusal } = built;
+    return { ...refusal, code: data.code, name };
+  }
+  // A named neighborhood must never fall through to the citywide count (e.g. its boundary row has no rectangle).
+  if (found && !built.points) return { status: "unavailable" as const, code: data.code, name };
+  return { data, profile, found, built };
+}
+
+export async function askCity({ data, profile, found, built }: Plan): Promise<CountResult> {
+  const { name } = data;
+  try {
+    if (found && built.points) {
+      const area = `${found.name} (City of Milwaukee boundary)`;
+      // The City's own flag says its row limit cut the page, whatever our cap is.
+      const { records: rows, truncated } = await datastoreSqlPage<{ lat: unknown; lon: unknown; g?: unknown }>(built.points.sql);
+      if (truncated || rows.length >= POINTS_CAP) return { status: "too-broad" as const, code: data.code, name, area };
+      const [missing] = await datastoreSql<{ n: string }>(built.points.missingSql);
+      const byDate = built.groupLabel === "month" || built.groupLabel === "year";
+      const tally = tallyPoints(rows, JSON.parse(found.geometry) as Geometry, built.overlap);
+      const ranked = rankGroups(tally.groups, byDate, built.overlap, MAX_GROUPS);
+      return {
+        status: "ok" as const, code: data.code, name, count: tally.count,
+        groups: built.groupLabel ? ranked.top.map(([g, n]) => ({ label: groupName(built.groupLabel, g), count: n })) : [],
+        other: ranked.other, otherLabel: ranked.capped ? (byDate ? "Earlier" : "Other") : null, overlap: built.overlap,
+        period: built.period, filters: built.filterLabels, futureExcluded: 0,
+        caveat: data.caveat, dateColumn: built.dateColumn, coverage: built.coverage, resourceName: profile.resourceName ?? null, namesPeople: profile.namesPeople,
+        area, noLocation: cityCount(missing), map: toMapData(tally.cells, found.name),
+      };
+    }
+    const [total] = await datastoreSql<{ n: string }>(built.totalSql);
+    const count = cityCount(total);
+    const rows = built.groupSql ? await datastoreSql<{ g: unknown; n: string }>(built.groupSql) : [];
+    const byDate = built.groupLabel === "month" || built.groupLabel === "year";
+    // Date groups come newest first (so a cap keeps the recent months); show them oldest to newest.
+    const groups = (byDate ? [...rows].reverse() : rows).map((r) => ({ label: groupName(built.groupLabel, r.g), count: cityCount(r) }));
+    const [future] = built.futureSql ? await datastoreSql<{ n: string }>(built.futureSql) : [{ n: "0" }];
+    const futureExcluded = cityCount(future);
+    let map: MapData | null = null;
+    if (built.gridSql) {
+      // The map has its own try: a failed grid query loses the map, never the count.
+      try {
+        const page = await datastoreSqlPage<{ i: unknown; j: unknown; n: unknown }>(built.gridSql);
+        // Rows missing a cell or count are skipped, so a malformed City row can't draw a NaN cell.
+        // A cut-off grid would under-draw the map; leave it out rather than draw part of it.
+        if (!page.truncated && page.records.length < POINTS_CAP) map = toMapData(new Map(page.records.filter((c) => [c.i, c.j, c.n].every((x) => Number.isFinite(Number(x)))).map((c) => [`${Number(c.i)},${Number(c.j)}`, Number(c.n)])), null);
+      } catch (e) {
+        console.error(`City map grid failed for ${data.code}: ${e instanceof Error ? e.message : String(e)}`);
+      }
+    }
+    const shown = groups.reduce((s, g) => s + g.count, 0);
+    // Overlapping groups (an incident with two offenses is in both) can't be summed, so no remainder is shown.
+    const capped = rows.length === MAX_GROUPS && !built.overlap;
+    return {
+      status: "ok" as const, code: data.code, name, count, groups,
+      other: capped ? Math.max(0, count - shown) : 0,
+      otherLabel: capped ? (byDate ? "Earlier" : "Other") : null, overlap: built.overlap,
+      period: built.period, filters: built.filterLabels, futureExcluded,
+      caveat: data.caveat, dateColumn: built.dateColumn, coverage: built.coverage, resourceName: profile.resourceName ?? null, namesPeople: profile.namesPeople,
+      area: null, noLocation: 0, map,
+      // The dataset records locations but this count has no map (the grid failed or was cut off): not "no locations".
+      ...(built.gridSql && !map ? { mapError: true as const } : {}),
+    };
+  } catch (e) {
+    console.error(`City count failed for ${data.code}: ${e instanceof Error ? e.message : String(e)}`);
+    return { status: "unavailable" as const, code: data.code, name };
+  }
+}

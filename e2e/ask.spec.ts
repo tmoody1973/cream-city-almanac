@@ -192,6 +192,10 @@ test.describe("signed in", () => {
     await expect(card).toContainText("Robbery");
     await expect(card.locator("[data-area]")).toHaveText("In Harambee (City of Milwaukee boundary)");
     await expect(card.locator("[data-count]")).toHaveText(/^\d{1,3}(,\d{3})*$/);
+    await expect(card.locator("[data-map-summary]")).toContainText("records in");
+    await expect(card.locator("[data-map] canvas")).toHaveCount(1);
+    // One live map: the folded earlier count draws none, so the page holds exactly one map canvas.
+    await expect(page.locator("[data-map] canvas")).toHaveCount(1);
   });
 
   test("shows today's count and a way to sign out", async ({ page }) => {

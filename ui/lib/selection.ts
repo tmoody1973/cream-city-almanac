@@ -23,3 +23,11 @@ export function selectionSearch({ q, open, ask }: Selection): string {
   const s = params.toString();
   return s ? `?${s}` : "";
 }
+
+// The WHERE map's filters live in the address (what, when, from/to, where); every redirect between a sheet's two addresses carries them.
+export const WHERE_KEYS = ["type", "when", "from", "to", "area"] as const;
+
+export function whereParams(search: string): string {
+  const from = new URLSearchParams(search);
+  return new URLSearchParams(WHERE_KEYS.flatMap((k) => (from.get(k) ? [[k, from.get(k)!]] : []))).toString();
+}

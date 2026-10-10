@@ -205,4 +205,15 @@ describe("neighborhood rectangle", () => {
   it("refuses a rectangle that isn't four finite numbers", () => {
     expect(() => buildCount(located, {}, "2026-10-10", { ...area, minLat: Number.NaN })).toThrow();
   });
+  it("builds a citywide grid query with the same filters and period, and none without location columns", () => {
+    const b = buildCount(located, { from: "2026-01-01", filters: [{ column: "Offense_All", values: ["robbery"] }] }, "2026-10-10");
+    if (!b.ok) throw new Error(JSON.stringify(b));
+    const where = b.totalSql.split(" WHERE ")[1];
+    expect(b.gridSql).toContain("floor(" + guard("Address_Latitude") + " / 0.0036) AS i");
+    expect(b.gridSql).toContain("floor(" + guard("Address_Longitude") + " / 0.0049) AS j");
+    expect(b.gridSql).toContain(where);
+    expect(b.gridSql).toMatch(/ GROUP BY i, j$/);
+    const plain = buildCount(P, {}, "2026-10-10");
+    expect(plain.ok && plain.gridSql).toBeNull();
+  });
 });

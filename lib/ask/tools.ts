@@ -26,6 +26,25 @@ export interface AskTool<P extends z.ZodObject = z.ZodObject> {
 
 const code = z.string().min(2).max(8).describe("A dataset code such as W01, H05, V02 or N03");
 
+// countRecords' arguments; the count card reads the same ones to fetch its map.
+export const countParams = z.object({
+  code,
+  from: z.string().optional().describe("YYYY-MM-DD"),
+  to: z.string().optional().describe("YYYY-MM-DD"),
+  filters: z.array(z.object({ column: z.string(), values: z.array(z.string()).max(10) })).max(4).optional(),
+  groupBy: z.string().optional().describe('"month", "year", or a column name'),
+  neighborhood: z.string().max(80).optional().describe("A City of Milwaukee neighborhood name, e.g. Harambee"),
+});
+
+// The conversation carries a count without its map's cells: a citywide map is ~50 KB and the whole conversation is
+// re-sent with every question. The card fetches the cells from api.map.mapCells, which countRecords just cached.
+export function withoutCells(r: CountResult) {
+  if (r.status !== "ok" || !r.map) return r;
+  const { cells: _cells, ...map } = r.map;
+  return { ...r, map };
+}
+export type CountForModel = ReturnType<typeof withoutCells>;
+
 export function askTools(b: AskBackend): AskTool[] {
   const tools = [
     {
@@ -79,15 +98,8 @@ export function askTools(b: AskBackend): AskTool[] {
       name: "countRecords",
       description:
         "Count City of Milwaukee records (crimes, crashes, 311 requests, permits …) for one live City dataset, by date range, by values of its listed columns (e.g. Police_District, Offense_All, TITLE), optionally grouped by month, year or one of those columns. Returns counts only. If it returns choices or columns, pick from them and call again. If it returns bad-dates, fix the date range (from must be on or before to) and call again. With neighborhood, counts only records located inside that City of Milwaukee neighborhood's official boundary; if it returns choices, pick one and call again; if no-neighborhood, tell the person and offer the nearest names.",
-      parameters: z.object({
-        code,
-        from: z.string().optional().describe("YYYY-MM-DD"),
-        to: z.string().optional().describe("YYYY-MM-DD"),
-        filters: z.array(z.object({ column: z.string(), values: z.array(z.string()).max(10) })).max(4).optional(),
-        groupBy: z.string().optional().describe('"month", "year", or a column name'),
-        neighborhood: z.string().max(80).optional().describe("A City of Milwaukee neighborhood name, e.g. Harambee"),
-      }),
-      execute: (a: Parameters<AskBackend["count"]>[0]) => b.count(a),
+      parameters: countParams,
+      execute: async (a: Parameters<AskBackend["count"]>[0]) => withoutCells(await b.count(a)),
     },
   ];
   return tools as AskTool[];

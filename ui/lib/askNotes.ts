@@ -45,3 +45,10 @@ export function earlierCountIds(messages: CallMsg[]): Set<string> {
   close();
   return earlier;
 }
+
+// The conversation's newest count: its card shows a live map; older cards offer "Show map" (one map at a time).
+export function lastCountId(messages: CallMsg[]): string | null {
+  let last: string | null = null;
+  for (const m of messages) for (const c of m.toolCalls ?? []) if (c.function?.name === "countRecords") last = c.id;
+  return last;
+}

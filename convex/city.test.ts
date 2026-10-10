@@ -27,7 +27,7 @@ describe("countRecords", () => {
     const t = await seed();
     installFakeFetch({ citySql: (sql) => sql.includes("left(") ? [{ g: "2026-10", n: "26" }, { g: "2026-09", n: "230" }] : sql.includes("> '") ? [{ n: "1" }] : [{ n: "256" }] });
     const r = await t.withIdentity(reader).action(api.city.countRecords, { code: "p01", filters: [{ column: "Police_District", values: ["6"] }, { column: "Offense_All", values: ["robbery"] }], groupBy: "month" });
-    expect(r).toMatchObject({ status: "ok", code: "P01", count: 256, groups: [{ label: "Sep 2026", count: 230 }, { label: "Oct 2026", count: 26 }], other: 0, futureExcluded: 1, filters: ["Police district 6", "Robbery"], caveat: "These are reported incidents, not all crime.", area: null, noLocation: 0 });
+    expect(r).toMatchObject({ status: "ok", code: "P01", count: 256, groups: [{ label: "Sep 2026", count: 230 }, { label: "Oct 2026", count: 26 }], other: 0, futureExcluded: 1, filters: ["Police district 6", "Robbery"], caveat: "These are reported incidents, not all crime.", area: null, noLocation: 0, map: expect.anything() });
   });
   it("labels the dropped remainder 'Earlier' for date groups and 'Other' for column groups when capped", async () => {
     const t = await seed();
@@ -145,7 +145,55 @@ describe("countRecords by neighborhood", () => {
         : sql.includes("IS NULL OR") ? [{ n: "3" }] : [{ n: "999" }],
     });
     const r = await t.withIdentity(reader).action(api.city.countRecords, { code: "P01", neighborhood: "harambee neighborhood", groupBy: "month" });
-    expect(r).toMatchObject({ status: "ok", count: 3, area: "Harambee (City of Milwaukee boundary)", noLocation: 3, groups: [{ label: "Sep 2026", count: 1 }, { label: "Oct 2026", count: 2 }], futureExcluded: 0 });
+    expect(r).toMatchObject({ status: "ok", count: 3, area: "Harambee (City of Milwaukee boundary)", map: expect.anything(), noLocation: 3, groups: [{ label: "Sep 2026", count: 1 }, { label: "Oct 2026", count: 2 }], futureExcluded: 0 });
+  });
+  it("returns the neighborhood's cells from the same points as the count", async () => {
+    const t = await seed();
+    await withHarambee(t);
+    installFakeFetch({ citySql: (sql) => sql.includes(" AS lat") ? [{ lat: 43.07, lon: -87.91 }, { lat: 43.07, lon: -87.91 }, { lat: 43.5, lon: -87.91 }] : [{ n: "0" }] });
+    const r = await t.withIdentity(reader).action(api.city.countRecords, { code: "P01", neighborhood: "Harambee" });
+    if (r.status !== "ok") throw new Error(r.status);
+    expect(r.count).toBe(2);
+    expect(r.map!.summary).toEqual({ total: 2, areas: 1, fivePlus: 0, busiest: 0 });
+    expect(r.map!.cells).toEqual([{ i: Math.floor(43.07 / 0.0036), j: Math.floor(-87.91 / 0.0049), band: 1 }]);
+    expect(r.map!.area).toBe("Harambee");
+  });
+  it("maps a citywide count with the grid query; records without a location make the map total smaller, never larger", async () => {
+    const t = await seed();
+    const fake = installFakeFetch({ citySql: (sql) => sql.includes("GROUP BY i, j") ? [{ i: 11962, j: -17952, n: "110" }, { i: 11957, j: -17950, n: "3" }] : sql.includes("> '") ? [{ n: "0" }] : [{ n: "120" }] });
+    const r = await t.withIdentity(reader).action(api.city.countRecords, { code: "P01" });
+    if (r.status !== "ok") throw new Error(r.status);
+    expect(r.count).toBe(120);
+    expect(r.map!.summary).toEqual({ total: 113, areas: 2, fivePlus: 1, busiest: 110 });
+    expect(r.map!.summary.total).toBeLessThanOrEqual(r.count);
+    expect(fake.calls.some((c) => c.url.includes("GROUP+BY+i") || decodeURIComponent(c.url).includes("GROUP BY i, j"))).toBe(true);
+  });
+  it("keeps a good count when only the map's grid query fails (I2)", async () => {
+    const t = await seed();
+    installFakeFetch({ citySql: (sql) => { if (sql.includes("GROUP BY i, j")) throw new Error("grid down"); return sql.includes("> '") ? [{ n: "0" }] : [{ n: "120" }]; } });
+    const r = await t.withIdentity(reader).action(api.city.countRecords, { code: "P01" });
+    expect(r).toMatchObject({ status: "ok", count: 120, map: null, mapError: true });
+  });
+  it("skips grid rows without a usable cell or count", async () => {
+    const t = await seed();
+    installFakeFetch({ citySql: (sql) => sql.includes("GROUP BY i, j") ? [{ i: 11962, j: -17952, n: "6" }, { n: "1" }] : sql.includes("> '") ? [{ n: "0" }] : [{ n: "6" }] });
+    const r = await t.withIdentity(reader).action(api.city.countRecords, { code: "P01" });
+    if (r.status !== "ok") throw new Error(r.status);
+    expect(r.map!.cells).toHaveLength(1);
+    expect(r.map!.summary.total).toBe(6);
+  });
+  it("draws no map when the City cuts the citywide grid answer off", async () => {
+    const t = await seed();
+    installFakeFetch({ citySql: (sql) => sql.includes("GROUP BY i, j") ? Array.from({ length: 32000 }, (_, k) => ({ i: k, j: 0, n: "1" })) : sql.includes("> '") ? [{ n: "0" }] : [{ n: "120" }] });
+    const r = await t.withIdentity(reader).action(api.city.countRecords, { code: "P01" });
+    expect(r).toMatchObject({ status: "ok", count: 120, map: null });
+  });
+  it("has no map for a dataset without location columns", async () => {
+    const t = await seed();
+    await t.run(async (ctx) => { const p = (await ctx.db.query("cityProfiles").first())!; await ctx.db.patch(p._id, { latColumn: null, lonColumn: null }); });
+    installFakeFetch({ citySql: () => [{ n: "7" }] });
+    const r = await t.withIdentity(reader).action(api.city.countRecords, { code: "P01" });
+    expect(r).toMatchObject({ status: "ok", map: null });
   });
   it("never counts a name that matches nothing, and asks which for an unclear one", async () => {
     const t = await seed();

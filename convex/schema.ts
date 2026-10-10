@@ -113,6 +113,11 @@ export default defineSchema({
     tracts: v.optional(v.array(v.object({ years: v.array(v.number()), tracts: v.array(v.string()) }))),
   }).index("by_definition_matchKey", ["definition", "matchKey"]),
 
+  // Public sheet maps: an answer by its normalized arguments, kept 10 minutes.
+  mapCache: defineTable({ key: v.string(), result: v.string(), expiresAt: v.number() })
+    .index("by_key", ["key"])
+    .index("by_expiresAt", ["expiresAt"]),
+
   itemOverrides: defineTable({
     hubId: v.string(),
     measure: v.union(v.string(), v.null()),

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { proseSegments } from "../../ui/lib/askProse";
 import { countCoverage, outsideCoverage } from "../../ui/lib/askCount";
-import { askTools, type AskBackend } from "../../lib/ask/tools";
+import { askTools, withoutCells, type AskBackend, type CountResult } from "../../lib/ask/tools";
 import { ASK_PROMPT } from "../../lib/ask/prompt";
 import { fakeAskModel, meteredModel, useFakeModel } from "../../lib/ask/model";
 import { MockLanguageModelV3 } from "ai/test";
@@ -191,6 +191,17 @@ describe("countRecords tool", () => {
     const t = askTools(b).find((x) => x.name === "countRecords")!;
     expect(await t.execute({ code: "P01", groupBy: "month" } as never)).toEqual({ status: "ok", count: 3 });
     expect(seen).toEqual([{ code: "P01", groupBy: "month" }]);
+  });
+  it("keeps the map's cells out of the conversation: a citywide count stays small (C1)", async () => {
+    const cells = Array.from({ length: 1500 }, (_, k) => ({ i: 11900 + (k % 60), j: -17990 + Math.floor(k / 60), band: 3 as const, n: 120 + k }));
+    const big = { status: "ok", code: "P01", name: "NIBRS Crime Data", count: 99999, groups: [], other: 0, otherLabel: null, overlap: false, period: "Oct 10, 2025 – Oct 9, 2026", filters: [], futureExcluded: 0, caveat: "These are reported incidents, not all crime.", dateColumn: "Incident_Date", coverage: "Jan 1, 2024 – Oct 9, 2026", resourceName: "2025", namesPeople: false, area: null, noLocation: 0, map: { size: { dLat: 0.0036, dLon: 0.0049 }, cells, summary: { total: 99999, areas: 1500, fivePlus: 1500, busiest: 1619 }, area: null } } as CountResult;
+    expect(JSON.stringify(big).length).toBeGreaterThan(40_000);
+    const small = withoutCells(big);
+    expect(JSON.stringify(small).length).toBeLessThan(4096);
+    expect(small).toMatchObject({ status: "ok", count: 99999, map: { summary: { areas: 1500 }, area: null } });
+    expect(JSON.stringify(small)).not.toContain('"cells"');
+    const t = askTools({ ...fakeBackend(), count: async () => big }).find((x) => x.name === "countRecords")!;
+    expect(JSON.stringify(await t.execute({ code: "P01" } as never)).length).toBeLessThan(4096);
   });
   it("previewData answers for a live City dataset instead of 'no-feed'", async () => {
     const b = { ...fakeBackend(), sheet: async () => ({ family: { code: "P01", name: "NIBRS Crime Data", source: "city" }, members: [], card: null, city: { columns: ["Incident_Date"], namesPeople: false, coverage: { min: "2024-01-01", max: "2026-10-08" }, datastoreId: "rid" } }) } as never;
