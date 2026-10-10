@@ -32,6 +32,24 @@ describe("DYCU definitions", () => {
       { name: "Burnham Park, Layton Park and Silver City", tracts: ["1101", "1102", "1103"] },
     ]);
   });
+  it("reads decimal tract numbers", () => {
+    const text = "Census tracts 3.02, 3.03 and 5.02 were used to define the Little Menomonee River Parkway neighborhood for the purposes of this report.";
+    expect(parseDefinitions(text)).toEqual([{ name: "Little Menomonee River Parkway", tracts: ["3.02", "3.03", "5.02"] }]);
+  });
+  it("ends the name at 'for the purposes' when the report doesn't say 'neighborhood'", () => {
+    const text = "Census tracts 164, 167 and 168 were used to define the Historic Mitchell St. for the purposes of this report. These tracts were chosen in consultation with our partners.";
+    expect(parseDefinitions(text)).toEqual([{ name: "Historic Mitchell St.", tracts: ["164", "167", "168"] }]);
+  });
+  it("treats renamed neighborhoods as the current name", () => {
+    const found = [
+      { name: "Westside", year: 2021, tracts: ["123", "124"] },
+      { name: "Near West Side", year: 2023, tracts: ["123", "124"] },
+    ];
+    expect(buildDycuNeighborhoods(found, ["Near West Side"])).toEqual({
+      rows: [{ name: "Near West Side", matchKey: "near-west-side", tracts: [{ years: [2021, 2023], tracts: ["123", "124"] }] }],
+      notes: [],
+    });
+  });
   it("keeps one entry per changed list, and reports names that don't match the spreadsheet places", () => {
     const found = [
       { name: "Riverwest", year: 2022, tracts: ["71", "72"] },

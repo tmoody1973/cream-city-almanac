@@ -33,15 +33,27 @@ export function parseCityNeighborhoods(geojson: unknown): { rows: CityNeighborho
 }
 
 // DYCU's reports say "Census tracts 71, 72, 79, 80 and 107 were used to define the Riverwest neighborhood …".
-const DEFINITION = /Census tracts? ((?:\d+(?:, and |, | and ))*\d+) (?:were|was) used to define the (.+?) neighborhoods?\b/g;
+const TRACT = String.raw`\d+(?:\.\d+)?`;
+const DEFINITION = new RegExp(
+  String.raw`Census tracts? ((?:${TRACT}(?:, and |, | and ))*${TRACT}) (?:were|was) used to define the (.+?)(?: neighborhoods?)? for the purposes of this report`,
+  "g",
+);
 
 export function parseDefinitions(text: string): { name: string; tracts: string[] }[] {
   const flat = text.replace(/\s+/g, " ");
   return [...flat.matchAll(DEFINITION)].map((m) => ({
     name: m[2].trim(),
-    tracts: (m[1].match(/\d+/g) ?? []).sort((a, b) => Number(a) - Number(b)),
+    tracts: (m[1].match(/\d+(?:\.\d+)?/g) ?? []).sort((a, b) => Number(a) - Number(b)),
   }));
 }
+
+// DYCU renamed these between report years; each old name has the same tracts as the current one.
+// ponytail: hand-kept, add a pair when a new report year renames a neighborhood.
+const ALIASES: Record<string, string> = {
+  "Layton Boulevard": "Burnham Park, Layton Park and Silver City",
+  Westside: "Near West Side",
+  "Little Menomonee River": "Little Menomonee River Parkway",
+};
 
 // One row per spreadsheet neighborhood (the 28 places DYCU publishes tables for); a new tracts entry only when the
 // list changed. Names that match no place, and places with no definition, go in the build notes.
@@ -54,7 +66,7 @@ export function buildDycuNeighborhoods(
   const notes: string[] = [];
   const unmatched = new Set<string>();
   for (const f of found) {
-    const key = placeKey(f.name);
+    const key = placeKey(ALIASES[f.name] ?? f.name);
     if (!byKey.has(key)) { unmatched.add(f.name); continue; }
     const versions = lists.get(key) ?? new Map<string, Set<number>>();
     const years = versions.get(f.tracts.join(",")) ?? new Set<number>();
