@@ -168,6 +168,14 @@ describe("countRecords by neighborhood", () => {
     expect(r.map!.summary.total).toBeLessThanOrEqual(r.count);
     expect(fake.calls.some((c) => c.url.includes("GROUP+BY+i") || decodeURIComponent(c.url).includes("GROUP BY i, j"))).toBe(true);
   });
+  it("skips grid rows without a usable cell or count", async () => {
+    const t = await seed();
+    installFakeFetch({ citySql: (sql) => sql.includes("GROUP BY i, j") ? [{ i: 11962, j: -17952, n: "6" }, { n: "1" }] : sql.includes("> '") ? [{ n: "0" }] : [{ n: "6" }] });
+    const r = await t.withIdentity(reader).action(api.city.countRecords, { code: "P01" });
+    if (r.status !== "ok") throw new Error(r.status);
+    expect(r.map!.cells).toHaveLength(1);
+    expect(r.map!.summary.total).toBe(6);
+  });
   it("draws no map when the City cuts the citywide grid answer off", async () => {
     const t = await seed();
     installFakeFetch({ citySql: (sql) => sql.includes("GROUP BY i, j") ? Array.from({ length: 32000 }, (_, k) => ({ i: k, j: 0, n: "1" })) : sql.includes("> '") ? [{ n: "0" }] : [{ n: "120" }] });

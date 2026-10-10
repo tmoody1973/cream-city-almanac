@@ -155,8 +155,9 @@ export async function runCount(ctx: ActionCtx, { code, neighborhood, ...args }: 
     let map: MapData | null = null;
     if (built.gridSql) {
       const page = await datastoreSqlPage<{ i: unknown; j: unknown; n: unknown }>(built.gridSql);
+      // Rows missing a cell or count are skipped, so a malformed City row can't draw a NaN cell.
       // A cut-off grid would under-draw the map; leave it out rather than draw part of it.
-      if (!page.truncated && page.records.length < POINTS_CAP) map = toMapData(new Map(page.records.map((c) => [`${Number(c.i)},${Number(c.j)}`, Number(c.n)])), null);
+      if (!page.truncated && page.records.length < POINTS_CAP) map = toMapData(new Map(page.records.filter((c) => [c.i, c.j, c.n].every((x) => Number.isFinite(Number(x)))).map((c) => [`${Number(c.i)},${Number(c.j)}`, Number(c.n)])), null);
     }
     const shown = groups.reduce((s, g) => s + g.count, 0);
     // Overlapping groups (an incident with two offenses is in both) can't be summed, so no remainder is shown.
