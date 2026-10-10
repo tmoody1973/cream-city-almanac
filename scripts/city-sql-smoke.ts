@@ -50,6 +50,12 @@ for (const args of [{ from: "2026-01-01", filters: [{ column: "Offense_All", val
   console.log("OK", rows.length, "points ·", missing.n, "unplaced ·", b.points.sql.slice(0, 90));
 }
 
+// Citywide map cells: the grid query with a filter and the period.
+const grid = buildCount(located, { from: "2026-01-01", filters: [{ column: "Offense_All", values: ["robbery"] }] }, today);
+if (!grid.ok || !grid.gridSql) throw new Error(JSON.stringify(grid));
+const cells = await datastoreSql<{ i: number; j: number; n: string }>(grid.gridSql);
+console.log("OK", cells.length, "cells · busiest", Math.max(...cells.map((c) => Number(c.n))), "·", grid.gridSql.slice(0, 90));
+
 // The profile's queries, including the unnest form for ';'-separated columns.
 const fields = [{ id: "Incident_Date", type: "text" }, { id: "Police_District", type: "text" }, { id: "Offense_All", type: "text" }, { id: "Weapon_Used_All", type: "text" }];
 const q = profileSql(RID, planProfile(fields));

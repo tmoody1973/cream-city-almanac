@@ -17,6 +17,10 @@ describe("tallyPoints", () => {
     expect([...r.groups]).toEqual([["13A", 1], ["120", 2]]);
     expect([...tallyPoints(rows, box, false).groups]).toEqual([["13A;120", 1], ["120", 1]]);
   });
+  it("bins only inside points into quarter-mile cells", () => {
+    const r = tallyPoints([{ lat: 0.5, lon: 0.5 }, { lat: 0.5, lon: 0.5 }, { lat: 2, lon: 2 }], box, false);
+    expect([...r.cells]).toEqual([[`${Math.floor(0.5 / 0.0036)},${Math.floor(0.5 / 0.0049)}`, 2]]);
+  });
 });
 
 describe("rankGroups", () => {

@@ -3,6 +3,7 @@ import { quoteId } from "./cityProfile";
 import { isOffenseColumn, offenseCodes, offenseName } from "./nibrs";
 import type { Bbox } from "./geo";
 import { POINTS_CAP } from "./cityPoints";
+import { CELL } from "./cityMap";
 
 // Turns Ask's checked arguments into the City's PostgreSQL. Only profiled columns and profiled values get in;
 // identifiers are double-quoted, literals single-quoted with quotes doubled. Constructs are limited to what the City's
@@ -22,7 +23,7 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 
 export interface CountArgs { from?: string; to?: string; filters?: { column: string; values: string[] }[]; groupBy?: string }
 export type Built =
-  | { ok: true; totalSql: string; groupSql: string | null; futureSql: string | null; period: string; filterLabels: string[]; groupLabel: string | null; overlap: boolean; dateColumn: string | null; coverage: string | null; points: { sql: string; missingSql: string } | null }
+  | { ok: true; totalSql: string; groupSql: string | null; futureSql: string | null; period: string; filterLabels: string[]; groupLabel: string | null; overlap: boolean; dateColumn: string | null; coverage: string | null; points: { sql: string; missingSql: string } | null; gridSql: string | null }
   | { ok: false; status: "no-locations" }
   | { ok: false; status: "outside-coverage"; coverage: string }
   | { ok: false; status: "choose"; column: string; asked: string; choices: string[] }
@@ -154,5 +155,12 @@ export function buildCount(p: CityProfile, a: CountArgs, today: string, area?: B
       missingSql: `SELECT COUNT(*) AS n FROM ${table} WHERE ${filtered}${unplaced}`,
     };
   }
-  return { ok: true, totalSql, groupSql, futureSql, period, filterLabels, groupLabel, overlap, dateColumn: p.dateColumn, coverage, points };
+  // Citywide quarter-mile counts: the same filters and period, binned by cell, with no rectangle.
+  let gridSql: string | null = null;
+  if (p.latColumn && p.lonColumn) {
+    const [lat, lon] = [num(p.latColumn), num(p.lonColumn)];
+    const filtered = where.length ? `${where.join(" AND ")} AND ` : "";
+    gridSql = `SELECT floor(${lat} / ${CELL.dLat}) AS i, floor(${lon} / ${CELL.dLon}) AS j, COUNT(*) AS n FROM ${table} WHERE ${filtered}${lat} IS NOT NULL AND ${lon} IS NOT NULL GROUP BY i, j`;
+  }
+  return { ok: true, totalSql, groupSql, futureSql, period, filterLabels, groupLabel, overlap, dateColumn: p.dateColumn, coverage, points, gridSql };
 }
