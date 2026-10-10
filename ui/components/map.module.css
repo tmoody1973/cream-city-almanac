@@ -1,0 +1,12 @@
+/* the map, its key and its words; bands read by pattern, text at body size in ink. */
+.map { margin: 10px 0 0; }
+.canvas { border: var(--hair); }
+.key { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: var(--fs-small); color: var(--ink); }
+.key li { display: flex; align-items: center; gap: 8px; }
+.swatch { width: 22px; height: 22px; border: 2px solid var(--ink); box-sizing: border-box; flex: none; }
+.hatch { background: repeating-linear-gradient(45deg, var(--ink) 0 2px, transparent 2px 7px); }
+.cross { background: repeating-linear-gradient(45deg, var(--ink) 0 1.5px, transparent 1.5px 5px), repeating-linear-gradient(-45deg, var(--ink) 0 1.5px, transparent 1.5px 5px); }
+.solid { background: var(--ink); opacity: 0.8; }
+.line { border: 3px solid var(--pencil); }
+.summary { margin: 8px 0 0; font-size: var(--fs-small); color: var(--ink); }
+.note, .message { margin: 6px 0 0; font-size: var(--fs-small); color: var(--ink); }
