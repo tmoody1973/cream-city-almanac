@@ -1,7 +1,8 @@
 import { ASK_EXAMPLES } from "../lib/ask/examples";
 import type { AskToolName } from "../lib/ask/tools";
 
-export interface AskQuestion { q: string; tool: AskToolName | AskToolName[]; expect: Record<string, string | number> }
+// final: grade only the last call of the tool — the card the person reads as the answer (earlier counts fold away).
+export interface AskQuestion { q: string; tool: AskToolName | AskToolName[]; expect: Record<string, string | number>; final?: boolean }
 
 export const ASK_QUESTIONS: AskQuestion[] = [
   { q: "How many kids under 5 live in poverty in Harambee?", tool: "getNumber", expect: { neighborhood: "Harambee", slug: "poverty-status-by-age" } },
@@ -33,7 +34,7 @@ export const ASK_QUESTIONS: AskQuestion[] = [
   { q: "How many robberies were reported in police district 6 this year?", tool: "countRecords", expect: {} },
   { q: "How many pothole requests did the City get each month this year?", tool: "countRecords", expect: {} },
   { q: "Count car break-ins in Milwaukee last month", tool: "countRecords", expect: {} },
-  { q: "How many robberies were there in Harambee this year?", tool: "countRecords", expect: { area: "Harambee" } },
+  { q: "How many robberies were there in Harambee this year?", tool: "countRecords", expect: { area: "Harambee", filter: "Robbery", period: "Jan 1, 2026" }, final: true },
   { q: "How many fire calls were there in Riverwest each month this year?", tool: "countRecords", expect: { area: "Riverwest" } },
   { q: "How many burglaries were there in Gotham Heights this year?", tool: "countRecords", expect: { status: "no-neighborhood" } },
   { q: "Is there City data on vacant buildings?", tool: "searchCatalog", expect: {} },
