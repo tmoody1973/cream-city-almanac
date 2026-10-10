@@ -19,7 +19,7 @@ const STYLE = { day: "https://tiles.openfreemap.org/styles/positron", night: "ht
 const MILWAUKEE: [[number, number], [number, number]] = [[-88.07, 42.92], [-87.86, 43.2]];
 const INK = { day: "#111111", night: "#ecebe6" };
 const PENCIL = { day: "#d7261e", night: "#ff6b5e" };
-const LAYER_IDS = ["layer-fill", "layer-line", "layer-dot"];
+const LAYER_IDS = ["layer-fill", "layer-outline", "layer-line", "layer-dot"];
 const CELL_IDS = ["b1", "b2", "b3"];
 
 // Hatching drawn in the edition's ink: 1–4 diagonal, 5–19 crossed. Patterns read without relying on faint shades.
@@ -151,7 +151,9 @@ export default function CityMap({ cells = null, count = 0, boundary = null, laye
       else {
         const ink = INK[edition];
         m.addSource("layer", { type: "geojson", data });
-        m.addLayer({ id: "layer-fill", type: "line", source: "layer", filter: ["==", ["geometry-type"], "Polygon"], paint: { "line-color": ink, "line-width": 1 } });
+        // An invisible fill makes a click anywhere inside a zone pick it; the outline is what shows.
+        m.addLayer({ id: "layer-fill", type: "fill", source: "layer", filter: ["==", ["geometry-type"], "Polygon"], paint: { "fill-color": ink, "fill-opacity": 0 } });
+        m.addLayer({ id: "layer-outline", type: "line", source: "layer", filter: ["==", ["geometry-type"], "Polygon"], paint: { "line-color": ink, "line-width": 1 } });
         m.addLayer({ id: "layer-line", type: "line", source: "layer", filter: ["==", ["geometry-type"], "LineString"], paint: { "line-color": ink, "line-width": 2 } });
         m.addLayer({ id: "layer-dot", type: "circle", source: "layer", filter: ["==", ["geometry-type"], "Point"], paint: { "circle-color": ink, "circle-radius": 3 } });
       }
@@ -175,6 +177,7 @@ export default function CityMap({ cells = null, count = 0, boundary = null, laye
       m.off("moveend", onMove); m.off("click", LAYER_IDS, onClick); m.off("style.load", ready);
       // The old layer's shapes and label must not sit under the next layer's note (skipped when the map is going away).
       if (map.current === m && loaded.current) (m.getSource("layer") as GeoJSONSource | undefined)?.setData({ type: "FeatureCollection", features: [] });
+      setLayerNote(null);
     };
   }, [layer, edition]);
 
