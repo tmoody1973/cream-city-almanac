@@ -166,6 +166,16 @@ describe("getNumber", () => {
     expect(r).toMatchObject({ status: "ok", neighborhood: "Harambee", year: 2024, slug: "poverty-status-by-age", tableIdText: "B17001", label: "Under 5 years", rowIndex: 2, values: [{ estimate: "608", moe: "252" }] });
     expect(r.status === "ok" && r.issues.length).toBe(1);
   });
+  it("names DYCU's tract definition for the neighborhood and year", async () => {
+    const t = convexTest(schema, modules);
+    await seed(t);
+    await t.run(async (ctx) => {
+      await ctx.db.insert("portraitTables", poverty(harambee(2024).hubId));
+      await ctx.db.insert("neighborhoods", { definition: "dycu", name: "Harambee", matchKey: "harambee", tracts: [{ years: [2021, 2022, 2023, 2024], tracts: ["63", "67", "68", "69", "1860"] }] });
+    });
+    const r = await t.query(api.ask.getNumber, { neighborhood: "Harambee", topic: "Poverty Status by Age", row: "Under 5 years" });
+    expect(r).toMatchObject({ status: "ok", definition: "census tracts 63, 67, 68, 69 and 1860" });
+  });
   it("returns the row with its neighbors, the asked-for one marked, for the phone excerpt", async () => {
     const t = convexTest(schema, modules);
     await seed(t);

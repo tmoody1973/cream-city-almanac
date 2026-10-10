@@ -182,6 +182,15 @@ test.describe("signed in", () => {
     await expect(card.getByRole("link", { name: /open the data/i })).toBeVisible();
   });
 
+  test("a neighborhood count names the City boundary it used", async ({ page }) => {
+    test.skip(!(await page.request.get("https://data.milwaukee.gov/api/3/action/status_show").then((r) => r.ok()).catch(() => false)), "City API unreachable");
+    await ask(page, "How many robberies in Harambee this year?");
+    const card = page.locator("[data-card=count]").first();
+    await expect(card).toBeVisible({ timeout: 40_000 });
+    await expect(card.locator("[data-area]")).toHaveText("In Harambee (City of Milwaukee boundary)");
+    await expect(card.locator("[data-count]")).toHaveText(/^\d{1,3}(,\d{3})*$/);
+  });
+
   test("shows today's count and a way to sign out", async ({ page }) => {
     await expect(page.getByText(/of \d+ questions left today/)).toBeVisible({ timeout: 20_000 });
     await page.getByTestId("copilot-input-overlay").getByRole("button", { name: "Sign out" }).click();

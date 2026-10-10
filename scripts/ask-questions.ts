@@ -33,6 +33,9 @@ export const ASK_QUESTIONS: AskQuestion[] = [
   { q: "How many robberies were reported in police district 6 this year?", tool: "countRecords", expect: {} },
   { q: "How many pothole requests did the City get each month this year?", tool: "countRecords", expect: {} },
   { q: "Count car break-ins in Milwaukee last month", tool: "countRecords", expect: {} },
+  { q: "How many robberies were there in Harambee this year?", tool: "countRecords", expect: { area: "Harambee" } },
+  { q: "How many fire calls were there in Riverwest each month this year?", tool: "countRecords", expect: { area: "Riverwest" } },
+  { q: "How many burglaries were there in Gotham Heights this year?", tool: "countRecords", expect: { status: "no-neighborhood" } },
   { q: "Is there City data on vacant buildings?", tool: "searchCatalog", expect: {} },
   { q: "Who owns the property at 2263 N Lake Dr?", tool: ["searchCatalog", "showDataset"], expect: {} },
 ];

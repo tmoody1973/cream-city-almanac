@@ -15,7 +15,7 @@ type Open = ((search: string) => void) | undefined;
 type Value = { estimate: string; moe: string | null } | null;
 export type NumberResult = {
   status: string; code: string; neighborhood: string; place: string; year: number | null; topic: string; slug: string;
-  tableIdText: string; label: string; rowIndex: number; values: Value[]; groups: string[]; nearby: { label: string; values: Value[]; marked: boolean }[];
+  tableIdText: string; definition: string | null; label: string; rowIndex: number; values: Value[]; groups: string[]; nearby: { label: string; values: Value[]; marked: boolean }[];
 };
 
 type CountOk = Extract<CountResult, { status: "ok" }>;
@@ -93,7 +93,8 @@ export function NumberCard({ r, onOpen, callKey }: { r: NumberResult; onOpen: Op
     // Laptop: the table is open in the pane with this row outlined; the note keeps a reference the leader starts from.
     return (
       <p className={styles.reference} data-card="number">
-        {title} · {r.label} <ProvenanceTag source="DYCU" /> <OpenLink code={r.code} query={query} onOpen={onOpen} anchor />
+        {title} · {r.label} <ProvenanceTag source="DYCU" />
+        {r.definition && <span className={styles.source} data-definition> {r.neighborhood} as DYCU defines it: {r.definition}</span>} <OpenLink code={r.code} query={query} onOpen={onOpen} anchor />
       </p>
     );
   }
@@ -104,6 +105,7 @@ export function NumberCard({ r, onOpen, callKey }: { r: NumberResult; onOpen: Op
         <path d="M6 0 V26 M1.5 21 L6 26.5 L10.5 21" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="square" />
       </svg>
       <figcaption className={styles.excerptTitle}>{title} <ProvenanceTag source="DYCU" /></figcaption>
+      {r.definition && <p className={styles.source} data-definition>{r.neighborhood} as DYCU defines it: {r.definition}</p>}
       <table className={styles.excerptTable}>
         <thead>
           <tr>
@@ -170,6 +172,8 @@ function CountCard({ r, onOpen }: { r: CountOk; onOpen: Open }) {
       )}
       {r.overlap && r.groups.length > 0 && <p className={styles.source}>An incident can count in more than one group.</p>}
       {covers && <p className={styles.source} data-coverage>{covers}</p>}
+      {r.area && <p className={styles.source} data-area>In {r.area}</p>}
+      {r.noLocation > 0 && <p className={styles.source} data-no-location>{r.noLocation.toLocaleString("en-US")} matching records citywide have no location and aren&apos;t included.</p>}
       {r.futureExcluded > 0 && <p className={styles.source}>{r.futureExcluded.toLocaleString("en-US")} records dated in the future were left out.</p>}
       {r.caveat && <p className={styles.source}>{r.caveat} <ProvenanceTag source="AI" /></p>}
       <OpenLink code={r.code} onOpen={onOpen} label="Open the data" />
@@ -228,6 +232,9 @@ export function AskCards({ onOpen }: { onOpen?: (search: string) => void }) {
     if (r.status === "unavailable") return <p className={styles.failed}>The City&apos;s data didn&apos;t respond. Try again shortly.</p>;
     if (r.status === "not-live") return <p className={styles.failed}>{r.name} can&apos;t be counted live.{r.note ? ` ${r.note}` : ""} <OpenLink code={r.code} onOpen={onOpen} /></p>;
     if (r.status === "busy") return <p className={styles.failed}>City counts are busy for your account; try again shortly.</p>;
+    if (r.status === "no-neighborhood") return <p className={styles.failed} data-card="count-no-neighborhood">No City neighborhood is called &ldquo;{r.asked}&rdquo;.{r.nearest.length ? ` Nearest: ${r.nearest.join(", ")}.` : ""}</p>;
+    if (r.status === "no-locations") return <p className={styles.failed}>{r.name} doesn&apos;t record locations, so it can&apos;t be counted by neighborhood. <OpenLink code={r.code} onOpen={onOpen} /></p>;
+    if (r.status === "too-broad") return <p className={styles.failed}>Too many {r.name} records in {r.area} to count at once; try a shorter period.</p>;
     return null; // choose / bad-column / bad-dates / not-found / not-city: the model asks or retries
   } }, [onOpen]);
 

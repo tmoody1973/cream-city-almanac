@@ -65,6 +65,16 @@ export const recordUsage = mutation({
 
 const N03_KEY = "document:neighborhood-portrait-spreadsheet";
 
+const listWords = (xs: string[]) => (xs.length < 2 ? xs.join("") : `${xs.slice(0, -1).join(", ")} and ${xs.at(-1)}`);
+
+// "census tracts 71, 72 and 107": DYCU's definition for that report year (or its latest), or null if none is stored.
+async function dycuDefinition(ctx: QueryCtx, place: string, year: number | null): Promise<string | null> {
+  const row = await ctx.db.query("neighborhoods").withIndex("by_definition_matchKey", (q) => q.eq("definition", "dycu").eq("matchKey", place)).first();
+  const versions = row?.tracts ?? [];
+  const v = versions.find((x) => year !== null && x.years.includes(year)) ?? versions.at(-1);
+  return v ? `census tract${v.tracts.length > 1 ? "s" : ""} ${listWords(v.tracts)}` : null;
+}
+
 // One row of one DYCU neighborhood table, exactly as written. Never combines rows, tables, places or years.
 export const getNumber = query({
   args: { neighborhood: v.string(), topic: v.string(), year: v.optional(v.number()), row: v.string() },
@@ -104,6 +114,7 @@ export const getNumber = query({
         values: picked.row.values,
         nearby,
         issues: table.issues,
+        definition: await dycuDefinition(ctx, placeKey(label(m)), m.years[0] ?? null),
       };
     }
     return { status: "no-table" as const, neighborhood: label(here[0]), topic: topic.topic };

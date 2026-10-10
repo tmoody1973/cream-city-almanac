@@ -14,7 +14,7 @@ export interface AskBackend {
   sheet(code: string): Promise<FamilySheet | null>;
   number(a: { neighborhood: string; topic: string; year?: number; row: string }): Promise<NumberResult>;
   report(a: { question: string; familyCode?: string }): Promise<ReportResult>;
-  count(a: { code: string; from?: string; to?: string; filters?: { column: string; values: string[] }[]; groupBy?: string }): Promise<CountResult>;
+  count(a: { code: string; from?: string; to?: string; filters?: { column: string; values: string[] }[]; groupBy?: string; neighborhood?: string }): Promise<CountResult>;
 }
 
 export interface AskTool<P extends z.ZodObject = z.ZodObject> {
@@ -78,13 +78,14 @@ export function askTools(b: AskBackend): AskTool[] {
     {
       name: "countRecords",
       description:
-        "Count City of Milwaukee records (crimes, crashes, 311 requests, permits …) for one live City dataset, by date range, by values of its listed columns (e.g. Police_District, Offense_All, TITLE), optionally grouped by month, year or one of those columns. Returns counts only. If it returns choices or columns, pick from them and call again. If it returns bad-dates, fix the date range (from must be on or before to) and call again.",
+        "Count City of Milwaukee records (crimes, crashes, 311 requests, permits …) for one live City dataset, by date range, by values of its listed columns (e.g. Police_District, Offense_All, TITLE), optionally grouped by month, year or one of those columns. Returns counts only. If it returns choices or columns, pick from them and call again. If it returns bad-dates, fix the date range (from must be on or before to) and call again. With neighborhood, counts only records located inside that City of Milwaukee neighborhood's official boundary; if it returns choices, pick one and call again; if no-neighborhood, tell the person and offer the nearest names.",
       parameters: z.object({
         code,
         from: z.string().optional().describe("YYYY-MM-DD"),
         to: z.string().optional().describe("YYYY-MM-DD"),
         filters: z.array(z.object({ column: z.string(), values: z.array(z.string()).max(10) })).max(4).optional(),
         groupBy: z.string().optional().describe('"month", "year", or a column name'),
+        neighborhood: z.string().max(80).optional().describe("A City of Milwaukee neighborhood name, e.g. Harambee"),
       }),
       execute: (a: Parameters<AskBackend["count"]>[0]) => b.count(a),
     },
