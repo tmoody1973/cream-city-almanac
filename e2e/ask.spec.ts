@@ -81,6 +81,21 @@ test.describe("signed in", () => {
     await expect(passage).not.toContainText("| --- |");
   });
 
+  test("a reply keeps its paragraphs and its list of story angles", async ({ page }) => {
+    await ask(page, "story angles please");
+    const prose = page.locator("[data-ask-prose]").last();
+    await expect(prose.locator("li")).toHaveCount(3, { timeout: 30_000 });
+    await expect(prose.locator("p")).toHaveCount(2);
+    await expect(prose.locator("li").first()).toHaveText("Where it is highest");
+  });
+
+  test("a dataset opened twice in one answer shows one card", async ({ page }) => {
+    await ask(page, "open it twice");
+    await expect(page.locator("[data-card=preview]")).toContainText("Daily Air Quality", { timeout: 30_000 });
+    await expect(page.locator("[data-card=preview]")).toHaveCount(1);
+    await expect(page.locator("[data-card=dataset]")).toHaveCount(0);
+  });
+
   test("a figure in the model's words is marked unverified", async ({ page }) => {
     await ask(page, "unverified please");
     await expect(page.locator("mark[data-unverified]")).toContainText("608", { timeout: 30_000 });

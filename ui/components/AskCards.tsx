@@ -1,7 +1,7 @@
 "use client";
 import { useRenderTool } from "@copilotkit/react-core/v2";
 import { useAction } from "convex/react";
-import { createContext, Fragment, useContext, useEffect, useState } from "react";
+import { createContext, Fragment, type ReactNode, useContext, useEffect, useState } from "react";
 import { z } from "zod";
 import { countCoverage, outsideCoverage } from "@/ui/lib/askCount";
 import { passageBlocks } from "@/ui/lib/askPassage";
@@ -158,6 +158,14 @@ function SheetCard({ code, name, onOpen, callKey, preview, source = "HUB" }: { c
 // provides them, and those cards fold to one line so a broad first count never reads as the answer.
 export const EarlierCounts = createContext<Set<string>>(new Set());
 
+// Sheet-card calls repeated later in the same question (ui/lib/askNotes.ts earlierSheetIds): they draw nothing,
+// so each dataset shows one card per answer.
+export const EarlierSheets = createContext<Set<string>>(new Set());
+function Once({ id, children }: { id?: string; children: ReactNode }) {
+  const earlier = useContext(EarlierSheets);
+  return id && earlier.has(id) ? null : children;
+}
+
 // The conversation's newest count (Note provides it) and the map the reader picked with "Show map" (AskPanel holds it).
 export const NewestCount = createContext<string | null>(null);
 export const MapPick = createContext<{ picked: { id: string; newest: string | null } | null; pick: (id: string, newest: string | null) => void }>({ picked: null, pick: () => {} });
@@ -263,7 +271,7 @@ export function AskCards({ onOpen }: { onOpen?: (search: string) => void }) {
     const r = parse<{ status: string; code: string; name: string }>(props.result);
     if (!r) return <Failed />;
     if (r.status !== "ok") return null;
-    return <SheetCard code={r.code} name={r.name} onOpen={onOpen} callKey={key("showDataset", props as never)} />;
+    return <Once id={props.toolCallId}><SheetCard code={r.code} name={r.name} onOpen={onOpen} callKey={key("showDataset", props as never)} /></Once>;
   } }, [onOpen]);
 
   useRenderTool({ name: "previewData", parameters: z.object({ code: z.string() }), render: (props) => {
@@ -271,7 +279,7 @@ export function AskCards({ onOpen }: { onOpen?: (search: string) => void }) {
     const r = parse<{ status: string; city?: boolean; code: string; name: string; members: { place: string | null; yearLabel: string | null; featureServerUrl: string | null }[]; fields: string[] }>(props.result);
     if (!r) return <Failed />;
     if (r.status !== "ok") return null;
-    return <SheetCard code={r.code} name={r.name} onOpen={onOpen} callKey={key("previewData", props as never)} preview={{ members: r.members, fields: r.fields }} source={r.city ? "CITY" : "HUB"} />;
+    return <Once id={props.toolCallId}><SheetCard code={r.code} name={r.name} onOpen={onOpen} callKey={key("previewData", props as never)} preview={{ members: r.members, fields: r.fields }} source={r.city ? "CITY" : "HUB"} /></Once>;
   } }, [onOpen]);
 
   useRenderTool({ name: "getNumber", parameters: z.object({ neighborhood: z.string() }), render: (props) => {

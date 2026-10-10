@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { earlierCountIds, lastCountId, noteNumbers, noteOrder } from "../../ui/lib/askNotes";
+import { earlierCountIds, earlierSheetIds, lastCountId, noteNumbers, noteOrder } from "../../ui/lib/askNotes";
 
 const u = (id: string) => ({ id, role: "user", content: "q" });
 const call = (id: string) => ({ id, role: "assistant", content: "", toolCalls: [{ id: `c-${id}` }] });
@@ -38,5 +38,26 @@ describe("newest count", () => {
     const ms = [u("u1"), counts("a1", "k1"), u("u2"), counts("a2", "s1", "k2", "k3")];
     expect(lastCountId(ms)).toBe("k3");
     expect(lastCountId([u("u1")])).toBeNull();
+  });
+});
+
+describe("repeated sheet cards", () => {
+  const opens = (id: string, ...calls: [string, string, string][]) => ({
+    id,
+    role: "assistant",
+    content: "",
+    toolCalls: calls.map(([cid, name, code]) => ({ id: cid, function: { name, arguments: JSON.stringify({ code }) } })),
+  });
+  it("keeps one card per dataset in a question, the last call, case-insensitively", () => {
+    const ms = [u("u1"), opens("a1", ["s1", "showDataset", "F02"], ["p1", "previewData", "f02"], ["s2", "showDataset", "N03"])];
+    expect([...earlierSheetIds(ms)]).toEqual(["s1"]);
+  });
+  it("starts fresh at the next question", () => {
+    const ms = [u("u1"), opens("a1", ["s1", "showDataset", "F02"]), u("u2"), opens("a2", ["s2", "showDataset", "F02"])];
+    expect(earlierSheetIds(ms).size).toBe(0);
+  });
+  it("ignores other tools and unreadable arguments", () => {
+    const ms = [u("u1"), { id: "a1", role: "assistant", content: "", toolCalls: [{ id: "c1", function: { name: "countRecords", arguments: '{"code":"P08"}' } }, { id: "s1", function: { name: "showDataset", arguments: "{" } }] }];
+    expect(earlierSheetIds(ms).size).toBe(0);
   });
 });

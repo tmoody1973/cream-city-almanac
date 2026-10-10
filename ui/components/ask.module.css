@@ -111,3 +111,8 @@
 .waiting { margin: 8px 0; padding: 8px 12px; border: var(--hair); }
 .examplesLine { margin: 4px 0 8px; font-size: var(--fs-small); }
 .panel:has([data-ask-question]) .examplesLine { display: none; }
+/* A reply's paragraphs and its list of story angles (proseBlocks). */
+.noteText > * + * { margin-top: 8px; }
+.noteText > p { margin-bottom: 0; }
+.noteList { margin: 0; padding-left: 1.2em; }
+.noteList li + li { margin-top: 4px; }
