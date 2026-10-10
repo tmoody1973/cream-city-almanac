@@ -25,6 +25,9 @@ const backend: AskBackend = {
   number: async (a) => run("ask:getNumber", a),
   report: async (a) => run("ask:readReport", a, true),
   count: async (a) => run("city:countRecords", a, true),
+  rank: async (a) => run("tracts:rankTracts", a, true),
+  change: async (a) => run("tracts:compareYears", a, true),
+  relate: async (a) => run("tracts:relateTracts", a, true),
 };
 const tools = Object.fromEntries(askTools(backend).map((t) => [t.name, tool({ description: t.description, inputSchema: t.parameters, execute: t.execute })]));
 

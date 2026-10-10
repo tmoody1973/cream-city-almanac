@@ -101,6 +101,9 @@ const backend: AskBackend = {
   number: async () => ({ status: "no-topic", topics: ["Rent Paid"] }) as never,
   report: async () => ({ status: "ok", passages: [] }),
   count: async () => ({ status: "not-found" }) as never,
+  rank: async () => ({ status: "busy" }) as never,
+  change: async () => ({ status: "busy" }) as never,
+  relate: async () => ({ status: "busy" }) as never,
 };
 const tool = (name: string) => askTools(backend).find((t) => t.name === name)!;
 

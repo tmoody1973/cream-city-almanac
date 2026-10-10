@@ -61,7 +61,7 @@ const text = (s: string) => {
 const call = (toolName: string, input: object) => ({ type: "tool-call" as const, toolCallId: nextId(`call-${toolName}`), toolName, input: JSON.stringify(input) });
 
 // A scripted model: the first step calls the tool the question's keyword names; the next step replies.
-// "poverty" → getNumber (Harambee); "air" → previewData V02; "twice" → showDataset and previewData V02 in one step;
+// "rank tracts" → rankTracts, "despite" → relateTracts (mismatch), "grow most" → compareYears (all three before "poverty", which they may contain); "poverty" → getNumber (Harambee); "air" → previewData V02; "twice" → showDataset and previewData V02 in one step;
 // "angles" → a reply with two paragraphs and three story angles; "report" → readReport; "unverified" → a reply with a figure; "thefts" and "robberies" → searchCatalog, then countRecords (robberies: a broad count, then robbery in Harambee); else searchCatalog.
 export function fakeAskModel(): LanguageModel {
   return new MockLanguageModelV3({
@@ -103,6 +103,12 @@ export function fakeAskModel(): LanguageModel {
           : [
               ...[question.includes("thefts") || question.includes("robberies")
                 ? call("searchCatalog", { query: "NIBRS crime" })
+                : question.includes("rank tracts")
+                ? call("rankTracts", { code: "E02", column: "pov_rate", place: "City", year: "2022", direction: "high" })
+                : question.includes("despite")
+                ? call("relateTracts", { a: { code: "E02", column: "pov_rate" }, b: { code: "F02", column: "per_insecure" }, place: "City", year: "2022", mode: "mismatch", aSide: "high", bSide: "low" })
+                : question.includes("grow most")
+                ? call("compareYears", { code: "E02", column: "pov_rate", place: "City", from: "2022", to: "2023" })
                 : question.includes("poverty")
                 ? call("getNumber", { neighborhood: "Harambee", topic: "Poverty Status by Age", row: "Under 5 years" })
                 : question.includes("twice")

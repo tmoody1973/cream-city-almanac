@@ -10,5 +10,8 @@ export function convexBackend(token: string): AskBackend {
     number: (a) => fetchQuery(api.ask.getNumber, a),
     report: (a) => fetchAction(api.ask.readReport, a, { token }),
     count: (a) => fetchAction(api.city.countRecords, a, { token }),
+    rank: (a) => fetchAction(api.tracts.rankTracts, a, { token }),
+    change: (a) => fetchAction(api.tracts.compareYears, a, { token }),
+    relate: (a) => fetchAction(api.tracts.relateTracts, a, { token }),
   };
 }
