@@ -26,3 +26,22 @@ export function noteNumbers(messages: Msg[]): Map<string, number> {
   for (const m of messages) if (hasText(m)) numbers.set(m.id, numbers.size + 1);
   return numbers;
 }
+
+// Ask sometimes counts broadly before it counts what was asked; only a question's last count is its answer, so the
+// cards before it fold away (the broad first count once read as the answer on the live site).
+type CallMsg = Msg & { toolCalls?: { id: string; function?: { name?: string } }[] };
+
+export function earlierCountIds(messages: CallMsg[]): Set<string> {
+  const earlier = new Set<string>();
+  let turn: string[] = [];
+  const close = () => {
+    turn.slice(0, -1).forEach((id) => earlier.add(id));
+    turn = [];
+  };
+  for (const m of messages) {
+    if (m.role === "user") close();
+    for (const c of m.toolCalls ?? []) if (c.function?.name === "countRecords") turn.push(c.id);
+  }
+  close();
+  return earlier;
+}

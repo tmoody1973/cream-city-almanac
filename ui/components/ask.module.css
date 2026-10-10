@@ -65,6 +65,9 @@
 .countFigure { margin: 4px 0 8px; font-family: var(--font-caps); font-weight: 700; font-size: clamp(36px, 6vw, 56px); line-height: 1; font-variant-numeric: lining-nums tabular-nums; }
 
 .busy, .failed { margin: 8px 0 0; color: var(--muted); font-size: var(--fs-small); }
+/* A count Ask made before its final one: one muted line that opens to the card. */
+.earlierCount { margin: 8px 0 0; color: var(--muted); font-size: var(--fs-small); }
+.earlierCount summary { cursor: pointer; }
 
 /* The question field at the column foot under a 2px rule: the box and its send button on one line.
    CopilotKit lays these out with its own utility classes; Ask doesn't load its stylesheet (radii, shadows). */

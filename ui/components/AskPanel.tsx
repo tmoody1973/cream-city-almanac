@@ -5,10 +5,10 @@ import { useQuery } from "convex/react";
 import Link from "next/link";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
-import { noteNumbers, noteOrder } from "@/ui/lib/askNotes";
+import { earlierCountIds, noteNumbers, noteOrder } from "@/ui/lib/askNotes";
 import { readPrompt, withoutPrompt } from "@/ui/lib/askPrompt";
 import { proseSegments } from "@/ui/lib/askProse";
-import { AskCards } from "./AskCards";
+import { AskCards, EarlierCounts } from "./AskCards";
 import styles from "./ask.module.css";
 
 const MAX_QUESTION = 500;
@@ -69,7 +69,9 @@ function Note({ message, messages = [] }: { message: Msg & { toolCalls?: unknown
         </>
       )}
       <div className={styles.results}>
-        <CopilotChatToolCallsView message={message as never} messages={messages as never} />
+        <EarlierCounts.Provider value={earlierCountIds(messages)}>
+          <CopilotChatToolCallsView message={message as never} messages={messages as never} />
+        </EarlierCounts.Provider>
       </div>
     </div>
   );
