@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { changeOf, halfWidth, isUnreliable, mismatch, overlaps, quantile, rankValues, relationship, spearman, type TractValue } from "../convex/lib/tractStats";
+import { byClearance, changeOf, halfWidth, isUnreliable, mismatch, overlaps, quantile, rankValues, relationship, spearman, type TractValue } from "../convex/lib/tractStats";
 
 const moe = (geoid: string, value: number, m: number): TractValue => ({ geoid, value, lo: value - m, hi: value + m, kind: "moe90" });
 const ci = (geoid: string, value: number, lo: number, hi: number): TractValue => ({ geoid, value, lo, hi, kind: "ci95" });
@@ -101,5 +101,18 @@ describe("quantile and mismatch", () => {
     const reliable = Array.from({ length: 19 }, (_, i) => i + 1);
     expect(r.cutA).toBeCloseTo(quantile(reliable, 2 / 3)); // 13
     expect(r.cutB).toBeCloseTo(quantile(reliable, 1 / 3)); // 7
+  });
+});
+
+describe("byClearance", () => {
+  const pair = (id: string, a: TractValue, b: TractValue) => ({ geoid: id, a, b });
+  it("orders by the smaller of the two margins past the cutoffs, largest first (range edges for clear fits)", () => {
+    // a high past 50, b low under 20. p1: margins 10 and 10; p2: 30 and 2; p3: 5 and 20.
+    const pairs = [pair("p2", moe("p2", 90, 10), moe("p2", 10, 8)), pair("p3", moe("p3", 60, 5), moe("p3", 0, 0)), pair("p1", moe("p1", 70, 10), moe("p1", 5, 5))];
+    expect(byClearance(pairs, "high", "low", 50, 20, "range").map((p) => p.geoid)).toEqual(["p1", "p3", "p2"]);
+  });
+  it("uses the values themselves for tracts that only come close", () => {
+    const pairs = [pair("x", moe("x", 52, 10), moe("x", 15, 10)), pair("y", moe("y", 80, 10), moe("y", 0, 10))];
+    expect(byClearance(pairs, "high", "low", 50, 20, "value").map((p) => p.geoid)).toEqual(["y", "x"]);
   });
 });

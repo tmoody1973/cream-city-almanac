@@ -196,7 +196,7 @@ describe("relateTracts", () => {
     const t = await seedPair();
     installFakeFetch({ columnsFor: routeFields, tractRows: routeRows });
     expect(await t.withIdentity(reader).action(api.tracts.relateTracts, { ...relateArgs, place: "County", year: "2023", mode: "relate" }))
-      .toMatchObject({ status: "choose-year", shared: [{ place: "City", year: "2022" }] });
+      .toMatchObject({ status: "choose-year", available: { a: [{ place: "City", year: "2022" }], b: [{ place: "City", year: "2022" }] }, shared: [{ place: "City", year: "2022" }] });
   });
   it("says too-few, with nothing to list, when fewer than 20 reliable pairs line up", async () => {
     const t = await seedPair();
@@ -213,6 +213,77 @@ describe("relateTracts", () => {
     for (let i = 0; i < 19; i++) await as.run(async (ctx) => { await rateLimiter.limit(ctx, "askTracts", { key: reader.tokenIdentifier }); });
     expect(await as.action(api.tracts.relateTracts, { ...relateArgs, mode: "relate" })).toMatchObject({ status: "ok" }); // 20th token, two datasets
     expect(await as.action(api.tracts.relateTracts, { ...relateArgs, mode: "mismatch" })).toEqual({ status: "busy" });
+  });
+
+  // 300 tracts, both datasets running 100..399 with wide ranges (A +/-50 Census margins, B +/-30 CDC limits), so the top
+  // third (cutoff 299.33) holds 50 tracts that clearly fit (A's lower edge v-50 >= 299.33, so v >= 350) and 50 that only come close.
+  const bigRows = (url: string) => ({
+    features: Array.from({ length: 300 }, (_, i) => {
+      const GEOID = `55079${100000 + i * 100}`;
+      return { attributes: url.includes("FoodSecurity") ? { GEOID, per_insecure: 100 + i, Low_Confidence_Limit: 70 + i, High_Confidence_Limit: 130 + i } : { GEOID, pov_rate: 100 + i, pov_rate_moe: 50 } };
+    }),
+  });
+  async function seedBig() {
+    const t = await seedPair();
+    await t.run(async (ctx) => { for (const c of await ctx.db.query("cards").collect()) await ctx.db.patch(c._id, { caveats: ["c".repeat(600)] }); });
+    installFakeFetch({ columnsFor: routeFields, tractRows: bigRows });
+    return t;
+  }
+  it("keeps every finding for the card, hands the model ten of each with the true totals, ordered by how clearly they clear", async () => {
+    const t = await seedBig();
+    const r = await t.withIdentity(reader).action(api.tracts.relateTracts, { ...relateArgs, mode: "mismatch", aSide: "high", bSide: "high" });
+    if (r.status !== "ok") throw new Error("expected ok");
+    expect(r).toMatchObject({ fitsCount: 50, closeCount: 50, n: 300, unreliableCount: 0 });
+    expect(r.fits).toHaveLength(10);
+    expect(r.close).toHaveLength(10);
+    expect(r.fits[0].a.value).toBe(399); // clears by the most: min(399-50-299.33, 399-30-299.33)
+    expect(r.fits.map((f) => f.a.value)).toEqual([399, 398, 397, 396, 395, 394, 393, 392, 391, 390]);
+    expect(r.close[0].a.value).toBe(349); // closest ones are the ones furthest past the cutoffs
+    const stored = await t.query(api.tracts.tractDetail, { key: r.key, now: Date.now() });
+    if (stored.status !== "ok" || stored.tool !== "relate") throw new Error("expected a stored relate");
+    expect(stored.fits).toHaveLength(50);
+    expect(stored.close).toHaveLength(50);
+    expect(stored.highlighted).toHaveLength(50);
+    expect(stored.closeIds).toHaveLength(50);
+    expect(stored.points).toHaveLength(300);
+    expect(stored.a.caveats[0]).toHaveLength(600);
+  });
+  it("keeps the model's copy small: no caveats, urls, ids or points", async () => {
+    const t = await seedBig();
+    const r = await t.withIdentity(reader).action(api.tracts.relateTracts, { ...relateArgs, mode: "mismatch", aSide: "high", bSide: "high" });
+    if (r.status !== "ok") throw new Error("expected ok");
+    for (const h of [r.a, r.b]) { expect(h).not.toHaveProperty("caveats"); expect(h).not.toHaveProperty("url"); }
+    for (const k of ["highlighted", "closeIds", "points"]) expect(r).not.toHaveProperty(k);
+    expect(JSON.stringify(r).length).toBeLessThan(8000);
+  });
+  it("counts the pairs left out as unreliable, and marks them on the points", async () => {
+    const t = await seedPair();
+    // Tract 3 (poverty 13) with a margin of 20: CV 20/1.645/13 = 0.94, unreliable.
+    installFakeFetch({ columnsFor: routeFields, tractRows: (url) => { const r = routeRows(url); return url.includes("FoodSecurity") ? r : { features: r.features.map((f, i) => (i === 3 ? { attributes: { ...f.attributes, pov_rate_moe: 20 } } : f)) }; } });
+    const r = await t.withIdentity(reader).action(api.tracts.relateTracts, { ...relateArgs, mode: "relate" });
+    if (r.status !== "ok") throw new Error("expected ok");
+    expect(r).toMatchObject({ n: 24, unreliableCount: 1 });
+    const stored = await t.query(api.tracts.tractDetail, { key: r.key, now: Date.now() });
+    if (stored.status !== "ok" || stored.tool !== "relate") throw new Error("expected a stored relate");
+    expect(stored.points.filter((p) => p.unreliable).map((p) => p.geoid)).toEqual(["55079100300"]);
+  });
+  it("names the dataset a refusal is about, and checks both datasets' cheap facts before asking DYCU anything", async () => {
+    const t = await seedPair();
+    const net = installFakeFetch({ columnsFor: routeFields, tractRows: routeRows });
+    const as = t.withIdentity(reader);
+    expect(await as.action(api.tracts.relateTracts, { ...relateArgs, a: { code: "Z99", column: "x" }, mode: "relate" })).toEqual({ status: "not-found", dataset: "a" });
+    expect(await as.action(api.tracts.relateTracts, { ...relateArgs, b: { code: "Z99", column: "x" }, mode: "relate" })).toEqual({ status: "not-found", dataset: "b" });
+    // A's code is wrong and B has no County data: both problems come back together, with nothing fetched.
+    expect(await as.action(api.tracts.relateTracts, { ...relateArgs, a: { code: "Z99", column: "x" }, place: "County", mode: "relate" }))
+      .toMatchObject({ status: "not-found", dataset: "a", also: [{ status: "choose-year", dataset: "b", available: [{ place: "City", year: "2022" }] }] });
+    expect(net.calls).toHaveLength(0);
+  });
+  it("tags a refusal from the DYCU fetch with the dataset it came from", async () => {
+    const t = await seedPair();
+    installFakeFetch({ columnsFor: routeFields, tractRows: routeRows });
+    const as = t.withIdentity(reader);
+    expect(await as.action(api.tracts.relateTracts, { ...relateArgs, b: { code: "F02", column: "nope" }, mode: "relate" })).toMatchObject({ status: "choose-column", dataset: "b", columns: [{ column: "per_insecure" }] });
+    expect(await as.action(api.tracts.relateTracts, { ...relateArgs, a: { code: "E02", column: "nope" }, mode: "relate" })).toMatchObject({ status: "choose-column", dataset: "a" });
   });
 });
 
@@ -249,15 +320,35 @@ describe("compareYears", () => {
     expect(r).toMatchObject({ status: "ok", increases: 1, decreases: 0, none: 23, unreliableCount: 1 });
     if (r.status !== "ok") return;
     expect(r.changes).toHaveLength(1);
-    expect(r.highlighted).toHaveLength(1);
+    expect(r.changeCount).toBe(1);
   });
-  it("keeps the biggest ten in the answer and serves it by key", async () => {
+  it("stores every clear change and hands the model the biggest ten with the true total", async () => {
     const t = await seedTwoYears();
     const r = await run(t, later(() => ({ delta: 8 }))); // 8 clears every tract, even Harambee's wider margin: sqrt(4^2 + 4^2) = 5.66
     if (r.status !== "ok") throw new Error("expected ok");
-    expect(r.increases).toBe(25);
+    expect(r).toMatchObject({ increases: 25, changeCount: 25 });
     expect(r.changes).toHaveLength(10);
-    expect(await t.query(api.tracts.tractDetail, { key: r.key, now: Date.now() })).toMatchObject({ status: "ok", tool: "change", increases: 25 });
+    expect(r).not.toHaveProperty("highlighted");
+    expect(r.header).not.toHaveProperty("caveats");
+    expect(r.header).not.toHaveProperty("url");
+    const stored = await t.query(api.tracts.tractDetail, { key: r.key, now: Date.now() });
+    if (stored.status !== "ok" || stored.tool !== "change") throw new Error("expected a stored change");
+    expect(stored.changes).toHaveLength(25);
+    expect(stored.highlighted).toHaveLength(25);
+    expect(stored.header.caveats).toEqual(["Survey estimates pool five years."]);
+  });
+  it("counts tracts in only one year, and each year's dropped rows, as left out", async () => {
+    const t = await seedTwoYears();
+    // Harambee's tract is missing from 2023, and 2023 has a tract 2022 never had: 24 matched, one left out on each side.
+    const r = await run(t, () => ({ features: [...povertyRows().features.slice(0, 24), { attributes: { GEOID: "55079150000", pov_rate: 30, pov_rate_moe: 1 } }] }));
+    expect(r).toMatchObject({ status: "ok", header: { n: 24, leftOut: 2 } });
+  });
+  it("names the year a refusal is about, and refuses to compare a year with itself", async () => {
+    const t = await seedTwoYears();
+    installFakeFetch({ columns: POV_FIELDS, tractRows: povertyRows });
+    const as = t.withIdentity(reader);
+    expect(await as.action(api.tracts.compareYears, { code: "E02", column: "pov_rate", place: "City", from: "2022", to: "2031" })).toMatchObject({ status: "choose-year", year: "2031", available: [{ place: "City", year: "2022" }, { place: "City", year: "2023" }] });
+    expect(await as.action(api.tracts.compareYears, { code: "E02", column: "pov_rate", place: "City", from: "2022", to: "2022" })).toMatchObject({ status: "choose-year", reason: "pick two different years" });
   });
 });
 

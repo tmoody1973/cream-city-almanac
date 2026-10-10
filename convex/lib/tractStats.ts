@@ -92,3 +92,14 @@ export function mismatch(pairs: Pair[], aSide: "high" | "low", bSide: "high" | "
   const close = ok.filter((p) => onSide(p.a.value, aSide, cutA) && onSide(p.b.value, bSide, cutB) && !fits.includes(p));
   return { cutA, cutB, fits, close };
 }
+
+// How far past its cutoff a tract sits on its own side: its nearer range edge ("range", for tracts that clearly fit) or
+// its value ("value", for those that only come close). A pair is ranked by the smaller of its two margins, largest first.
+const past = (v: TractValue, side: "high" | "low", cut: number, edge: "range" | "value") => {
+  const x = edge === "value" ? v.value : side === "high" ? v.lo : v.hi;
+  return x === null ? -Infinity : side === "high" ? x - cut : cut - x;
+};
+export function byClearance(pairs: Pair[], aSide: "high" | "low", bSide: "high" | "low", cutA: number, cutB: number, edge: "range" | "value"): Pair[] {
+  const score = (p: Pair) => Math.min(past(p.a, aSide, cutA, edge), past(p.b, bSide, cutB, edge));
+  return [...pairs].sort((x, y) => (score(y) > score(x) ? 1 : score(y) < score(x) ? -1 : 0));
+}

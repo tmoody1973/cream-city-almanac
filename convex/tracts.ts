@@ -7,7 +7,7 @@ import { chicagoDay } from "./lib/ask";
 import { hashInputs } from "./lib/hash";
 import { columnKind, fetchTractRows, isNumericField, rangeColumns, tractNumber, type RangeCols } from "./lib/tractData";
 import { neighborhoodFor, type DycuDef } from "./lib/tractNames";
-import { changeOf, isUnreliable, mismatch, rankValues, relationship, spearman, type TractValue } from "./lib/tractStats";
+import { byClearance, changeOf, isUnreliable, mismatch, rankValues, relationship, spearman, type TractValue } from "./lib/tractStats";
 import { rateLimiter } from "./limits";
 
 // Ask's tract analyses (docs/superpowers/specs/2026-10-10-ask-analyzes-design.md). The model gets a compact answer;
@@ -16,21 +16,28 @@ import { rateLimiter } from "./limits";
 
 export type TractRow = { geoid: string; tract: string; neighborhood: string | null; value: number; lo: number | null; hi: number | null; unreliable: boolean };
 export type Header = { code: string; name: string; column: string; meaning: string; kind: "rate" | "count" | "value"; place: string; year: string; n: number; leftOut: number; confidence: string | null; url: string; caveats: string[] };
-export type Refusal =
+type Slot = { place: string; year: string };
+// A refusal can say which dataset (relateTracts: "a" or "b") or which year (compareYears: the second) it is about, and
+// relateTracts may carry the other cheap problems it found in the same pass.
+type Tag = { dataset?: "a" | "b"; year?: string; also?: Refusal[] };
+export type Refusal = Tag & (
   | { status: "not-found" }
   | { status: "not-tract" }
   | { status: "choose-column"; columns: { column: string; meaning: string }[] }
-  | { status: "choose-year"; available: { place: string; year: string }[]; shared?: { place: string; year: string }[] }
+  | { status: "choose-year"; available: Slot[] | { a: Slot[]; b: Slot[] }; shared?: Slot[]; reason?: string }
   | { status: "unavailable" }
-  | { status: "busy" };
+  | { status: "busy" }
+);
 export type RankDetail = { status: "ok"; tool: "rank"; header: Header; direction: "high" | "low"; top: TractRow[]; ties: TractRow[]; tieCount: number; unreliable: TractRow[]; unreliableCount: number; highlighted: string[]; key: string };
 
 const vPlace = v.union(v.literal("City"), v.literal("County"));
 const CONFIDENCE = { moe90: "90% confidence (Census)", ci95: "95% confidence (CDC)" } as const;
 
+export type Fam = { code: string; name: string; members: { place: string; year: string; url: string }[]; glossary: { field: string; meaning: string }[]; caveats: string[] };
+
 export const familyForTracts = internalQuery({
   args: { code: v.string() },
-  handler: async (ctx, { code }) => {
+  handler: async (ctx, { code }): Promise<Fam | null> => {
     const family = await ctx.db.query("families").withIndex("by_code", (q) => q.eq("code", code.trim().toUpperCase())).first();
     if (!family || family.source === "city" || family.kind === "page") return null;
     const members = await ctx.db.query("members").withIndex("by_family", (q) => q.eq("familyKey", family.key)).collect();
@@ -54,15 +61,20 @@ export const dycuDefs = internalQuery({
 export type Spend = () => Promise<boolean>;
 export type Resolved = { family: { code: string; name: string; caveats: string[] }; url: string; year: string; column: string; meaning: string; range: RangeCols };
 
-// The checks every tool runs before any math (spec §4). Throws nothing: a refusal is an answer the model acts on.
-// `spend` is called once, after the database-only checks and before the first call to DYCU's server, so a refusal that
-// never reached DYCU costs the person nothing. Pass the same memoized spend (see spender) to every resolve in one action.
-export async function resolveTract(ctx: ActionCtx, code: string, column: string, place: string, year: string, spend: Spend): Promise<Resolved | Refusal> {
-  const fam = await ctx.runQuery(internal.tracts.familyForTracts, { code });
+const slotsOf = (fam: Fam | null): Slot[] => (fam?.members ?? []).map(({ place, year }) => ({ place, year }));
+export type Looked = { fam: Fam; member: Fam["members"][number] };
+
+// The database-only half of the checks (spec §4): is there such a dataset, and does it have this place and year? Free.
+export function pickMember(fam: Fam | null, place: string, year: string): Looked | Refusal {
   if (!fam) return { status: "not-found" };
-  const available = fam.members.map(({ place, year }) => ({ place, year }));
   const member = fam.members.find((m) => m.place === place && sameYear(m.year, year));
-  if (!member) return { status: "choose-year", available };
+  return member ? { fam, member } : { status: "choose-year", available: slotsOf(fam) };
+}
+
+// The half that asks DYCU. Throws nothing: a refusal is an answer the model acts on. `spend` is called once, before the
+// first call to DYCU's server, so a refusal that never reached DYCU costs the person nothing. Pass the same memoized
+// spend (see spender) to every resolve in one action.
+export async function resolveLooked(ctx: ActionCtx, { fam, member }: Looked, column: string, spend: Spend): Promise<Resolved | Refusal> {
   if (!(await spend())) return { status: "busy" };
   let fields;
   try {
@@ -77,6 +89,12 @@ export async function resolveTract(ctx: ActionCtx, code: string, column: string,
   const col = numeric.find((f) => f.name.toLowerCase() === column.trim().toLowerCase());
   if (!col) return { status: "choose-column", columns: numeric.map((f) => ({ column: f.name, meaning: meaningOf(f.name) })) };
   return { family: { code: fam.code, name: fam.name, caveats: fam.caveats }, url: member.url, year: member.year, column: col.name, meaning: meaningOf(col.name), range: rangeColumns(col.name, fields.map((f) => f.name), fam.glossary) };
+}
+
+export async function resolveTract(ctx: ActionCtx, code: string, column: string, place: string, year: string, spend: Spend): Promise<Resolved | Refusal> {
+  const fam: Fam | null = await ctx.runQuery(internal.tracts.familyForTracts, { code });
+  const looked = pickMember(fam, place, year);
+  return "status" in looked ? looked : resolveLooked(ctx, looked, column, spend);
 }
 
 // DYCU years can be spelled with any dash ("2018–2022"); compare them with one.
@@ -171,24 +189,41 @@ export const tractDetail = query({
 });
 
 export type ChangeRow = { geoid: string; tract: string; neighborhood: string | null; from: TractRow; to: TractRow; change: number; direction: "increase" | "decrease" };
-export type ChangeDetail = { status: "ok"; tool: "change"; header: Header; from: string; to: string; increases: number; decreases: number; none: number; unreliableCount: number; changes: ChangeRow[]; highlighted: string[]; key: string };
-export type Point = { geoid: string; tract: string; neighborhood: string | null; a: [number, number | null, number | null]; b: [number, number | null, number | null]; mark: "fits" | "close" | null };
+export type ChangeDetail = { status: "ok"; tool: "change"; header: Header; from: string; to: string; increases: number; decreases: number; none: number; unreliableCount: number; changeCount: number; changes: ChangeRow[]; highlighted: string[]; key: string };
+export type Point = { geoid: string; tract: string; neighborhood: string | null; a: [number, number | null, number | null]; b: [number, number | null, number | null]; unreliable: boolean; mark: "fits" | "close" | null };
 export type RelateDetail = {
-  status: "ok"; tool: "relate"; mode: "relate" | "mismatch"; a: Header; b: Header; n: number; rho: number;
+  status: "ok"; tool: "relate"; mode: "relate" | "mismatch"; a: Header; b: Header; n: number; unreliableCount: number; rho: number;
   strength: "too-few" | "little" | "weak" | "moderate" | "strong"; direction: "higher" | "lower";
   aSide?: "high" | "low"; bSide?: "high" | "low"; cutA?: number; cutB?: number;
-  fits: { a: TractRow; b: TractRow }[]; close: { a: TractRow; b: TractRow }[]; points: Point[]; highlighted: string[]; closeIds: string[]; key: string;
+  fits: { a: TractRow; b: TractRow }[]; fitsCount: number; close: { a: TractRow; b: TractRow }[]; closeCount: number;
+  points: Point[]; highlighted: string[]; closeIds: string[]; key: string;
 };
 
+// What the model sees: the card reads the rest (caveats, urls, ids, points, every finding) from tractDetail by key.
+type SlimHeader = Omit<Header, "caveats" | "url">;
+export type ChangeAnswer = Omit<ChangeDetail, "header" | "highlighted"> & { header: SlimHeader };
+export type RelateAnswer = Omit<RelateDetail, "a" | "b" | "points" | "highlighted" | "closeIds"> & { a: SlimHeader; b: SlimHeader };
+const slim = ({ caveats: _caveats, url: _url, ...rest }: Header): SlimHeader => rest;
+const ANSWER_ROWS = 10;
+// A refusal that came from fetching one dataset says which; running out of allowance isn't about either.
+const tag = (r: Refusal, dataset: "a" | "b"): Refusal => (r.status === "busy" ? r : { ...r, dataset });
+
 // A change counts only when both years are reliable (spec §5 rule 2); tracts that aren't are counted apart, never listed.
+// The card gets every clear change; the model gets the largest ten and the totals.
 export const compareYears = action({
   args: { code: v.string(), column: v.string(), place: vPlace, from: v.string(), to: v.string() },
-  handler: async (ctx, args): Promise<ChangeDetail | Refusal> => {
+  handler: async (ctx, args): Promise<ChangeAnswer | Refusal> => {
     const spend = await spender(ctx); // sign-in check now; the budget is spent once, before the first DYCU fetch
-    const r1 = await resolveTract(ctx, args.code, args.column, args.place, args.from, spend);
+    const fam: Fam | null = await ctx.runQuery(internal.tracts.familyForTracts, { code: args.code });
+    const l1 = pickMember(fam, args.place, args.from);
+    if ("status" in l1) return l1;
+    const l2 = pickMember(fam, args.place, args.to);
+    if ("status" in l2) return { ...l2, year: args.to };
+    if (sameYear(l1.member.year, l2.member.year)) return { status: "choose-year", available: slotsOf(fam), reason: "pick two different years" };
+    const r1 = await resolveLooked(ctx, l1, args.column, spend);
     if ("status" in r1) return r1;
-    const r2 = await resolveTract(ctx, args.code, r1.column, args.place, args.to, spend);
-    if ("status" in r2) return r2;
+    const r2 = await resolveLooked(ctx, l2, r1.column, spend);
+    if ("status" in r2) return r2.status === "busy" ? r2 : { ...r2, year: args.to };
     const [y1, y2] = await Promise.all([loadValues(ctx, r1), loadValues(ctx, r2)]);
     if (!y1 || !y2) return { status: "unavailable" };
     const defs = await ctx.runQuery(internal.tracts.dycuDefs, {});
@@ -208,12 +243,15 @@ export const compareYears = action({
     changes.sort((p, q) => Math.abs(q.change) - Math.abs(p.change));
     const { key, save } = await store(ctx, { tool: "change", ...args, from: r1.year, to: r2.year, code: r1.family.code, column: r1.column });
     const matched = increases + decreases + none + unreliableCount;
+    // Left out: tracts only one year has, plus the rows each year dropped for having no usable value.
+    const leftOut = y1.values.length - matched + (y2.values.length - matched) + y1.leftOut + y2.leftOut;
     const detail: ChangeDetail = {
-      status: "ok", tool: "change", header: header(r1, args.place, `${r1.year}\u2013${r2.year}`, matched, y1.values.length + y1.leftOut - matched),
-      from: r1.year, to: r2.year, increases, decreases, none, unreliableCount, changes: changes.slice(0, 10), highlighted: changes.slice(0, 10).map((c) => c.geoid), key,
+      status: "ok", tool: "change", header: header(r1, args.place, `${r1.year}\u2013${r2.year}`, matched, leftOut),
+      from: r1.year, to: r2.year, increases, decreases, none, unreliableCount, changeCount: changes.length, changes, highlighted: changes.map((c) => c.geoid), key,
     };
     await save(detail);
-    return detail;
+    const { highlighted: _highlighted, ...rest } = detail;
+    return { ...rest, header: slim(detail.header), changes: changes.slice(0, ANSWER_ROWS) };
   },
 });
 
@@ -222,19 +260,26 @@ const vPick = v.object({ code: v.string(), column: v.string() });
 
 export const relateTracts = action({
   args: { a: vPick, b: vPick, place: vPlace, year: v.string(), mode: v.union(v.literal("relate"), v.literal("mismatch")), aSide: v.optional(vSide), bSide: v.optional(vSide) },
-  handler: async (ctx, args): Promise<Omit<RelateDetail, "points"> | Refusal> => {
+  handler: async (ctx, args): Promise<RelateAnswer | Refusal> => {
     const spend = await spender(ctx); // one charge covers both datasets
-    const ra = await resolveTract(ctx, args.a.code, args.a.column, args.place, args.year, spend);
-    if ("status" in ra && ra.status !== "choose-year") return ra;
-    const rb = "status" in ra ? ra : await resolveTract(ctx, args.b.code, args.b.column, args.place, args.year, spend);
-    if ("status" in ra || "status" in rb) {
-      if ("status" in rb && rb.status !== "choose-year") return rb;
-      // A place/year one dataset lacks: say which the two share.
-      const [fa, fb] = await Promise.all([ctx.runQuery(internal.tracts.familyForTracts, { code: args.a.code }), ctx.runQuery(internal.tracts.familyForTracts, { code: args.b.code })]);
-      const pa = (fa?.members ?? []).map(({ place, year }) => ({ place, year }));
-      const shared = pa.filter((x) => (fb?.members ?? []).some((y) => y.place === x.place && sameYear(y.year, x.year)));
-      return { status: "choose-year", available: pa, shared };
+    // Every database-only problem with either dataset comes back at once, before anything is spent or fetched.
+    const [fa, fb]: (Fam | null)[] = await Promise.all([ctx.runQuery(internal.tracts.familyForTracts, { code: args.a.code }), ctx.runQuery(internal.tracts.familyForTracts, { code: args.b.code })]);
+    const pa = pickMember(fa, args.place, args.year);
+    const pb = pickMember(fb, args.place, args.year);
+    if ("status" in pa || "status" in pb) {
+      const found = [...("status" in pa ? [tag(pa, "a")] : []), ...("status" in pb ? [tag(pb, "b")] : [])];
+      const hard = found.filter((r) => r.status !== "choose-year");
+      if (hard.length) {
+        const [first, ...rest] = [...hard, ...found.filter((r) => r.status === "choose-year")];
+        return rest.length ? { ...first, also: rest } : first;
+      }
+      const sa = slotsOf(fa);
+      return { status: "choose-year", available: { a: sa, b: slotsOf(fb) }, shared: sa.filter((x) => slotsOf(fb).some((y) => y.place === x.place && sameYear(y.year, x.year))) };
     }
+    const ra = await resolveLooked(ctx, pa, args.a.column, spend);
+    if ("status" in ra) return tag(ra, "a");
+    const rb = await resolveLooked(ctx, pb, args.b.column, spend);
+    if ("status" in rb) return tag(rb, "b");
     const [va, vb] = await Promise.all([loadValues(ctx, ra), loadValues(ctx, rb)]);
     if (!va || !vb) return { status: "unavailable" };
     const defs = await ctx.runQuery(internal.tracts.dycuDefs, {});
@@ -243,25 +288,29 @@ export const relateTracts = action({
     const ok = pairs.filter((p) => !isUnreliable(p.a) && !isUnreliable(p.b));
     const rho = ok.length ? spearman(ok.map((p) => p.a.value), ok.map((p) => p.b.value)) : 0;
     const verdict = relationship(rho, ok.length);
-    const mm = args.mode === "mismatch" && ok.length >= 20 ? mismatch(pairs, args.aSide ?? "high", args.bSide ?? "low") : null;
-    const fitsIds = new Set(mm?.fits.map((p) => p.geoid));
-    const closeIds = new Set(mm?.close.map((p) => p.geoid));
+    const aSide = args.aSide ?? "high", bSide = args.bSide ?? "low";
+    const mm = args.mode === "mismatch" && ok.length >= 20 ? mismatch(pairs, aSide, bSide) : null;
+    // Most clearly past the cutoffs first, so the ten the model names are the strongest cases, not the first found.
+    const fits = mm ? byClearance(mm.fits, aSide, bSide, mm.cutA, mm.cutB, "range") : [];
+    const close = mm ? byClearance(mm.close, aSide, bSide, mm.cutA, mm.cutB, "value") : [];
+    const fitsIds = new Set(fits.map((p) => p.geoid));
+    const closeIds = new Set(close.map((p) => p.geoid));
     const both = (p: { a: TractValue; b: TractValue }) => ({ a: toRow(p.a, ra.year, defs), b: toRow(p.b, ra.year, defs) });
     const { key, save } = await store(ctx, { tool: "relate", ...args, year: ra.year, a: { code: ra.family.code, column: ra.column }, b: { code: rb.family.code, column: rb.column } });
     const detail: RelateDetail = {
       status: "ok", tool: "relate", mode: args.mode,
       a: header(ra, args.place, ra.year, pairs.length, va.values.length + va.leftOut - pairs.length), b: header(rb, args.place, rb.year, pairs.length, vb.values.length + vb.leftOut - pairs.length),
-      n: ok.length, rho, strength: verdict.strength, direction: verdict.direction,
-      ...(mm ? { aSide: args.aSide ?? "high", bSide: args.bSide ?? "low", cutA: mm.cutA, cutB: mm.cutB } : {}),
-      fits: (mm?.fits ?? []).slice(0, 10).map(both), close: (mm?.close ?? []).slice(0, 10).map(both),
+      n: ok.length, unreliableCount: pairs.length - ok.length, rho, strength: verdict.strength, direction: verdict.direction,
+      ...(mm ? { aSide, bSide, cutA: mm.cutA, cutB: mm.cutB } : {}),
+      fits: fits.map(both), fitsCount: fits.length, close: close.map(both), closeCount: close.length,
       points: pairs.map((p) => {
         const row = toRow(p.a, ra.year, defs);
-        return { geoid: p.geoid, tract: row.tract, neighborhood: row.neighborhood, a: [p.a.value, p.a.lo, p.a.hi], b: [p.b.value, p.b.lo, p.b.hi], mark: fitsIds.has(p.geoid) ? "fits" : closeIds.has(p.geoid) ? "close" : null };
+        return { geoid: p.geoid, tract: row.tract, neighborhood: row.neighborhood, a: [p.a.value, p.a.lo, p.a.hi], b: [p.b.value, p.b.lo, p.b.hi], unreliable: isUnreliable(p.a) || isUnreliable(p.b), mark: fitsIds.has(p.geoid) ? "fits" : closeIds.has(p.geoid) ? "close" : null };
       }),
-      highlighted: [...fitsIds].slice(0, 10), closeIds: [...closeIds].slice(0, 10), key,
+      highlighted: [...fitsIds], closeIds: [...closeIds], key,
     };
     await save(detail);
-    const { points: _points, ...forModel } = detail;
-    return forModel;
+    const { points: _points, highlighted: _highlighted, closeIds: _closeIds, ...rest } = detail;
+    return { ...rest, a: slim(detail.a), b: slim(detail.b), fits: detail.fits.slice(0, ANSWER_ROWS), close: detail.close.slice(0, ANSWER_ROWS) };
   },
 });
