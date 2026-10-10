@@ -24,4 +24,5 @@ Dated entries, written by Tarik. Each answers three things: what did we expect, 
 1. We expected a "hide under 5" rule to be enough to keep a crime map safe. What happened: real Harambee counts showed the busiest robbery square held 4, so the rule would have hidden every one. What do we now believe?
 2. We expected the City to offset crime points so they don't mark exact homes. What happened: NIBRS publishes exact street addresses and precise coordinates (the "not shown at exact location" note belongs to the retired WIBR Monthly dataset). What do we now believe?
 3. We expected a map legend to be a small detail. What happened: the first one wasn't readable, and it took three tries (patterns instead of faint shades, body-size words in full ink, a written summary) before it was. What do we now believe?
+4. We expected our map tests (a canvas exists, the summary text is there) to prove the map drew. What happened: MapLibre's helper file was a 404 under Next, so no square or boundary ever drew; every test passed and only a screenshot showed it. What do we now believe?
 -->

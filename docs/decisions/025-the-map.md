@@ -9,7 +9,7 @@
 - *Boundary only:* safest. Cost: tells a reporter nothing about where within the neighborhood.
 - *Exact dots, as the City publishes:* most detailed. Cost: can point at a home.
 
-**What we chose and why:** Shaded areas — Tarik's call, 2026-10-10 — after real Harambee numbers showed a stricter "hide under 5" rule would hide every robbery square. Streets from OpenFreeMap (free, no key); the sheet map is open to everyone, with a 10-minute cache and a site-wide limit so the City's server isn't hammered.
+**What we chose and why:** Shaded areas — Tarik's call, 2026-10-10 — after real Harambee numbers showed a stricter "hide under 5" rule would hide every robbery square. Streets from OpenFreeMap (free, no key); the sheet map is open to everyone, with a 10-minute cache (a saved copy of the answer, reused for 10 minutes) and a site-wide limit (a cap on how many City queries the whole site makes per minute) so the City's server isn't hammered.
 
 **What we gave up:** Exact locations; OpenFreeMap is a small independent project, so if it goes down the streets go blank (our squares and boundaries still draw); public maps spend City queries we don't control (capped).
 
