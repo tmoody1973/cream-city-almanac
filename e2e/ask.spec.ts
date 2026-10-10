@@ -2,7 +2,7 @@
 import { expect, test } from "./fixtures";
 
 test("signed out, Ask offers sign-in and search stays public", async ({ page }, info) => {
-  await page.goto(info.project.name === "phone" ? "/ask" : "/?ask=1");
+  await page.goto(info.project.name === "phone" ? "/ask" : "/search?ask=1");
   await expect(page.getByRole("button", { name: "Sign in to ask" })).toBeVisible();
   await page.goto("/d/N03");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
@@ -15,13 +15,13 @@ test("signed out, Ask shows the waiting question and links to examples", async (
 });
 
 test("signed out, there is no ACCOUNT", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/search");
   await expect(page.getByRole("link", { name: "ASK" }).first()).toBeVisible();
   await expect(page.getByRole("button", { name: /^account$/i })).toHaveCount(0);
 });
 
 test("the masthead ASK is a link", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/search");
   await expect(page.getByRole("link", { name: "ASK" }).first()).toHaveAttribute("href", "/ask");
 });
 
@@ -36,7 +36,7 @@ test.describe("signed in", () => {
     // the fixtures' preview-bypass route add its header too.
     await page.route("**/api/copilotkit/**", (route) => route.fallback({ headers: { ...route.request().headers(), "x-ask-fake": "1" } }));
     // Sign in on the page under test, then reload: Clerk navigates on its own after signing in.
-    const target = info.project.name === "phone" ? "/ask" : "/?ask=1";
+    const target = info.project.name === "phone" ? "/ask" : "/search?ask=1";
     await page.goto(target);
     await clerk.signIn({ page, emailAddress: process.env.E2E_CLERK_USER_EMAIL! });
     // Clerk may still be redirecting after sign-in; a canceled reload just means load the page fresh.
@@ -129,7 +129,7 @@ test.describe("signed in", () => {
 
   test("signed in, the laptop masthead keeps every label on one line and START HERE keeps its rule", async ({ page }, info) => {
     test.skip(info.project.name !== "desktop");
-    for (const path of ["/start-here", "/?ask=1"])
+    for (const path of ["/start-here", "/search?ask=1"])
       for (const width of [1100, 1180, 1280, 1440, 1536, 1920]) {
         await page.setViewportSize({ width, height: 900 });
         await page.goto(path);

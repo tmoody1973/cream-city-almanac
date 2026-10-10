@@ -242,3 +242,46 @@ describe("City sheets", () => {
     expect(nibrs.city!.what).toEqual({ column: "Offense_All", options: [{ value: "120", label: "Robbery" }] });
   });
 });
+
+describe("landing stats", () => {
+  it("counts families by source, City live feeds, the three newest, and the crime code", async () => {
+    const t = convexTest(schema, modules);
+    await seed(t);
+    await t.run(async (ctx) => {
+      for (const [key, code, live] of [["city:nibrs-crime-data", "P32", true], ["city:zoning", "G05", false]] as const) {
+        await ctx.db.insert("families", { key, code, name: key, kind: "dataset", topic: "Public Safety", keywords: [], places: ["City"], years: [], latestModified: "2020-01-01", baseSearchText: "", searchText: "", dictionaryTab: null, source: "city", live });
+      }
+    });
+    const s = await t.query(api.catalog.landingStats, {});
+    const dycu = (await t.run((ctx) => ctx.db.query("families").collect())).filter((f) => !f.source && f.kind !== "page").length;
+    expect(s).toMatchObject({ dycuFamilies: dycu, cityFamilies: 2, cityLive: 1, sampleCode: "P32" });
+    expect(s.newest).toHaveLength(3);
+    expect(s.newest[0]).toEqual({ code: expect.any(String), name: expect.any(String) });
+  });
+
+  it("does not count guide pages as families", async () => {
+    const t = convexTest(schema, modules);
+    await seed(t);
+    const before = await t.query(api.catalog.landingStats, {});
+    await t.run(async (ctx) => {
+      await ctx.db.insert("families", { key: "page:landing-test", code: "X01", name: "Landing test page", kind: "page", topic: "Guides", keywords: [], places: [], years: [], latestModified: "2099-01-01", baseSearchText: "", searchText: "", dictionaryTab: null });
+    });
+    const after = await t.query(api.catalog.landingStats, {});
+    expect(after.dycuFamilies).toBe(before.dycuFamilies);
+    expect(after.cityFamilies).toBe(before.cityFamilies);
+  });
+
+  it("newest is the first three rundown rows", async () => {
+    const t = convexTest(schema, modules);
+    await seed(t);
+    const s = await t.query(api.catalog.landingStats, {});
+    const expected = (await t.query(api.catalog.rundown, {})).slice(0, 3).map(({ code, name }) => ({ code, name }));
+    expect(s.newest).toEqual(expected);
+  });
+
+  it("sampleCode is null when the crime family is absent", async () => {
+    const t = convexTest(schema, modules);
+    await seed(t);
+    expect((await t.query(api.catalog.landingStats, {})).sampleCode).toBeNull();
+  });
+});

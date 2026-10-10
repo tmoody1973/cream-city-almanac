@@ -49,7 +49,7 @@ export function StartHere({ data }: { data: Data | null }) {
           who="A REPORTER"
           question="Do the neighborhoods with the most old housing also have the most asthma?"
           steps={[
-            <>Search <Link href={`/?q=${encodeURIComponent(REPORTER_QUERY)}`}>{REPORTER_QUERY}</Link>. Asthma Prevalence and Housing Built Before 1950 come up.</>,
+            <>Search <Link href={`/search?q=${encodeURIComponent(REPORTER_QUERY)}`}>{REPORTER_QUERY}</Link>. Asthma Prevalence and Housing Built Before 1950 come up.</>,
             <>Read each sheet&apos;s caveats first: they say what the numbers can and can&apos;t support.</>,
             <>Use the story angles as starting questions.</>,
             <>Download both CSVs and match them by census tract.</>,
@@ -72,7 +72,7 @@ export function StartHere({ data }: { data: Data | null }) {
               </>
             ) : <NotLoaded />
           }
-          tryHref={`/?q=${encodeURIComponent(REPORTER_QUERY)}`}
+          tryHref={`/search?q=${encodeURIComponent(REPORTER_QUERY)}`}
         />
 
         <Example
@@ -114,7 +114,7 @@ export function StartHere({ data }: { data: Data | null }) {
           who="A RESIDENT"
           question="What has the air been like in Milwaukee lately?"
           steps={[
-            <>Search <Link href="/?q=air%20quality">air quality</Link> and open Daily Air Quality (V02).</>,
+            <>Search <Link href="/search?q=air%20quality">air quality</Link> and open Daily Air Quality (V02).</>,
             <>The live preview charts every day&apos;s reading, straight from DYCU&apos;s Hub. No download needed.</>,
             <>Read the caveat before comparing days or years.</>,
           ]}

@@ -15,7 +15,7 @@ test("a dataset sheet explains, previews and offers downloads", async ({ page })
 test("lowercase codes work and opening a sheet ticks it on the rundown", async ({ page }) => {
   await page.goto("/d/v02");
   await expect(page.getByRole("heading", { level: 2, name: /Daily Air Quality/ })).toBeVisible();
-  await page.goto("/");
+  await page.goto("/search");
   await expect(page.locator("[data-code='V02']").getByText("opened before")).toBeAttached();
 });
 
@@ -23,7 +23,7 @@ test("unknown code shows the not-found page", async ({ page }) => {
   const res = await page.goto("/d/Z99");
   expect(res?.status()).toBe(404);
   await expect(page.getByText("No dataset with that code")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Back to the rundown" })).toHaveAttribute("href", "/");
+  await expect(page.getByRole("link", { name: "Back to the rundown" })).toHaveAttribute("href", "/search");
 });
 
 test("when the Hub is down the preview says so and offers a retry", async ({ page }) => {

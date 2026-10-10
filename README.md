@@ -125,7 +125,7 @@ Without `AI_GATEWAY_API_KEY`, search still works on keywords only and says so. A
 ## Project structure
 
 ```
-app/                 Next.js routes: home (/), dataset sheets (/d/[code]), Ask (/ask, /ask/guide),
+app/                 Next.js routes: front door (/), search (/search), dataset sheets (/d/[code]), Ask (/ask, /ask/guide),
                      Start here, How it works, and the Ask API route (api/copilotkit)
 ui/components/       Rundown rows, dataset sheets, Ask panel and cards, the map, grease-pencil marks
 ui/lib/              Pure UI logic: formatting, marks, address parameters, map cells and layers

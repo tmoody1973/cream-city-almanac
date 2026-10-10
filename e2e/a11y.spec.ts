@@ -2,12 +2,14 @@ import AxeBuilder from "@axe-core/playwright";
 import { type Page } from "@playwright/test";
 import { expect, test } from "./fixtures";
 
-const PAGES = ["/", "/?q=asthma", "/d/W01", "/d/N02", "/d/N03", "/how-it-works", "/start-here", "/?q=asthma&open=W01"];
+const PAGES = ["/", "/search", "/search?q=asthma", "/d/W01", "/d/N02", "/d/N03", "/how-it-works", "/start-here", "/search?q=asthma&open=W01"];
 
 // networkidle doesn't wait for Convex's WebSocket search, so wait for real result rows on search pages.
 async function settle(page: Page, path: string) {
   await page.waitForLoadState("networkidle");
   if (path.includes("?q=")) await page.locator("li[data-code]").first().waitFor();
+  // The front page's sample Ask answer asks the City; wait until it has either shown its figure or its link.
+  if (path === "/") await page.locator('[data-landing-sample="done"]').waitFor();
 }
 
 for (const path of PAGES) {
@@ -29,7 +31,7 @@ for (const path of PAGES) {
 }
 
 test("the search works from the keyboard alone", async ({ page }, info) => {
-  await page.goto("/");
+  await page.goto("/search");
   // The search box comes right after the links above it in reading order (the wordmark's home link; laptop site links
   // SEARCH, ASK, START HERE, HOW IT WORKS, or the phone's MENU; then the band's link). Some browsers skip links when
   // tabbing, so allow up to six stops before it.
@@ -48,8 +50,8 @@ test("the search works from the keyboard alone", async ({ page }, info) => {
 });
 
 test("an opened result has no serious accessibility issues and no sideways scroll on a phone", async ({ page }, info) => {
-  await page.goto("/?q=asthma");
-  await settle(page, "/?q=asthma");
+  await page.goto("/search?q=asthma");
+  await settle(page, "/search?q=asthma");
   await page.locator("li[data-code] button").first().click();
   // Laptops open the result in the right pane; phones expand it in place.
   if (info.project.name === "desktop") await page.locator("#sheet-pane h2").waitFor();
@@ -84,7 +86,7 @@ for (const width of [1024, 1440]) {
     test.skip(info.project.name !== "desktop");
     await page.setViewportSize({ width, height: 900 });
     const focus = "place=walkers-point&year=2023&topic=sex-and-age"; // a wide, grouped neighborhood table
-    for (const path of ["/", "/how-it-works", "/?q=asthma&open=W01", `/?open=N03&${focus}`, `/d/N03?${focus}`]) {
+    for (const path of ["/search", "/how-it-works", "/search?q=asthma&open=W01", `/search?open=N03&${focus}`, `/d/N03?${focus}`]) {
       await page.goto(path);
       await page.waitForLoadState("networkidle");
       expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth), path).toBeLessThanOrEqual(0);

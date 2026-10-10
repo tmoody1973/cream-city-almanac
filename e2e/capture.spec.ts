@@ -15,7 +15,7 @@ test.describe("@capture", () => {
   test("hero at the comp's size", async ({ page }) => {
     await page.clock.setFixedTime(FIXED);
     await page.setViewportSize({ width: 1024, height: 1536 });
-    await page.goto("/");
+    await page.goto("/search");
     await settle(page);
     await page.screenshot({ path: ".impeccable/review/hero-repro.png" });
   });
@@ -25,7 +25,7 @@ test.describe("@capture", () => {
     await page.setViewportSize({ width: 1024, height: 1536 });
     // E01 was opened on an earlier visit, so its row shows the grease-pencil tick.
     await page.addInitScript(() => localStorage.setItem("cca:opened", JSON.stringify(["E01"])));
-    await page.goto("/?q=" + encodeURIComponent("kids who can't afford food"));
+    await page.goto("/search?q=" + encodeURIComponent("kids who can't afford food"));
     await page.locator("li[data-code] button").first().click();
     await page.locator("[id^='preview-'] a", { hasText: "Open sheet" }).waitFor();
     await settle(page);
@@ -39,7 +39,7 @@ test.describe("@capture", () => {
       [390, 844, "mobile.png"],
     ] as const) {
       await page.setViewportSize({ width, height });
-      await page.goto("/");
+      await page.goto("/search");
       await settle(page);
       await page.screenshot({ path: `.impeccable/review/${file}`, fullPage: true });
     }
@@ -47,7 +47,7 @@ test.describe("@capture", () => {
   test("laptop two-pane at the comp's size", async ({ page }) => {
     await page.clock.setFixedTime(FIXED);
     await page.setViewportSize({ width: 1536, height: 1024 });
-    await page.goto("/");
+    await page.goto("/search");
     await page.locator("#sheet-pane h2").waitFor();
     await settle(page);
     await page.screenshot({ path: ".impeccable/review/laptop-repro.png" });
@@ -69,7 +69,7 @@ test.describe("@capture", () => {
     await page.clock.setFixedTime(FIXED);
     // Laptop: the gate diffs the section against .impeccable/mocks/portraits-b-laptop-section.png, comp px 628,236 (788x752).
     await page.setViewportSize({ width: 1536, height: 1024 });
-    await page.goto("/?open=N03&place=walkers-point&year=2023&topic=sex-and-age");
+    await page.goto("/search?open=N03&place=walkers-point&year=2023&topic=sex-and-age");
     const section = page.locator("section[aria-labelledby=portrait-heading]");
     await section.locator("table").waitFor();
     await settle(page);
@@ -91,7 +91,7 @@ test.describe("@capture", () => {
     const section = page.locator("section[aria-labelledby=portrait-heading]");
     // Desktop 1440: the same crop of the section the comp shows (the gate diffs it against the comp).
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto("/?open=N03&place=walkers-point&year=2023&topic=sex-and-age");
+    await page.goto("/search?open=N03&place=walkers-point&year=2023&topic=sex-and-age");
     await section.locator("table").waitFor();
     await settle(page);
     await section.evaluate((s) => {
@@ -133,7 +133,7 @@ test.describe("@capture", () => {
     await setupClerkTestingToken({ page });
     await page.route("**/api/copilotkit/**", (route) => route.fallback({ headers: { ...route.request().headers(), "x-ask-fake": "1" } }));
     for (const [width, height, path, start] of [
-      [1536, 1024, ".impeccable/review/ask-laptop-repro.png", "/?ask=1"],
+      [1536, 1024, ".impeccable/review/ask-laptop-repro.png", "/search?ask=1"],
       [390, 844, ".impeccable/review/ask-phone-repro.png", "/ask"],
     ] as const) {
       await page.setViewportSize({ width, height });

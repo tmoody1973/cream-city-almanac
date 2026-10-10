@@ -19,7 +19,7 @@ export function DatasetSheet({ sheet }: { sheet: SheetData }) {
       <Masthead side="RUNDOWN" showDate={false} nav={<SiteNav placement="masthead" current={null} />} />
       <main>
         <nav className={styles.back}>
-          <Link href="/">
+          <Link href="/search">
             <Arrow direction="left" />
             Rundown
           </Link>

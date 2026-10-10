@@ -9,7 +9,7 @@ export function SiteNav({ placement, current }: { placement: Placement; current:
   const cls = (active: boolean) => (dock ? (active ? styles.tabActive : styles.tab) : active ? styles.mastTabActive : styles.mastTab);
   return (
     <nav className={dock ? styles.tabBar : styles.mastNav} aria-label={dock ? "Sections" : "Site"}>
-      <Link className={cls(current === "search")} href="/" aria-current={current === "search" ? "page" : undefined}>
+      <Link className={cls(current === "search")} href="/search" aria-current={current === "search" ? "page" : undefined}>
         SEARCH
       </Link>
       <Link className={cls(current === "ask")} href="/ask" aria-current={current === "ask" ? "page" : undefined}>

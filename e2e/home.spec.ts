@@ -1,7 +1,7 @@
 import { expect, test } from "./fixtures";
 
 test("home shows today's rundown with live codes and the catalog line", async ({ page }, info) => {
-  await page.goto("/");
+  await page.goto("/search");
   await expect(page.getByRole("heading", { level: 1, name: /cream city almanac/i })).toBeVisible();
   // Laptops (comp B) trade the masthead's "TODAY'S RUNDOWN" for the site links; phones show MENU over today's date.
   if (info.project.name === "desktop") await expect(page.getByRole("navigation", { name: "Site" })).toBeVisible();
@@ -19,9 +19,9 @@ test("home shows today's rundown with live codes and the catalog line", async ({
 });
 
 test("searching by meaning finds a dataset and opens it in place", async ({ page }, info) => {
-  await page.goto("/");
+  await page.goto("/search");
   await page.getByLabel("TOPIC:").fill("asthma");
-  await expect(page).toHaveURL(/\?q=asthma/);
+  await expect(page).toHaveURL(/\/search\?q=asthma/);
   const row = page.locator("[data-code='W01']");
   await expect(row).toBeVisible();
   await expect(page.locator("header").getByText(/\d+ results/).filter({ visible: true })).toBeVisible();
@@ -39,7 +39,7 @@ test("searching by meaning finds a dataset and opens it in place", async ({ page
 });
 
 test("a suggestion tag runs a search and clearing returns to the rundown", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/search");
   await page.getByRole("button", { name: "food insecurity" }).click();
   await expect(page.locator("[data-code='F02']")).toBeVisible();
   await page.getByLabel("TOPIC:").fill("");
@@ -47,7 +47,7 @@ test("a suggestion tag runs a search and clearing returns to the rundown", async
 });
 
 test("a nonsense search explains that nothing matched", async ({ page }) => {
-  await page.goto("/?q=zzqqxxjj");
+  await page.goto("/search?q=zzqqxxjj");
   await expect(page.getByRole("status")).toContainText("No datasets matched");
 });
 
@@ -55,7 +55,7 @@ test("a dropped connection ends in the failure notice, not endless loading", asy
   // WebKit's emulated offline mode keeps an open WebSocket alive (search still answers, measured 2026-10-07),
   // so only Chromium can simulate the dropped connection.
   test.skip(info.project.name === "phone", "WebKit offline emulation does not drop open WebSockets");
-  await page.goto("/");
+  await page.goto("/search");
   await expect(page.locator("li[data-code]").first()).toBeVisible();
   await context.setOffline(true);
   await page.getByLabel("TOPIC:").fill("asthma");
@@ -66,23 +66,23 @@ test("a dropped connection ends in the failure notice, not endless loading", asy
 test("a shared laptop link opens the full sheet on a phone", async ({ page }, info) => {
   test.skip(info.project.name !== "phone");
   // Pick a code that isn't in today's rundown, so the phone has no row to expand.
-  await page.goto("/");
+  await page.goto("/search");
   const listed = await page.locator("li[data-code]").evaluateAll((els) => els.map((e) => e.getAttribute("data-code")));
   const code = ["W01", "F02", "H08", "N02", "A04"].find((c) => !listed.includes(c))!;
-  await page.goto(`/?open=${code}`);
+  await page.goto(`/search?open=${code}`);
   await expect(page).toHaveURL(new RegExp(`/d/${code}$`));
 });
 
 test("a shared search link with a selection expands that row on a phone", async ({ page }, info) => {
   test.skip(info.project.name !== "phone");
-  await page.goto("/?q=asthma&open=W01");
+  await page.goto("/search?q=asthma&open=W01");
   await expect(page.locator("li[data-code='W01'] button")).toHaveAttribute("aria-expanded", "true");
 });
 
 const BAND = "Milwaukee data in plain English.";
 
 test("the home page explains itself in one line and links to How it works", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/search");
   const band = page.getByText(BAND);
   await expect(band).toBeVisible();
   // One line: the band's height is no more than one line of its own text plus its padding.
@@ -103,7 +103,7 @@ test("every page's footer links to How it works", async ({ page }) => {
 });
 
 test("the rundown's column heads use plain words", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/search");
   await page.locator("li[data-code]").first().waitFor();
   expect(await page.getByText("DATASET", { exact: true }).count()).toBeGreaterThan(0); // hidden on laptops
   await expect(page.getByText("SLUG", { exact: true })).toHaveCount(0);

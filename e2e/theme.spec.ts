@@ -60,13 +60,14 @@ test("Clerk's account window follows dark mode", async ({ page }) => {
   await expect(root.locator(".cl-scrollBox").first()).toHaveCSS("background-color", DARK_PAPER);
 });
 
-const PAGES = ["/", "/?q=asthma", "/d/W01", "/d/N03", "/how-it-works", "/start-here", "/?q=asthma&open=W01"];
+const PAGES = ["/", "/search", "/search?q=asthma", "/d/W01", "/d/N03", "/how-it-works", "/start-here", "/search?q=asthma&open=W01"];
 for (const path of PAGES) {
   test(`no serious accessibility violations in dark mode on ${path}`, async ({ page }) => {
     await page.emulateMedia({ colorScheme: "dark" });
     await page.goto(path);
     await page.waitForLoadState("networkidle");
     if (path.includes("?q=")) await page.locator("li[data-code]").first().waitFor();
+    if (path === "/") await page.locator('[data-landing-sample="done"]').waitFor();
     expect(await paper(page)).toBe(DARK_PAPER);
     const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze();
     const serious = results.violations.filter((v) => v.impact === "serious" || v.impact === "critical");

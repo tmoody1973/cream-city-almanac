@@ -16,7 +16,7 @@ export default function ErrorPage({ reset }: { error: Error & { digest?: string 
             Try again
           </button>
         </p>
-        <Link href="/">
+        <Link href="/search">
           <Arrow direction="left" />
           Back to the rundown
         </Link>

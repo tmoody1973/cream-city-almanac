@@ -84,8 +84,8 @@ export function HowItWorks({ status, example }: { status: CatalogStatus | null; 
             <h3 className={styles.heading}>HOW SEARCH WORKS</h3>
             <p>
               Type what you&apos;re reporting on, in your own words. Search matches meaning (text that means something similar) and exact
-              words, then ranks what agrees. Try <Link href={`/?q=${encodeURIComponent(EXAMPLE_QUERY)}`}>{EXAMPLE_QUERY}</Link>: it finds
-              Food Insecurity Prevalence. Try <Link href={`/?q=${encodeURIComponent(NEIGHBORHOOD_QUERY)}`}>{NEIGHBORHOOD_QUERY}</Link>
+              words, then ranks what agrees. Try <Link href={`/search?q=${encodeURIComponent(EXAMPLE_QUERY)}`}>{EXAMPLE_QUERY}</Link>: it finds
+              Food Insecurity Prevalence. Try <Link href={`/search?q=${encodeURIComponent(NEIGHBORHOOD_QUERY)}`}>{NEIGHBORHOOD_QUERY}</Link>
               : it opens that neighborhood&apos;s table.
             </p>
             <p>When nothing is close, it says so instead of listing unrelated data.</p>
