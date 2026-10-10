@@ -387,7 +387,7 @@ export const neighborhoodSources = internalQuery({
   },
 });
 
-// Only the passages of one report that state a definition (whitespace-normalized), never the embeddings.
+// Only the passages of one report that state a definition (whitespace-normalized); only that text is returned (the read still loads each row, embedding included).
 export const definitionSentences = internalQuery({
   args: { hubId: v.string() },
   handler: async (ctx, { hubId }) =>

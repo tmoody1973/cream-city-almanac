@@ -22,6 +22,11 @@ describe("geo", () => {
     expect(inShape({ lat: 5.5, lon: 5.5 }, twoParts)).toBe(true);
     expect(inShape({ lat: 3, lon: 3 }, twoParts)).toBe(false);
   });
+  it("handles slanted edges, not just axis-aligned squares", () => {
+    const triangle: Geometry = { type: "Polygon", coordinates: [[[0, 0], [2, 0], [0, 2], [0, 0]]] };
+    expect(inShape({ lat: 0.5, lon: 0.5 }, triangle)).toBe(true);
+    expect(inShape({ lat: 1.5, lon: 1.5 }, triangle)).toBe(false);
+  });
   it("puts a point on the line between two neighbors in exactly one of them", () => {
     const left: Geometry = { type: "Polygon", coordinates: [square(0, 0, 1, 1)] };
     const right: Geometry = { type: "Polygon", coordinates: [square(1, 0, 2, 1)] };
