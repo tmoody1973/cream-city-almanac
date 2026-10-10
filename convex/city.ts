@@ -4,7 +4,10 @@ import type { Doc } from "./_generated/dataModel";
 import { action, internalQuery } from "./_generated/server";
 import { chicagoDay } from "./lib/ask";
 import { datastoreSql } from "./lib/ckan";
+import { POINTS_CAP, rankGroups, tallyPoints } from "./lib/cityPoints";
 import { buildCount, groupLabelFor, MAX_GROUPS } from "./lib/citySql";
+import type { Bbox, Geometry } from "./lib/geo";
+import { matchName } from "./lib/neighborhoodNames";
 import { rateLimiter } from "./limits";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -26,6 +29,24 @@ export const countContext = internalQuery({
   },
 });
 
+type Found =
+  | { kind: "one"; name: string; geometry: string; bbox: Bbox }
+  | { kind: "choose"; names: string[] }
+  | { kind: "none"; nearest: string[] }
+  | { kind: "empty" };
+
+// The City's official boundary for a typed name: one match, a short choice, or none (never a guess).
+export const findNeighborhood = internalQuery({
+  args: { asked: v.string() },
+  handler: async (ctx, { asked }): Promise<Found> => {
+    const rows = await ctx.db.query("neighborhoods").withIndex("by_definition_matchKey", (q) => q.eq("definition", "city")).collect();
+    if (rows.length === 0) return { kind: "empty" };
+    const m = matchName(asked, rows);
+    if (m.kind !== "one") return m;
+    return { kind: "one", name: m.row.name, geometry: m.row.geometry!, bbox: m.row.bbox! };
+  },
+});
+
 // An election file's rows are wards with vote totals: a "count" there would be a count of wards.
 const ELECTIONS_NOTE = "Election results list wards and vote totals, not records to count.";
 
@@ -42,12 +63,15 @@ export type CountResult =
       status: "ok"; code: string; name: string; count: number; groups: { label: string; count: number }[]; other: number; otherLabel: "Earlier" | "Other" | null;
       overlap: boolean; period: string; filters: string[]; futureExcluded: number; caveat: string | null;
       dateColumn: string | null; coverage: string | null; resourceName: string | null; namesPeople: boolean;
+      area: string | null; noLocation: number;
     }
   | { status: "outside-coverage"; code: string; name: string; coverage: string }
   | { status: "choose"; code: string; name: string; column: string; asked: string; choices: string[] }
   | { status: "bad-column"; code: string; name: string; column: string; columns: string[] }
   | { status: "bad-dates"; code: string; name: string; from: string; to: string }
+  | { status: "no-neighborhood"; code: string; name: string; asked: string; nearest: string[] }
   | { status: "no-locations"; code: string; name: string }
+  | { status: "too-broad"; code: string; name: string; area: string }
   | { status: "not-found"; code: string }
   | { status: "not-city"; code: string; name: string }
   | { status: "not-live"; code: string; name: string; note?: string }
@@ -65,8 +89,8 @@ const groupName = (label: string | null, g: unknown) => {
 // Counts City records live. Arguments are checked against the dataset's profile (convex/lib/citySql.ts); returns
 // counts only, never rows.
 export const countRecords = action({
-  args: { code: v.string(), from: v.optional(v.string()), to: v.optional(v.string()), filters: v.optional(v.array(vFilter)), groupBy: v.optional(v.string()) },
-  handler: async (ctx, { code, ...args }): Promise<CountResult> => {
+  args: { code: v.string(), neighborhood: v.optional(v.string()), from: v.optional(v.string()), to: v.optional(v.string()), filters: v.optional(v.array(vFilter)), groupBy: v.optional(v.string()) },
+  handler: async (ctx, { code, neighborhood, ...args }): Promise<CountResult> => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Sign in to ask");
     if (!(await rateLimiter.limit(ctx, "askCity", { key: identity.tokenIdentifier })).ok) return { status: "busy" as const };
@@ -77,12 +101,37 @@ export const countRecords = action({
     if (!data.city) return { status: "not-city" as const, code: data.code, name };
     if (data.topic === "Elections") return { status: "not-live" as const, code: data.code, name, note: ELECTIONS_NOTE };
     if (!profile || profile.rowCount === 0) return { status: "not-live" as const, code: data.code, name };
-    const built = buildCount(profile, args, chicagoDay(Date.now()));
+    let found: Extract<Found, { kind: "one" }> | null = null;
+    if (neighborhood?.trim()) {
+      const f: Found = await ctx.runQuery(internal.city.findNeighborhood, { asked: neighborhood });
+      if (f.kind === "empty") return { status: "unavailable" as const, code: data.code, name };
+      if (f.kind === "choose") return { status: "choose" as const, code: data.code, name, column: "neighborhood", asked: neighborhood, choices: f.names };
+      if (f.kind === "none") return { status: "no-neighborhood" as const, code: data.code, name, asked: neighborhood, nearest: f.nearest };
+      found = f;
+    }
+    const built = buildCount(profile, args, chicagoDay(Date.now()), found?.bbox);
     if (!built.ok) {
       const { ok: _ok, ...refusal } = built;
       return { ...refusal, code: data.code, name };
     }
     try {
+      if (found && built.points) {
+        const area = `${found.name} (City of Milwaukee boundary)`;
+        const rows = await datastoreSql<{ lat: unknown; lon: unknown; g?: unknown }>(built.points.sql);
+        if (rows.length >= POINTS_CAP) return { status: "too-broad" as const, code: data.code, name, area };
+        const [missing] = await datastoreSql<{ n: string }>(built.points.missingSql);
+        const byDate = built.groupLabel === "month" || built.groupLabel === "year";
+        const tally = tallyPoints(rows, JSON.parse(found.geometry) as Geometry, built.overlap);
+        const ranked = rankGroups(tally.groups, byDate, built.overlap, MAX_GROUPS);
+        return {
+          status: "ok" as const, code: data.code, name, count: tally.count,
+          groups: built.groupLabel ? ranked.top.map(([g, n]) => ({ label: groupName(built.groupLabel, g), count: n })) : [],
+          other: ranked.other, otherLabel: ranked.capped ? (byDate ? "Earlier" : "Other") : null, overlap: built.overlap,
+          period: built.period, filters: built.filterLabels, futureExcluded: 0,
+          caveat: data.caveat, dateColumn: built.dateColumn, coverage: built.coverage, resourceName: profile.resourceName ?? null, namesPeople: profile.namesPeople,
+          area, noLocation: cityCount(missing),
+        };
+      }
       const [total] = await datastoreSql<{ n: string }>(built.totalSql);
       const count = cityCount(total);
       const rows = built.groupSql ? await datastoreSql<{ g: unknown; n: string }>(built.groupSql) : [];
@@ -100,6 +149,7 @@ export const countRecords = action({
         otherLabel: capped ? (byDate ? "Earlier" : "Other") : null, overlap: built.overlap,
         period: built.period, filters: built.filterLabels, futureExcluded,
         caveat: data.caveat, dateColumn: built.dateColumn, coverage: built.coverage, resourceName: profile.resourceName ?? null, namesPeople: profile.namesPeople,
+        area: null, noLocation: 0,
       };
     } catch (e) {
       console.error(`City count failed for ${data.code}: ${e instanceof Error ? e.message : String(e)}`);

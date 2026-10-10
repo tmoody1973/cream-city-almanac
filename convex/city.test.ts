@@ -17,7 +17,7 @@ async function seed(withProfile = true) {
   await t.run(async (ctx) => {
     await ctx.db.insert("families", { key: "city:nibrs-crime-data", code: "P01", name: "NIBRS Crime Data", kind: "dataset", topic: "Public Safety", keywords: [], places: ["City"], years: [], latestModified: "2023-01-05", baseSearchText: "", searchText: "", dictionaryTab: null, source: "city", live: true });
     await ctx.db.insert("cards", { familyKey: "city:nibrs-crime-data", inputHash: "h", explainer: "x", explainerProvenance: "AI", hubSummary: "", glossary: [], caveats: ["These are reported incidents, not all crime."], storyAngles: [], basic: false, embedding: new Array(1536).fill(0) });
-    if (withProfile) await ctx.db.insert("cityProfiles", { familyKey: "city:nibrs-crime-data", resourceId: RID, columns: [], dateColumn: "Incident_Date", districtColumns: ["Police_District"], categories: [{ column: "Police_District", values: [{ value: "6", count: 5 }] }, { column: "Offense_All", values: [{ value: "120", count: 5 }, { value: "13A", count: 3 }], multi: true }], rowCount: 10, minDate: "2024-01-01", maxDate: "2026-10-08", namesPeople: false, resourceName: "2025", signature: "s", updatedAt: 0 });
+    if (withProfile) await ctx.db.insert("cityProfiles", { familyKey: "city:nibrs-crime-data", resourceId: RID, columns: [], dateColumn: "Incident_Date", latColumn: "Address_Latitude", lonColumn: "Address_Longitude", districtColumns: ["Police_District"], categories: [{ column: "Police_District", values: [{ value: "6", count: 5 }] }, { column: "Offense_All", values: [{ value: "120", count: 5 }, { value: "13A", count: 3 }], multi: true }], rowCount: 10, minDate: "2024-01-01", maxDate: "2026-10-08", namesPeople: false, resourceName: "2025", signature: "s", updatedAt: 0 });
   });
   return t;
 }
@@ -27,7 +27,7 @@ describe("countRecords", () => {
     const t = await seed();
     installFakeFetch({ citySql: (sql) => sql.includes("left(") ? [{ g: "2026-10", n: "26" }, { g: "2026-09", n: "230" }] : sql.includes("> '") ? [{ n: "1" }] : [{ n: "256" }] });
     const r = await t.withIdentity(reader).action(api.city.countRecords, { code: "p01", filters: [{ column: "Police_District", values: ["6"] }, { column: "Offense_All", values: ["robbery"] }], groupBy: "month" });
-    expect(r).toMatchObject({ status: "ok", code: "P01", count: 256, groups: [{ label: "Sep 2026", count: 230 }, { label: "Oct 2026", count: 26 }], other: 0, futureExcluded: 1, filters: ["Police district 6", "Robbery"], caveat: "These are reported incidents, not all crime." });
+    expect(r).toMatchObject({ status: "ok", code: "P01", count: 256, groups: [{ label: "Sep 2026", count: 230 }, { label: "Oct 2026", count: 26 }], other: 0, futureExcluded: 1, filters: ["Police district 6", "Robbery"], caveat: "These are reported incidents, not all crime.", area: null, noLocation: 0 });
   });
   it("labels the dropped remainder 'Earlier' for date groups and 'Other' for column groups when capped", async () => {
     const t = await seed();
@@ -127,5 +127,56 @@ describe("countRecords", () => {
   it("requires sign-in", async () => {
     const t = await seed();
     await expect(t.action(api.city.countRecords, { code: "P01" })).rejects.toThrow(/sign in/i);
+  });
+});
+
+const ring = [[-87.92, 43.06], [-87.9, 43.06], [-87.9, 43.08], [-87.92, 43.08], [-87.92, 43.06]];
+async function withHarambee(t: Awaited<ReturnType<typeof seed>>) {
+  await t.run((ctx) => ctx.db.insert("neighborhoods", { definition: "city", name: "Harambee", matchKey: "harambee", geometry: JSON.stringify({ type: "Polygon", coordinates: [ring] }), bbox: { minLat: 43.06, maxLat: 43.08, minLon: -87.92, maxLon: -87.9 } }));
+}
+
+describe("countRecords by neighborhood", () => {
+  it("counts only points inside the boundary, groups them, and says which boundary", async () => {
+    const t = await seed();
+    await withHarambee(t);
+    installFakeFetch({
+      citySql: (sql) => sql.includes(" AS lat")
+        ? [{ lat: 43.07, lon: -87.91, g: "2026-09" }, { lat: 43.07, lon: -87.91, g: "2026-10" }, { lat: 43.079, lon: -87.919, g: "2026-10" }, { lat: 43.5, lon: -87.91, g: "2026-10" }]
+        : sql.includes("IS NULL OR") ? [{ n: "3" }] : [{ n: "999" }],
+    });
+    const r = await t.withIdentity(reader).action(api.city.countRecords, { code: "P01", neighborhood: "harambee neighborhood", groupBy: "month" });
+    expect(r).toMatchObject({ status: "ok", count: 3, area: "Harambee (City of Milwaukee boundary)", noLocation: 3, groups: [{ label: "Sep 2026", count: 1 }, { label: "Oct 2026", count: 2 }], futureExcluded: 0 });
+  });
+  it("never counts a name that matches nothing, and asks which for an unclear one", async () => {
+    const t = await seed();
+    await withHarambee(t);
+    const fake = installFakeFetch({ citySql: () => [{ n: "5" }] });
+    expect(await t.withIdentity(reader).action(api.city.countRecords, { code: "P01", neighborhood: "Gotham Heights" })).toMatchObject({ status: "no-neighborhood", asked: "Gotham Heights", nearest: ["Harambee"] });
+    expect(await t.withIdentity(reader).action(api.city.countRecords, { code: "P01", neighborhood: "Harambe" })).toMatchObject({ status: "choose", column: "neighborhood", choices: ["Harambee"] });
+    expect(fake.calls.filter((c) => c.url.includes("datastore_search_sql"))).toHaveLength(0);
+  });
+  it("refuses a dataset without locations, a too-broad question, and an empty boundary table", async () => {
+    const t = await seed();
+    await withHarambee(t);
+    await t.run(async (ctx) => {
+      const p = (await ctx.db.query("cityProfiles").first())!;
+      await ctx.db.patch(p._id, { latColumn: null, lonColumn: null });
+    });
+    expect(await t.withIdentity(reader).action(api.city.countRecords, { code: "P01", neighborhood: "Harambee" })).toMatchObject({ status: "no-locations" });
+
+    const t2 = await seed();
+    await withHarambee(t2);
+    installFakeFetch({ citySql: (sql) => (sql.includes(" AS lat") ? Array.from({ length: 32000 }, () => ({ lat: 43.07, lon: -87.91 })) : [{ n: "0" }]) });
+    expect(await t2.withIdentity(reader).action(api.city.countRecords, { code: "P01", neighborhood: "Harambee" })).toMatchObject({ status: "too-broad", area: "Harambee (City of Milwaukee boundary)" });
+
+    const t3 = await seed();
+    expect(await t3.withIdentity(reader).action(api.city.countRecords, { code: "P01", neighborhood: "Harambee" })).toMatchObject({ status: "unavailable" });
+  });
+  it("answers a period outside the data's coverage without asking the City", async () => {
+    const t = await seed();
+    await withHarambee(t);
+    const fake = installFakeFetch({ cityStatus: 500 });
+    expect(await t.withIdentity(reader).action(api.city.countRecords, { code: "P01", neighborhood: "Harambee", from: "2010-01-01", to: "2010-12-31" })).toMatchObject({ status: "outside-coverage" });
+    expect(fake.calls.filter((c) => c.url.includes("datastore_search_sql"))).toHaveLength(0);
   });
 });
