@@ -32,7 +32,7 @@ export function changeOf(a: TractValue, b: TractValue): "increase" | "decrease" 
   const hb = halfWidth(b);
   if (ha === null || hb === null) return "none";
   const diff = b.value - a.value;
-  if (Math.abs(diff) <= Math.sqrt(ha * ha + hb * hb)) return "none";
+  if (!(Math.abs(diff) > Math.sqrt(ha * ha + hb * hb))) return "none"; // negated so NaN fails closed
   return diff > 0 ? "increase" : "decrease";
 }
 
@@ -64,10 +64,11 @@ export function spearman(xs: number[], ys: number[]): number {
   return dx === 0 || dy === 0 ? 0 : num / Math.sqrt(dx * dy);
 }
 
-export function relationship(rho: number, n: number) {
+export function relationship(rho: number, n: number): { strength: "too-few" | "little" | "weak" | "moderate" | "strong"; direction: "higher" | "lower" } {
+  if (!Number.isFinite(rho)) return { strength: "too-few", direction: "higher" };
   const a = Math.abs(rho);
   const strength = n < 20 ? "too-few" : a < 0.2 ? "little" : a < 0.4 ? "weak" : a < 0.6 ? "moderate" : "strong";
-  return { strength, direction: rho >= 0 ? "higher" : "lower" } as { strength: "too-few" | "little" | "weak" | "moderate" | "strong"; direction: "higher" | "lower" };
+  return { strength, direction: rho >= 0 ? "higher" : "lower" };
 }
 
 export function quantile(sorted: number[], p: number): number {

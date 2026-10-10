@@ -54,6 +54,9 @@ describe("changeOf", () => {
     expect(changeOf(moe("a", 60, 3), moe("a", 50, 3))).toBe("decrease");
     expect(changeOf(bare("a", 10), bare("a", 90))).toBe("none");
   });
+  it("treats a NaN value as no change", () => {
+    expect(changeOf(moe("a", NaN, 1), moe("a", 50, 1))).toBe("none");
+  });
 });
 
 describe("spearman and relationship", () => {
@@ -69,6 +72,9 @@ describe("spearman and relationship", () => {
     expect(relationship(0.1, 40)).toEqual({ strength: "little", direction: "higher" });
     expect(relationship(0.9, 19).strength).toBe("too-few");
   });
+  it("refuses a non-finite correlation", () => {
+    expect(relationship(NaN, 40).strength).toBe("too-few");
+  });
 });
 
 describe("quantile and mismatch", () => {
@@ -80,7 +86,7 @@ describe("quantile and mismatch", () => {
     // a: poverty 0..100 step 5 (21 tracts); b: food insecurity mirrors it, except two high-poverty tracts with low b.
     const pairs = Array.from({ length: 21 }, (_, i) => ({ geoid: `t${i}`, a: moe(`t${i}`, i * 5, 1), b: ci(`t${i}`, i * 5, i * 5 - 1, i * 5 + 1) }));
     pairs[20] = { geoid: "fits", a: moe("fits", 100, 2), b: ci("fits", 5, 4, 6) }; // clearly high a, clearly low b
-    pairs[19] = { geoid: "close", a: moe("close", 95, 2), b: ci("close", 30, 20, 40) }; // low-ish b whose range crosses the cutoff
+    pairs[19] = { geoid: "close", a: moe("close", 95, 2), b: ci("close", 22, 14, 30) }; // low-ish b whose range crosses the cutoff
     const r = mismatch(pairs, "high", "low");
     expect(r.fits.map((p) => p.geoid)).toEqual(["fits"]);
     expect(r.close.map((p) => p.geoid)).toEqual(["close"]);
@@ -88,6 +94,12 @@ describe("quantile and mismatch", () => {
   it("leaves unreliable tracts out of cutoffs and findings", () => {
     const pairs = Array.from({ length: 21 }, (_, i) => ({ geoid: `t${i}`, a: moe(`t${i}`, i, 0.5), b: moe(`t${i}`, 20 - i, 0.5) }));
     pairs.push({ geoid: "shaky", a: moe("shaky", 30, 30), b: moe("shaky", 0, 0.1) });
-    expect(mismatch(pairs, "high", "low").fits.some((p) => p.geoid === "shaky")).toBe(false);
+    const r = mismatch(pairs, "high", "low");
+    expect(r.fits.some((p) => p.geoid === "shaky")).toBe(false);
+    expect(r.close.some((p) => p.geoid === "shaky")).toBe(false);
+    // t0 and t20 are themselves unreliable (value 0 with a positive margin), so cutoffs come from t1..t19 only: a = 1..19, b = 19..1.
+    const reliable = Array.from({ length: 19 }, (_, i) => i + 1);
+    expect(r.cutA).toBeCloseTo(quantile(reliable, 2 / 3)); // 13
+    expect(r.cutB).toBeCloseTo(quantile(reliable, 1 / 3)); // 7
   });
 });
