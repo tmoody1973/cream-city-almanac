@@ -5,10 +5,10 @@ import { useQuery } from "convex/react";
 import Link from "next/link";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
-import { earlierCountIds, noteNumbers, noteOrder } from "@/ui/lib/askNotes";
+import { earlierCountIds, lastCountId, noteNumbers, noteOrder } from "@/ui/lib/askNotes";
 import { readPrompt, withoutPrompt } from "@/ui/lib/askPrompt";
 import { proseSegments } from "@/ui/lib/askProse";
-import { AskCards, EarlierCounts } from "./AskCards";
+import { AskCards, EarlierCounts, MapPick, NewestCount } from "./AskCards";
 import styles from "./ask.module.css";
 
 const MAX_QUESTION = 500;
@@ -69,9 +69,11 @@ function Note({ message, messages = [] }: { message: Msg & { toolCalls?: unknown
         </>
       )}
       <div className={styles.results}>
-        <EarlierCounts.Provider value={earlierCountIds(messages)}>
-          <CopilotChatToolCallsView message={message as never} messages={messages as never} />
-        </EarlierCounts.Provider>
+        <NewestCount.Provider value={lastCountId(messages)}>
+          <EarlierCounts.Provider value={earlierCountIds(messages)}>
+            <CopilotChatToolCallsView message={message as never} messages={messages as never} />
+          </EarlierCounts.Provider>
+        </NewestCount.Provider>
       </div>
     </div>
   );
@@ -114,6 +116,8 @@ export function AskPanel({ onOpen }: { onOpen?: (search: string) => void }) {
   // Read once on mount, before Search's own address writes (the parent's effects run after this one).
   const [prompt, setPrompt] = useState("");
   useEffect(() => setPrompt(readPrompt(window.location.search)), []);
+  // Which count card the reader asked to see the map of ("Show map"); see MapPick in AskCards.
+  const [picked, setPicked] = useState<{ id: string; newest: string | null } | null>(null);
   const placed = useCallback(() => {
     setPrompt("");
     window.history.replaceState(null, "", withoutPrompt(window.location.href));
@@ -131,7 +135,9 @@ export function AskPanel({ onOpen }: { onOpen?: (search: string) => void }) {
       <Show when="signed-in">
         <ExamplesLine />
         <PromptFill.Provider value={{ prompt, placed }}>
-          <AskChat onOpen={onOpen} />
+          <MapPick.Provider value={{ picked, pick: (id, newest) => setPicked({ id, newest }) }}>
+            <AskChat onOpen={onOpen} />
+          </MapPick.Provider>
         </PromptFill.Provider>
       </Show>
     </section>

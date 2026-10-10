@@ -6,6 +6,7 @@ import { countCoverage, outsideCoverage } from "@/ui/lib/askCount";
 import { passageBlocks } from "@/ui/lib/askPassage";
 import { formatPortraitMargin, formatPortraitNumber } from "@/ui/lib/portrait";
 import type { CountResult } from "@/lib/ask/tools";
+import { CityMap } from "./CityMapLoader";
 import { LivePreview } from "./LivePreview";
 import { ProvenanceTag } from "./ProvenanceTag";
 import styles from "./ask.module.css";
@@ -154,20 +155,37 @@ function SheetCard({ code, name, onOpen, callKey, preview, source = "HUB" }: { c
 // provides them, and those cards fold to one line so a broad first count never reads as the answer.
 export const EarlierCounts = createContext<Set<string>>(new Set());
 
+// The conversation's newest count (Note provides it) and the map the reader picked with "Show map" (AskPanel holds it).
+export const NewestCount = createContext<string | null>(null);
+export const MapPick = createContext<{ picked: { id: string; newest: string | null } | null; pick: (id: string, newest: string | null) => void }>({ picked: null, pick: () => {} });
+
+function CountMap({ r, id }: { r: CountOk; id?: string }) {
+  const newest = useContext(NewestCount);
+  const { picked, pick } = useContext(MapPick);
+  if (!r.map) return <p className={styles.source} data-map-message>No map: this dataset doesn&apos;t record locations.</p>;
+  // A pick lasts until a newer count arrives; then the newest card is live again.
+  const live = picked && picked.newest === newest ? picked.id === id : id === newest;
+  if (!live) return <button type="button" className={styles.textButton} onClick={() => id && pick(id, newest)} data-show-map>Show map</button>;
+  // A grouped count ("by month") maps all of its groups together.
+  const months = /^[A-Z][a-z]{2} \d{4}$|^\d{4}$/.test(r.groups[0]?.label ?? "");
+  const together = r.groups.length > 0 ? `Counts cover all ${months ? "months" : "types"} together.` : undefined;
+  return <CityMap cells={r.map} count={r.count} boundary={r.map.area} after={together} />;
+}
+
 function CountOrEarlier({ r, id, onOpen }: { r: CountOk; id?: string; onOpen: Open }) {
   const earlier = useContext(EarlierCounts);
-  if (!id || !earlier.has(id)) return <CountCard r={r} onOpen={onOpen} />;
+  if (!id || !earlier.has(id)) return <CountCard r={r} id={id} onOpen={onOpen} />;
   return (
     <details className={styles.earlierCount} data-earlier-count>
       <summary>Earlier count: {[r.name, r.area, ...r.filters, r.period].filter(Boolean).join(" · ")}</summary>
-      <CountCard r={r} onOpen={onOpen} />
+      <CountCard r={r} onOpen={onOpen} noMap />
     </details>
   );
 }
 
 // A City count: the number lives here, never in the model's words. Filters in plain words, the period, what the
 // data covers, and caveats.
-function CountCard({ r, onOpen }: { r: CountOk; onOpen: Open }) {
+function CountCard({ r, id, onOpen, noMap }: { r: CountOk; id?: string; onOpen: Open; noMap?: boolean }) {
   const covers = countCoverage(r);
   return (
     <figure className={styles.excerpt} data-card="count">
@@ -189,6 +207,7 @@ function CountCard({ r, onOpen }: { r: CountOk; onOpen: Open }) {
       {covers && <p className={styles.source} data-coverage>{covers}</p>}
       {r.area && <p className={styles.source} data-area>In {r.area}</p>}
       {r.noLocation > 0 && <p className={styles.source} data-no-location>{r.noLocation.toLocaleString("en-US")} matching records citywide have no location and aren&apos;t included.</p>}
+      {!noMap && <CountMap r={r} id={id} />}
       {r.futureExcluded > 0 && <p className={styles.source}>{r.futureExcluded.toLocaleString("en-US")} records dated in the future were left out.</p>}
       {r.caveat && <p className={styles.source}>{r.caveat} <ProvenanceTag source="AI" /></p>}
       <OpenLink code={r.code} onOpen={onOpen} label="Open the data" />

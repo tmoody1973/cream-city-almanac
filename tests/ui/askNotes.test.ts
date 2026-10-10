@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { earlierCountIds, noteNumbers, noteOrder } from "../../ui/lib/askNotes";
+import { earlierCountIds, lastCountId, noteNumbers, noteOrder } from "../../ui/lib/askNotes";
 
 const u = (id: string) => ({ id, role: "user", content: "q" });
 const call = (id: string) => ({ id, role: "assistant", content: "", toolCalls: [{ id: `c-${id}` }] });
@@ -21,13 +21,22 @@ describe("margin notes order", () => {
   });
 });
 
+const counts = (id: string, ...callIds: string[]) => ({ id, role: "assistant", content: "", toolCalls: callIds.map((c) => ({ id: c, function: { name: c.startsWith("s") ? "searchCatalog" : "countRecords" } })) });
+
 describe("earlier counts", () => {
-  const counts = (id: string, ...callIds: string[]) => ({ id, role: "assistant", content: "", toolCalls: callIds.map((c) => ({ id: c, function: { name: c.startsWith("s") ? "searchCatalog" : "countRecords" } })) });
   it("folds every count in a question except its last, and starts fresh at the next question", () => {
     const ms = [u("u1"), counts("a1", "s1", "k1"), tool("t1"), counts("a2", "k2", "k3"), tool("t2"), say("a3"), u("u2"), counts("a4", "k4"), tool("t3")];
     expect([...earlierCountIds(ms)].sort()).toEqual(["k1", "k2"]);
   });
   it("folds nothing when a question has one count or none", () => {
     expect(earlierCountIds([u("u1"), counts("a1", "s1"), u("u2"), counts("a2", "k1")]).size).toBe(0);
+  });
+});
+
+describe("newest count", () => {
+  it("is the last count call in the whole conversation", () => {
+    const ms = [u("u1"), counts("a1", "k1"), u("u2"), counts("a2", "s1", "k2", "k3")];
+    expect(lastCountId(ms)).toBe("k3");
+    expect(lastCountId([u("u1")])).toBeNull();
   });
 });

@@ -28,9 +28,9 @@ function pattern(color: string, crossed: boolean, size: number): ImageData {
   return x.getImageData(0, 0, size, size);
 }
 
-type Props = { cells?: MapData | null; count?: number; boundary?: string | null; layer?: { url: string; name: string } | null; height?: number };
+type Props = { cells?: MapData | null; count?: number; boundary?: string | null; layer?: { url: string; name: string } | null; height?: number; after?: string };
 
-export default function CityMap({ cells = null, count = 0, boundary = null, layer = null, height = 260 }: Props) {
+export default function CityMap({ cells = null, count = 0, boundary = null, layer = null, height = 260, after }: Props) {
   const box = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap | null>(null);
   const loaded = useRef(false); // true while the current style is fully loaded (isStyleLoaded() also goes false while tiles load)
@@ -139,7 +139,7 @@ export default function CityMap({ cells = null, count = 0, boundary = null, laye
           {shape && <li><span className={`${styles.swatch} ${styles.line}`} />{shape.name} (City boundary)</li>}
         </ul>
       )}
-      {summary && <figcaption className={styles.summary} data-map-summary>{summary}</figcaption>}
+      {summary && <figcaption className={styles.summary} data-map-summary>{summary}{after && ` ${after}`}</figcaption>}
       {cells && <p className={styles.note}>Areas are quarter-mile squares, never addresses.</p>}
     </figure>
   );
