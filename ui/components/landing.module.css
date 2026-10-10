@@ -241,6 +241,7 @@
   border: var(--hair);
   padding: 12px 14px;
   margin-top: 10px;
+  min-height: 168px; /* the answer's height (measured 154-165px at 390-1440), so the link -> figure swap doesn't shift the page */
 }
 
 .sampleQ {

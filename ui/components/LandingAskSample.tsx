@@ -3,7 +3,7 @@ import { useAction } from "convex/react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { api } from "@/convex/_generated/api";
-import { type SampleResult, sampleView } from "@/ui/lib/landingSample";
+import { sampleView } from "@/ui/lib/landingSample";
 import { ProvenanceTag } from "./ProvenanceTag";
 import styles from "./landing.module.css";
 
@@ -16,21 +16,22 @@ const ROBBERY = { column: "Offense_All", values: ["120"] };
 // data-landing-sample says which (pending / done).
 export function LandingAskSample({ code }: { code: string | null }) {
   const run = useAction(api.map.mapCells);
-  const [result, setResult] = useState<SampleResult | null>(null);
+  // Only what the card shows is kept, not the whole payload (map cells, groups).
+  const [view, setView] = useState<ReturnType<typeof sampleView>>({ kind: "link" });
   const [settled, setSettled] = useState(!code);
   useEffect(() => {
     if (!code) return;
     let live = true;
     const year = new Date().toLocaleDateString("en-CA", { timeZone: "America/Chicago" }).slice(0, 4);
     run({ code, from: `${year}-01-01`, filters: [ROBBERY], neighborhood: "Harambee" }).then(
-      (r) => live && (setResult(r), setSettled(true)),
+      (r) => live && (setView(sampleView(r)), setSettled(true)),
+      // Silent on purpose: any failure leaves the link, never a number.
       () => live && setSettled(true),
     );
     return () => {
       live = false;
     };
   }, [code, run]);
-  const view = sampleView(result);
   return (
     <div className={styles.sample} data-landing-sample={settled ? "done" : "pending"}>
       <p className={styles.sampleQ}>{QUESTION}</p>
