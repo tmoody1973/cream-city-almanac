@@ -86,6 +86,8 @@ export const vMismatch = v.object({
   typoFixes: v.array(v.string()),
 });
 
+export const vBbox = v.object({ minLat: v.number(), maxLat: v.number(), minLon: v.number(), maxLon: v.number() });
+
 export const vOutcome = v.union(v.literal("done"), v.literal("skipped"), v.literal("failed"));
 
 export const vPortraitTable = v.object({

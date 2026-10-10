@@ -3,11 +3,11 @@ import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import { internalMutation, internalQuery, type MutationCtx } from "./_generated/server";
 import { codeLetter, nextCode } from "./lib/codes";
-import { searchTextWithCard } from "./lib/families";
+import { isPdfFamily, isSpreadsheetFamily, searchTextWithCard } from "./lib/families";
 import { renderReport } from "./lib/report";
 import type { FamilyInput } from "./lib/types";
 import { readSettings } from "./settings";
-import { vCard, vOutcome, vPortraitTable } from "./validators";
+import { vBbox, vCard, vOutcome, vPortraitTable } from "./validators";
 import { vCityProfile, vDictionary, vFamilyInput, vMismatch } from "./validators";
 
 export const STALE_BUILD_MS = 2 * 60 * 60 * 1000;
@@ -341,18 +341,59 @@ export const cleanupOrphanChunks = internalMutation({
 });
 
 export const completeBuild = internalMutation({
-  args: { buildId: v.id("builds"), orphanChunksDeleted: v.number() },
-  handler: async (ctx, { buildId, orphanChunksDeleted }) => {
+  args: { buildId: v.id("builds"), orphanChunksDeleted: v.number(), notes: v.optional(v.array(v.string())) },
+  handler: async (ctx, { buildId, orphanChunksDeleted, notes }) => {
     const b = await ctx.db.get(buildId);
     if (!b || b.status !== "running") return;
-    const final = { ...b, status: "completed" as const, finishedAt: Date.now(), orphanChunksDeleted };
+    const final = { ...b, notes: [...b.notes, ...(notes ?? [])], status: "completed" as const, finishedAt: Date.now(), orphanChunksDeleted };
     await ctx.db.patch(buildId, {
       status: final.status,
       finishedAt: final.finishedAt,
       orphanChunksDeleted,
+      notes: final.notes,
       report: renderReport(final),
     });
   },
+});
+
+const vNeighborhoodRow = v.object({
+  name: v.string(), matchKey: v.string(), geometry: v.optional(v.string()), bbox: v.optional(vBbox),
+  tracts: v.optional(v.array(v.object({ years: v.array(v.number()), tracts: v.array(v.string()) }))),
+});
+
+// One definition's rows are replaced together, only after that definition was read successfully.
+export const replaceNeighborhoods = internalMutation({
+  args: { definition: v.union(v.literal("city"), v.literal("dycu")), rows: v.array(vNeighborhoodRow) },
+  handler: async (ctx, { definition, rows }) => {
+    const old = await ctx.db.query("neighborhoods").withIndex("by_definition_matchKey", (q) => q.eq("definition", definition)).collect();
+    for (const r of old) await ctx.db.delete(r._id);
+    for (const r of rows) await ctx.db.insert("neighborhoods", { definition, ...r });
+  },
+});
+
+// The neighborhood reports (PDF families' members with a place) and the 28 spreadsheet places to check names against.
+export const neighborhoodSources = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const families = await ctx.db.query("families").collect();
+    const membersOf = (key: string) => ctx.db.query("members").withIndex("by_family", (q) => q.eq("familyKey", key)).collect();
+    const reports: { hubId: string; year: number | null }[] = [];
+    const places = new Set<string>();
+    for (const f of families) {
+      if (isPdfFamily(f)) for (const m of await membersOf(f.key)) if (m.place) reports.push({ hubId: m.hubId, year: m.years[0] ?? null });
+      if (isSpreadsheetFamily(f)) for (const m of await membersOf(f.key)) places.add(m.place ?? m.title);
+    }
+    return { reports, places: [...places] };
+  },
+});
+
+// Only the passages of one report that state a definition (whitespace-normalized), never the embeddings.
+export const definitionSentences = internalQuery({
+  args: { hubId: v.string() },
+  handler: async (ctx, { hubId }) =>
+    (await ctx.db.query("docChunks").withIndex("by_hubId", (q) => q.eq("hubId", hubId)).collect())
+      .map((c) => c.text.replace(/\s+/g, " "))
+      .filter((t) => /used to define the/.test(t)),
 });
 
 export const sourceAges = internalQuery({

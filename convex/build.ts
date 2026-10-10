@@ -24,6 +24,7 @@ import { assembleProfile, isMultiValued, planProfile, profileSql } from "./lib/c
 import { HUB_FEED_URL, parseDcat } from "./lib/dcat";
 import { INVENTORY_XLSX_URL, isSuspectLink, mapDictionaries, readInventory, unlinkedTabs, type Inventory } from "./lib/dictionary";
 import { groupItems, hubCounts, isPdfFamily, isSpreadsheetFamily, reportDelays, toFamilyInput } from "./lib/families";
+import { buildDycuNeighborhoods, parseCityNeighborhoods, parseDefinitions } from "./lib/neighborhoodSources";
 import { parsePortrait, portraitBuildNote, portraitPassage } from "./lib/portrait";
 import { firecrawlKey, scrapeMarkdown } from "./lib/firecrawl";
 import { chatJson, costUsd, embed, estimateTokens, gatewayKey } from "./lib/gateway";
@@ -279,7 +280,38 @@ export const finish = internalAction({
       deleted += page.deleted;
       cursor = page.isDone ? null : page.continueCursor;
     } while (cursor !== null);
-    await ctx.runMutation(internal.buildStore.completeBuild, { buildId, orphanChunksDeleted: deleted });
+    const neighborhoodNotes: string[] = await ctx.runAction(internal.build.refreshNeighborhoods, {});
+    await ctx.runMutation(internal.buildStore.completeBuild, { buildId, orphanChunksDeleted: deleted, notes: neighborhoodNotes });
+  },
+});
+
+export const NEIGHBORHOODS_URL =
+  "https://milwaukeemaps.milwaukee.gov/arcgis/rest/services/planning/special_districts/MapServer/4/query?where=1%3D1&outFields=NEIGHBORHD&outSR=4326&f=geojson";
+
+// The City's boundaries and DYCU's tract lists. Each definition is replaced only when it was read; a City outage
+// keeps last week's boundaries. Runs at the end of the build, after this week's reports were indexed.
+export const refreshNeighborhoods = internalAction({
+  args: {},
+  handler: async (ctx): Promise<string[]> => {
+    const notes: string[] = [];
+    try {
+      const { rows, skipped } = parseCityNeighborhoods(await (await fetchOk(NEIGHBORHOODS_URL, "City neighborhoods")).json());
+      if (rows.length === 0) throw new Error("no neighborhoods in the layer");
+      await ctx.runMutation(internal.buildStore.replaceNeighborhoods, { definition: "city", rows });
+      if (skipped.length) notes.push(`City neighborhoods skipped (no usable shape): ${skipped.join(", ")}`);
+    } catch (e) {
+      notes.push(`City neighborhoods unavailable, kept last week's: ${message(e)}`);
+    }
+    const { reports, places } = await ctx.runQuery(internal.buildStore.neighborhoodSources, {});
+    const found: { name: string; year: number | null; tracts: string[] }[] = [];
+    for (const r of reports) {
+      for (const text of await ctx.runQuery(internal.buildStore.definitionSentences, { hubId: r.hubId })) {
+        for (const d of parseDefinitions(text)) found.push({ ...d, year: r.year });
+      }
+    }
+    const dycu = buildDycuNeighborhoods(found, places);
+    if (dycu.rows.length) await ctx.runMutation(internal.buildStore.replaceNeighborhoods, { definition: "dycu", rows: dycu.rows });
+    return [...notes, ...dycu.notes];
   },
 });
 

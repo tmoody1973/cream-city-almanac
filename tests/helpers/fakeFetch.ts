@@ -16,6 +16,8 @@ export interface FakeOptions {
   cityStatus?: number;
   cityFields?: { id: string; type: string }[];
   citySql?: (sql: string) => unknown[];
+  cityNeighborhoods?: unknown;
+  cityNeighborhoodsStatus?: number;
 }
 
 export const DEFAULT_CARD = {
@@ -51,6 +53,9 @@ export function installFakeFetch(opts: FakeOptions = {}) {
     const url = String(input instanceof Request ? input.url : input);
     const body = init?.body ? JSON.parse(String(init.body)) : undefined;
     calls.push({ url, body });
+
+    if (url.includes("special_districts/MapServer/4/query"))
+      return json(opts.cityNeighborhoodsStatus ?? 200, opts.cityNeighborhoods ?? { type: "FeatureCollection", features: [] });
 
     if (url.includes("data.milwaukee.gov/api/3/action/package_search")) {
       // Like CKAN, honour `start`: a page past the end of the results is empty.

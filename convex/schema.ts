@@ -1,6 +1,6 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
-import { vCityProfile, vDictionaryField, vGlossaryEntry, vKind, vMember, vMismatch, vProvenance, vPortraitTable } from "./validators";
+import { vBbox, vCityProfile, vDictionaryField, vGlossaryEntry, vKind, vMember, vMismatch, vProvenance, vPortraitTable } from "./validators";
 
 export default defineSchema({
   families: defineTable({
@@ -102,6 +102,16 @@ export default defineSchema({
     hubCounts: v.optional(v.object({ rawData: v.number(), reports: v.number(), visualizations: v.number() })),
     pdfReports: v.optional(v.number()),
   }).index("by_status", ["status"]),
+
+  // Neighborhoods by definition: the City's official boundaries (shape + rectangle), DYCU's tract lists.
+  neighborhoods: defineTable({
+    definition: v.union(v.literal("city"), v.literal("dycu")),
+    name: v.string(),
+    matchKey: v.string(),
+    geometry: v.optional(v.string()),
+    bbox: v.optional(vBbox),
+    tracts: v.optional(v.array(v.object({ years: v.array(v.number()), tracts: v.array(v.string()) }))),
+  }).index("by_definition_matchKey", ["definition", "matchKey"]),
 
   itemOverrides: defineTable({
     hubId: v.string(),
