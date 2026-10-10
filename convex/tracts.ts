@@ -23,7 +23,7 @@ export type Refusal =
   | { status: "choose-year"; available: { place: string; year: string }[]; shared?: { place: string; year: string }[] }
   | { status: "unavailable" }
   | { status: "busy" };
-export type RankDetail = { status: "ok"; tool: "rank"; header: Header; direction: "high" | "low"; top: TractRow[]; ties: TractRow[]; unreliable: TractRow[]; highlighted: string[]; key: string };
+export type RankDetail = { status: "ok"; tool: "rank"; header: Header; direction: "high" | "low"; top: TractRow[]; ties: TractRow[]; tieCount: number; unreliable: TractRow[]; unreliableCount: number; highlighted: string[]; key: string };
 
 const vPlace = v.union(v.literal("City"), v.literal("County"));
 const CONFIDENCE = { moe90: "90% confidence (Census)", ci95: "95% confidence (CDC)" } as const;
@@ -51,40 +51,61 @@ export const dycuDefs = internalQuery({
     (await ctx.db.query("neighborhoods").collect()).filter((n) => n.definition === "dycu").map((n) => ({ name: n.name, tracts: n.tracts })),
 });
 
+export type Spend = () => Promise<boolean>;
 export type Resolved = { family: { code: string; name: string; caveats: string[] }; url: string; column: string; meaning: string; range: RangeCols };
 
 // The checks every tool runs before any math (spec §4). Throws nothing: a refusal is an answer the model acts on.
-export async function resolveTract(ctx: ActionCtx, code: string, column: string, place: string, year: string): Promise<Resolved | Refusal> {
+// `spend` is called once, after the database-only checks and before the first call to DYCU's server, so a refusal that
+// never reached DYCU costs the person nothing. Pass the same memoized spend (see spender) to every resolve in one action.
+export async function resolveTract(ctx: ActionCtx, code: string, column: string, place: string, year: string, spend: Spend): Promise<Resolved | Refusal> {
   const fam = await ctx.runQuery(internal.tracts.familyForTracts, { code });
   if (!fam) return { status: "not-found" };
   const available = fam.members.map(({ place, year }) => ({ place, year }));
-  const member = fam.members.find((m) => m.place === place && m.year === year.trim());
+  const member = fam.members.find((m) => m.place === place && sameYear(m.year, year));
   if (!member) return { status: "choose-year", available };
+  if (!(await spend())) return { status: "busy" };
   let fields;
   try {
     fields = await fetchColumns(member.url);
-  } catch {
+  } catch (e) {
+    console.error(`Tract columns failed for ${member.url}: ${e instanceof Error ? e.message : String(e)}`);
     return { status: "unavailable" };
   }
   if (!fields.some((f) => f.name.toUpperCase() === "GEOID")) return { status: "not-tract" };
   const meaningOf = (name: string) => fam.glossary.find((g) => g.field.toLowerCase() === name.toLowerCase())?.meaning ?? "";
-  const numeric = fields.filter((f) => isNumericField(f) && !/_moe$|confidence_limit$/i.test(f.name));
+  const numeric = fields.filter((f) => isNumericField(f) && !/_moe$|confidence_limit$|(low|high)_confidence$/i.test(f.name));
   const col = numeric.find((f) => f.name.toLowerCase() === column.trim().toLowerCase());
   if (!col) return { status: "choose-column", columns: numeric.map((f) => ({ column: f.name, meaning: meaningOf(f.name) })) };
   return { family: { code: fam.code, name: fam.name, caveats: fam.caveats }, url: member.url, column: col.name, meaning: meaningOf(col.name), range: rangeColumns(col.name, fields.map((f) => f.name), fam.glossary) };
 }
 
-export async function limitTracts(ctx: ActionCtx) {
+// DYCU years can be spelled with any dash ("2018–2022"); compare them with one.
+const yearKey = (s: string) => s.trim().replace(/[\u2010-\u2015]/g, "-");
+const sameYear = (a: string, b: string) => yearKey(a) === yearKey(b);
+
+// Signed-in check first (throws), then a spend that charges the person's askTracts bucket once however often it is called.
+export async function spender(ctx: ActionCtx): Promise<Spend> {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) throw new Error("Sign in to ask");
-  return (await rateLimiter.limit(ctx, "askTracts", { key: identity.tokenIdentifier })).ok;
+  let charged: Promise<boolean> | null = null;
+  return () => (charged ??= rateLimiter.limit(ctx, "askTracts", { key: identity.tokenIdentifier }).then((r) => r.ok));
 }
 
-// DYCU's server is the weak link: a failed read is "unavailable", never a partial answer.
-export async function loadValues(r: Resolved) {
+type Loaded = { values: TractValue[]; leftOut: number };
+
+// DYCU's server is the weak link: a failed read is "unavailable", never a partial answer. Rows are kept 10 minutes under
+// tractrows: (not tracts:, so tractDetail never serves them) and shared by everyone asking the same thing.
+export async function loadValues(ctx: ActionCtx, r: Resolved): Promise<Loaded | null> {
+  const fields = ["GEOID", r.column, ...(r.range?.kind === "moe90" ? [r.range.moe] : r.range?.kind === "ci95" ? [r.range.lo, r.range.hi] : [])];
+  const key = `tractrows:${await hashInputs({ url: r.url, fields })}`;
+  const hit: string | null = await ctx.runQuery(internal.map.cached, { key, now: Date.now() });
+  if (hit) return JSON.parse(hit) as Loaded;
   try {
-    return await fetchTractRows(r.url, r.column, r.range);
-  } catch {
+    const rows = await fetchTractRows(r.url, r.column, r.range);
+    await ctx.runMutation(internal.map.remember, { key, result: JSON.stringify(rows), expiresAt: Date.now() + MAP_TTL_MS });
+    return rows;
+  } catch (e) {
+    console.error(`Tract rows failed for ${r.url}: ${e instanceof Error ? e.message : String(e)}`);
     return null;
   }
 }
@@ -109,30 +130,32 @@ export async function store(ctx: ActionCtx, args: unknown) {
 export const rankTracts = action({
   args: { code: v.string(), column: v.string(), place: vPlace, year: v.string(), direction: v.union(v.literal("high"), v.literal("low")) },
   handler: async (ctx, args): Promise<RankDetail | Refusal> => {
-    if (!(await limitTracts(ctx))) return { status: "busy" };
-    const r = await resolveTract(ctx, args.code, args.column, args.place, args.year);
+    const spend = await spender(ctx);
+    const r = await resolveTract(ctx, args.code, args.column, args.place, args.year, spend);
     if ("status" in r) return r;
-    const rows = await loadValues(r);
+    const rows = await loadValues(ctx, r);
     if (!rows) return { status: "unavailable" };
     const defs = await ctx.runQuery(internal.tracts.dycuDefs, {});
     const ranked = rankValues(rows.values, args.direction);
     const { key, save } = await store(ctx, { tool: "rank", ...args, code: r.family.code, column: r.column });
     const detail: RankDetail = {
       status: "ok", tool: "rank", header: header(r, args.place, args.year, rows.values.length, rows.leftOut), direction: args.direction,
-      top: ranked.top.map((v) => toRow(v, args.year, defs)), ties: ranked.ties.slice(0, 10).map((v) => toRow(v, args.year, defs)),
-      unreliable: ranked.unreliable.slice(0, 10).map((v) => toRow(v, args.year, defs)), highlighted: ranked.top.map((v) => v.geoid), key,
+      top: ranked.top.map((v) => toRow(v, args.year, defs)),
+      ties: ranked.ties.map((v) => toRow(v, args.year, defs)), tieCount: ranked.ties.length,
+      unreliable: ranked.unreliable.map((v) => toRow(v, args.year, defs)), unreliableCount: ranked.unreliable.length,
+      highlighted: ranked.top.map((v) => v.geoid), key,
     };
-    await save(detail);
-    return detail;
+    await save(detail); // the card gets every tie and every unreliable tract; the model gets the first ten of each, with the totals
+    return { ...detail, ties: detail.ties.slice(0, 10), unreliable: detail.unreliable.slice(0, 10) };
   },
 });
 
 // The card's full answer by key. Anyone with the key may read it: it holds public DYCU data and expires in 10 minutes.
 export const tractDetail = query({
-  args: { key: v.string() },
-  handler: async (ctx, { key }) => {
-    if (!key.startsWith("tracts:")) return { status: "expired" as const };
+  args: { key: v.string(), now: v.number() }, // the page passes its clock: queries don't read the wall clock
+  handler: async (ctx, { key, now }): Promise<RankDetail | { status: "expired" }> => {
+    if (!key.startsWith("tracts:")) return { status: "expired" };
     const row = await ctx.db.query("mapCache").withIndex("by_key", (q) => q.eq("key", key)).first();
-    return row && row.expiresAt > Date.now() ? JSON.parse(row.result) : { status: "expired" as const };
+    return row && row.expiresAt > now ? JSON.parse(row.result) : { status: "expired" };
   },
 });

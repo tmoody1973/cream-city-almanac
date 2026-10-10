@@ -50,7 +50,7 @@ describe("rankTracts", () => {
     if (r.status !== "ok") return;
     expect(r.top[0]).toMatchObject({ tract: "1860", neighborhood: "Harambee", value: 58, lo: 54, hi: 62, unreliable: false });
     expect(r.top).toHaveLength(10);
-    expect(await t.query(api.tracts.tractDetail, { key: r.key })).toMatchObject({ status: "ok", tool: "rank" });
+    expect(await t.query(api.tracts.tractDetail, { key: r.key, now: Date.now() })).toMatchObject({ status: "ok", tool: "rank" });
   });
   it("offers the numeric columns when the column isn't one", async () => {
     const t = await seedTracts();
@@ -75,6 +75,70 @@ describe("rankTracts", () => {
   });
   it("answers an expired or unknown key with expired", async () => {
     const t = await seedTracts();
-    expect(await t.query(api.tracts.tractDetail, { key: "tracts:nope" })).toEqual({ status: "expired" });
+    expect(await t.query(api.tracts.tractDetail, { key: "tracts:nope", now: Date.now() })).toEqual({ status: "expired" });
+  });
+
+  it("gives the full totals: the model's lists are cut to 10, the card's are not", async () => {
+    const t = await seedTracts();
+    const geoid = (i: number) => `55079${String(100000 + i * 100).slice(-6)}`;
+    const rows = () => ({
+      features: [
+        ...Array.from({ length: 25 }, (_, i) => ({ attributes: { GEOID: geoid(i), pov_rate: 50, pov_rate_moe: 1 } })), // all tied
+        ...Array.from({ length: 12 }, (_, i) => ({ attributes: { GEOID: geoid(30 + i), pov_rate: 2, pov_rate_moe: 5 } })), // all unreliable
+      ],
+    });
+    installFakeFetch({ columns: POV_FIELDS, tractRows: rows });
+    const r = await t.withIdentity(reader).action(api.tracts.rankTracts, { code: "E02", column: "pov_rate", place: "City", year: "2022", direction: "high" });
+    if (r.status !== "ok") throw new Error("expected ok");
+    expect(r.top).toHaveLength(10);
+    expect(r.ties).toHaveLength(10);
+    expect(r.tieCount).toBe(15);
+    expect(r.unreliable).toHaveLength(10);
+    expect(r.unreliableCount).toBe(12);
+    const stored = await t.query(api.tracts.tractDetail, { key: r.key, now: Date.now() });
+    expect(stored).toMatchObject({ status: "ok", tieCount: 15, unreliableCount: 12 });
+    if (stored.status !== "ok") return;
+    expect(stored.ties).toHaveLength(15);
+    expect(stored.unreliable).toHaveLength(12);
+  });
+  it("reads DYCU's rows once for the same dataset, however the question is turned", async () => {
+    const t = await seedTracts();
+    let fetched = 0;
+    installFakeFetch({ columns: POV_FIELDS, tractRows: () => { fetched++; return povertyRows(); } });
+    const ask = (direction: "high" | "low") => t.withIdentity(reader).action(api.tracts.rankTracts, { code: "E02", column: "pov_rate", place: "City", year: "2022", direction });
+    expect(await ask("high")).toMatchObject({ status: "ok" });
+    expect(await ask("low")).toMatchObject({ status: "ok", direction: "low" });
+    expect(fetched).toBe(1);
+  });
+  it("matches years across dash styles", async () => {
+    const t = await seedTracts();
+    installFakeFetch({ columns: POV_FIELDS, tractRows: povertyRows });
+    await t.run(async (ctx) => {
+      const m = await ctx.db.query("members").withIndex("by_hubId", (q) => q.eq("hubId", "h1")).first();
+      if (m) await ctx.db.patch(m._id, { yearLabel: "2018\u20132022" });
+    });
+    expect(await t.withIdentity(reader).action(api.tracts.rankTracts, { code: "E02", column: "pov_rate", place: "City", year: "2018-2022", direction: "high" })).toMatchObject({ status: "ok" });
+  });
+  it("spends the person's allowance only when DYCU is about to be asked", async () => {
+    const t = await seedTracts();
+    installFakeFetch({ columns: POV_FIELDS, tractRows: povertyRows });
+    const as = t.withIdentity(reader);
+    const go = (year: string) => as.action(api.tracts.rankTracts, { code: "E02", column: "pov_rate", place: "City", year, direction: "high" });
+    for (let i = 0; i < 25; i++) expect(await go("2023")).toMatchObject({ status: "choose-year" });
+    expect(await as.action(api.tracts.rankTracts, { code: "Z99", column: "pov_rate", place: "City", year: "2022", direction: "high" })).toEqual({ status: "not-found" });
+    for (let i = 0; i < 20; i++) expect(await go("2022")).toMatchObject({ status: "ok" });
+    expect(await go("2022")).toEqual({ status: "busy" });
+  });
+  it("treats a City family as not a tract dataset", async () => {
+    const t = await seedTracts();
+    await t.run((ctx) => ctx.db.insert("families", { key: "c01", code: "C01", name: "City thing", kind: "dataset", topic: "x", keywords: [], places: [], years: [], latestModified: "2024-01-01", baseSearchText: "", searchText: "", dictionaryTab: null, source: "city" }));
+    installFakeFetch({ columns: POV_FIELDS, tractRows: povertyRows });
+    expect(await t.withIdentity(reader).action(api.tracts.rankTracts, { code: "C01", column: "pov_rate", place: "City", year: "2022", direction: "high" })).toEqual({ status: "not-found" });
+  });
+  it("leaves the Low/High_Confidence columns out of the choices", async () => {
+    const t = await seedTracts();
+    installFakeFetch({ columns: [...POV_FIELDS, { name: "Low_Confidence", type: "esriFieldTypeDouble" }, { name: "High_Confidence", type: "esriFieldTypeDouble" }], tractRows: povertyRows });
+    const r = await t.withIdentity(reader).action(api.tracts.rankTracts, { code: "E02", column: "NAME", place: "City", year: "2022", direction: "high" });
+    expect(JSON.stringify(r)).not.toContain("_Confidence");
   });
 });
