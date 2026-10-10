@@ -67,3 +67,29 @@ describe("City column profiles", () => {
     expect(none).toMatchObject({ dateColumn: null, minDate: null, maxDate: null });
   });
 });
+
+describe("point columns", () => {
+  const f = (...ids: string[]) => ids.map((id) => ({ id, type: "text" }));
+  it("finds latitude and longitude columns by name", () => {
+    expect(planProfile(f("Case_Number", "Address_Latitude", "Address_Longitude"))).toMatchObject({ latColumn: "Address_Latitude", lonColumn: "Address_Longitude" });
+    expect(planProfile(f("latitude", "longitude"))).toMatchObject({ latColumn: "latitude", lonColumn: "longitude" });
+    expect(planProfile(f("X", "Y"))).toMatchObject({ latColumn: null, lonColumn: null });
+    expect(planProfile(f("Latitude"))).toMatchObject({ latColumn: null, lonColumn: null });
+  });
+  it("samples non-null pairs", () => {
+    expect(profileSql("87843297-a6fa-46d4-ba5d-cb342fb2d3bb", planProfile(f("lat", "lon"))).points).toBe(
+      `SELECT "lat" AS lat, "lon" AS lon FROM "87843297-a6fa-46d4-ba5d-cb342fb2d3bb" WHERE "lat" IS NOT NULL AND "lon" IS NOT NULL LIMIT 50`,
+    );
+  });
+  it("keeps the columns only when at least 90% of the sample is in Milwaukee", () => {
+    const plan = planProfile(f("lat", "lon"));
+    const at = (lat: string, lon: string) => ({ lat, lon });
+    const good = Array.from({ length: 10 }, () => at("43.05", "-87.95"));
+    type Plan = ReturnType<typeof planProfile>;
+    const base: [string, string, { id: string; type: string }[], Plan, { n: number }, undefined, never[], number] =
+      ["fam", "87843297-a6fa-46d4-ba5d-cb342fb2d3bb", f("lat", "lon"), plan, { n: 10 }, undefined, [], 0];
+    expect(assembleProfile(...base, good)).toMatchObject({ latColumn: "lat", lonColumn: "lon" });
+    expect(assembleProfile(...base, [...good.slice(0, 8), at("0", "0"), at("bad", "x")])).toMatchObject({ latColumn: null, lonColumn: null });
+    expect(assembleProfile(...base, [])).toMatchObject({ latColumn: null, lonColumn: null });
+  });
+});

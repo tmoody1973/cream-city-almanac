@@ -82,7 +82,8 @@ async function profileCity(ctx: ActionCtx, familyKey: string, rid: string, resou
       const rows = await datastoreSql<{ v: string | null; n: string }>(t.sql);
       tops.push(isMultiValued(rows) ? { column: t.column, rows: await datastoreSql<{ v: string | null; n: string }>(t.multiSql), multi: true } : { column: t.column, rows });
     }
-    const profile = { ...assembleProfile(familyKey, rid, fields, plan, count, range, tops, Date.now()), resourceName };
+    const points = q.points ? await datastoreSql<{ lat: unknown; lon: unknown }>(q.points) : [];
+    const profile = { ...assembleProfile(familyKey, rid, fields, plan, count, range, tops, Date.now(), points), resourceName };
     await ctx.runMutation(internal.buildStore.replaceCityProfile, { profile });
   } catch (e) {
     console.error(`City profile failed for ${familyKey}: ${message(e)}`);
