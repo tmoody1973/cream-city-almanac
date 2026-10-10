@@ -87,9 +87,7 @@
   margin: 0 0 6px;
 }
 
-.three > section p,
-.pair > section > p,
-.block p {
+:where(.three > section, .pair > section, .block) > p {
   margin: 0;
 }
 
@@ -173,14 +171,21 @@
   padding: 0;
   display: grid;
   gap: 8px 24px;
+  align-items: center;
 }
 
 .who li {
   padding: 6px 0;
 }
 
+.cta {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
 .fine {
-  margin: 34px 0 0;
+  margin: 0;
   border-top: var(--rule);
   padding-top: 10px;
   font-size: var(--fs-small);

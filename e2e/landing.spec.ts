@@ -28,6 +28,7 @@ test("Back to the rundown goes to search, not the landing page", async ({ page }
 
 test("the landing page explains the almanac, with live numbers and working links", async ({ page }) => {
   await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
   await expect(page.getByText("Find it. Understand it. Check where it came from.")).toBeVisible();
   for (const h of ["Find it", "Understand it", "Check where it came from", "The data", "Ask a question", "Who it's for"]) {
     await expect(page.getByRole("heading", { name: h, exact: true })).toBeVisible();

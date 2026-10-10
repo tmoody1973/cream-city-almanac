@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { FunctionReturnType } from "convex/server";
 import type { api } from "@/convex/_generated/api";
+import { CreditFooter } from "./CreditFooter";
 import { Masthead } from "./Masthead";
 import { ProvenanceTag } from "./ProvenanceTag";
 import { SiteNav } from "./SiteNav";
@@ -51,7 +52,7 @@ export function Landing({ stats }: { stats: Stats }) {
         <div className={styles.pair}>
           <section>
             <h3 className={styles.heading}>The data</h3>
-            <table className={styles.table}>
+            <table className={styles.table} aria-label="What the almanac holds">
               <thead>
                 <tr>
                   <th scope="col">Source</th>
@@ -98,7 +99,7 @@ export function Landing({ stats }: { stats: Stats }) {
 
         <section className={styles.block}>
           <h3 className={styles.heading}>Who it&apos;s for</h3>
-          <ul className={styles.who}>
+          <ul className={styles.who} role="list">
             <li>
               <b>A reporter</b> checking a number on deadline
             </li>
@@ -109,17 +110,16 @@ export function Landing({ stats }: { stats: Stats }) {
               <b>A resident</b> curious about their block
             </li>
             <li>
-              <Link href="/start-here">Start here →</Link>
+              <Link href="/start-here" className={styles.cta}>Start here →</Link>
             </li>
           </ul>
         </section>
-
-        <p className={styles.fine}>
-          Unofficial. Not affiliated with Data You Can Use or the City of Milwaukee. · <Link href="/how-it-works">How it works</Link> ·{" "}
-          <a href="https://github.com/tmoody1973/cream-city-almanac">Code on GitHub</a> · Questions about the data:{" "}
-          <a href="mailto:hub@datayoucanuse.org">hub@datayoucanuse.org</a>
-        </p>
       </main>
+      <p className={styles.fine}>
+        Unofficial. Not affiliated with Data You Can Use or the City of Milwaukee. · <a href="https://github.com/tmoody1973/cream-city-almanac">Code on GitHub</a> ·
+        Questions about the data: <a href="mailto:hub@datayoucanuse.org">hub@datayoucanuse.org</a>
+      </p>
+      <CreditFooter />
     </div>
   );
 }
