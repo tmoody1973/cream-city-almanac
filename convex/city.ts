@@ -3,7 +3,7 @@ import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import { action, internalQuery } from "./_generated/server";
 import { chicagoDay } from "./lib/ask";
-import { datastoreSql } from "./lib/ckan";
+import { datastoreSql, datastoreSqlPage } from "./lib/ckan";
 import { POINTS_CAP, rankGroups, tallyPoints } from "./lib/cityPoints";
 import { buildCount, groupLabelFor, MAX_GROUPS } from "./lib/citySql";
 import type { Bbox, Geometry } from "./lib/geo";
@@ -119,8 +119,9 @@ export const countRecords = action({
     try {
       if (found && built.points) {
         const area = `${found.name} (City of Milwaukee boundary)`;
-        const rows = await datastoreSql<{ lat: unknown; lon: unknown; g?: unknown }>(built.points.sql);
-        if (rows.length >= POINTS_CAP) return { status: "too-broad" as const, code: data.code, name, area };
+        // The City's own flag says its row limit cut the page, whatever our cap is.
+        const { records: rows, truncated } = await datastoreSqlPage<{ lat: unknown; lon: unknown; g?: unknown }>(built.points.sql);
+        if (truncated || rows.length >= POINTS_CAP) return { status: "too-broad" as const, code: data.code, name, area };
         const [missing] = await datastoreSql<{ n: string }>(built.points.missingSql);
         const byDate = built.groupLabel === "month" || built.groupLabel === "year";
         const tally = tallyPoints(rows, JSON.parse(found.geometry) as Geometry, built.overlap);

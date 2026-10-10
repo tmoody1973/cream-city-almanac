@@ -172,6 +172,12 @@ describe("countRecords by neighborhood", () => {
     const t3 = await seed();
     expect(await t3.withIdentity(reader).action(api.city.countRecords, { code: "P01", neighborhood: "Harambee" })).toMatchObject({ status: "unavailable" });
   });
+  it("says too-broad when the City itself reports a truncated page, even under the row cap", async () => {
+    const t = await seed();
+    await withHarambee(t);
+    installFakeFetch({ citySql: (sql) => (sql.includes(" AS lat") ? [{ lat: 43.07, lon: -87.91 }] : [{ n: "0" }]), citySqlTruncated: (sql) => sql.includes(" AS lat") });
+    expect(await t.withIdentity(reader).action(api.city.countRecords, { code: "P01", neighborhood: "Harambee" })).toMatchObject({ status: "too-broad", area: "Harambee (City of Milwaukee boundary)" });
+  });
   it("answers unavailable, never a citywide count, when the boundary has no rectangle", async () => {
     const t = await seed();
     await t.run((ctx) => ctx.db.insert("neighborhoods", { definition: "city", name: "Harambee", matchKey: "harambee", geometry: JSON.stringify({ type: "Polygon", coordinates: [ring] }) }));

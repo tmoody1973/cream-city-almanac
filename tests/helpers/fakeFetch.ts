@@ -16,6 +16,7 @@ export interface FakeOptions {
   cityStatus?: number;
   cityFields?: { id: string; type: string }[];
   citySql?: (sql: string) => unknown[];
+  citySqlTruncated?: (sql: string) => boolean; // the City's own row-limit flag
   cityNeighborhoods?: unknown;
   cityNeighborhoodsStatus?: number;
 }
@@ -66,7 +67,7 @@ export function installFakeFetch(opts: FakeOptions = {}) {
     }
     if (url.includes("data.milwaukee.gov/api/3/action/datastore_search_sql")) {
       const sql = new URL(url).searchParams.get("sql") ?? "";
-      return json(opts.cityStatus ?? 200, { success: true, result: { records: opts.citySql ? opts.citySql(sql) : [] } });
+      return json(opts.cityStatus ?? 200, { success: true, result: { records: opts.citySql ? opts.citySql(sql) : [], ...(opts.citySqlTruncated?.(sql) ? { records_truncated: true } : {}) } });
     }
     if (url.includes("data.milwaukee.gov/api/3/action/datastore_search"))
       return json(opts.cityStatus ?? 200, { success: true, result: { fields: [{ id: "_id", type: "int" }, ...(opts.cityFields ?? [])], records: [] } });
