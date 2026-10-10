@@ -128,7 +128,7 @@ export default function CityMap({ cells = null, count = 0, boundary = null, laye
 
   return (
     <figure className={styles.map} data-map>
-      <div ref={box} className={styles.canvas} style={{ height }} role="img" aria-label={summary ?? (layer ? `Map of ${layer.name}` : "Map of Milwaukee")} />
+      <div ref={box} className={styles.canvas} style={{ height }} role="group" aria-label={summary ?? (layer ? `Map of ${layer.name}` : "Map of Milwaukee")} />
       {!tiles && <p className={styles.message} data-map-message>Street map unavailable.</p>}
       {layerNote && <p className={styles.message} data-map-message>{layerNote}</p>}
       {cells && (

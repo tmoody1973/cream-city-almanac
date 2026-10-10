@@ -8,6 +8,7 @@ import { PlaceYearGrid } from "./PlaceYearGrid";
 import type { PortraitFocus } from "@/ui/lib/portrait";
 import { PortraitTables } from "./PortraitTables";
 import { ProvenanceTag } from "./ProvenanceTag";
+import { SheetWhere } from "./SheetWhere";
 import styles from "./sheet.module.css";
 
 // Long column names (Low_Confidence_Limit) wrap after underscores on phones instead of mid-word.
@@ -154,6 +155,13 @@ export function SheetBody({ sheet, headingId, focus }: { sheet: SheetData; headi
             <section className={styles.section}>
               <h3 className={styles.heading}>LIVE PREVIEW</h3>
               <CityPreview datastoreId={sheet.city.datastoreId} dateColumn={sheet.city.dateColumn} />
+            </section>
+          )}
+
+          {sheet.city?.located && (
+            <section className={styles.section}>
+              <h3 className={styles.heading}>WHERE</h3>
+              <SheetWhere code={family.code} what={sheet.city.what} />
             </section>
           )}
 

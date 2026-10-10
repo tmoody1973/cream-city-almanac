@@ -5,6 +5,8 @@ import { pdfUrl } from "./lib/arcgis";
 import { CITY_NOTES, REPLACED_BY } from "./lib/cityFamilies";
 import { isPdfFamily, isSpreadsheetFamily } from "./lib/families";
 import { placeYearGrid } from "./lib/grid";
+import { groupLabelFor } from "./lib/citySql";
+import { isOffenseColumn } from "./lib/nibrs";
 import { matchSources } from "./lib/sources";
 import { rundownRows, toRow } from "./search";
 import { placeKey } from "./lib/portrait";
@@ -110,6 +112,15 @@ export const portraitTables = query({
   handler: (ctx, { hubId }) => tablesFor(ctx, hubId),
 });
 
+// Offense_Last_Edited names "offense" but holds timestamps, not offenses.
+const EDIT_STAMP = /edited|date|time/i;
+// The sheet map's "What" menu: the offense column, else a type column, else the first profiled category.
+function whatMenu(p: Doc<"cityProfiles"> | null) {
+  if (!p || p.categories.length === 0) return null;
+  const cat = p.categories.find((c) => isOffenseColumn(c.column) && !EDIT_STAMP.test(c.column)) ?? p.categories.find((c) => /type/i.test(c.column)) ?? p.categories[0];
+  return { column: cat.column, options: cat.values.slice(0, 40).map((v) => ({ value: v.value, label: groupLabelFor(cat.column, v.value) })) };
+}
+
 async function cityInfo(ctx: QueryCtx, familyKey: string) {
   const p = await ctx.db.query("cityProfiles").withIndex("by_family", (q) => q.eq("familyKey", familyKey)).first();
   const next = REPLACED_BY[familyKey];
@@ -120,6 +131,8 @@ async function cityInfo(ctx: QueryCtx, familyKey: string) {
     coverage: { min: p?.minDate ?? null, max: p?.maxDate ?? null },
     datastoreId: p && p.rowCount > 0 ? p.resourceId : null,
     dateColumn: p?.dateColumn ?? null,
+    located: Boolean(p?.latColumn && p?.lonColumn),
+    what: whatMenu(p),
     replacedBy: replacement ? { code: replacement.code, name: replacement.name } : null,
     note: Object.hasOwn(CITY_NOTES, familyKey) ? CITY_NOTES[familyKey] : null,
   };

@@ -10,3 +10,7 @@
 .line { border: 3px solid var(--pencil); }
 .summary { margin: 8px 0 0; font-size: var(--fs-small); color: var(--ink); }
 .note, .message { margin: 6px 0 0; font-size: var(--fs-small); color: var(--ink); }
+.where { margin: 0; }
+.filters { display: flex; flex-wrap: wrap; gap: 12px 18px; font-size: var(--fs-small); }
+.filters label { display: flex; flex-direction: column; gap: 4px; }
+.figure { font-family: var(--font-caps); font-size: var(--fs-label); margin: 12px 0 0; }
