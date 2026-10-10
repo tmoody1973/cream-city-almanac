@@ -42,7 +42,8 @@ export const mapCells = action({
     const plan = await planCount(ctx, { ...input, neighborhood: args.neighborhood });
     if (!("status" in plan) && !(await rateLimiter.limit(ctx, "mapCity")).ok) return { status: "busy" as const };
     const result = "status" in plan ? plan : await askCity(plan);
-    if (result.status !== "unavailable" && result.status !== "busy") {
+    // Only answers that ran a City query are worth keeping; refusals are cheaper to recompute than to store.
+    if (!("status" in plan) && result.status !== "unavailable") {
       await ctx.runMutation(internal.map.remember, { key, result: JSON.stringify(result), expiresAt: Date.now() + MAP_TTL_MS });
     }
     return result;
