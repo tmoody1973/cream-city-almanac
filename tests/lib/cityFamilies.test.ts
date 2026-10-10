@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parseCkan } from "../../convex/lib/ckan";
-import { cityRepresentative, cityTopic, groupCityItems } from "../../convex/lib/cityFamilies";
+import { cityRepresentative, cityTopic, groupCityItems, retiredLast } from "../../convex/lib/cityFamilies";
 import { codeLetter } from "../../convex/lib/codes";
 import { cityPackages } from "../helpers/cityFixtures";
 
@@ -65,5 +65,13 @@ describe("City families", () => {
   it("parseCkan carries the organization title, trimmed", () => {
     const items = parseCkan(cityPackages() as never);
     expect(items[0].organization).toBe("Milwaukee Police Department");
+  });
+});
+
+describe("retiredLast", () => {
+  it("moves a dataset the City replaced below everything else, keeping the rest in order", () => {
+    const rows = [{ key: "city:wibr-crime-monthly" }, { key: "city:nibrs-crime-data" }, { key: "dataset:x" }];
+    expect(retiredLast(rows).map((r) => r.key)).toEqual(["city:nibrs-crime-data", "dataset:x", "city:wibr-crime-monthly"]);
+    expect(retiredLast([{ key: "constructor" }]).map((r) => r.key)).toEqual(["constructor"]);
   });
 });
