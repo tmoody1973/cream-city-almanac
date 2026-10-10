@@ -258,4 +258,30 @@ describe("landing stats", () => {
     expect(s.newest).toHaveLength(3);
     expect(s.newest[0]).toEqual({ code: expect.any(String), name: expect.any(String) });
   });
+
+  it("does not count guide pages as families", async () => {
+    const t = convexTest(schema, modules);
+    await seed(t);
+    const before = await t.query(api.catalog.landingStats, {});
+    await t.run(async (ctx) => {
+      await ctx.db.insert("families", { key: "page:landing-test", code: "X01", name: "Landing test page", kind: "page", topic: "Guides", keywords: [], places: [], years: [], latestModified: "2099-01-01", baseSearchText: "", searchText: "", dictionaryTab: null });
+    });
+    const after = await t.query(api.catalog.landingStats, {});
+    expect(after.dycuFamilies).toBe(before.dycuFamilies);
+    expect(after.cityFamilies).toBe(before.cityFamilies);
+  });
+
+  it("newest is the first three rundown rows", async () => {
+    const t = convexTest(schema, modules);
+    await seed(t);
+    const s = await t.query(api.catalog.landingStats, {});
+    const expected = (await t.query(api.catalog.rundown, {})).slice(0, 3).map(({ code, name }) => ({ code, name }));
+    expect(s.newest).toEqual(expected);
+  });
+
+  it("sampleCode is null when the crime family is absent", async () => {
+    const t = convexTest(schema, modules);
+    await seed(t);
+    expect((await t.query(api.catalog.landingStats, {})).sampleCode).toBeNull();
+  });
 });

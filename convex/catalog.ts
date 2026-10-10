@@ -214,15 +214,17 @@ export const familyPreview = query({
 export const landingStats = query({
   args: {},
   handler: async (ctx) => {
+    // ponytail: reads every family (≈180 today, each up to ~16 KB of search text); past ~1,000 families or the 16 MiB read limit, have the weekly build write a counts document instead.
     const families = (await ctx.db.query("families").collect()).filter((f) => f.kind !== "page");
     const city = families.filter((f) => f.source === "city");
     const newest = (await rundownRows(ctx)).slice(0, 3).map((r) => ({ code: r.code, name: r.name }));
+    const crime = await ctx.db.query("families").withIndex("by_key", (q) => q.eq("key", "city:nibrs-crime-data")).first();
     return {
       dycuFamilies: families.length - city.length,
       cityFamilies: city.length,
       cityLive: city.filter((f) => f.live).length,
       newest,
-      sampleCode: families.find((f) => f.key === "city:nibrs-crime-data")?.code ?? null,
+      sampleCode: crime?.code ?? null,
     };
   },
 });
