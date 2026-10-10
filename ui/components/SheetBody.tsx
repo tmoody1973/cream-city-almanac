@@ -1,7 +1,7 @@
 import type { FunctionReturnType } from "convex/server";
 import Link from "next/link";
 import type { api } from "@/convex/_generated/api";
-import { shortDate, subline, yearSpan } from "@/ui/lib/format";
+import { shortDate, subline, versionLabel } from "@/ui/lib/format";
 import { CityPreview } from "./CityPreview";
 import { LivePreview } from "./LivePreview";
 import { PlaceYearGrid } from "./PlaceYearGrid";
@@ -62,6 +62,11 @@ export function SheetBody({ sheet, headingId, focus }: { sheet: SheetData; headi
         </section>
       ) : (
         <>
+          {sheet.city?.note && (
+            <section className={styles.section}>
+              <p className={styles.note} data-city-note>{sheet.city.note}</p>
+            </section>
+          )}
           {sheet.city?.replacedBy && latest && (
             <section className={styles.section}>
               <p data-replaced-by>
@@ -175,7 +180,7 @@ export function SheetBody({ sheet, headingId, focus }: { sheet: SheetData; headi
             <ol className={styles.versions}>
               {members.map((m) => (
                 <li key={m.hubId}>
-                  <a href={m.landingPage}>{[m.place, m.yearLabel ?? yearSpan(m.years)].filter(Boolean).join(" · ") || m.title}</a>
+                  <a href={m.landingPage}>{versionLabel(m, family.source === "city")}</a>
                   <span className={styles.updated}>updated {shortDate(m.modified)}</span>
                   {m.files.length > 0 ? <CityFiles files={m.files} /> : DOWNLOAD_ORDER.filter((f) => m.downloads[f]).map((f) => (
                     <a key={f} className={styles.dl} href={m.downloads[f]}>{f === "App" ? "Open app" : f}</a>

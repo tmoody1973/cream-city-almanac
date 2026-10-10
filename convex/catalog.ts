@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
 import { query, type QueryCtx } from "./_generated/server";
 import { pdfUrl } from "./lib/arcgis";
-import { REPLACED_BY } from "./lib/cityFamilies";
+import { CITY_NOTES, REPLACED_BY } from "./lib/cityFamilies";
 import { isPdfFamily, isSpreadsheetFamily } from "./lib/families";
 import { placeYearGrid } from "./lib/grid";
 import { matchSources } from "./lib/sources";
@@ -121,6 +121,7 @@ async function cityInfo(ctx: QueryCtx, familyKey: string) {
     datastoreId: p && p.rowCount > 0 ? p.resourceId : null,
     dateColumn: p?.dateColumn ?? null,
     replacedBy: replacement ? { code: replacement.code, name: replacement.name } : null,
+    note: Object.hasOwn(CITY_NOTES, familyKey) ? CITY_NOTES[familyKey] : null,
   };
 }
 

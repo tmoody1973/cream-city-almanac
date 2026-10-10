@@ -93,3 +93,13 @@ export function shortExplainer(text: string, max = EXPLAINER_MAX): string {
   const plainClause = lastClauseEnd(plain, max);
   return plainClause > 0 ? `${plain.slice(0, plainClause)}.` : plain;
 }
+
+// A row in a sheet's ALL VERSIONS list. DYCU versions differ by place and year; City versions all sit in "City" with
+// no years, so they go by the City's own word ("Current", "Historical") or their title.
+export function versionLabel(m: { title: string; place: string | null; years: number[]; yearLabel: string | null }, city: boolean): string {
+  if (city) {
+    const word = m.title.match(/\((current|historical)\)\s*$/i)?.[1];
+    return word ? word[0].toUpperCase() + word.slice(1).toLowerCase() : m.title.trim();
+  }
+  return [m.place, m.yearLabel ?? yearSpan(m.years)].filter(Boolean).join(" · ") || m.title;
+}
