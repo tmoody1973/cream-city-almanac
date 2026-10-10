@@ -172,6 +172,13 @@ describe("countRecords by neighborhood", () => {
     const t3 = await seed();
     expect(await t3.withIdentity(reader).action(api.city.countRecords, { code: "P01", neighborhood: "Harambee" })).toMatchObject({ status: "unavailable" });
   });
+  it("answers unavailable, never a citywide count, when the boundary has no rectangle", async () => {
+    const t = await seed();
+    await t.run((ctx) => ctx.db.insert("neighborhoods", { definition: "city", name: "Harambee", matchKey: "harambee", geometry: JSON.stringify({ type: "Polygon", coordinates: [ring] }) }));
+    const fake = installFakeFetch({ citySql: () => [{ n: "999" }] });
+    expect(await t.withIdentity(reader).action(api.city.countRecords, { code: "P01", neighborhood: "Harambee" })).toMatchObject({ status: "unavailable" });
+    expect(fake.calls.filter((c) => c.url.includes("datastore_search_sql"))).toHaveLength(0);
+  });
   it("answers a period outside the data's coverage without asking the City", async () => {
     const t = await seed();
     await withHarambee(t);

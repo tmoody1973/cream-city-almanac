@@ -114,6 +114,8 @@ export const countRecords = action({
       const { ok: _ok, ...refusal } = built;
       return { ...refusal, code: data.code, name };
     }
+    // A named neighborhood must never fall through to the citywide count (e.g. its boundary row has no rectangle).
+    if (found && !built.points) return { status: "unavailable" as const, code: data.code, name };
     try {
       if (found && built.points) {
         const area = `${found.name} (City of Milwaukee boundary)`;
