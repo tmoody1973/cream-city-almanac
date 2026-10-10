@@ -40,6 +40,38 @@ test("a located City sheet maps its records and the filters go in the address", 
   await expect(where.locator("[data-where-count]")).toContainText("In Harambee", { timeout: 30_000 });
 });
 
+async function nibrsCode(page: import("@playwright/test").Page) {
+  await page.goto("/?q=" + encodeURIComponent("crime incidents police"));
+  return page.locator("li[data-code]").filter({ hasText: /NIBRS Crime Data/ }).first().getAttribute("data-code");
+}
+
+test("a shared map link restores its filters with no hydration error", async ({ page }) => {
+  test.skip(!(await page.request.get("https://data.milwaukee.gov/api/3/action/status_show").then((r) => r.ok()).catch(() => false)), "City API unreachable");
+  const code = await nibrsCode(page);
+  const errors: string[] = [];
+  page.on("console", (m) => /hydrat/i.test(m.text()) && errors.push(m.text()));
+  page.on("pageerror", (e) => /hydrat/i.test(e.message) && errors.push(e.message));
+  // On a laptop the sheet address becomes the two-pane address, so start from the address that stays put on each.
+  await page.goto(`/d/${code}?type=120&when=year&area=Harambee`);
+  const where = page.locator("[data-sheet-where]");
+  await expect(where.locator('[data-filter="what"] option:checked')).toHaveText("Robbery");
+  await expect(where.locator('[data-filter="when"] option:checked')).toHaveText("This year");
+  await expect(where.locator('[data-filter="where"]')).toHaveValue("Harambee");
+  await expect(where.locator("[data-where-count]")).toContainText("In Harambee", { timeout: 30_000 });
+  expect(errors).toEqual([]);
+});
+
+test("a sheet address keeps its filters through the laptop redirect", async ({ page }, info) => {
+  test.skip(info.project.name !== "desktop", "the redirect is a laptop behavior");
+  test.skip(!(await page.request.get("https://data.milwaukee.gov/api/3/action/status_show").then((r) => r.ok()).catch(() => false)), "City API unreachable");
+  const code = await nibrsCode(page);
+  await page.goto(`/d/${code}?type=120&area=Harambee`);
+  await expect(page).toHaveURL(/open=/);
+  await expect(page).toHaveURL(/type=120/);
+  await expect(page).toHaveURL(/area=Harambee/);
+  await expect(page.locator("[data-sheet-where] [data-where-count]")).toContainText("In Harambee", { timeout: 30_000 });
+});
+
 for (const scheme of ["light", "dark"] as const)
   test(`a City sheet has no serious accessibility violations (${scheme})`, async ({ page }) => {
     await page.emulateMedia({ colorScheme: scheme });

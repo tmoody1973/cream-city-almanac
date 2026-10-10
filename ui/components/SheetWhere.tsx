@@ -14,34 +14,57 @@ const isoToday = () => new Date().toLocaleDateString("en-CA", { timeZone: "Ameri
 export function SheetWhere({ code, what }: { code: string; what: What }) {
   const run = useAction(api.map.mapCells);
   const names = useQuery(api.map.cityNeighborhoodNames, {}) ?? [];
-  const read = (k: string) => (typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get(k) ?? "");
-  const [type, setType] = useState(read("type"));
-  const [when, setWhen] = useState(read("from") ? "custom" : "12m");
-  const [from, setFrom] = useState(read("from"));
-  const [to, setTo] = useState(read("to"));
-  const [area, setArea] = useState(read("area"));
+  // The server renders the defaults (the sheet page is cached and has no address); the shared address is read once on mount.
+  const [type, setType] = useState("");
+  const [when, setWhen] = useState("12m");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [area, setArea] = useState("");
+  const [ready, setReady] = useState(false);
+  const [pending, setPending] = useState(false);
   const [result, setResult] = useState<CountResult | null>(null);
   const seq = useRef(0);
 
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
-    for (const [k, v] of Object.entries({ type, from: when === "custom" ? from : "", to: when === "custom" ? to : "", area })) v ? q.set(k, v) : q.delete(k);
+    const w = q.get("when");
+    setType(q.get("type") ?? "");
+    setWhen(w === "year" || w === "custom" ? w : q.get("from") ? "custom" : "12m");
+    setFrom(q.get("from") ?? "");
+    setTo(q.get("to") ?? "");
+    setArea(q.get("area") ?? "");
+    setReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!ready) return; // until the address has been read, writing it would wipe a shared map's filters
+    const q = new URLSearchParams(window.location.search);
+    const wanted = { type, when: when === "12m" ? "" : when, from: when === "custom" ? from : "", to: when === "custom" ? to : "", area };
+    for (const [k, v] of Object.entries(wanted)) v ? q.set(k, v) : q.delete(k);
     // Only rewrite the address when a filter changed it: on a laptop this sheet's own address is about to be replaced by the two-pane view.
     if (q.toString() !== window.location.search.slice(1)) window.history.replaceState(null, "", `${window.location.pathname}${q.size ? `?${q}` : ""}`);
     const mine = ++seq.current;
+    setPending(true);
     const t = window.setTimeout(async () => {
       const year = isoToday().slice(0, 4);
-      const r = await run({
-        code,
-        from: when === "year" ? `${year}-01-01` : when === "custom" ? from || undefined : undefined,
-        to: when === "custom" ? to || undefined : undefined,
-        filters: type && what ? [{ column: what.column, values: [type] }] : undefined,
-        neighborhood: area || undefined,
-      });
-      if (mine === seq.current) setResult(r); // only the newest request may draw
+      let r: CountResult;
+      try {
+        r = await run({
+          code,
+          from: when === "year" ? `${year}-01-01` : when === "custom" ? from || undefined : undefined,
+          to: when === "custom" ? to || undefined : undefined,
+          filters: type && what ? [{ column: what.column, values: [type] }] : undefined,
+          neighborhood: area || undefined,
+        });
+      } catch {
+        r = { status: "unavailable" } as CountResult;
+      }
+      if (mine !== seq.current) return; // only the newest request may draw
+      setResult(r);
+      setPending(false);
     }, 250);
     return () => window.clearTimeout(t);
-  }, [code, type, when, from, to, area, run, what]);
+  }, [ready, code, type, when, from, to, area, run, what]);
 
   return (
     <div className={styles.where} data-sheet-where>
@@ -65,7 +88,7 @@ export function SheetWhere({ code, what }: { code: string; what: What }) {
           <datalist id="city-neighborhoods">{names.map((n) => <option key={n} value={n} />)}</datalist>
         </label>
       </div>
-      <WhereResult r={result} />
+      <div aria-busy={pending}><WhereResult r={result} /></div>
     </div>
   );
 }

@@ -7,7 +7,7 @@ import type { ResultRow, SearchResponse } from "@/convex/lib/types";
 import { circledCodes, LAST_VISIT_KEY, OPENED_KEY, readOpened, safeStorage } from "@/ui/lib/marks";
 import { SEARCH_TIMEOUT_MS, searchNotice, withTimeout, type SearchState } from "@/ui/lib/search";
 import { portraitFocusQuery, portraitParams, type PortraitFocus } from "@/ui/lib/portrait";
-import { LAPTOP_QUERY, parseSelection, selectionSearch } from "@/ui/lib/selection";
+import { LAPTOP_QUERY, parseSelection, selectionSearch, whereParams } from "@/ui/lib/selection";
 import { useLaptop } from "@/ui/lib/useLaptop";
 import { AskLeader } from "./AskLeader";
 import { AskPanel } from "./AskPanel";
@@ -141,7 +141,7 @@ export function SearchHome({ rundown, status }: { rundown: ResultRow[]; status: 
   useEffect(() => {
     if (!open || window.matchMedia(LAPTOP_QUERY).matches) return;
     if (searching && !response) return;
-    const choice = portraitParams(window.location.search);
+    const choice = [portraitParams(window.location.search), whereParams(window.location.search)].filter(Boolean).join("&");
     if (choice || !rows.some((r) => r.code === open)) router.replace(`/d/${open}${choice ? `?${choice}` : ""}`);
   }, [open, rows, searching, response, router]);
 
