@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { proseSegments } from "../../ui/lib/askProse";
+import { countCoverage, outsideCoverage } from "../../ui/lib/askCount";
 import { askTools, type AskBackend } from "../../lib/ask/tools";
-import { meteredModel, useFakeModel } from "../../lib/ask/model";
+import { ASK_PROMPT } from "../../lib/ask/prompt";
+import { fakeAskModel, meteredModel, useFakeModel } from "../../lib/ask/model";
 import { MockLanguageModelV3 } from "ai/test";
 import { simulateReadableStream } from "ai";
 
@@ -28,6 +30,40 @@ describe("proseSegments", () => {
     expect(check('Harambee\'s "Under 5 years" row is below.')).toEqual([]);
     expect(check("The \u201cIncome in the past 12 months\u201d row.")).toEqual([]);
     expect(check('The estimate is "608".')).toEqual(["608"]);
+  });
+  it("allows places and dates the person named: districts, wards, ZIPs, street addresses, calendar dates", () => {
+    expect(flagged("Police district 6, aldermanic District 12 and ward 12.")).toEqual([]);
+    expect(flagged("Everything in ZIP 53212 and ZIP code 53206.")).toEqual([]);
+    expect(flagged("I can't look up 2263 N Lake Dr, or 410 E. Wells St.")).toEqual([]);
+    expect(flagged("The data ends December 31, 2023, and Dec 31 is the last day. Sep. 5 and Mar 3, 2025 too.")).toEqual([]);
+  });
+  it("a district or ward number can't swallow a count that follows it", () => {
+    expect(flagged("In the district 1,200 homes were vacant.")).toEqual(["1,200"]);
+    expect(flagged("Ward 6,520 voters")).toEqual(["6,520"]);
+    expect(flagged("district 6.5% of homes")).toEqual(["6.5%"]);
+    expect(flagged("Police district 6, District 3 had fewer, and ward 12.")).toEqual([]);
+  });
+  it("a month-day, district or ward can't swallow a count that follows it (m6)", () => {
+    expect(flagged("In March 31 robberies were reported.")).toEqual(["31"]);
+    expect(flagged("In ward 120 requests were filed.")).toEqual(["120"]);
+    expect(flagged("District 412 robberies were reported.")).toEqual(["412"]);
+    expect(flagged("Police district 6 calls rose.")).toEqual(["6"]);
+    expect(flagged("March 31, 2025 is the last day; on March 31 the file closed, and Mar 3 2024 too.")).toEqual([]);
+    expect(flagged("Ward 12 has fewer; district 5 and district 7 were busier than district 3.")).toEqual([]);
+  });
+  it("still flags a bare count next to those words", () => {
+    expect(flagged("There were 31 robberies.")).toEqual(["31"]);
+    expect(flagged("There were 31 robberies in district 6.")).toEqual(["31"]);
+    expect(flagged("About 94 incidents in ward 12 on Dec 31.")).toEqual(["94"]);
+    expect(flagged("53212 people lived there.")).toEqual(["53212"]);
+    expect(flagged("There were 12 North Side shootings.")).toEqual(["12"]);
+  });
+  it("allows a duration only when the data itself says that duration (a rule or lag the dataset documents)", () => {
+    const data = JSON.stringify({ caveat: "A property can take up to 72 hours to appear.", period: "Oct 9, 2025 \u2013 Oct 9, 2026 (last 12 months)", explainer: "left vacant for 30 days or more" });
+    const check = (t: string) => proseSegments(t, data).filter((s) => s.unverified).map((s) => s.text);
+    expect(check("New cases can take up to 72 hours; the card covers the last 12 months; vacant for 30 days or more.")).toEqual([]);
+    expect(check("Cases take 48 hours, and 12 days later.")).toEqual(["48", "12"]);
+    expect(flagged("New cases can take up to 72 hours.")).toEqual(["72"]);
   });
   it("treats digits glued to letters as identifiers, not figures", () => {
     expect(flagged("Census tables B17001, S1501 and DP04 cover it, with PM2.5 readings.")).toEqual([]);
@@ -64,6 +100,7 @@ const backend: AskBackend = {
       : null,
   number: async () => ({ status: "no-topic", topics: ["Rent Paid"] }) as never,
   report: async () => ({ status: "ok", passages: [] }),
+  count: async () => ({ status: "not-found" }) as never,
 };
 const tool = (name: string) => askTools(backend).find((t) => t.name === name)!;
 
@@ -143,5 +180,60 @@ describe("metering", () => {
     const model = meteredModel(inner(10, 5), async () => { throw new Error("convex down"); }) as unknown as { doStream: (o: object) => Promise<{ stream: ReadableStream<{ type: string }> }> };
     const { stream } = await model.doStream({ prompt });
     expect(await drain(stream)).toContain("finish");
+  });
+});
+
+const fakeBackend = () => backend;
+describe("countRecords tool", () => {
+  it("is offered and passes its arguments through", async () => {
+    const seen: unknown[] = [];
+    const b = { ...fakeBackend(), count: async (a: unknown) => (seen.push(a), { status: "ok", count: 3 }) } as never;
+    const t = askTools(b).find((x) => x.name === "countRecords")!;
+    expect(await t.execute({ code: "P01", groupBy: "month" } as never)).toEqual({ status: "ok", count: 3 });
+    expect(seen).toEqual([{ code: "P01", groupBy: "month" }]);
+  });
+  it("previewData answers for a live City dataset instead of 'no-feed'", async () => {
+    const b = { ...fakeBackend(), sheet: async () => ({ family: { code: "P01", name: "NIBRS Crime Data", source: "city" }, members: [], card: null, city: { columns: ["Incident_Date"], namesPeople: false, coverage: { min: "2024-01-01", max: "2026-10-08" }, datastoreId: "rid" } }) } as never;
+    expect(await askTools(b).find((x) => x.name === "previewData")!.execute({ code: "P01" } as never)).toMatchObject({ status: "ok", city: true, fields: ["Incident_Date"] });
+  });
+  it("tells the model a City dataset names people, on its sheet and its preview (m1)", async () => {
+    const mprop = { family: { code: "H09", name: "Master Property File", places: ["City"], years: [], source: "city" }, members: [], card: { explainer: "e", caveats: [], storyAngles: [], glossary: [] }, city: { columns: ["OWNER_NAME_1"], namesPeople: true, coverage: { min: null, max: null }, datastoreId: "rid" } };
+    const b = { ...fakeBackend(), sheet: async () => mprop } as never;
+    expect(await askTools(b).find((x) => x.name === "showDataset")!.execute({ code: "H09" } as never)).toMatchObject({ status: "ok", namesPeople: true });
+    expect(await askTools(b).find((x) => x.name === "previewData")!.execute({ code: "H09" } as never)).toMatchObject({ status: "ok", city: true, namesPeople: true });
+    expect(await tool("showDataset").execute({ code: "V02" })).not.toHaveProperty("namesPeople");
+  });
+  it("tells the model to count only through countRecords and never repeat a person's record", () => {
+    expect(ASK_PROMPT).toContain("countRecords");
+    expect(ASK_PROMPT).toMatch(/never repeat or look up an individual/i);
+  });
+  it("the fake model searches then counts for 'thefts'", async () => {
+    const model = fakeAskModel() as unknown as { doStream(o: unknown): Promise<{ stream: ReadableStream<{ type: string }> }> };
+    const run = async (prompt: unknown[]) => {
+      const { stream } = await model.doStream({ prompt });
+      const calls: { toolName: string; input: string }[] = [];
+      const r = stream.getReader();
+      for (;;) { const { done, value } = await r.read(); if (done) break; if (value.type === "tool-call") calls.push(value as never); }
+      return calls;
+    };
+    const user = { role: "user", content: [{ type: "text", text: "How many thefts?" }] };
+    expect((await run([user]))[0].toolName).toBe("searchCatalog");
+    const tool = { role: "tool", content: [{ type: "tool-result", toolCallId: "c", toolName: "searchCatalog", output: { type: "json", value: { rows: [{ code: "P07" }] } } }] };
+    const second = await run([user, tool]);
+    expect(second[0].toolName).toBe("countRecords");
+    expect(JSON.parse(second[0].input)).toMatchObject({ code: "P07", groupBy: "month" });
+  });
+});
+
+describe("count card coverage (C2, I2)", () => {
+  it("says which date the count is by, what the data covers, and which file", () => {
+    expect(countCoverage({ dateColumn: "EXP_DATE", coverage: "Jan 1, 2024 – Oct 9, 2026", resourceName: "2025" })).toBe("Counted by EXP_DATE. The City's data here covers Jan 1, 2024 – Oct 9, 2026, from the City's '2025' file.");
+    expect(countCoverage({ dateColumn: "Incident_Date", coverage: "Jan 1, 2024 – Oct 9, 2026", resourceName: null })).toBe("Counted by Incident_Date. The City's data here covers Jan 1, 2024 – Oct 9, 2026.");
+    expect(countCoverage({ dateColumn: null, coverage: null, resourceName: "2025" })).toBe("From the City's '2025' file.");
+    expect(countCoverage({ dateColumn: null, coverage: null, resourceName: null })).toBeNull();
+  });
+  it("says a period outside the coverage has nothing to count, with no number", () => {
+    const t = outsideCoverage({ name: "NIBRS Crime Data", coverage: "Jan 1, 2024 – Oct 9, 2026" });
+    expect(t).toBe("NIBRS Crime Data: the City's data here covers Jan 1, 2024 – Oct 9, 2026, so there is nothing to count for that period.");
   });
 });

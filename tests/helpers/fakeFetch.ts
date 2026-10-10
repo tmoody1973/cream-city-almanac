@@ -12,6 +12,10 @@ export interface FakeOptions {
   columns?: { name: string; alias?: string; type?: string }[];
   portraitBytes?: Uint8Array;
   portraitStatus?: number;
+  cityCatalog?: unknown;
+  cityStatus?: number;
+  cityFields?: { id: string; type: string }[];
+  citySql?: (sql: string) => unknown[];
 }
 
 export const DEFAULT_CARD = {
@@ -48,6 +52,19 @@ export function installFakeFetch(opts: FakeOptions = {}) {
     const body = init?.body ? JSON.parse(String(init.body)) : undefined;
     calls.push({ url, body });
 
+    if (url.includes("data.milwaukee.gov/api/3/action/package_search")) {
+      // Like CKAN, honour `start`: a page past the end of the results is empty.
+      const catalog = (opts.cityCatalog ?? { success: true, result: { count: 0, results: [] } }) as { result?: { results?: unknown[] } };
+      const start = Number(new URL(url).searchParams.get("start") ?? 0);
+      const paged = catalog.result?.results ? { ...catalog, result: { ...catalog.result, results: catalog.result.results.slice(start) } } : catalog;
+      return json(opts.cityStatus ?? 200, paged);
+    }
+    if (url.includes("data.milwaukee.gov/api/3/action/datastore_search_sql")) {
+      const sql = new URL(url).searchParams.get("sql") ?? "";
+      return json(opts.cityStatus ?? 200, { success: true, result: { records: opts.citySql ? opts.citySql(sql) : [] } });
+    }
+    if (url.includes("data.milwaukee.gov/api/3/action/datastore_search"))
+      return json(opts.cityStatus ?? 200, { success: true, result: { fields: [{ id: "_id", type: "int" }, ...(opts.cityFields ?? [])], records: [] } });
     if (url.includes("/api/feed/dcat-us/")) return json(opts.hubStatus ?? 200, opts.hubFeed ?? hubCatalog);
     if (url.includes("docs.google.com/spreadsheets"))
       return new Response(Uint8Array.from(atob(inventoryBase64), (c) => c.charCodeAt(0)), { status: 200 });

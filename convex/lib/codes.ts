@@ -9,6 +9,10 @@ export const TOPICS: { name: string; letter: string }[] = [
   { name: "Housing", letter: "H" },
   { name: "Economic", letter: "E" },
   { name: "Demographics", letter: "D" },
+  { name: "Public Safety", letter: "P" },
+  { name: "Elections", letter: "B" },
+  { name: "City Services", letter: "C" },
+  { name: "Maps", letter: "G" },
 ];
 
 export function topicOf(members: { keywords: string[] }[]): string {

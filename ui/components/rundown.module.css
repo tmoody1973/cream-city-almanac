@@ -961,3 +961,4 @@
   .sideNote,
   .menuButton { display: none; }
 }
+.live { margin-left: 6px; padding: 0 4px; border: var(--hair); font-family: var(--font-caps); font-weight: 700; font-size: 0.7em; vertical-align: 0.15em; }

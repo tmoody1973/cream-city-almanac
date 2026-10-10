@@ -4,7 +4,6 @@ import type { Id } from "./_generated/dataModel";
 import { internalAction, type ActionCtx } from "./_generated/server";
 import { fetchColumns, pdfUrl } from "./lib/arcgis";
 import {
-  aiCardSchema,
   assembleCard,
   basicCard,
   buildCardPrompt,
@@ -13,11 +12,15 @@ import {
   cardEmbeddingText,
   cardMaxTokens,
   latestDescription,
+  parseAiCard,
   PROMPT_VERSION,
   uniqueDescriptions,
   type AiCard,
 } from "./lib/card";
+import { cityRepresentative, groupCityItems } from "./lib/cityFamilies";
 import { chunkMarkdown } from "./lib/chunk";
+import { fetchCityCatalog, datastoreFields, datastoreSql } from "./lib/ckan";
+import { assembleProfile, isMultiValued, planProfile, profileSql } from "./lib/cityProfile";
 import { HUB_FEED_URL, parseDcat } from "./lib/dcat";
 import { INVENTORY_XLSX_URL, isSuspectLink, mapDictionaries, readInventory, unlinkedTabs, type Inventory } from "./lib/dictionary";
 import { groupItems, hubCounts, isPdfFamily, isSpreadsheetFamily, reportDelays, toFamilyInput } from "./lib/families";
@@ -28,7 +31,7 @@ import { hashInputs } from "./lib/hash";
 import { fetchWithTimeout } from "./lib/http";
 import { matchSources, SOURCE_JSON_SCHEMA, SOURCE_SITES, SOURCE_SYSTEM, sourceProfileSchema } from "./lib/sources";
 import { fixTypos } from "./lib/titles";
-import type { Card, Column, Mismatch } from "./lib/types";
+import type { Card, Column, Family, FamilyInput, Mismatch } from "./lib/types";
 import { retryOnConflict } from "./lib/retry";
 import { STALE_BUILD_MS } from "./buildStore";
 import type { Settings } from "./settings";
@@ -58,6 +61,34 @@ export const processFamily = internalAction({
   },
 });
 
+// Live City dataset: read its columns and build the counting menu. If the City won't describe its columns, the profile
+// goes (it can't be counted); a failed counting query after that keeps last week's profile.
+async function profileCity(ctx: ActionCtx, familyKey: string, rid: string, resourceName: string | null): Promise<Column[]> {
+  let fields: { id: string; type: string }[];
+  try {
+    fields = await datastoreFields(rid);
+  } catch (e) {
+    await ctx.runMutation(internal.buildStore.deleteCityProfile, { familyKey });
+    throw e;
+  }
+  const plan = planProfile(fields);
+  const q = profileSql(rid, plan);
+  try {
+    const [count] = await datastoreSql<{ n: string }>(q.count);
+    const [range] = q.range ? await datastoreSql<{ lo: string | null; hi: string | null }>(q.range) : [undefined];
+    const tops = [];
+    for (const t of q.tops) {
+      const rows = await datastoreSql<{ v: string | null; n: string }>(t.sql);
+      tops.push(isMultiValued(rows) ? { column: t.column, rows: await datastoreSql<{ v: string | null; n: string }>(t.multiSql), multi: true } : { column: t.column, rows });
+    }
+    const profile = { ...assembleProfile(familyKey, rid, fields, plan, count, range, tops, Date.now()), resourceName };
+    await ctx.runMutation(internal.buildStore.replaceCityProfile, { profile });
+  } catch (e) {
+    console.error(`City profile failed for ${familyKey}: ${message(e)}`);
+  }
+  return fields.map((f) => ({ name: f.id, alias: f.id, type: f.type }));
+}
+
 async function writeCard(ctx: ActionCtx, buildId: Id<"builds">, familyKey: string): Promise<Result> {
   const data = await ctx.runQuery(internal.buildStore.familyContext, { familyKey });
   if (!data) return { outcome: "skipped", note: `${familyKey}: no longer in catalog` };
@@ -66,7 +97,11 @@ async function writeCard(ctx: ActionCtx, buildId: Id<"builds">, familyKey: strin
   const rep = members
     .filter((m) => m.featureServerUrl)
     .sort((a, b) => b.modified.localeCompare(a.modified))[0];
-  const columns: Column[] = rep?.featureServerUrl ? await fetchColumns(rep.featureServerUrl) : [];
+  const cityRep = cityRepresentative(members);
+  if (family.source === "city" && !cityRep?.datastoreId) await ctx.runMutation(internal.buildStore.deleteCityProfile, { familyKey });
+  const columns: Column[] = cityRep?.datastoreId
+    ? await profileCity(ctx, familyKey, cityRep.datastoreId, cityRep.datastoreName ?? null)
+    : rep?.featureServerUrl ? await fetchColumns(rep.featureServerUrl) : [];
   const inputHash = await hashInputs({
     v: PROMPT_VERSION,
     members: members.map((m) => [m.hubId, m.modified]).sort(),
@@ -140,7 +175,7 @@ async function writeAiCard(
         key,
       );
       spent += costUsd(usage, settings.cardInputUsdPerToken, settings.cardOutputUsdPerToken);
-      const parsed = aiCardSchema.safeParse(value);
+      const parsed = parseAiCard(value);
       if (parsed.success) return { card: parsed.data, costUsd: spent, error: "" };
       error = `schema: ${parsed.error.issues[0]?.message ?? "invalid"}`;
     } catch (e) {
@@ -281,6 +316,16 @@ async function runBuild(ctx: ActionCtx, buildId: Id<"builds">) {
   const overrides = await ctx.runQuery(internal.buildStore.listOverrides, {});
   const families = groupItems(items, overrides.items);
 
+  // The City's catalog: if it can't be read, last week's City families stay (swap would otherwise retire them).
+  let cityFamilies: Family[] = [];
+  let carried: FamilyInput[] = [];
+  try {
+    cityFamilies = groupCityItems(await fetchCityCatalog(), new Date());
+  } catch (e) {
+    notes.push(`City catalog unavailable, kept last week's City datasets: ${message(e)}`);
+    carried = await ctx.runQuery(internal.buildStore.cityFamilyInputs, {});
+  }
+
   let inventory: Inventory = { dictionaries: [], links: [], tabs: [] };
   try {
     inventory = readInventory(new Uint8Array(await (await fetchOk(INVENTORY_XLSX_URL, "Inventory sheet")).arrayBuffer()));
@@ -297,10 +342,15 @@ async function runBuild(ctx: ActionCtx, buildId: Id<"builds">) {
 
   const swap = await ctx.runMutation(internal.buildStore.swapCatalog, {
     buildId,
-    families: families.map((f) => toFamilyInput(f, byFamily[f.key] ?? null)),
+    families: [...families.map((f) => toFamilyInput(f, byFamily[f.key] ?? null)), ...cityFamilies.map((f) => toFamilyInput(f, null)), ...carried],
     dictionaries: inventory.dictionaries,
   });
   if (!swap.ok) throw new Error(swap.reason);
+  if (swap.cityKept) {
+    // Last week's City families stayed (like an outage), so none of this week's are processed.
+    if (swap.note) notes.push(swap.note);
+    cityFamilies = [];
+  }
 
   await refreshSources(ctx, buildId, settings, notes);
 
@@ -314,7 +364,7 @@ async function runBuild(ctx: ActionCtx, buildId: Id<"builds">) {
     hubIds: portraits.map((p) => p.hubId),
   });
   const portraitDelays = reportDelays(portraits, new Map(portraitStored.map((p) => [p.hubId, p.modified])), PORTRAIT_SPACING_MS);
-  const pending = families.length + reports.length + portraits.length;
+  const pending = families.length + cityFamilies.length + reports.length + portraits.length;
   await ctx.runMutation(internal.buildStore.setPending, {
     buildId,
     pending,
@@ -325,6 +375,9 @@ async function runBuild(ctx: ActionCtx, buildId: Id<"builds">) {
   });
   for (const [i, f] of families.entries()) {
     await ctx.scheduler.runAfter(i * 500, internal.build.processFamily, { buildId, familyKey: f.key });
+  }
+  for (const [i, f] of cityFamilies.entries()) {
+    await ctx.scheduler.runAfter((families.length + i) * 500, internal.build.processFamily, { buildId, familyKey: f.key });
   }
   for (const { hubId, delayMs } of delays) {
     await ctx.scheduler.runAfter(delayMs, internal.build.processReport, { buildId, hubId });

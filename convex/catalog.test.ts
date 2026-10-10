@@ -204,3 +204,23 @@ describe("startHere", () => {
     expect(d.resident!.caveat).toBeNull();
   });
 });
+
+describe("City sheets", () => {
+  it("list every file and point a replaced dataset at its replacement", async () => {
+    const t = convexTest(schema, modules);
+    await t.run(async (ctx) => {
+      for (const [key, code, name] of [["city:wibr-crime-monthly", "P38", "WIBR Crime (Monthly)"], ["city:nibrs-crime-data", "P08", "NIBRS Crime Data"]]) {
+        await ctx.db.insert("families", { key, code, name, kind: "dataset", topic: "Public Safety", keywords: [], places: ["City"], years: [], latestModified: "2021-01-13", baseSearchText: "", searchText: "", dictionaryTab: null, source: "city", live: false });
+      }
+      await ctx.db.insert("members", {
+        familyKey: "city:wibr-crime-monthly", hubId: "city:w", kind: "dataset", title: "WIBR Crime (Monthly)", landingPage: "https://data.milwaukee.gov/dataset/wibr-crime-monthly",
+        place: "City", years: [], yearLabel: null, modified: "2025-03-24T00:00:00", featureServerUrl: null, downloads: {}, description: "", keywords: [], source: "city",
+        files: [{ name: "Homicides", format: "Esri REST", url: "https://maps.example/MapServer/0" }],
+      });
+    });
+    const wibr = (await t.query(api.catalog.familySheet, { code: "P38" }))!;
+    expect(wibr.members[0].files).toEqual([{ name: "Homicides", format: "Esri REST", url: "https://maps.example/MapServer/0" }]);
+    expect(wibr.city!.replacedBy).toEqual({ code: "P08", name: "NIBRS Crime Data" });
+    expect((await t.query(api.catalog.familySheet, { code: "P08" }))!.city!.replacedBy).toBeNull();
+  });
+});

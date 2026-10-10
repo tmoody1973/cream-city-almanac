@@ -304,7 +304,8 @@ Ruled and flat, like a box drawn on the sheet with a marker.
 
 ### Chips
 - **Suggestion tags:** three plain-word searches in body type, divided by vertical hairlines with no other border, 44px tall. Hover underlines the word (0.18em offset). They disappear once a search is running.
-- **Provenance tag:** a small boxed capital tag (HUB, DYCU, SOURCE, AI) at 0.8em of the surrounding text, in a 1px ink hairline box with 0.35em side padding, raised 0.1em. It follows every sourced or AI-written fact and carries its full meaning as a title.
+- **Provenance tag:** a small boxed capital tag (HUB, DYCU, SOURCE, CITY, AI) at 0.8em of the surrounding text, in a 1px ink hairline box with 0.35em side padding, raised 0.1em. It follows every sourced or AI-written fact and carries its full meaning as a title.
+- **CITY tag and LIVE mark:** CITY is one more provenance tag, titled "From the City of Milwaukee's open data", and marks anything that comes from the City's catalog or its live data: it follows a City family's name on the rundown and in results, sits in the sheet's subline, and ends the City count card's caption. LIVE is a different thing: a small ruled caps mark (`.live` in `rundown.module.css`) on a City family the City refreshes daily, placed after the name and the CITY tag, a 1px ink hairline box in condensed caps at 0.7em. Every City dataset is dated by when the City created it, never by its daily metadata updates (the City re-saves even static map layers every day), so City refreshes do not rank anything or take the circle-and-"new". A column change doesn't re-date it either: the City switches files often enough that re-dating flooded the list in testing.
 
 ### Cards / Containers
 There are none. An opened row's preview is an indented region closed by a hairline, on the row's own ground. Dataset sheet sections are ruled blocks separated by hairlines, each led by a label-voice capital heading.
@@ -353,6 +354,12 @@ The almanac's reference desk, from the approved comps `.impeccable/mocks/ask-lap
 - **Status line:** one graphite line under the field: "N of M questions left today · Don't paste private source info · Sign out", Sign out an underlined text button.
 - **Signed out:** a one-line invitation and a ruled "Sign in to ask" button (Clerk's modal).
 - Leaders and outlines are ink, never red: red is DYCU's teaching voice, not the AI's.
+
+### City Sheet and City Count Card
+The City of Milwaukee's open data joins the almanac as one more kind of row, not a separate section: a City family sits in the same rundown and search results with a CITY tag, and the daily feeds carry the LIVE mark. Codes keep the rundown's letters: P Public Safety, B Elections, C City Services, G Maps, and H for the City's housing and property data (sharing the letter with DYCU's housing).
+- **City sheet:** the same sheet as any family, with the CITY tag in the subline. When the dataset's profile flags people's names, the note "Names private individuals. Shown as the City publishes it." sits above the preview in small body type. The LIVE PREVIEW is the City's newest rows, fetched in the reader's browser straight from the City, in the same banded table as DYCU's preview. The COLUMN GUIDE uses the City's own column names and descriptions, and falls back to the column names alone when the City gives no glossary.
+- **City count card (Ask):** the excerpt card's style, one hairline box. The caption is "name · filters · period" in label size, ending in the CITY tag. The count is the card's one big figure, in caps figures (`.countFigure`, clamp(36px, 6vw, 56px), tabular), so the eye lands on it. A grouped question ("by month") adds a ruled group table under the count: date groups run oldest to newest and any remainder is one last row, "Earlier" for dates or "Other" for types. Under the table, small graphite notes say how many future-dated records were left out and repeat the dataset's own caveat. "Open the data" is the card's only link and goes to the dataset's sheet.
+- **The count is the card's, never the model's:** the card is filled from the City live, so a number appears only on a card. If the City does not respond the card says "The City's data didn't respond." and shows no figure. Ask only counts and never looks up a named person.
 
 ### Annotated Sheet (signature, How it works)
 A real dataset sheet, cut to its four teaching parts and marked up by the grease pencil like a page from the producer's desk.

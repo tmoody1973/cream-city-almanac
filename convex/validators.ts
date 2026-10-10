@@ -27,6 +27,10 @@ export const vMember = v.object({
   downloads: v.record(v.string(), v.string()),
   description: v.string(),
   keywords: v.array(v.string()),
+  source: v.optional(v.literal("city")),
+  datastoreId: v.optional(v.union(v.string(), v.null())),
+  datastoreName: v.optional(v.union(v.string(), v.null())),
+  files: v.optional(v.array(v.object({ name: v.string(), format: v.string(), url: v.string() }))),
 });
 
 export const vFamilyInput = v.object({
@@ -41,6 +45,8 @@ export const vFamilyInput = v.object({
   baseSearchText: v.string(),
   dictionaryTab: v.union(v.string(), v.null()),
   members: v.array(vMember),
+  source: v.optional(v.literal("city")),
+  live: v.optional(v.boolean()),
 });
 
 export const vDictionaryField = v.object({
@@ -99,4 +105,23 @@ export const vPortraitTable = v.object({
     }),
   ),
   issues: v.array(v.string()),
+});
+
+// A live City dataset's counting menu (see lib/cityProfile.ts).
+export const vCityProfile = v.object({
+  familyKey: v.string(),
+  resourceId: v.string(),
+  columns: v.array(v.object({ name: v.string(), type: v.string() })),
+  dateColumn: v.union(v.string(), v.null()),
+  districtColumns: v.array(v.string()),
+  categories: v.array(
+    v.object({ column: v.string(), values: v.array(v.object({ value: v.string(), count: v.number() })), multi: v.optional(v.boolean()) }),
+  ),
+  rowCount: v.number(),
+  minDate: v.union(v.string(), v.null()),
+  maxDate: v.union(v.string(), v.null()),
+  namesPeople: v.boolean(),
+  resourceName: v.optional(v.union(v.string(), v.null())),
+  signature: v.string(),
+  updatedAt: v.number(),
 });

@@ -8,7 +8,7 @@ import { renderReport } from "./lib/report";
 import type { FamilyInput } from "./lib/types";
 import { readSettings } from "./settings";
 import { vCard, vOutcome, vPortraitTable } from "./validators";
-import { vDictionary, vFamilyInput, vMismatch } from "./validators";
+import { vCityProfile, vDictionary, vFamilyInput, vMismatch } from "./validators";
 
 export const STALE_BUILD_MS = 2 * 60 * 60 * 1000;
 // A feed may not shrink the live catalog (families or items) by more than 10% in one run.
@@ -83,31 +83,59 @@ export const addDictionaryOverride = internalMutation({
   },
 });
 
+// How a source's incoming catalog shrank against the live one, if by more than 10% (families or items).
+function shrinkage(liveFamilies: number, liveItems: number, incoming: FamilyInput[]) {
+  const items = incoming.reduce((n, f) => n + f.members.length, 0);
+  if (liveFamilies > 0 && incoming.length < Math.ceil(liveFamilies * MIN_KEEP_RATIO)) return { what: "families", from: liveFamilies, to: incoming.length };
+  if (liveItems > 0 && items < Math.ceil(liveItems * MIN_KEEP_RATIO)) return { what: "items", from: liveItems, to: items };
+  return null;
+}
+
+// DYCU and the City are guarded separately. A DYCU shrink fails the build, as before; a City-only shrink is treated
+// like a City outage: last week's City families stay untouched and the build notes it.
 export const swapCatalog = internalMutation({
   args: { buildId: v.id("builds"), families: v.array(vFamilyInput), dictionaries: v.array(vDictionary) },
   handler: async (ctx, { families, dictionaries }) => {
+    const isCity = (f: { source?: string }) => f.source === "city";
     const live = await ctx.db.query("families").collect();
-    if (live.length > 0 && families.length < Math.ceil(live.length * MIN_KEEP_RATIO)) {
+    const liveMembers = await ctx.db.query("members").collect();
+    const dycuIn = families.filter((f) => !isCity(f));
+    const cityIn = families.filter(isCity);
+    const dycu = shrinkage(live.filter((f) => !isCity(f)).length, liveMembers.filter((m) => !isCity(m)).length, dycuIn);
+    if (dycu) {
       return {
         ok: false as const,
-        reason: `Feed produced ${families.length} families; live catalog has ${live.length}. Refusing to shrink by more than 10%.`,
+        reason: `Feed produced ${dycu.to} ${dycu.what}; live catalog has ${dycu.from}. Refusing to shrink by more than 10%.`,
       };
     }
-    const liveMembers = (await ctx.db.query("members").collect()).length;
-    const incomingMembers = families.reduce((n, f) => n + f.members.length, 0);
-    if (liveMembers > 0 && incomingMembers < Math.ceil(liveMembers * MIN_KEEP_RATIO)) {
-      return {
-        ok: false as const,
-        reason: `Feed produced ${incomingMembers} items; live catalog has ${liveMembers}. Refusing to shrink by more than 10%.`,
-      };
-    }
+    const city = shrinkage(live.filter(isCity).length, liveMembers.filter(isCity).length, cityIn);
+    const incoming = city ? dycuIn : families;
+    const replaceable = city ? live.filter((f) => !isCity(f)) : live;
     const liveByKey = new Map(live.map((f) => [f.key, f]));
-    const incoming = new Set(families.map((f) => f.key));
-    for (const old of live) if (!incoming.has(old.key)) await retireFamily(ctx, old);
-    for (const f of families) await upsertFamily(ctx, f, liveByKey.get(f.key) ?? null);
+    const incomingKeys = new Set(incoming.map((f) => f.key));
+    for (const old of replaceable) if (!incomingKeys.has(old.key)) await retireFamily(ctx, old);
+    for (const f of incoming) await upsertFamily(ctx, f, liveByKey.get(f.key) ?? null);
     for (const d of await ctx.db.query("dictionaries").collect()) await ctx.db.delete(d._id);
     for (const d of dictionaries) await ctx.db.insert("dictionaries", d);
-    return { ok: true as const };
+    if (!city) return { ok: true as const, cityKept: false };
+    const what = city.what === "families" ? "datasets" : "items";
+    return { ok: true as const, cityKept: true, note: `City catalog shrank from ${city.from} to ${city.to} ${what}; kept last week's City datasets` };
+  },
+});
+
+// The City families now in the catalog, as swap input: carried forward when the City is down during a build.
+export const cityFamilyInputs = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const families = (await ctx.db.query("families").collect()).filter((f) => f.source === "city");
+    return Promise.all(
+      families.map(async ({ _id, _creationTime, code, searchText, ...f }) => ({
+        ...f,
+        members: (await ctx.db.query("members").withIndex("by_family", (q) => q.eq("familyKey", f.key)).collect()).map(
+          ({ _id: _m, _creationTime: _c, familyKey: _k, ...m }) => m,
+        ),
+      })),
+    );
   },
 });
 
@@ -142,10 +170,21 @@ async function retireFamily(ctx: MutationCtx, fam: Doc<"families">) {
   for (const m of members) await ctx.db.delete(m._id);
   const cards = await ctx.db.query("cards").withIndex("by_family", (q) => q.eq("familyKey", fam.key)).collect();
   for (const c of cards) await ctx.db.delete(c._id);
+  await deleteProfiles(ctx, fam.key);
   const code = await ctx.db.query("codes").withIndex("by_familyKey", (q) => q.eq("familyKey", fam.key)).first();
   if (code) await ctx.db.patch(code._id, { retiredAt: Date.now() });
   await ctx.db.delete(fam._id);
 }
+
+async function deleteProfiles(ctx: MutationCtx, familyKey: string) {
+  for (const p of await ctx.db.query("cityProfiles").withIndex("by_family", (q) => q.eq("familyKey", familyKey)).collect()) await ctx.db.delete(p._id);
+}
+
+// A City family with no live resource left (or one the City won't describe) can't be counted: its profile goes.
+export const deleteCityProfile = internalMutation({
+  args: { familyKey: v.string() },
+  handler: (ctx, { familyKey }) => deleteProfiles(ctx, familyKey),
+});
 
 export const setPending = internalMutation({
   args: {
@@ -178,12 +217,15 @@ export const familyContext = internalQuery({
     const card = await ctx.db.query("cards").withIndex("by_family", (q) => q.eq("familyKey", familyKey)).first();
     const sources = await ctx.db.query("sources").collect();
     return {
-      family: { key: family.key, name: family.name, kind: family.kind, places: family.places, years: family.years },
+      family: { key: family.key, name: family.name, kind: family.kind, places: family.places, years: family.years, source: family.source ?? null },
       members: members.map((m) => ({
         hubId: m.hubId,
+        title: m.title,
         modified: m.modified,
         description: m.description,
         featureServerUrl: m.featureServerUrl,
+        datastoreId: m.datastoreId ?? null,
+        datastoreName: m.datastoreName ?? null,
       })),
       dictionary: dictionary ? { tab: dictionary.tab, dataSource: dictionary.dataSource, fields: dictionary.fields } : null,
       sources: sources.map((s) => ({ name: s.name, summary: s.summary, limits: s.limits })),
@@ -382,5 +424,16 @@ export const replacePortrait = internalMutation({
     }
     for (const table of tables) await ctx.db.insert("portraitTables", { hubId, modified, ...table });
     for (const c of chunks) await ctx.db.insert("docChunks", { hubId, modified, ...c });
+  },
+});
+
+// One profile per City family. Profiling never re-dates the family: every City family is dated by when the City
+// created it, so a daily refresh or a file switch with new columns can't flood "Updated this season" (decision 023).
+export const replaceCityProfile = internalMutation({
+  args: { profile: vCityProfile },
+  handler: async (ctx, { profile }) => {
+    const old = await ctx.db.query("cityProfiles").withIndex("by_family", (q) => q.eq("familyKey", profile.familyKey)).first();
+    if (old) await ctx.db.replace(old._id, profile);
+    else await ctx.db.insert("cityProfiles", profile);
   },
 });

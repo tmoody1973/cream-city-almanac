@@ -2,8 +2,10 @@
 import { useRenderTool } from "@copilotkit/react-core/v2";
 import { Fragment, useEffect } from "react";
 import { z } from "zod";
+import { countCoverage, outsideCoverage } from "@/ui/lib/askCount";
 import { passageBlocks } from "@/ui/lib/askPassage";
 import { formatPortraitMargin, formatPortraitNumber } from "@/ui/lib/portrait";
+import type { CountResult } from "@/lib/ask/tools";
 import { LivePreview } from "./LivePreview";
 import { ProvenanceTag } from "./ProvenanceTag";
 import styles from "./ask.module.css";
@@ -15,6 +17,8 @@ export type NumberResult = {
   status: string; code: string; neighborhood: string; place: string; year: number | null; topic: string; slug: string;
   tableIdText: string; label: string; rowIndex: number; values: Value[]; groups: string[]; nearby: { label: string; values: Value[]; marked: boolean }[];
 };
+
+type CountOk = Extract<CountResult, { status: "ok" }>;
 
 const parse = <T,>(result: unknown): T | null => {
   try {
@@ -132,15 +136,44 @@ export function NumberCard({ r, onOpen, callKey }: { r: NumberResult; onOpen: Op
   );
 }
 
-function SheetCard({ code, name, onOpen, callKey, preview }: { code: string; name: string; onOpen: Open; callKey: string; preview?: { members: { place: string | null; yearLabel: string | null; featureServerUrl: string | null }[]; fields: string[] } }) {
+function SheetCard({ code, name, onOpen, callKey, preview, source = "HUB" }: { code: string; name: string; onOpen: Open; callKey: string; preview?: { members: { place: string | null; yearLabel: string | null; featureServerUrl: string | null }[]; fields: string[] }; source?: "HUB" | "CITY" }) {
   useOpenOnce(callKey, `open=${code}`, onOpen);
   return (
     <div className={styles.reference} data-card={preview ? "preview" : "dataset"}>
       <p className={styles.referenceLine}>
-        <span className={styles.code}>{code}</span> · {name} {preview && <ProvenanceTag source="HUB" />} <OpenLink code={code} onOpen={onOpen} anchor={Boolean(onOpen)} />
+        <span className={styles.code}>{code}</span> · {name} {preview && <ProvenanceTag source={source} />} <OpenLink code={code} onOpen={onOpen} anchor={Boolean(onOpen)} />
       </p>
-      {preview && !onOpen && <LivePreview members={preview.members} fields={preview.fields} chartOnly />}
+      {preview && source === "HUB" && !onOpen && <LivePreview members={preview.members} fields={preview.fields} chartOnly />}
     </div>
+  );
+}
+
+// A City count: the number lives here, never in the model's words. Filters in plain words, the period, what the
+// data covers, and caveats.
+function CountCard({ r, onOpen }: { r: CountOk; onOpen: Open }) {
+  const covers = countCoverage(r);
+  return (
+    <figure className={styles.excerpt} data-card="count">
+      <figcaption className={styles.excerptTitle}>
+        {[r.name, ...r.filters, r.period].join(" · ")} <ProvenanceTag source="CITY" />
+      </figcaption>
+      <p className={styles.countFigure} data-count>{r.count.toLocaleString("en-US")}</p>
+      {r.groups.length > 0 && (
+        <table className={styles.excerptTable}>
+          <tbody>
+            {r.groups.map((g) => (
+              <tr key={g.label}><th scope="row">{g.label}</th><td>{g.count.toLocaleString("en-US")}</td></tr>
+            ))}
+            {r.other > 0 && <tr><th scope="row">{r.otherLabel ?? "Other"}</th><td>{r.other.toLocaleString("en-US")}</td></tr>}
+          </tbody>
+        </table>
+      )}
+      {r.overlap && r.groups.length > 0 && <p className={styles.source}>An incident can count in more than one group.</p>}
+      {covers && <p className={styles.source} data-coverage>{covers}</p>}
+      {r.futureExcluded > 0 && <p className={styles.source}>{r.futureExcluded.toLocaleString("en-US")} records dated in the future were left out.</p>}
+      {r.caveat && <p className={styles.source}>{r.caveat} <ProvenanceTag source="AI" /></p>}
+      <OpenLink code={r.code} onOpen={onOpen} label="Open the data" />
+    </figure>
   );
 }
 
@@ -172,10 +205,10 @@ export function AskCards({ onOpen }: { onOpen?: (search: string) => void }) {
 
   useRenderTool({ name: "previewData", parameters: z.object({ code: z.string() }), render: (props) => {
     if (props.status !== "complete") return <Busy />;
-    const r = parse<{ status: string; code: string; name: string; members: { place: string | null; yearLabel: string | null; featureServerUrl: string | null }[]; fields: string[] }>(props.result);
+    const r = parse<{ status: string; city?: boolean; code: string; name: string; members: { place: string | null; yearLabel: string | null; featureServerUrl: string | null }[]; fields: string[] }>(props.result);
     if (!r) return <Failed />;
     if (r.status !== "ok") return null;
-    return <SheetCard code={r.code} name={r.name} onOpen={onOpen} callKey={key("previewData", props as never)} preview={{ members: r.members, fields: r.fields }} />;
+    return <SheetCard code={r.code} name={r.name} onOpen={onOpen} callKey={key("previewData", props as never)} preview={{ members: r.members, fields: r.fields }} source={r.city ? "CITY" : "HUB"} />;
   } }, [onOpen]);
 
   useRenderTool({ name: "getNumber", parameters: z.object({ neighborhood: z.string() }), render: (props) => {
@@ -184,6 +217,18 @@ export function AskCards({ onOpen }: { onOpen?: (search: string) => void }) {
     if (!r) return <Failed />;
     if (r.status !== "ok") return null; // the model picks from the choices and calls again
     return <NumberCard r={r} onOpen={onOpen} callKey={key("getNumber", props as never)} />;
+  } }, [onOpen]);
+
+  useRenderTool({ name: "countRecords", parameters: z.object({ code: z.string() }), render: (props) => {
+    if (props.status !== "complete") return <Busy />;
+    const r = parse<CountResult>(props.result);
+    if (!r) return <Failed />;
+    if (r.status === "ok") return <CountCard r={r} onOpen={onOpen} />;
+    if (r.status === "outside-coverage") return <p className={styles.failed} data-card="count-outside">{outsideCoverage(r)} <OpenLink code={r.code} onOpen={onOpen} /></p>;
+    if (r.status === "unavailable") return <p className={styles.failed}>The City&apos;s data didn&apos;t respond. Try again shortly.</p>;
+    if (r.status === "not-live") return <p className={styles.failed}>{r.name} can&apos;t be counted live.{r.note ? ` ${r.note}` : ""} <OpenLink code={r.code} onOpen={onOpen} /></p>;
+    if (r.status === "busy") return <p className={styles.failed}>City counts are busy for your account; try again shortly.</p>;
+    return null; // choose / bad-column / bad-dates / not-found / not-city: the model asks or retries
   } }, [onOpen]);
 
   useRenderTool({ name: "readReport", parameters: z.object({ question: z.string() }), render: (props) => {

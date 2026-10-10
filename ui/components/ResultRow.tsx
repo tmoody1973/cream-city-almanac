@@ -4,6 +4,7 @@ import type { ResultRow as Row } from "@/convex/lib/types";
 import { placeSummary, shortDate, subline, yearShort } from "@/ui/lib/format";
 import { FamilyPreview } from "./FamilyPreview";
 import { PencilMark } from "./PencilMark";
+import { ProvenanceTag } from "./ProvenanceTag";
 import { Tick } from "./Tick";
 import styles from "./rundown.module.css";
 
@@ -59,7 +60,7 @@ export function ResultRow({
         {mode === "results" ? (
           <>
             <span className={styles.slug}>
-              <span className={styles.name}>{row.name}</span>
+              <span className={styles.name}>{row.name}{row.source === "city" && <> <ProvenanceTag source="CITY" /></>}{row.live && <span className={styles.live}>LIVE</span>}</span>
             </span>
             <span className={styles.right}>
               {place && <span className={styles.place}>{place}</span>}
@@ -72,6 +73,7 @@ export function ResultRow({
             <span className={styles.slug}>
               <span className={styles.name}>
                 {row.name}
+                {row.source === "city" && <> <ProvenanceTag source="CITY" /></>}{row.live && <span className={styles.live}>LIVE</span>}
                 {sub && <span className={styles.dash}> —</span>}
               </span>
               {sub && (

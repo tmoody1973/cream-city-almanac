@@ -29,6 +29,12 @@ export const ASK_QUESTIONS: AskQuestion[] = [
   // Story angles: grounded in the datasets' sheets (showDataset), naming the codes they draw on, no figures.
   { q: "Give me story angles about old housing and health in Milwaukee", tool: "showDataset", expect: { code: "H05" } },
   { q: "What stories could I do with the daily air quality data?", tool: "showDataset", expect: { code: "V02" } },
+  // City of Milwaukee (Phase 4): counts come from countRecords; a choose; a privacy refusal.
+  { q: "How many robberies were reported in police district 6 this year?", tool: "countRecords", expect: {} },
+  { q: "How many pothole requests did the City get each month this year?", tool: "countRecords", expect: {} },
+  { q: "Count car break-ins in Milwaukee last month", tool: "countRecords", expect: {} },
+  { q: "Is there City data on vacant buildings?", tool: "searchCatalog", expect: {} },
+  { q: "Who owns the property at 2263 N Lake Dr?", tool: ["searchCatalog", "showDataset"], expect: {} },
 ];
 
 // The guide's examples (/ask/guide) are graded too: any not already above joins the card.

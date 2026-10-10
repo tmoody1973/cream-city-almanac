@@ -24,6 +24,7 @@ const backend: AskBackend = {
   sheet: async (code) => run("catalog:familySheet", { code }),
   number: async (a) => run("ask:getNumber", a),
   report: async (a) => run("ask:readReport", a, true),
+  count: async (a) => run("city:countRecords", a, true),
 };
 const tools = Object.fromEntries(askTools(backend).map((t) => [t.name, tool({ description: t.description, inputSchema: t.parameters, execute: t.execute })]));
 

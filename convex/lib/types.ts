@@ -1,6 +1,10 @@
 export type HubKind = "dataset" | "document" | "app" | "page";
 export type Provenance = "HUB" | "DYCU" | "SOURCE_SITE" | "AI";
 
+export type Source = "city";
+
+export interface CityFile { name: string; format: string; url: string }
+
 export interface HubItem {
   hubId: string;
   kind: HubKind;
@@ -11,6 +15,13 @@ export interface HubItem {
   landingPage: string;
   featureServerUrl: string | null;
   downloads: Record<string, string>;
+  source?: Source; // absent: Data You Can Use
+  datastoreId?: string | null; // City: the CKAN resource that can be queried live
+  datastoreName?: string | null; // City: that resource's name, when the package has several live files
+  files?: CityFile[]; // City: every file in the package (downloads keeps only one per format)
+  created?: string;
+  groups?: string[];
+  organization?: string; // City: the publishing department
 }
 
 export interface ParsedTitle {
@@ -34,6 +45,10 @@ export interface Member {
   downloads: Record<string, string>;
   description: string;
   keywords: string[];
+  source?: Source; // absent: Data You Can Use
+  datastoreId?: string | null; // City: the CKAN resource that can be queried live
+  datastoreName?: string | null; // City: that resource's name, when the package has several live files
+  files?: CityFile[]; // City: every file in the package
 }
 
 export interface Family {
@@ -47,6 +62,8 @@ export interface Family {
   latestModified: string;
   baseSearchText: string;
   members: Member[];
+  source?: Source;
+  live?: boolean;
 }
 
 export interface FamilyInput extends Family {
@@ -115,6 +132,8 @@ export interface ResultRow {
   years: number[];
   latestModified: string;
   snippet: Snippet | null;
+  source: "city" | null;
+  live: boolean;
 }
 
 export interface SearchResponse {
