@@ -19,3 +19,9 @@ Dated entries, written by Tarik. Each answers three things: what did we expect, 
 2. We expected a crime map to be the first neighborhood feature. What happened: a count by boundary came first, because a count is something a reporter can cite and a map is not. What do we now believe?
 3. We expected all 28 DYCU neighborhood definitions to parse from one sentence form. What happened: 25 of 28 parsed at first; decimal tracts (3.03), one sentence without the word "neighborhood", and three renamed neighborhoods (Layton Boulevard, Westside, Little Menomonee River) needed fixes; the final count is 27 distinct, because two spreadsheet spellings are one place. What do we now believe?
 -->
+
+<!-- Suggested entries (for Tarik to write in his own words), 2026-10-10, the map. See decision 025.
+1. We expected a "hide under 5" rule to be enough to keep a crime map safe. What happened: real Harambee counts showed the busiest robbery square held 4, so the rule would have hidden every one. What do we now believe?
+2. We expected the City to offset crime points so they don't mark exact homes. What happened: NIBRS publishes exact street addresses and precise coordinates (the "not shown at exact location" note belongs to the retired WIBR Monthly dataset). What do we now believe?
+3. We expected a map legend to be a small detail. What happened: the first one wasn't readable, and it took three tries (patterns instead of faint shades, body-size words in full ink, a written summary) before it was. What do we now believe?
+-->
