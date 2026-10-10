@@ -6,7 +6,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import type { MapData } from "@/convex/lib/cityMap";
-import { fetchLayer, labelFields } from "@/ui/lib/arcgisLayer";
+import { escapeHtml, fetchLayer, labelFields } from "@/ui/lib/arcgisLayer";
 import { cellsToGeoJSON, summarySentence } from "@/ui/lib/mapCells";
 import { useNight } from "@/ui/lib/useNight";
 import styles from "./map.module.css";
@@ -16,8 +16,6 @@ const MILWAUKEE: [[number, number], [number, number]] = [[-88.07, 42.92], [-87.8
 const INK = { day: "#111111", night: "#ecebe6" };
 const PENCIL = { day: "#d7261e", night: "#ff6b5e" };
 const LAYER_IDS = ["layer-fill", "layer-line", "layer-dot"];
-// Field names and values come from the City: escape them before they go into popup HTML.
-const escapeHtml = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
 // Hatching drawn in the edition's ink: 1–4 diagonal, 5–19 crossed. Patterns read without relying on faint shades.
 function pattern(color: string, crossed: boolean, size: number): ImageData {
@@ -99,15 +97,25 @@ export default function CityMap({ cells = null, count = 0, boundary = null, laye
     if (!m) return;
     let cancelled = false;
     let timer: number | undefined;
+    let inFlight: AbortController | undefined; // only the newest view's request may draw; older ones are cancelled
+    let popup: Popup | undefined;
     const load = async () => {
+      inFlight?.abort();
+      const ctl = new AbortController();
+      inFlight = ctl;
       if (!layer) {
         for (const id of LAYER_IDS) if (m.getLayer(id)) m.removeLayer(id);
         if (m.getSource("layer")) m.removeSource("layer");
         setLayerNote(null);
         return;
       }
-      const r = await fetchLayer(layer.url, m.getBounds().toArray() as [[number, number], [number, number]]);
-      if (cancelled) return;
+      let r: Awaited<ReturnType<typeof fetchLayer>>;
+      try {
+        r = await fetchLayer(layer.url, m.getBounds().toArray() as [[number, number], [number, number]], ctl.signal);
+      } catch {
+        return; // cancelled by a newer view or by cleanup
+      }
+      if (cancelled || ctl.signal.aborted) return;
       setLayerNote(r.status === "ok" ? null : r.status === "too-many" ? `Zoom in to see ${layer.name}.` : "This City map layer isn't responding.");
       const data = r.status === "ok" ? r.data : { type: "FeatureCollection" as const, features: [] };
       const src = m.getSource("layer") as GeoJSONSource | undefined;
@@ -126,13 +134,20 @@ export default function CityMap({ cells = null, count = 0, boundary = null, laye
     // registered across a style swap, so it works again once the layers are re-added.
     const onClick = (e: { features?: { properties?: Record<string, unknown> | null }[]; lngLat: { lng: number; lat: number } }) => {
       const html = labelFields(e.features?.[0]?.properties ?? {}).map(([k, v]) => `<b>${escapeHtml(k)}</b> ${escapeHtml(v)}`).join("<br>");
-      if (html) new Popup({ closeButton: true }).setLngLat(e.lngLat).setHTML(html).addTo(m);
+      if (!html) return;
+      popup?.remove();
+      popup = new Popup({ closeButton: true }).setLngLat(e.lngLat).setHTML(html).addTo(m);
     };
     m.on("click", LAYER_IDS, onClick);
     // Registered after the draw effect's listener, so on a style swap our layers go on after the cells and boundary.
     const ready = () => { if (!cancelled) load(); };
     if (loaded.current && styleEdition.current === edition) load(); else m.once("style.load", ready);
-    return () => { cancelled = true; window.clearTimeout(timer); m.off("moveend", onMove); m.off("click", LAYER_IDS, onClick); m.off("style.load", ready); };
+    return () => {
+      cancelled = true; window.clearTimeout(timer); inFlight?.abort(); popup?.remove();
+      m.off("moveend", onMove); m.off("click", LAYER_IDS, onClick); m.off("style.load", ready);
+      // The old layer's shapes and label must not sit under the next layer's note (skipped when the map is going away).
+      if (map.current === m && loaded.current) (m.getSource("layer") as GeoJSONSource | undefined)?.setData({ type: "FeatureCollection", features: [] });
+    };
   }, [layer, edition]);
 
   return (

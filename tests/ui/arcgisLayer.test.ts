@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fetchLayer, labelFields, layerQueryUrl } from "../../ui/lib/arcgisLayer";
+import { escapeHtml, fetchLayer, labelFields, layerQueryUrl } from "../../ui/lib/arcgisLayer";
 
 afterEach(() => vi.unstubAllGlobals());
 const L = "https://milwaukeemaps.milwaukee.gov/arcgis/rest/services/planning/zoning/MapServer/0";
@@ -25,5 +25,24 @@ describe("City map layers in the browser", () => {
     expect(await fetchLayer(L, view)).toEqual({ status: "too-many" });
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ error: { code: 400 } }))));
     expect(await fetchLayer(L, view)).toEqual({ status: "down" });
+  });
+  it("passes the abort signal to fetch, and a cancelled request is not reported as the layer being down", async () => {
+    const abortable = vi.fn((_u: string, init?: RequestInit) => new Promise<Response>((_res, rej) => {
+      const stop = () => rej(new DOMException("aborted", "AbortError"));
+      if (init?.signal?.aborted) stop(); else init?.signal?.addEventListener("abort", stop);
+    }));
+    vi.stubGlobal("fetch", abortable);
+    const mid = new AbortController();
+    const pending = fetchLayer(L, view, mid.signal);
+    expect(abortable.mock.calls[0][1]?.signal).toBe(mid.signal);
+    mid.abort();
+    await expect(pending).rejects.toMatchObject({ name: "AbortError" });
+    const already = new AbortController();
+    already.abort();
+    await expect(fetchLayer(L, view, already.signal)).rejects.toMatchObject({ name: "AbortError" });
+  });
+  it("escapes City text before it goes into popup HTML", () => {
+    expect(escapeHtml(`<img src=x onerror=alert(1)>`)).toBe("&lt;img src=x onerror=alert(1)&gt;");
+    expect(escapeHtml(`a & "b" 'c'`)).toBe("a &amp; &quot;b&quot; &#39;c&#39;");
   });
 });

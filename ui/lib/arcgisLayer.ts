@@ -14,15 +14,20 @@ export function layerQueryUrl(layerUrl: string, [[w, s], [e, n]]: View): string 
 export const labelFields = (props: Record<string, unknown>): [string, string][] =>
   Object.entries(props).filter(([k, v]) => !SYSTEM.test(k) && v !== null && v !== "").slice(0, 6).map(([k, v]) => [k, String(v)]);
 
-export async function fetchLayer(url: string, view: View): Promise<{ status: "ok"; data: GeoJSON.FeatureCollection } | { status: "too-many" } | { status: "down" }> {
+// City text goes into popup HTML: escape it.
+export const escapeHtml = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+
+// A request cancelled through `signal` rejects with its AbortError, never "down": the caller dropped it on purpose.
+export async function fetchLayer(url: string, view: View, signal?: AbortSignal): Promise<{ status: "ok"; data: GeoJSON.FeatureCollection } | { status: "too-many" } | { status: "down" }> {
   try {
-    const res = await fetch(layerQueryUrl(url, view));
+    const res = await fetch(layerQueryUrl(url, view), { signal });
     if (!res.ok) return { status: "down" };
     const body = (await res.json()) as GeoJSON.FeatureCollection & { exceededTransferLimit?: boolean; error?: unknown };
     if (body.error || !Array.isArray(body.features)) return { status: "down" };
     if (body.exceededTransferLimit || body.features.length > DRAW_LIMIT) return { status: "too-many" };
     return { status: "ok", data: { type: "FeatureCollection", features: body.features } };
-  } catch {
+  } catch (err) {
+    if (signal?.aborted) throw err;
     return { status: "down" };
   }
 }
