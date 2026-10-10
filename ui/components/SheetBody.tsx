@@ -15,6 +15,24 @@ const breakable = (field: string) => field.split("_").flatMap((part, i, all) => 
 
 export type SheetData = NonNullable<FunctionReturnType<typeof api.catalog.familySheet>>;
 const DOWNLOAD_ORDER = ["CSV", "GeoJSON", "XLSX", "KML", "ZIP", "App"];
+// A City package holds one file or 144 (an election's ward files); past a handful they fold behind a native toggle.
+const INLINE_FILES = 6;
+const MONTH_YEAR = new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
+
+function CityFiles({ files }: { files: SheetData["members"][number]["files"] }) {
+  const links = files.map((f, i) => {
+    const format = /^esri/i.test(f.format) ? "map layer" : f.format.toUpperCase();
+    const label = f.name.toUpperCase() === format.toUpperCase() ? format : `${f.name} · ${format}`;
+    return <a key={i} className={styles.dl} href={f.url}>{label}</a>;
+  });
+  if (files.length <= INLINE_FILES) return <>{links}</>;
+  return (
+    <details className={styles.files}>
+      <summary className={styles.dl}>{files.length} files</summary>
+      <div className={styles.fileList}>{links}</div>
+    </details>
+  );
+}
 
 export function SheetBody({ sheet, headingId, focus }: { sheet: SheetData; headingId?: string; focus?: PortraitFocus | null }) {
   const { family, card, members, grid, sources, fileLabel } = sheet;
@@ -44,6 +62,14 @@ export function SheetBody({ sheet, headingId, focus }: { sheet: SheetData; headi
         </section>
       ) : (
         <>
+          {sheet.city?.replacedBy && latest && (
+            <section className={styles.section}>
+              <p data-replaced-by>
+                The City hasn&apos;t updated this since {MONTH_YEAR.format(new Date(latest.modified))}. For newer records, see{" "}
+                <Link href={`/d/${sheet.city.replacedBy.code}`}>{sheet.city.replacedBy.code} {sheet.city.replacedBy.name}</Link>.
+              </p>
+            </section>
+          )}
           <div className={styles.lead}>
             <div className={styles.section}>
               <h3 className={`${styles.heading} ${styles.laptopOnly}`}>PLACE BY YEAR</h3>
@@ -151,7 +177,7 @@ export function SheetBody({ sheet, headingId, focus }: { sheet: SheetData; headi
                 <li key={m.hubId}>
                   <a href={m.landingPage}>{[m.place, m.yearLabel ?? yearSpan(m.years)].filter(Boolean).join(" · ") || m.title}</a>
                   <span className={styles.updated}>updated {shortDate(m.modified)}</span>
-                  {DOWNLOAD_ORDER.filter((f) => m.downloads[f]).map((f) => (
+                  {m.files.length > 0 ? <CityFiles files={m.files} /> : DOWNLOAD_ORDER.filter((f) => m.downloads[f]).map((f) => (
                     <a key={f} className={styles.dl} href={m.downloads[f]}>{f === "App" ? "Open app" : f}</a>
                   ))}
                   {m.fileUrl && fileLabel && <a className={styles.dl} href={m.fileUrl}>{fileLabel}</a>}

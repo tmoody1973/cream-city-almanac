@@ -17,6 +17,15 @@ test("a City sheet shows live rows and the private-names note where it applies",
   await expect(page.locator("[data-city-preview] tbody tr").first()).toBeVisible({ timeout: 20_000 });
 });
 
+test("a City sheet lists every file, and a replaced dataset points to its replacement", async ({ page }) => {
+  await page.goto("/?q=" + encodeURIComponent("WIBR crime monthly"));
+  const code = await page.locator("li[data-code]").filter({ hasText: /WIBR Crime \(Monthly\)/ }).first().getAttribute("data-code");
+  await page.goto(`/d/${code}`);
+  await page.getByText(/^\d+ files$/).click();
+  for (const layer of ["Homicides", "Arson", "Assault"]) await expect(page.getByRole("link", { name: `${layer} · map layer` })).toBeVisible();
+  await expect(page.locator("[data-replaced-by]").getByRole("link", { name: /NIBRS Crime Data/ })).toBeVisible();
+});
+
 for (const scheme of ["light", "dark"] as const)
   test(`a City sheet has no serious accessibility violations (${scheme})`, async ({ page }) => {
     await page.emulateMedia({ colorScheme: scheme });

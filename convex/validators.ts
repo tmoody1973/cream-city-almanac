@@ -30,6 +30,7 @@ export const vMember = v.object({
   source: v.optional(v.literal("city")),
   datastoreId: v.optional(v.union(v.string(), v.null())),
   datastoreName: v.optional(v.union(v.string(), v.null())),
+  files: v.optional(v.array(v.object({ name: v.string(), format: v.string(), url: v.string() }))),
 });
 
 export const vFamilyInput = v.object({

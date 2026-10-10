@@ -34,6 +34,7 @@ export function parseCkan(packages: CkanPackage[]): HubItem[] {
     landingPage: `https://data.milwaukee.gov/dataset/${p.name}`,
     featureServerUrl: null,
     downloads: Object.fromEntries(p.resources.filter((r) => r.url && r.format).map((r) => [r.format!.toUpperCase(), r.url!])),
+    files: p.resources.filter((r) => r.url && r.format).map((r) => ({ name: r.name?.trim() || r.format!, format: r.format!, url: r.url! })),
     source: "city",
     datastoreId: live.id,
     datastoreName: live.name,

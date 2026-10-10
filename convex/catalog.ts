@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
 import { query, type QueryCtx } from "./_generated/server";
 import { pdfUrl } from "./lib/arcgis";
+import { REPLACED_BY } from "./lib/cityFamilies";
 import { isPdfFamily, isSpreadsheetFamily } from "./lib/families";
 import { placeYearGrid } from "./lib/grid";
 import { matchSources } from "./lib/sources";
@@ -111,12 +112,15 @@ export const portraitTables = query({
 
 async function cityInfo(ctx: QueryCtx, familyKey: string) {
   const p = await ctx.db.query("cityProfiles").withIndex("by_family", (q) => q.eq("familyKey", familyKey)).first();
+  const next = REPLACED_BY[familyKey];
+  const replacement = next ? await ctx.db.query("families").withIndex("by_key", (q) => q.eq("key", next)).first() : null;
   return {
     columns: p?.columns.map((c) => c.name) ?? [],
     namesPeople: p?.namesPeople ?? false,
     coverage: { min: p?.minDate ?? null, max: p?.maxDate ?? null },
     datastoreId: p && p.rowCount > 0 ? p.resourceId : null,
     dateColumn: p?.dateColumn ?? null,
+    replacedBy: replacement ? { code: replacement.code, name: replacement.name } : null,
   };
 }
 
@@ -148,6 +152,7 @@ export const familySheet = query({
         featureServerUrl: m.featureServerUrl,
         datastoreId: m.datastoreId ?? null,
         downloads: m.downloads,
+        files: m.files ?? [],
         fileUrl: m.kind === "document" ? pdfUrl(m.hubId) : null,
       })),
       city: family.source === "city" ? await cityInfo(ctx, family.key) : null,

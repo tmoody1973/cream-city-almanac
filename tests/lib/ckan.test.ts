@@ -23,6 +23,15 @@ describe("parseCkan", () => {
     expect(current).toMatchObject({ datastoreId: "r-cur", datastoreName: "Crime (Current)" });
     expect(items[0].datastoreName).toBeNull();
   });
+  it("keeps every file with its name, even several of one format (WIBR's ten map layers)", () => {
+    const layer = (n: number, name: string) => ({ id: `l${n}`, name, format: "Esri REST", url: `https://maps.example/MapServer/${n}`, datastore_active: false });
+    const note = { id: "note", name: "UPDATE 3/2025 - Shootings", format: "link", url: "" };
+    const [wibr] = parseCkan([{ ...cityPackages()[0], resources: [layer(0, "Homicides"), layer(1, " Arson "), note] }] as never);
+    expect(wibr.files).toEqual([
+      { name: "Homicides", format: "Esri REST", url: "https://maps.example/MapServer/0" },
+      { name: "Arson", format: "Esri REST", url: "https://maps.example/MapServer/1" },
+    ]);
+  });
   it("leaves datastoreId null when no resource is live", () => {
     expect(items[2].datastoreId).toBeNull();
   });

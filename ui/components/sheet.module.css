@@ -23,6 +23,9 @@
 .versions li { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; padding: 10px 0; border-top: var(--hair); }
 .updated { color: var(--muted); font-size: var(--fs-small); }
 .dl { font-family: var(--font-caps); font-weight: 700; font-size: var(--fs-label); text-decoration: none; }
+.files { flex-basis: 100%; }
+.files summary { cursor: pointer; }
+.fileList { display: flex; flex-wrap: wrap; gap: 6px 14px; padding-top: 8px; }
 .downloadBar { position: sticky; bottom: 0; display: flex; gap: 12px; padding: 12px 0; border-top: var(--rule); background: var(--paper); }
 .button { display: inline-flex; align-items: center; min-height: 44px; padding: 0 clamp(14px, 3vw, 28px); border: var(--rule); font-family: var(--font-caps); font-weight: 700; font-size: var(--fs-label); text-decoration: none; }
 @media (min-width: 900px) { .downloadBar { position: static; } }
