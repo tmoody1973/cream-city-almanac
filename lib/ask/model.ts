@@ -79,15 +79,20 @@ export function fakeAskModel(): LanguageModel {
         const stream = [call("countRecords", { code, filters: [{ column: "Offense_All", values: ["All Other Larceny"] }], groupBy: "month" }), finish("tool-calls")];
         return { stream: simulateReadableStream({ chunks: [{ type: "stream-start" as const, warnings: [] }, ...stream] }) };
       }
+      // Like the real model on the live site: a broad count in one step, then the one that was asked in the next (the
+      // first must fold away even though it arrived in an earlier message).
+      const counted = answered && last?.role === "tool"
+        ? (last.content as { type: string; toolName?: string; input?: unknown }[]).find((p) => p.type === "tool-result" && p.toolName === "countRecords")
+        : undefined;
       if (question.includes("robberies") && searched?.output) {
         const v = searched.output.type === "json" ? searched.output.value : JSON.parse(String(searched.output.value));
         const code = (v as { rows?: { code: string }[] }).rows?.[0]?.code ?? "P01";
-        // Like the real model on the live site: a broad count first, then the one that was asked (the first folds away).
-        const stream = [
-          call("countRecords", { code, neighborhood: "Harambee" }),
-          call("countRecords", { code, filters: [{ column: "Offense_All", values: ["robbery"] }], neighborhood: "Harambee" }),
-          finish("tool-calls"),
-        ];
+        const stream = [call("countRecords", { code, neighborhood: "Harambee" }), finish("tool-calls")];
+        return { stream: simulateReadableStream({ chunks: [{ type: "stream-start" as const, warnings: [] }, ...stream] }) };
+      }
+      if (question.includes("robberies") && counted && !JSON.stringify(prompt).includes("Offense_All")) {
+        const code = JSON.stringify(prompt).match(/"code":"(P\d+)"/)?.[1] ?? "P01";
+        const stream = [call("countRecords", { code, filters: [{ column: "Offense_All", values: ["robbery"] }], neighborhood: "Harambee" }), finish("tool-calls")];
         return { stream: simulateReadableStream({ chunks: [{ type: "stream-start" as const, warnings: [] }, ...stream] }) };
       }
       const chunks = answered
