@@ -764,7 +764,7 @@ git commit -m "feat: rankTracts — checks, live DYCU rows, ranked tracts with r
 - Test: `convex/tracts.test.ts`
 
 **Interfaces:**
-- Consumes: Task 3's `resolveTract`, `limitTracts`, `loadValues`, `toRow`, `header`, `store`, `familyForTracts`, `yearNumber`; Task 1's `changeOf`, `spearman`, `relationship`, `mismatch`, `isUnreliable`.
+- Consumes: Task 3's `spender(ctx) → spend` (one per action, passed to every `resolveTract(ctx, code, column, place, year, spend)`), `loadValues(ctx, resolved)` (cached), `toRow`, `header`, `store`, `familyForTracts`, `yearNumber` (as built after Task 3's fix round — read convex/tracts.ts); Task 1's `changeOf`, `spearman`, `relationship`, `mismatch`, `isUnreliable`.
 - Produces:
   - `type ChangeRow = { geoid: string; tract: string; neighborhood: string | null; from: TractRow; to: TractRow; change: number; direction: "increase" | "decrease" }`
   - `type ChangeDetail = { status: "ok"; tool: "change"; header: Header; from: string; to: string; increases: number; decreases: number; none: number; changes: ChangeRow[]; highlighted: string[]; key: string }`
@@ -864,12 +864,12 @@ export type RelateDetail = {
 export const compareYears = action({
   args: { code: v.string(), column: v.string(), place: vPlace, from: v.string(), to: v.string() },
   handler: async (ctx, args): Promise<ChangeDetail | Refusal> => {
-    if (!(await limitTracts(ctx))) return { status: "busy" };
-    const r1 = await resolveTract(ctx, args.code, args.column, args.place, args.from);
+    const spend = await spender(ctx); // sign-in check now; the budget is spent once, before the first DYCU fetch
+    const r1 = await resolveTract(ctx, args.code, args.column, args.place, args.from, spend);
     if ("status" in r1) return r1;
-    const r2 = await resolveTract(ctx, args.code, r1.column, args.place, args.to);
+    const r2 = await resolveTract(ctx, args.code, r1.column, args.place, args.to, spend);
     if ("status" in r2) return r2;
-    const [y1, y2] = await Promise.all([loadValues(r1), loadValues(r2)]);
+    const [y1, y2] = await Promise.all([loadValues(ctx, r1), loadValues(ctx, r2)]);
     if (!y1 || !y2) return { status: "unavailable" };
     const defs = await ctx.runQuery(internal.tracts.dycuDefs, {});
     const later = new Map(y2.values.map((x) => [x.geoid, x]));
@@ -902,9 +902,9 @@ const vPick = v.object({ code: v.string(), column: v.string() });
 export const relateTracts = action({
   args: { a: vPick, b: vPick, place: vPlace, year: v.string(), mode: v.union(v.literal("relate"), v.literal("mismatch")), aSide: v.optional(vSide), bSide: v.optional(vSide) },
   handler: async (ctx, args): Promise<Omit<RelateDetail, "points"> | Refusal> => {
-    if (!(await limitTracts(ctx))) return { status: "busy" };
-    const ra = await resolveTract(ctx, args.a.code, args.a.column, args.place, args.year);
-    const rb = await resolveTract(ctx, args.b.code, args.b.column, args.place, args.year);
+    const spend = await spender(ctx);
+    const ra = await resolveTract(ctx, args.a.code, args.a.column, args.place, args.year, spend);
+    const rb = await resolveTract(ctx, args.b.code, args.b.column, args.place, args.year, spend);
     if ("status" in ra || "status" in rb) {
       const year = [ra, rb].find((x): x is Extract<Refusal, { status: "choose-year" }> => "status" in x && x.status === "choose-year");
       if (year) {
@@ -915,7 +915,7 @@ export const relateTracts = action({
       }
       return ("status" in ra ? ra : rb) as Refusal;
     }
-    const [va, vb] = await Promise.all([loadValues(ra), loadValues(rb)]);
+    const [va, vb] = await Promise.all([loadValues(ctx, ra), loadValues(ctx, rb)]);
     if (!va || !vb) return { status: "unavailable" };
     const defs = await ctx.runQuery(internal.tracts.dycuDefs, {});
     const bBy = new Map(vb.values.map((x) => [x.geoid, x]));
@@ -1184,7 +1184,7 @@ function Fine({ heads, causal }: { heads: Header[]; causal?: boolean }) {
 `ChangeCard({ r })`: header line plus `<p className={styles.tractCounts}>{r.increases} clear increases · {r.decreases} clear decreases · {r.none} no clear change</p>`; a table (Tract, Neighborhood, `r.from`, `r.to`, Change) of `r.changes` with change cells like `+15 (clear increase)`; the map slot; `<Fine heads={[r.header]} />`.
 
 `RelateCard({ r })`:
-- `const detail = useQuery(api.tracts.tractDetail, { key: r.key })`; points = `detail?.status === "ok" ? detail.points : []`; expired → `<p>This answer has expired; ask again.</p>` in place of the scatter.
+- `const [now] = useState(() => Date.now()); const detail = useQuery(api.tracts.tractDetail, { key: r.key, now })`; points = `detail?.status === "ok" ? detail.points : []`; expired → `<p>This answer has expired; ask again.</p>` in place of the scatter.
 - Title `${r.a.name} vs. ${r.b.name}`; both headers' meta lines.
 - relate mode: `<p className={styles.tractVerdict}>{STRENGTH[r.strength]}</p>` and, unless too few, the sentence `{r.b.column} is {r.direction} where {r.a.column} is higher` plus `ρ = {r.rho.toFixed(2)}, {r.n} tracts`.
 - mismatch mode: if `r.fits.length === 0` → `No tract clearly fits; {r.close.length} come close.`
