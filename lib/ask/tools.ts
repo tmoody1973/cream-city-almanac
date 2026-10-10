@@ -51,7 +51,8 @@ export const changeParams = z.object({ code, column, place, from: year, to: year
 export const relateParams = z.object({
   a: z.object({ code, column }), b: z.object({ code, column }), place, year,
   mode: z.enum(["relate", "mismatch"]).describe("relate: do they go together; mismatch: tracts high on one but low on the other"),
-  aSide: z.enum(["high", "low"]).optional(), bSide: z.enum(["high", "low"]).optional(),
+  aSide: z.enum(["high", "low"]).optional().describe("Which side of dataset a the person asked about (high or low). Always set it in mismatch mode."),
+  bSide: z.enum(["high", "low"]).optional().describe("Which side of dataset b the person asked about (high or low). Always set it in mismatch mode."),
 });
 
 // The conversation carries a count without its map's cells: a citywide map is ~50 KB and the whole conversation is
@@ -121,19 +122,19 @@ export function askTools(b: AskBackend): AskTool[] {
     },
     {
       name: "rankTracts",
-      description: "Rank census tracts on one DYCU tract dataset's column (highest or lowest), with margins of error and DYCU neighborhood names. Returns rows for the card; never restate their numbers. If it returns choose-column or choose-year, pick from the list and call again.",
+      description: "Rank census tracts on one DYCU tract dataset's column (highest or lowest), with margins of error and DYCU neighborhood names. If it returns choose-column or choose-year, pick from the list and call again. Returns rows for the card; never restate their numbers. Read the dataset's column guide (showDataset) first and pick a rate over a count.",
       parameters: rankParams,
       execute: (a: z.infer<typeof rankParams>) => b.rank(a),
     },
     {
       name: "compareYears",
-      description: "Find census tracts whose value on one DYCU tract dataset's column changed clearly between two years (beyond both years' margins of error). Same place both years.",
+      description: "Find census tracts whose value on one DYCU tract dataset's column changed clearly between two years (beyond both years' margins of error). Same place both years. Returns rows for the card; never restate their numbers. Read the dataset's column guide (showDataset) first and pick a rate over a count.",
       parameters: changeParams,
       execute: (a: z.infer<typeof changeParams>) => b.change(a),
     },
     {
       name: "relateTracts",
-      description: "Line two DYCU tract datasets up tract by tract. mode relate: do they go together (a ranked comparison, worded on the card). mode mismatch: tracts high on one but low on the other (aSide, bSide), counted only when their ranges clear both cutoffs. If they share no place/year, it returns the shared ones.",
+      description: "Line two DYCU tract datasets up tract by tract. mode relate: do they go together (a ranked comparison, worded on the card). mode mismatch: tracts high on one but low on the other (aSide, bSide), counted only when their ranges clear both cutoffs. If they share no place/year, it returns the shared ones. In mismatch mode, put the dataset the person says is high as a with aSide \"high\", and the one that is low as b with bSide \"low\" (or whatever sides they named); always set both sides. Example: 'food insecurity low despite high poverty' → a = poverty (E02, a poverty rate), aSide high; b = food insecurity (F02), bSide low. Returns rows for the card; never restate their numbers. Read the dataset's column guide (showDataset) first and pick a rate over a count.",
       parameters: relateParams,
       execute: (a: z.infer<typeof relateParams>) => b.relate(a),
     },
