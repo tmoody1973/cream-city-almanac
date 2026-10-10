@@ -9,7 +9,7 @@ const menu = (page: Page) => page.getByRole("dialog", { name: "Menu" });
 test.describe("phone menu", () => {
   test.beforeEach(({}, info) => test.skip(info.project.name !== "phone", "phones only"));
 
-  for (const [path, current] of [["/", "SEARCH"], ["/start-here", "START HERE"], ["/how-it-works", "HOW IT WORKS"], ["/d/W01", null], ["/ask", "ASK"], ["/ask/guide", "HOW TO USE ASK"]] as const)
+  for (const [path, current] of [["/search", "SEARCH"], ["/start-here", "START HERE"], ["/how-it-works", "HOW IT WORKS"], ["/d/W01", null], ["/ask", "ASK"], ["/ask/guide", "HOW TO USE ASK"]] as const)
     test(`MENU on ${path} opens every page, marking the current one`, async ({ page }) => {
       await page.goto(path);
       await menuButton(page).click();
@@ -35,7 +35,7 @@ test.describe("phone menu", () => {
   });
 
   test("a link in the menu goes there and the menu is gone", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/search");
     await menuButton(page).click();
     await menu(page).getByRole("link", { name: "HOW IT WORKS", exact: true }).click();
     await expect(page).toHaveURL(/\/how-it-works/);
@@ -43,7 +43,7 @@ test.describe("phone menu", () => {
   });
 
   test("the home page keeps today's date under MENU", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/search");
     await expect(page.locator("header").getByText(/\b(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b.*\d{4}/)).toBeVisible();
   });
 

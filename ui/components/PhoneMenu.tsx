@@ -6,7 +6,7 @@ import { useRef, useState } from "react";
 import { ThemeSwitch } from "./ThemeSwitch";
 import styles from "./rundown.module.css";
 
-const PAGES: [href: string, label: string][] = [["/", "SEARCH"], ["/ask", "ASK"], ["/ask/guide", "HOW TO USE ASK"], ["/start-here", "START HERE"], ["/how-it-works", "HOW IT WORKS"]];
+const PAGES: [href: string, label: string][] = [["/search", "SEARCH"], ["/ask", "ASK"], ["/ask/guide", "HOW TO USE ASK"], ["/start-here", "START HERE"], ["/how-it-works", "HOW IT WORKS"]];
 
 // Phones and tablets: MENU in the masthead opens every page, the account, and the theme switch, on a native modal
 // <dialog> (focus moves in, Escape closes, the page behind is inert; focus goes back to MENU by hand, since Safari

@@ -210,7 +210,7 @@ export function SearchHome({ rundown, status }: { rundown: ResultRow[]; status: 
         <aside className={styles.askRail} aria-label="Ask">
           <a
             className={styles.askRailLabel}
-            href={`/${selectionSearch({ q: query, open, ask: !askOpen })}`}
+            href={`/search${selectionSearch({ q: query, open, ask: !askOpen })}`}
             aria-label={askOpen ? "Close Ask" : "Open Ask"}
             onClick={(e) => {
               e.preventDefault();

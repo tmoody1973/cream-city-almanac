@@ -40,7 +40,7 @@ test("each Try it link lands where its steps say", async ({ page }, info) => {
 });
 
 test("the masthead, home band and footer lead to Start here", async ({ page }, info) => {
-  await page.goto("/");
+  await page.goto("/search");
   await expect(page.getByRole("link", { name: /Start here/ }).first()).toHaveAttribute("href", "/start-here");
   await expect(page.locator("footer").getByRole("link", { name: "Start here" })).toHaveAttribute("href", "/start-here");
   if (info.project.name === "desktop") {
@@ -67,7 +67,7 @@ test("the resident's chart runs one mark per day, January to December", async ({
 });
 
 test("the reporter's search finds both datasets", async ({ page }) => {
-  await page.goto("/?q=" + encodeURIComponent("older housing and asthma rates"));
+  await page.goto("/search?q=" + encodeURIComponent("older housing and asthma rates"));
   // The home rundown's rows show before the search answers and are then replaced: keep reading the top five until the
   // results arrive (reading once raced the swap and saw an empty list on phones).
   const top5 = () => page.locator("li[data-code]").evaluateAll((els) => els.slice(0, 5).map((e) => e.getAttribute("data-code")));
@@ -83,7 +83,7 @@ test("the resident chart's labels stay readable", async ({ page }) => {
 
 test("a guide page's phone preview links out and to Start here", async ({ page }, info) => {
   test.skip(info.project.name !== "phone", "the inline preview is the phone's");
-  await page.goto("/?q=" + encodeURIComponent("getting started"));
+  await page.goto("/search?q=" + encodeURIComponent("getting started"));
   await page.locator("li[data-code='X02'] button").click();
   const preview = page.locator("li[data-code='X02'] [id^=preview-]");
   await expect(preview.getByText("A guide page on DYCU's Hub, not a dataset.")).toBeVisible();

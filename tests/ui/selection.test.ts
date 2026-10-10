@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LAPTOP_QUERY, parseSelection, selectionSearch } from "../../ui/lib/selection";
+import { isSearchAddress, LAPTOP_QUERY, parseSelection, SEARCH_PARAMS, selectionSearch } from "../../ui/lib/selection";
 
 describe("selection in the address", () => {
   it("reads the query and a normalized code", () => {
@@ -26,5 +26,19 @@ describe("the Ask column in the address", () => {
     expect(parseSelection("?q=rent").ask).toBeFalsy();
     expect(selectionSearch({ q: "rent", open: "N03", ask: true })).toBe("?ask=1&q=rent&open=N03");
     expect(selectionSearch({ q: "", open: null, ask: false })).toBe("");
+  });
+});
+
+describe("search addresses", () => {
+  it("lists exactly the parameters the search screen reads", () => {
+    expect([...SEARCH_PARAMS]).toEqual(["q", "open", "ask", "prompt", "row", "place", "year", "topic", "day", "month", "weekday"]);
+  });
+  it("sends any search parameter to /search and keeps other links on the landing page", () => {
+    expect(isSearchAddress({})).toBe(false);
+    expect(isSearchAddress({ q: "x" })).toBe(true);
+    expect(isSearchAddress({ open: "P14" })).toBe(true);
+    expect(isSearchAddress({ q: "" })).toBe(true);
+    expect(isSearchAddress({ utm_source: "linkedin" })).toBe(false);
+    expect(isSearchAddress({ utm_source: "x", ask: "1" })).toBe(true);
   });
 });

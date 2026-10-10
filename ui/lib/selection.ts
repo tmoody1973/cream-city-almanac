@@ -31,3 +31,10 @@ export function whereParams(search: string): string {
   const from = new URLSearchParams(search);
   return new URLSearchParams(WHERE_KEYS.flatMap((k) => (from.get(k) ? [[k, from.get(k)!]] : []))).toString();
 }
+
+// Every address parameter the search screen reads. A request to / with any of these is a search link from before the
+// landing page existed (or a share of one) and goes to /search unchanged; other parameters (campaign tags) stay home.
+export const SEARCH_PARAMS = ["q", "open", "ask", "prompt", "row", "place", "year", "topic", "day", "month", "weekday"] as const;
+
+export const isSearchAddress = (params: Record<string, string | string[] | undefined>) =>
+  SEARCH_PARAMS.some((k) => params[k] !== undefined);

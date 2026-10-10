@@ -5,7 +5,7 @@ const cityUp = (page: import("@playwright/test").Page) =>
   page.request.get("https://data.milwaukee.gov/api/3/action/status_show").then((r) => r.ok()).catch(() => false);
 
 test("City datasets appear in search with the CITY tag, live feeds marked LIVE", async ({ page }) => {
-  await page.goto("/?q=" + encodeURIComponent("crime incidents police"));
+  await page.goto("/search?q=" + encodeURIComponent("crime incidents police"));
   const row = page.locator("li[data-code]").filter({ hasText: /NIBRS Crime Data/ }).first();
   await expect(row).toBeVisible({ timeout: 20_000 });
   await expect(row.getByTitle("From the City of Milwaukee's open data")).toBeVisible();
@@ -13,7 +13,7 @@ test("City datasets appear in search with the CITY tag, live feeds marked LIVE",
 });
 
 test("a City sheet shows live rows and the private-names note where it applies", async ({ page }) => {
-  await page.goto("/?q=" + encodeURIComponent("master property file"));
+  await page.goto("/search?q=" + encodeURIComponent("master property file"));
   const code = await page.locator("li[data-code]").filter({ hasText: /Master Property/, hasNotText: /Visualizations/ }).first().getAttribute("data-code");
   await page.goto(`/d/${code}`);
   await expect(page.getByText("Names private individuals. Shown as the City publishes it.")).toBeVisible();
@@ -21,7 +21,7 @@ test("a City sheet shows live rows and the private-names note where it applies",
 });
 
 test("a City sheet lists every file, and a replaced dataset points to its replacement", async ({ page }) => {
-  await page.goto("/?q=" + encodeURIComponent("WIBR crime monthly"));
+  await page.goto("/search?q=" + encodeURIComponent("WIBR crime monthly"));
   const code = await page.locator("li[data-code]").filter({ hasText: /WIBR Crime \(Monthly\)/ }).first().getAttribute("data-code");
   await page.goto(`/d/${code}`);
   // On a laptop the sheet page hands over to the Rundown pane once the page hydrates; wait for it so the click isn't lost.
@@ -33,7 +33,7 @@ test("a City sheet lists every file, and a replaced dataset points to its replac
 
 test("a located City sheet maps its records and the filters go in the address", async ({ page }) => {
   test.skip(!(await cityUp(page)), "City API unreachable");
-  await page.goto("/?q=" + encodeURIComponent("crime incidents police"));
+  await page.goto("/search?q=" + encodeURIComponent("crime incidents police"));
   const code = await page.locator("li[data-code]").filter({ hasText: /NIBRS Crime Data/ }).first().getAttribute("data-code");
   await page.goto(`/d/${code}`);
   const where = page.locator("[data-sheet-where]");
@@ -46,7 +46,7 @@ test("a located City sheet maps its records and the filters go in the address", 
 });
 
 async function nibrsCode(page: import("@playwright/test").Page) {
-  await page.goto("/?q=" + encodeURIComponent("crime incidents police"));
+  await page.goto("/search?q=" + encodeURIComponent("crime incidents police"));
   return page.locator("li[data-code]").filter({ hasText: /NIBRS Crime Data/ }).first().getAttribute("data-code");
 }
 
@@ -91,7 +91,7 @@ test("a sheet address keeps its filters through the laptop redirect", async ({ p
   test.skip(!(await cityUp(page)), "City API unreachable");
   const code = await nibrsCode(page);
   await page.goto(`/d/${code}?type=120&area=Harambee`);
-  await expect(page).toHaveURL(/open=/);
+  await expect(page).toHaveURL(/\/search\?open=/);
   await expect(page).toHaveURL(/type=120/);
   await expect(page).toHaveURL(/area=Harambee/);
   await expect(page.locator("[data-sheet-where] [data-where-count]")).toContainText("In Harambee", { timeout: 30_000 });
@@ -101,7 +101,7 @@ for (const scheme of ["light", "dark"] as const)
   test(`a City sheet has no serious accessibility violations (${scheme})`, async ({ page }) => {
     test.skip(!(await cityUp(page)), "City API unreachable");
     await page.emulateMedia({ colorScheme: scheme });
-    await page.goto("/?q=" + encodeURIComponent("crime incidents police"));
+    await page.goto("/search?q=" + encodeURIComponent("crime incidents police"));
     const code = await page.locator("li[data-code]").filter({ hasText: /NIBRS Crime Data/ }).first().getAttribute("data-code");
     await page.goto(`/d/${code}`);
     // Wait for an answer (a figure, or a message other than "Loading map…"); map tiles never go network-idle.
@@ -136,11 +136,11 @@ test("switching to the night edition redraws the cells and boundary", async ({ p
 
 test("a City map-layer sheet draws its layer, and asks to zoom in on parcels", async ({ page }) => {
   test.skip(!(await page.request.get("https://milwaukeemaps.milwaukee.gov/arcgis/rest/services?f=json").then((r) => r.ok()).catch(() => false)), "City map server unreachable");
-  await page.goto("/?q=" + encodeURIComponent("zoning"));
+  await page.goto("/search?q=" + encodeURIComponent("zoning"));
   const zoning = await page.locator("li[data-code]").filter({ hasText: /^.*Zoning/ }).first().getAttribute("data-code");
   await page.goto(`/d/${zoning}`);
   await expect(page.locator("[data-sheet-layers] [data-map] canvas")).toHaveCount(1, { timeout: 30_000 });
-  await page.goto("/?q=" + encodeURIComponent("parcel polygons"));
+  await page.goto("/search?q=" + encodeURIComponent("parcel polygons"));
   const parcels = await page.locator("li[data-code]").filter({ hasText: /Parcel Polygons/ }).first().getAttribute("data-code");
   await page.goto(`/d/${parcels}`);
   await expect(page.locator("[data-sheet-layers] [data-map-message]")).toContainText("Zoom in to see", { timeout: 30_000 });

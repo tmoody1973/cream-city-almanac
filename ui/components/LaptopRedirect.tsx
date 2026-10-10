@@ -11,7 +11,7 @@ export function LaptopRedirect({ code }: { code: string }) {
     if (!window.matchMedia(LAPTOP_QUERY).matches) return;
     // Keep a neighborhood table choice (place, year, topic) and any WHERE filters from a phone link.
     const choice = [portraitParams(window.location.search), whereParams(window.location.search)].filter(Boolean).join("&");
-    router.replace(`/${selectionSearch({ q: "", open: code })}${choice ? `&${choice}` : ""}`);
+    router.replace(`/search${selectionSearch({ q: "", open: code })}${choice ? `&${choice}` : ""}`);
   }, [code, router]);
   return null;
 }

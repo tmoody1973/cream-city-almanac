@@ -1,7 +1,7 @@
 import { expect, test } from "./fixtures";
 
 const open = (page: import("@playwright/test").Page, project: string, query = "") =>
-  page.goto(project === "desktop" ? `/?open=N03${query ? `&${query}` : ""}` : `/d/N03${query ? `?${query}` : ""}`);
+  page.goto(project === "desktop" ? `/search?open=N03${query ? `&${query}` : ""}` : `/d/N03${query ? `?${query}` : ""}`);
 const section = (page: import("@playwright/test").Page) => page.getByRole("region", { name: "What's in each spreadsheet" });
 
 test("shows a neighborhood's table with margins of error, and puts it in the address", async ({ page }, info) => {
@@ -51,7 +51,7 @@ test("switching neighborhoods quickly shows only the last choice", async ({ page
 
 test("a neighborhood search opens that table", async ({ page }, info) => {
   test.skip(info.project.name !== "desktop", "laptop pane");
-  await page.goto("/?q=" + encodeURIComponent("Walker's Point race and ethnicity 2023"));
+  await page.goto("/search?q=" + encodeURIComponent("Walker's Point race and ethnicity 2023"));
   await page.locator("li[data-code='N03'] button").click();
   await expect(page).toHaveURL(/open=N03/);
   await expect(page).toHaveURL(/topic=race-and-ethnicity/);
@@ -73,7 +73,7 @@ test("on a phone, choosing a topic brings its table into view", async ({ page },
 
 test("a search result opens its table even when N03 is already in the pane", async ({ page }, info) => {
   test.skip(info.project.name !== "desktop", "laptop pane");
-  await page.goto("/?q=" + encodeURIComponent("Lincoln Park employment status by sex"));
+  await page.goto("/search?q=" + encodeURIComponent("Lincoln Park employment status by sex"));
   await expect(page.locator("li[data-code]").first()).toHaveAttribute("data-code", "N03");
   await page.locator("li[data-code='N03'] button").click();
   await expect(section(page).locator("caption")).toHaveText("Lincoln Park, 2021: Employment Status by Sex");
@@ -82,9 +82,9 @@ test("a search result opens its table even when N03 is already in the pane", asy
 test("a shared link keeps its table on the other kind of screen", async ({ page }, info) => {
   const choice = "place=walkers-point&year=2023&topic=rent-paid";
   // A phone link opened on a laptop, and a laptop link opened on a phone.
-  await page.goto(info.project.name === "desktop" ? `/d/N03?${choice}` : `/?open=N03&${choice}`);
+  await page.goto(info.project.name === "desktop" ? `/d/N03?${choice}` : `/search?open=N03&${choice}`);
   // A client-side redirect: under parallel runs the dev server can take longer than the default 5s to serve it.
-  await expect(page).toHaveURL(info.project.name === "desktop" ? /\/\?open=N03&place=walkers-point/ : /\/d\/N03\?place=walkers-point/, { timeout: 15_000 });
+  await expect(page).toHaveURL(info.project.name === "desktop" ? /\/search\?open=N03&place=walkers-point/ : /\/d\/N03\?place=walkers-point/, { timeout: 15_000 });
   await expect(section(page).locator("caption")).toHaveText(/Walker's Point, 2023: Rent Paid/i);
 });
 

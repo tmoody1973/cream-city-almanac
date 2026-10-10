@@ -9,7 +9,7 @@ export default function NotFound() {
       <Masthead side="RUNDOWN" showDate={false} />
       <main className={styles.section}>
         <p>No dataset with that code. It may have left DYCU&apos;s Hub.</p>
-        <Link href="/">
+        <Link href="/search">
           <Arrow direction="left" />
           Back to the rundown
         </Link>

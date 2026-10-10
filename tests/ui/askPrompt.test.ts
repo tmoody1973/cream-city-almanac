@@ -17,7 +17,7 @@ describe("Ask prompt in the address", () => {
     expect(withoutPrompt("https://x/ask?prompt=hi")).toBe("/ask");
   });
   it("carries the prompt through the laptop redirect", () => {
-    expect(laptopAskHref("?prompt=a%26b")).toBe("/?ask=1&prompt=a%26b");
-    expect(laptopAskHref("")).toBe("/?ask=1");
+    expect(laptopAskHref("?prompt=a%26b")).toBe("/search?ask=1&prompt=a%26b");
+    expect(laptopAskHref("")).toBe("/search?ask=1");
   });
 });

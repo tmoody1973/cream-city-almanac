@@ -60,7 +60,7 @@ test("Clerk's account window follows dark mode", async ({ page }) => {
   await expect(root.locator(".cl-scrollBox").first()).toHaveCSS("background-color", DARK_PAPER);
 });
 
-const PAGES = ["/", "/?q=asthma", "/d/W01", "/d/N03", "/how-it-works", "/start-here", "/?q=asthma&open=W01"];
+const PAGES = ["/search", "/search?q=asthma", "/d/W01", "/d/N03", "/how-it-works", "/start-here", "/search?q=asthma&open=W01"];
 for (const path of PAGES) {
   test(`no serious accessibility violations in dark mode on ${path}`, async ({ page }) => {
     await page.emulateMedia({ colorScheme: "dark" });
