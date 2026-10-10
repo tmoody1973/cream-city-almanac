@@ -291,7 +291,7 @@ git commit -m "feat: tract statistics — ranges, reliability, ties, change test
 - Consumes: `TractValue`, `RangeKind` (Task 1); `fetchWithTimeout(url, init, ms)` from `convex/lib/http.ts`; `Column` from `convex/lib/types.ts` (`{ name; alias; type }`, type without the `esriFieldType` prefix).
 - Produces:
   - `type RangeCols = { kind: "moe90"; moe: string } | { kind: "ci95"; lo: string; hi: string } | null`
-  - `rangeColumns(column: string, fieldNames: string[]): RangeCols`
+  - `rangeColumns(column: string, fieldNames: string[], glossary?: { field: string; meaning: string }[]): RangeCols` (exact `<col>_moe`; else DYCU's "Margin of Error - X" ↔ "Estimate - X" definitions; else Low_Confidence(_Limit)/High_Confidence(_Limit) — controller ruling after Task 2 review)
   - `columnKind(name: string, meaning: string): "rate" | "count" | "value"`
   - `isNumericField(c: Column): boolean`
   - `normalizeGeoid(x: unknown): string | null`
@@ -678,7 +678,7 @@ export async function resolveTract(ctx: ActionCtx, code: string, column: string,
   const numeric = fields.filter((f) => isNumericField(f) && !/_moe$|confidence_limit$/i.test(f.name));
   const col = numeric.find((f) => f.name.toLowerCase() === column.trim().toLowerCase());
   if (!col) return { status: "choose-column", columns: numeric.map((f) => ({ column: f.name, meaning: meaningOf(f.name) })) };
-  return { family: { code: fam.code, name: fam.name, caveats: fam.caveats }, url: member.url, column: col.name, meaning: meaningOf(col.name), range: rangeColumns(col.name, fields.map((f) => f.name)) };
+  return { family: { code: fam.code, name: fam.name, caveats: fam.caveats }, url: member.url, column: col.name, meaning: meaningOf(col.name), range: rangeColumns(col.name, fields.map((f) => f.name), fam.glossary) };
 }
 
 export async function limitTracts(ctx: ActionCtx) {
