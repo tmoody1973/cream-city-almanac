@@ -47,6 +47,7 @@ export type CountResult =
   | { status: "choose"; code: string; name: string; column: string; asked: string; choices: string[] }
   | { status: "bad-column"; code: string; name: string; column: string; columns: string[] }
   | { status: "bad-dates"; code: string; name: string; from: string; to: string }
+  | { status: "no-locations"; code: string; name: string }
   | { status: "not-found"; code: string }
   | { status: "not-city"; code: string; name: string }
   | { status: "not-live"; code: string; name: string; note?: string }

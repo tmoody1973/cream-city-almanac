@@ -172,3 +172,26 @@ describe("count query builder", () => {
     }
   });
 });
+
+describe("neighborhood rectangle", () => {
+  const area = { minLat: 43.06, maxLat: 43.08, minLon: -87.92, maxLon: -87.9 };
+  const located = { ...P, latColumn: "Address_Latitude", lonColumn: "Address_Longitude" };
+  const guard = (c: string) => `(CASE WHEN "${c}" ~ '^-?[0-9]+(\\.[0-9]+)?$' THEN "${c}"::float END)`;
+  it("adds a guarded rectangle and selects only coordinates and the group", () => {
+    const b = buildCount(located, { from: "2026-01-01", groupBy: "month" }, "2026-10-10", area);
+    if (!b.ok) throw new Error(JSON.stringify(b));
+    expect(b.points!.sql).toContain(`${guard("Address_Latitude")} BETWEEN 43.06 AND 43.08 AND ${guard("Address_Longitude")} BETWEEN -87.92 AND -87.9`);
+    expect(b.points!.sql).toMatch(/^SELECT \(CASE WHEN .* AS lat, \(CASE WHEN .* AS lon, left\("Incident_Date", 7\) AS g FROM /);
+    expect(b.points!.sql).toMatch(/ LIMIT 32000$/);
+    expect(b.points!.missingSql).toContain(`("Address_Latitude" IS NULL OR "Address_Longitude" IS NULL OR NOT ("Address_Latitude" ~ '^-?[0-9]+(\\.[0-9]+)?$' AND "Address_Longitude" ~ '^-?[0-9]+(\\.[0-9]+)?$'))`);
+    expect(b.points!.sql).not.toContain("Case_Number");
+  });
+  it("has no points query without an area, and refuses an area for a dataset without locations", () => {
+    const b = buildCount(located, {}, "2026-10-10");
+    expect(b.ok && b.points).toBeNull();
+    expect(buildCount(P, {}, "2026-10-10", area)).toEqual({ ok: false, status: "no-locations" });
+  });
+  it("refuses a rectangle that isn't four finite numbers", () => {
+    expect(() => buildCount(located, {}, "2026-10-10", { ...area, minLat: Number.NaN })).toThrow();
+  });
+});

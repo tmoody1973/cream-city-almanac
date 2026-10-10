@@ -1,10 +1,13 @@
 import type { CityProfile } from "./cityProfile";
 import { quoteId } from "./cityProfile";
 import { isOffenseColumn, offenseCodes, offenseName } from "./nibrs";
+import type { Bbox } from "./geo";
+import { POINTS_CAP } from "./cityPoints";
 
 // Turns Ask's checked arguments into the City's PostgreSQL. Only profiled columns and profiled values get in;
 // identifiers are double-quoted, literals single-quoted with quotes doubled. Constructs are limited to what the City's
-// datastore allows (verified by scripts/city-sql-smoke.ts): no NULLIF, no :: casts, no substr. City dates are ISO text
+// datastore allows (verified by scripts/city-sql-smoke.ts): no NULLIF, no substr, and `::float` only inside a numeric
+// CASE guard. City dates are ISO text
 // ("2026-06-16 14:51:00"), which sorts correctly as text, so the period filter is a plain text comparison.
 export const MAX_GROUPS = 24;
 const RID = /^[0-9a-f-]{36}$/;
@@ -12,11 +15,15 @@ const RID = /^[0-9a-f-]{36}$/;
 const MAX_OFFENSE_CODES = 5;
 // Only a plain code ("120", "23H") goes inside a LIKE pattern, so no value can carry a wildcard or a quote into it.
 const LIKE_SAFE = /^[0-9A-Z]{2,4}$/;
+export const NUMERIC = "^-?[0-9]+(\\.[0-9]+)?$";
+const num = (c: string) => `(CASE WHEN ${quoteId(c)} ~ ${lit(NUMERIC)} THEN ${quoteId(c)}::float END)`;
+const coord = (n: number) => { if (!Number.isFinite(n)) throw new Error("Neighborhood rectangle is not numeric"); return String(n); };
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 export interface CountArgs { from?: string; to?: string; filters?: { column: string; values: string[] }[]; groupBy?: string }
 export type Built =
-  | { ok: true; totalSql: string; groupSql: string | null; futureSql: string | null; period: string; filterLabels: string[]; groupLabel: string | null; overlap: boolean; dateColumn: string | null; coverage: string | null }
+  | { ok: true; totalSql: string; groupSql: string | null; futureSql: string | null; period: string; filterLabels: string[]; groupLabel: string | null; overlap: boolean; dateColumn: string | null; coverage: string | null; points: { sql: string; missingSql: string } | null }
+  | { ok: false; status: "no-locations" }
   | { ok: false; status: "outside-coverage"; coverage: string }
   | { ok: false; status: "choose"; column: string; asked: string; choices: string[] }
   | { ok: false; status: "bad-column"; column: string; columns: string[] }
@@ -47,11 +54,12 @@ export const groupLabelFor = (column: string, value: string) => (isOffenseColumn
 const filterLabel = (column: string, value: string, districts: string[]) =>
   isOffenseColumn(column) ? offenseName(value) : districts.includes(column) ? `${column.replace(/_/g, " ").toLowerCase().replace(/^\w/, (c) => c.toUpperCase())} ${value}` : value;
 
-export function buildCount(p: CityProfile, a: CountArgs, today: string): Built {
+export function buildCount(p: CityProfile, a: CountArgs, today: string, area?: Bbox): Built {
   if (!RID.test(p.resourceId)) throw new Error("Not a CKAN resource id");
   const table = quoteId(p.resourceId);
   // A date that was given but isn't a real day is refused, never quietly replaced by the default window.
   if ((!absent(a.from) && !isDay(a.from!)) || (!absent(a.to) && !isDay(a.to!))) return { ok: false, status: "bad-dates", from: a.from ?? "", to: a.to ?? "" };
+  if (area && !(p.latColumn && p.lonColumn)) return { ok: false, status: "no-locations" };
   const menu = new Map(p.categories.map((c) => [c.column.toLowerCase(), c]));
   const where: string[] = [];
   const filterLabels: string[] = [];
@@ -134,5 +142,17 @@ export function buildCount(p: CityProfile, a: CountArgs, today: string): Built {
     groupLabel = cat.column;
     overlap = Boolean(cat.multi);
   }
-  return { ok: true, totalSql, groupSql, futureSql, period, filterLabels, groupLabel, overlap, dateColumn: p.dateColumn, coverage };
+  let points: { sql: string; missingSql: string } | null = null;
+  if (area && p.latColumn && p.lonColumn) {
+    const [lat, lon] = [p.latColumn, p.lonColumn];
+    const box = `${num(lat)} BETWEEN ${coord(area.minLat)} AND ${coord(area.maxLat)} AND ${num(lon)} BETWEEN ${coord(area.minLon)} AND ${coord(area.maxLon)}`;
+    const g = groupLabel === "month" || groupLabel === "year" ? `, left(${quoteId(p.dateColumn!)}, ${groupLabel === "month" ? 7 : 4}) AS g` : groupLabel ? `, ${quoteId(groupLabel)} AS g` : "";
+    const filtered = where.length ? `${where.join(" AND ")} AND ` : "";
+    const unplaced = `(${quoteId(lat)} IS NULL OR ${quoteId(lon)} IS NULL OR NOT (${quoteId(lat)} ~ ${lit(NUMERIC)} AND ${quoteId(lon)} ~ ${lit(NUMERIC)}))`;
+    points = {
+      sql: `SELECT ${num(lat)} AS lat, ${num(lon)} AS lon${g} FROM ${table} WHERE ${filtered}${box} LIMIT ${POINTS_CAP}`,
+      missingSql: `SELECT COUNT(*) AS n FROM ${table} WHERE ${filtered}${unplaced}`,
+    };
+  }
+  return { ok: true, totalSql, groupSql, futureSql, period, filterLabels, groupLabel, overlap, dateColumn: p.dateColumn, coverage, points };
 }

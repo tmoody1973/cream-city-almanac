@@ -39,6 +39,17 @@ const [all] = await datastoreSql<{ n: string }>(robbery.totalSql);
 const [only] = await datastoreSql<{ n: string }>(`SELECT COUNT(*) AS n FROM "${RID}" WHERE "Offense_All" IN ('120')`);
 console.log(`Robbery since 2024-01-01: ${all.n} incidents with 120 anywhere (robbery-only rows: ${only.n})`);
 
+// Neighborhood counts: the guarded rectangle with an offense and a date, and the no-location count.
+const located = { ...P, latColumn: "Address_Latitude", lonColumn: "Address_Longitude" };
+const area = { minLat: 43.05, maxLat: 43.08, minLon: -87.93, maxLon: -87.9 };
+for (const args of [{ from: "2026-01-01", filters: [{ column: "Offense_All", values: ["robbery"] }] }, { from: "2026-01-01", groupBy: "month" }, { from: "2026-01-01", groupBy: "Offense_All" }]) {
+  const b = buildCount(located, args, today, area);
+  if (!b.ok || !b.points) throw new Error(JSON.stringify(b));
+  const rows = await datastoreSql<Record<string, unknown>>(b.points.sql);
+  const [missing] = await datastoreSql<{ n: string }>(b.points.missingSql);
+  console.log("OK", rows.length, "points ·", missing.n, "unplaced ·", b.points.sql.slice(0, 90));
+}
+
 // The profile's queries, including the unnest form for ';'-separated columns.
 const fields = [{ id: "Incident_Date", type: "text" }, { id: "Police_District", type: "text" }, { id: "Offense_All", type: "text" }, { id: "Weapon_Used_All", type: "text" }];
 const q = profileSql(RID, planProfile(fields));
