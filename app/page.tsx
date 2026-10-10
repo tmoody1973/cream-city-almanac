@@ -1,4 +1,7 @@
+import { fetchQuery } from "convex/nextjs";
 import { redirect } from "next/navigation";
+import { api } from "@/convex/_generated/api";
+import { Landing } from "@/ui/components/Landing";
 import { isSearchAddress } from "@/ui/lib/selection";
 
 export const metadata = {
@@ -16,10 +19,6 @@ export default async function HomePage({ searchParams }: { searchParams: Params 
     for (const [k, v] of Object.entries(params)) for (const one of [v].flat()) if (one !== undefined) q.append(k, one);
     redirect(`/search?${q}`);
   }
-  return (
-    <main>
-      <h1>A guide to Milwaukee&apos;s public data.</h1>
-      <form action="/search" method="get"><label>Topic: <input name="q" placeholder="What are you looking into?" /></label></form>
-    </main>
-  );
+  const stats = await fetchQuery(api.catalog.landingStats, {});
+  return <Landing stats={stats} />;
 }

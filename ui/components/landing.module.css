@@ -1,0 +1,232 @@
+/* The landing page, layout A from the approved mockup, in the site's tokens. 2px rule opens a block, 1px hairline
+   divides; no cards, shadows, radii or red. Laptop is its own composition (three ruled columns, data beside Ask). */
+.page {
+  max-width: min(1280px, 100%);
+  min-height: 100vh;
+  margin: 0 auto;
+  padding-inline: var(--gutter);
+  display: flex;
+  flex-direction: column;
+}
+
+.main {
+  flex: 1;
+  padding-bottom: 32px;
+}
+
+/* The page has no name of its own to show beside the wordmark. */
+.side {
+  min-height: 0;
+}
+
+.headline {
+  font-family: var(--font-caps);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: clamp(36px, 6vw, 64px);
+  line-height: 0.95;
+  margin: 0 0 6px;
+  padding-top: 18px;
+}
+
+.tagline {
+  font-size: var(--fs-body);
+  margin: 0 0 18px;
+}
+
+.entry {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+  border: var(--hair);
+  padding: 10px 12px;
+  max-width: 760px;
+}
+
+.entryLabel {
+  font-family: var(--font-caps);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.entryInput {
+  flex: 1;
+  min-width: 12ch;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+}
+
+.entryInput::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+
+.button {
+  min-height: 44px;
+  padding: 0 18px;
+  border: var(--rule);
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-caps);
+  font-weight: 700;
+  font-size: var(--fs-label);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.heading {
+  font-family: var(--font-caps);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: clamp(22px, 1.8vw, 26px);
+  line-height: 1;
+  margin: 0 0 6px;
+}
+
+.three > section p,
+.pair > section > p,
+.block p {
+  margin: 0;
+}
+
+.three {
+  display: grid;
+  margin-top: 30px;
+  border-top: var(--rule);
+}
+
+.three > section {
+  padding: 14px 0;
+  border-top: var(--hair);
+}
+
+.three > section:first-child {
+  border-top: 0;
+}
+
+.pair {
+  display: grid;
+  gap: 28px;
+  margin-top: 30px;
+  border-top: var(--rule);
+  padding-top: 12px;
+}
+
+.block {
+  margin-top: 30px;
+  border-top: var(--rule);
+  padding-top: 12px;
+}
+
+.example {
+  font-size: var(--fs-small);
+  color: var(--muted);
+  border-top: var(--hair);
+  margin: 10px 0 0;
+  padding-top: 8px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+}
+
+.table th,
+.table td {
+  text-align: left;
+  padding: 10px 10px 10px 0;
+  border-bottom: var(--hair);
+  vertical-align: top;
+}
+
+.table thead th {
+  font-family: var(--font-caps);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: var(--fs-small);
+  padding: 8px 10px 6px 0;
+}
+
+.table tbody th {
+  font-weight: 600;
+}
+
+.table tbody tr:nth-child(even) > * {
+  background: var(--band);
+}
+
+.num {
+  font-family: var(--font-caps);
+  font-weight: 700;
+  font-size: clamp(24px, 2.1vw, 30px);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.who {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px 24px;
+}
+
+.who li {
+  padding: 6px 0;
+}
+
+.fine {
+  margin: 34px 0 0;
+  border-top: var(--rule);
+  padding-top: 10px;
+  font-size: var(--fs-small);
+  color: var(--muted);
+}
+
+/* Keep this media query identical to LAPTOP_QUERY in ui/lib/selection.ts. */
+@media (min-width: 1100px) and (orientation: landscape) {
+  .page {
+    max-width: none;
+    --fs-wordmark: clamp(60px, 5.6vw, 86px);
+    --fs-body: clamp(15px, 1.2vw, 18px);
+    --fs-small: clamp(13px, 1vw, 16px);
+    --fs-label: clamp(14px, 1.1vw, 17px);
+    font-size: var(--fs-body);
+  }
+
+  .side {
+    display: none;
+  }
+
+  .headline {
+    margin-top: 22px;
+  }
+
+  .three {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .three > section {
+    border-top: 0;
+    padding: 14px 20px 4px 0;
+  }
+
+  .three > section + section {
+    border-left: var(--hair);
+    padding-left: 20px;
+  }
+
+  .pair {
+    grid-template-columns: 1.1fr 1fr;
+    gap: 40px;
+  }
+
+  .who {
+    grid-template-columns: repeat(4, auto);
+    justify-content: start;
+  }
+}
