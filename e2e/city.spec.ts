@@ -21,6 +21,8 @@ test("a City sheet lists every file, and a replaced dataset points to its replac
   await page.goto("/?q=" + encodeURIComponent("WIBR crime monthly"));
   const code = await page.locator("li[data-code]").filter({ hasText: /WIBR Crime \(Monthly\)/ }).first().getAttribute("data-code");
   await page.goto(`/d/${code}`);
+  // On a laptop the sheet page hands over to the Rundown pane once the page hydrates; wait for it so the click isn't lost.
+  if (test.info().project.name === "desktop") await page.waitForURL(/open=/);
   await page.getByText(/^\d+ files$/).click();
   for (const layer of ["Homicides", "Arson", "Assault"]) await expect(page.getByRole("link", { name: `${layer} · map layer` })).toBeVisible();
   await expect(page.locator("[data-replaced-by]").getByRole("link", { name: /NIBRS Crime Data/ })).toBeVisible();
@@ -82,3 +84,15 @@ for (const scheme of ["light", "dark"] as const)
     const r = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze();
     expect(r.violations.filter((v) => v.impact === "serious" || v.impact === "critical").map((v) => `${v.id}: ${v.nodes.length}`)).toEqual([]);
   });
+
+test("a City map-layer sheet draws its layer, and asks to zoom in on parcels", async ({ page }) => {
+  test.skip(!(await page.request.get("https://milwaukeemaps.milwaukee.gov/arcgis/rest/services?f=json").then((r) => r.ok()).catch(() => false)), "City map server unreachable");
+  await page.goto("/?q=" + encodeURIComponent("zoning"));
+  const zoning = await page.locator("li[data-code]").filter({ hasText: /^.*Zoning/ }).first().getAttribute("data-code");
+  await page.goto(`/d/${zoning}`);
+  await expect(page.locator("[data-sheet-layers] [data-map] canvas")).toHaveCount(1, { timeout: 30_000 });
+  await page.goto("/?q=" + encodeURIComponent("parcel polygons"));
+  const parcels = await page.locator("li[data-code]").filter({ hasText: /Parcel Polygons/ }).first().getAttribute("data-code");
+  await page.goto(`/d/${parcels}`);
+  await expect(page.locator("[data-sheet-layers] [data-map-message]")).toContainText("Zoom in to see", { timeout: 30_000 });
+});

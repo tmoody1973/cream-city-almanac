@@ -8,6 +8,7 @@ import { PlaceYearGrid } from "./PlaceYearGrid";
 import type { PortraitFocus } from "@/ui/lib/portrait";
 import { PortraitTables } from "./PortraitTables";
 import { ProvenanceTag } from "./ProvenanceTag";
+import { SheetLayers } from "./SheetLayers";
 import { SheetWhere } from "./SheetWhere";
 import styles from "./sheet.module.css";
 
@@ -162,6 +163,13 @@ export function SheetBody({ sheet, headingId, focus }: { sheet: SheetData; headi
             <section className={styles.section}>
               <h3 className={styles.heading}>WHERE</h3>
               <SheetWhere code={family.code} what={sheet.city.what} />
+            </section>
+          )}
+
+          {sheet.layers.length > 0 && !sheet.city?.located && (
+            <section className={styles.section}>
+              <h3 className={styles.heading}>WHERE</h3>
+              <SheetLayers layers={sheet.layers} />
             </section>
           )}
 

@@ -1,11 +1,12 @@
 "use client";
 import { useQuery } from "convex/react";
 // MapLibre 6 has no default export: named imports only.
-import { GeoJSONSource, Map as MapLibreMap } from "maplibre-gl";
+import { GeoJSONSource, Map as MapLibreMap, Popup } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import type { MapData } from "@/convex/lib/cityMap";
+import { fetchLayer, labelFields } from "@/ui/lib/arcgisLayer";
 import { cellsToGeoJSON, summarySentence } from "@/ui/lib/mapCells";
 import { useNight } from "@/ui/lib/useNight";
 import styles from "./map.module.css";
@@ -15,6 +16,8 @@ const MILWAUKEE: [[number, number], [number, number]] = [[-88.07, 42.92], [-87.8
 const INK = { day: "#111111", night: "#ecebe6" };
 const PENCIL = { day: "#d7261e", night: "#ff6b5e" };
 const LAYER_IDS = ["layer-fill", "layer-line", "layer-dot"];
+// Field names and values come from the City: escape them before they go into popup HTML.
+const escapeHtml = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
 // Hatching drawn in the edition's ink: 1–4 diagonal, 5–19 crossed. Patterns read without relying on faint shades.
 function pattern(color: string, crossed: boolean, size: number): ImageData {
@@ -89,7 +92,7 @@ export default function CityMap({ cells = null, count = 0, boundary = null, laye
     return () => { m.off("style.load", draw); };
   }, [cells, shape, edition]);
 
-  // City map layers: fetched by the browser for the visible area only (Task 8 fills in fetchLayer).
+  // City map layers: fetched by the browser for the visible area only.
   // Drawn after the style is ready, and again after a style swap (which drops them); the draw effect leaves them alone.
   useEffect(() => {
     const m = map.current;
@@ -103,7 +106,6 @@ export default function CityMap({ cells = null, count = 0, boundary = null, laye
         setLayerNote(null);
         return;
       }
-      const { fetchLayer } = await import("@/ui/lib/arcgisLayer");
       const r = await fetchLayer(layer.url, m.getBounds().toArray() as [[number, number], [number, number]]);
       if (cancelled) return;
       setLayerNote(r.status === "ok" ? null : r.status === "too-many" ? `Zoom in to see ${layer.name}.` : "This City map layer isn't responding.");
@@ -120,10 +122,17 @@ export default function CityMap({ cells = null, count = 0, boundary = null, laye
     };
     const onMove = () => { window.clearTimeout(timer); timer = window.setTimeout(load, 300); };
     m.on("moveend", onMove);
+    // A click on a shape labels it with up to six of the City's own fields. A click handler bound to layer ids stays
+    // registered across a style swap, so it works again once the layers are re-added.
+    const onClick = (e: { features?: { properties?: Record<string, unknown> | null }[]; lngLat: { lng: number; lat: number } }) => {
+      const html = labelFields(e.features?.[0]?.properties ?? {}).map(([k, v]) => `<b>${escapeHtml(k)}</b> ${escapeHtml(v)}`).join("<br>");
+      if (html) new Popup({ closeButton: true }).setLngLat(e.lngLat).setHTML(html).addTo(m);
+    };
+    m.on("click", LAYER_IDS, onClick);
     // Registered after the draw effect's listener, so on a style swap our layers go on after the cells and boundary.
     const ready = () => { if (!cancelled) load(); };
     if (loaded.current && styleEdition.current === edition) load(); else m.once("style.load", ready);
-    return () => { cancelled = true; window.clearTimeout(timer); m.off("moveend", onMove); m.off("style.load", ready); };
+    return () => { cancelled = true; window.clearTimeout(timer); m.off("moveend", onMove); m.off("click", LAYER_IDS, onClick); m.off("style.load", ready); };
   }, [layer, edition]);
 
   return (

@@ -169,6 +169,8 @@ export const familySheet = query({
         files: m.files ?? [],
         fileUrl: m.kind === "document" ? pdfUrl(m.hubId) : null,
       })),
+      // City map layers (ArcGIS), in member order: the WHERE section draws them on a map.
+      layers: members.flatMap((m) => (m.files ?? []).filter((f) => /^esri/i.test(f.format)).map((f) => ({ name: f.name, url: f.url }))),
       city: family.source === "city" ? await cityInfo(ctx, family.key) : null,
       card: card
         ? {

@@ -220,6 +220,7 @@ describe("City sheets", () => {
     });
     const wibr = (await t.query(api.catalog.familySheet, { code: "P38" }))!;
     expect(wibr.members[0].files).toEqual([{ name: "Homicides", format: "Esri REST", url: "https://maps.example/MapServer/0" }]);
+    expect(wibr.layers).toEqual([{ name: "Homicides", url: "https://maps.example/MapServer/0" }]);
     expect(wibr.city!.replacedBy).toEqual({ code: "P08", name: "NIBRS Crime Data" });
     expect((await t.query(api.catalog.familySheet, { code: "P08" }))!.city!.replacedBy).toBeNull();
     expect((await t.query(api.catalog.familySheet, { code: "P08" }))!.city!.note).toBe("The City's file names still say WIBR (wibr.csv), the system Milwaukee police used before NIBRS.");
