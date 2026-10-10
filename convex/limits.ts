@@ -10,6 +10,9 @@ export const ASK_EMBEDS = { kind: "token bucket" as const, rate: 60, period: HOU
 // Live City counts from Ask; each is up to three SQL calls to the City, so same shape as report reads.
 export const ASK_CITY = { kind: "token bucket" as const, rate: 60, period: HOUR, capacity: 20 };
 
+// Tract analyses from Ask; each reads DYCU's map server, which is shared, so same shape as City reads.
+export const ASK_TRACTS = { kind: "token bucket" as const, rate: 60, period: HOUR, capacity: 20 };
+
 // Questions starting at once. The site budget only counts spend already recorded, so parallel questions could
 // overshoot it; these bound the overshoot: 5 at once per account (2 a minute after), 20 at once site-wide.
 export const ASK_RUNS = { kind: "token bucket" as const, rate: 120, period: HOUR, capacity: 5 };
@@ -23,6 +26,7 @@ export const rateLimiter = new RateLimiter(components.rateLimiter, {
   searchEmbeds: SEARCH_EMBEDS,
   askEmbeds: ASK_EMBEDS,
   askCity: ASK_CITY,
+  askTracts: ASK_TRACTS,
   askRuns: ASK_RUNS,
   askRunsAll: ASK_RUNS_ALL,
   mapCity: MAP_CITY,
