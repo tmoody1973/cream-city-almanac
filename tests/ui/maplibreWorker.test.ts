@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 describe("MapLibre worker copies", () => {
   for (const f of ["maplibre-gl-worker.mjs", "maplibre-gl-shared.mjs"])
     it(`${f} matches the installed maplibre-gl`, () => {
-      expect(readFileSync(`public/maplibre/${f}`, "utf8")).toBe(readFileSync(`node_modules/maplibre-gl/dist/${f}`, "utf8"));
+      const same = readFileSync(`public/maplibre/${f}`).equals(readFileSync(`node_modules/maplibre-gl/dist/${f}`));
+      expect(same, `public/maplibre/${f} differs from node_modules/maplibre-gl/dist/${f}; copy it again`).toBe(true);
     });
 });

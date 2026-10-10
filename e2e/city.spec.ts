@@ -96,13 +96,22 @@ for (const scheme of ["light", "dark"] as const)
 test("switching to the night edition redraws the cells and boundary", async ({ page }) => {
   test.skip(!(await cityUp(page)), "City API unreachable");
   const code = await nibrsCode(page);
+  // Registered before the first navigation that mounts the map. addLayer succeeds even when MapLibre's worker 404s
+  // (a blank map), so the worker files and the console are what prove the map can draw.
+  const worker = page.waitForResponse((r) => /\/maplibre\/maplibre-gl-worker\.mjs$/.test(r.url()));
+  const shared = page.waitForResponse((r) => /\/maplibre\/maplibre-gl-shared\.mjs$/.test(r.url()));
+  const failures: string[] = [];
+  page.on("console", (m) => /Worker failed/.test(m.text()) && failures.push(m.text()));
   await page.goto(`/d/${code}`);
   const map = page.locator("[data-sheet-where] [data-map]");
   await expect(map.locator("[data-map-summary]")).toContainText("quarter-mile areas", { timeout: 30_000 });
+  expect((await worker).status()).toBe(200);
+  expect((await shared).status()).toBe(200);
   await expect(map).toHaveAttribute("data-drawn", "day", { timeout: 30_000 });
   await page.evaluate(() => (document.documentElement.dataset.theme = "dark"));
   await expect(map).toHaveAttribute("data-drawn", "night", { timeout: 30_000 }); // set only after the cells were added to the night style
   await expect(map.locator("canvas")).toHaveCount(1);
+  expect(failures).toEqual([]);
 });
 
 test("a City map-layer sheet draws its layer, and asks to zoom in on parcels", async ({ page }) => {
