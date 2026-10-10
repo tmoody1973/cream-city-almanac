@@ -86,7 +86,7 @@ table (public City data). Sizes are small enough to send as stored: median 1 KB,
   checks, same refusals, same `too-broad`), returning `{ status, count, map }`. Whole city → one grid query.
   Neighborhood → exact-points path.
 - Open to everyone. A `mapCache` table holds results by a hash of the normalized arguments for 10 minutes; identical
-  requests never reach the City. A site-wide token bucket `mapCity` (60 City queries per minute, capacity 20) protects
+  requests never reach the City. A site-wide token bucket `mapCity` (60 map requests per minute, capacity 20; one request is 2–3 City queries) protects
   the City's server; when empty: "The map is busy; try again in a minute." (cached answers still serve).
 
 ### 6.2 City map-layer datasets (43)

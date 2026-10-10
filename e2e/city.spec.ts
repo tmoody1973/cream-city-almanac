@@ -50,6 +50,26 @@ async function nibrsCode(page: import("@playwright/test").Page) {
   return page.locator("li[data-code]").filter({ hasText: /NIBRS Crime Data/ }).first().getAttribute("data-code");
 }
 
+test("two filters changed back to back end on the second one's answer", async ({ page }) => {
+  test.skip(!(await cityUp(page)), "City API unreachable");
+  const code = await nibrsCode(page);
+  await page.goto(`/d/${code}`);
+  const where = page.locator("[data-sheet-where]");
+  await expect(where.locator("[data-where-count]")).toContainText("records", { timeout: 30_000 });
+  const what = where.locator('[data-filter="what"]');
+  await what.selectOption({ label: "Robbery" });
+  await page.waitForTimeout(300); // past the 250 ms pause, so the first request is on its way
+  const second = await what.locator("option").evaluateAll((os) => (os as HTMLOptionElement[]).map((o) => o.value).find((v) => v && v !== "120")!);
+  await what.selectOption(second);
+  await expect(where.locator('[aria-busy="false"] [data-where-count]')).toBeVisible({ timeout: 30_000 });
+  const shown = await where.locator("[data-where-count]").textContent();
+  // The same filter loaded fresh gives the answer the figure must have ended on.
+  await page.goto(`/d/${code}?type=${encodeURIComponent(second)}`);
+  await expect(where.locator('[aria-busy="false"] [data-where-count]')).toBeVisible({ timeout: 30_000 });
+  await expect(where.locator('[data-filter="what"]')).toHaveValue(second);
+  await expect(where.locator("[data-where-count]")).toHaveText(shown!);
+});
+
 test("a shared map link restores its filters with no hydration error", async ({ page }) => {
   test.skip(!(await cityUp(page)), "City API unreachable");
   const code = await nibrsCode(page);
