@@ -26,3 +26,8 @@ Dated entries, written by Tarik. Each answers three things: what did we expect, 
 3. We expected a map legend to be a small detail. What happened: the first one wasn't readable, and it took three tries (patterns instead of faint shades, body-size words in full ink, a written summary) before it was. What do we now believe?
 4. We expected our map tests (a canvas exists, the summary text is there) to prove the map drew. What happened: MapLibre's helper file was a 404 under Next, so no square or boundary ever drew; every test passed and only a screenshot showed it. What do we now believe?
 -->
+
+<!-- Suggested entries (for Tarik to write in his own words), 2026-10-10, the landing page. See decision 026.
+1. We expected a landing page to be mostly words. What happened: most of the work was moving search to /search without breaking the links people had already shared. What do we now believe?
+2. We expected "redirect any address that has a parameter" to be the safe rule. What happened: it would have sent campaign tags (utm_source and the like) to search; the rule is now an explicit list of the 11 search settings. What do we now believe?
+-->

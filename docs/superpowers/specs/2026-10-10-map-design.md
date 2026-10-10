@@ -113,7 +113,7 @@ table (public City data). Sizes are small enough to send as stored: median 1 KB,
 - Browser: a count card shows a map whose summary matches the count; only the newest card's map is live; sheet
   filters change the figure, the summary and the address; a City-layer sheet draws and shows "Zoom in" on parcels;
   axe in both editions.
-- Report card: one question asserts the final count's `map.summary.total` equals its `count`.
+- Report card: one question asserts the final count's `map.summary.total` never exceeds its `count` (records without a location aren't on the map).
 
 ## 9. Rollout
 

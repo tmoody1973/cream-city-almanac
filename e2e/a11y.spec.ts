@@ -2,12 +2,14 @@ import AxeBuilder from "@axe-core/playwright";
 import { type Page } from "@playwright/test";
 import { expect, test } from "./fixtures";
 
-const PAGES = ["/search", "/search?q=asthma", "/d/W01", "/d/N02", "/d/N03", "/how-it-works", "/start-here", "/search?q=asthma&open=W01"];
+const PAGES = ["/", "/search", "/search?q=asthma", "/d/W01", "/d/N02", "/d/N03", "/how-it-works", "/start-here", "/search?q=asthma&open=W01"];
 
 // networkidle doesn't wait for Convex's WebSocket search, so wait for real result rows on search pages.
 async function settle(page: Page, path: string) {
   await page.waitForLoadState("networkidle");
   if (path.includes("?q=")) await page.locator("li[data-code]").first().waitFor();
+  // The front page's sample Ask answer asks the City; wait until it has either shown its figure or its link.
+  if (path === "/") await page.locator('[data-landing-sample="done"]').waitFor();
 }
 
 for (const path of PAGES) {
