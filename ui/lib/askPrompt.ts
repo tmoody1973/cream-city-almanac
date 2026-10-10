@@ -7,7 +7,7 @@ export function readPrompt(search: string): string {
 
 export const askHref = (question: string) => `/ask?prompt=${encodeURIComponent(question)}`;
 
-// Phones keep /ask; laptops open Ask's column on the home page, so the prompt travels with the redirect.
+// Phones keep /ask; laptops open Ask's column on the search page, so the prompt travels with the redirect.
 export function laptopAskHref(search: string): string {
   const prompt = readPrompt(search);
   return prompt ? `/search?ask=1&prompt=${encodeURIComponent(prompt)}` : "/search?ask=1";

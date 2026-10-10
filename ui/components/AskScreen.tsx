@@ -8,7 +8,7 @@ import { SiteNav } from "./SiteNav";
 import styles from "./ask.module.css";
 import rundown from "./rundown.module.css";
 
-// Phones: Ask is its own screen. Laptops: the notes column beside the pane, at /?ask=1.
+// Phones: Ask is its own screen. Laptops: the notes column beside the pane, at /search?ask=1.
 export function AskScreen() {
   // On a laptop this screen only redirects: its panel must not mount, or it would take the guide's ?prompt= and
   // rewrite the address mid-redirect. A full load, not router.replace: Clerk's dev-key address cleanup lands as a
