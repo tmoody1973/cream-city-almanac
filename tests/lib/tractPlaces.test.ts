@@ -16,6 +16,11 @@ describe("cityShares", () => {
     expect(cityShares(tract, [hood("Sliver", box(0, 0, 0.8, 10)), hood("Rest", box(0.8, 0, 10, 10))]).map((s) => s.name)).toEqual(["Rest"]);
     expect(cityShares(tract, [hood("Edge", box(0, 0, 1, 10)), hood("Rest", box(1, 0, 10, 10))])).toEqual([{ name: "Rest", share: 90 }, { name: "Edge", share: 10 }]);
   });
+  it("orders by exact area, so shares that round equal don't fall back to the alphabet", () => {
+    // B: 18 columns + one extra cell (721 points); A: 18 columns minus that cell (719). Both round to 45%.
+    const b: Geometry = { type: "MultiPolygon", coordinates: [box(0, 0, 4.5, 10).coordinates as number[][][], box(4.5, 0, 4.75, 0.25).coordinates as number[][][]] };
+    expect(cityShares(tract, [hood("B", b), hood("A", box(4.5, 0, 9, 10)), hood("Rest", box(9, 0, 10, 10))])).toEqual([{ name: "B", share: 45 }, { name: "A", share: 45 }, { name: "Rest", share: 10 }]);
+  });
   it("leaves a tract's hole out", () => {
     const donut: Geometry = { type: "Polygon", coordinates: [[[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]], [[2.5, 2.5], [7.5, 2.5], [7.5, 7.5], [2.5, 7.5], [2.5, 2.5]]] };
     expect(cityShares(donut, [hood("Middle", box(2.5, 2.5, 7.5, 7.5))])).toEqual([]);

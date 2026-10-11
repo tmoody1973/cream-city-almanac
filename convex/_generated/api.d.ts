@@ -49,6 +49,7 @@ import type * as lib_text from "../lib/text.js";
 import type * as lib_titles from "../lib/titles.js";
 import type * as lib_tractData from "../lib/tractData.js";
 import type * as lib_tractNames from "../lib/tractNames.js";
+import type * as lib_tractPlaces from "../lib/tractPlaces.js";
 import type * as lib_tractStats from "../lib/tractStats.js";
 import type * as lib_types from "../lib/types.js";
 import type * as lib_xlsx from "../lib/xlsx.js";
@@ -108,6 +109,7 @@ declare const fullApi: ApiFromModules<{
   "lib/titles": typeof lib_titles;
   "lib/tractData": typeof lib_tractData;
   "lib/tractNames": typeof lib_tractNames;
+  "lib/tractPlaces": typeof lib_tractPlaces;
   "lib/tractStats": typeof lib_tractStats;
   "lib/types": typeof lib_types;
   "lib/xlsx": typeof lib_xlsx;

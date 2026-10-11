@@ -4,7 +4,7 @@ import { type ReactNode, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import type { CityShare } from "@/convex/lib/tractPlaces";
 import type { ChangeAnswer, Header, RankDetail, RelateAnswer, RelateDetail, TractRow } from "@/convex/tracts";
-import { cityList, dycuText } from "@/ui/lib/placeNames";
+import { cityList, dycuText, placesLabel } from "@/ui/lib/placeNames";
 import { changeText, mismatchVerdict, noMargin, plainMeaning, rangeText, tooFew, unitOf, type Unit } from "@/ui/lib/tractFormat";
 import { AREA_NOTE, changeSummary, EXACT, propertyNotes, rankSummary, relateSummary } from "@/ui/lib/tractSummary";
 import { capTractIds, MAX_TRACT_SHAPES } from "@/ui/lib/tractShapes";
@@ -120,7 +120,7 @@ function Places({ city }: { city?: CityShare[] }) {
   if (city.length === 1) return <>{city[0].name}</>;
   return (
     <details className={styles.places} data-places>
-      <summary>{city[0].name} <span className={styles.placesMore}>+{city.length - 1}</span></summary>
+      <summary aria-label={placesLabel(city)}>{city[0].name} <span className={styles.placesMore}>+{city.length - 1}</span></summary>
       {cityList(city)}
     </details>
   );

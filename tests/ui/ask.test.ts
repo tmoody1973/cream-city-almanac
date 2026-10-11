@@ -247,7 +247,7 @@ describe("countRecords tool", () => {
     expect(ASK_PROMPT).toMatch(/explain it to a neighbor/i);
     expect(ASK_PROMPT).toMatch(/report areas/i);
     // Tract rows carry the City's neighborhoods (city) and DYCU's areas (dycu); "mostly" only at half or more.
-    expect(ASK_PROMPT).toContain('"mostly X" when its share is 50 or more, "partly X" otherwise');
+    expect(ASK_PROMPT).toContain(`"mostly X" when its share is 50 or more and larger than the next one's, "partly X" otherwise`);
     expect(ASK_PROMPT).toMatch(/never a City neighborhood/);
     expect(ASK_PROMPT).toMatch(/never list properties/i);
     expect(ASK_PROMPT).toContain("Address Search");

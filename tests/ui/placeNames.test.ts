@@ -1,13 +1,20 @@
 import { describe, expect, it } from "vitest";
-import { cityList, cityWord, dycuText, placeLabel } from "@/ui/lib/placeNames";
+import { cityList, cityWord, dycuText, placeLabel, placesLabel } from "@/ui/lib/placeNames";
 import { AREA_NOTE } from "@/ui/lib/tractSummary";
 
 const hillside = [{ name: "Hillside", share: 51 }, { name: "Halyard Park", share: 27 }, { name: "Triangle North", share: 13 }];
 
 describe("place names", () => {
   it("says mostly at half the tract or more, partly below", () => {
-    expect(cityWord({ name: "Hillside", share: 50 })).toBe("mostly Hillside");
-    expect(cityWord({ name: "Northridge", share: 49 })).toBe("partly Northridge");
+    expect(cityWord([{ name: "Hillside", share: 50 }, { name: "Halyard Park", share: 30 }])).toBe("mostly Hillside");
+    expect(cityWord([{ name: "Northridge", share: 49 }])).toBe("partly Northridge");
+  });
+  it("never says mostly for an even split", () => {
+    expect(cityWord([{ name: "Uptown", share: 50 }, { name: "Washington Heights", share: 50 }])).toBe("partly Uptown");
+  });
+  it("names the hidden neighborhoods for screen readers", () => {
+    expect(placesLabel(hillside)).toBe("Hillside, and 2 more City neighborhoods");
+    expect(placesLabel(hillside.slice(0, 2))).toBe("Hillside, and 1 more City neighborhood");
   });
   it("lists every neighborhood with its share", () => {
     expect(cityList(hillside)).toBe("Hillside 51% · Halyard Park 27% · Triangle North 13%");

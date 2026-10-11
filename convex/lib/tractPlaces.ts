@@ -33,10 +33,11 @@ export function cityShares(tract: Geometry, hoods: Hood[]): CityShare[] {
     const h = hoods.find((x) => inBbox(p, x.bbox) && inShape(p, x.geometry));
     if (h) counts.set(h.name, (counts.get(h.name) ?? 0) + 1);
   }
+  // Ordered by exact point counts before rounding, so two shares that round equal keep the larger one first.
   return [...counts]
+    .sort((x, y) => y[1] - x[1] || x[0].localeCompare(y[0]))
     .map(([name, c]) => ({ name, share: Math.round((100 * c) / inside.length) }))
-    .filter((s) => s.share >= MIN_SHARE)
-    .sort((x, y) => y.share - x.share || x.name.localeCompare(y.name));
+    .filter((s) => s.share >= MIN_SHARE);
 }
 
 type Feature = { properties?: { GEOID?: unknown } | null; geometry?: { type?: unknown; coordinates?: unknown } | null };
