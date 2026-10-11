@@ -20,6 +20,10 @@ const DEFINITIONS = [
   /\btable\s+\d+\b/gi,
   named(/\b(?:(?:police|aldermanic|council|school)\s+)?district\s+\d{1,3}/gi),
   named(/\bward\s+\d{1,3}/gi),
+  // The City's 311 service line and 911 are names, not figures, when the words around them say so ("311 requests",
+  // "the City's 311 line", "call 911"). A bare "311 homes" or "311 complaints" stays a figure.
+  /\b(?:311|911)(?=\s+(?:service\s+)?(?:requests?|calls?|line|app|system|data|center)\b)/g,
+  /(?<=\b(?:the City's|Milwaukee's|MKE|call|calling|dial|dialing|via|through)\s+)(?:311|911)\b/gi,
   /\bzip(?:\s+code)?\s+\d{5}\b/gi,
   /\b\d{1,5}\s+[NSEW]\.?\s+[A-Z][a-z]+/g, // a street address; the direction is what tells it from a count
   named(/\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|June?|July?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\.?\s+\d{1,2}/g),
