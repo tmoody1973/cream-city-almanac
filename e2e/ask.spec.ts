@@ -232,6 +232,9 @@ test.describe("signed in", () => {
     await expect(card.locator("[data-map]")).toBeVisible();
     await expect(card.locator("[data-map][data-drawn][data-tracts]")).toHaveCount(1, { timeout: 30_000 });
     await expect(card.locator("details[data-ties]")).toHaveCount(1);
+    // Tract names are DYCU's report areas, said so on the card ("United Community" is DYCU's, not a City neighborhood).
+    await expect(card.locator("thead")).toContainText("DYCU area");
+    await expect(card).toContainText("not the City's official neighborhoods");
     // The plain sentence leads, written by code from the same counts.
     await expect(card.locator("[data-summary]")).toContainText(/^These are the 10 census tracts in Milwaukee County with the highest /);
     // The caveat link keeps the chat: a new tab on a phone, the side pane on a laptop.

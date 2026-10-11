@@ -98,6 +98,8 @@ export function changeSummary(r: { header: Col; from: string; to: string; increa
 }
 
 export const EXACT = "exact (City records)";
+// Tract names on the cards are DYCU's report areas ("United Community" is one), never the City's 190 neighborhoods.
+export const AREA_NOTE = "Area names are Data You Can Use's report areas: groups of census tracts DYCU chose with its neighborhood partners, not the City's official neighborhoods.";
 const NOTE = {
   value: "Assessed value is the City's figure for property taxes, not what a home would sell for.",
   owner: "'Owner-occupied' means the owner's mailing address is the property's address; an owner who gets mail elsewhere isn't counted.",

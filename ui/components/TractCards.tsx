@@ -4,7 +4,7 @@ import { type ReactNode, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import type { ChangeAnswer, Header, RankDetail, RelateAnswer, RelateDetail, TractRow } from "@/convex/tracts";
 import { changeText, mismatchVerdict, noMargin, plainMeaning, rangeText, tooFew, unitOf, type Unit } from "@/ui/lib/tractFormat";
-import { changeSummary, EXACT, propertyNotes, rankSummary, relateSummary } from "@/ui/lib/tractSummary";
+import { AREA_NOTE, changeSummary, EXACT, propertyNotes, rankSummary, relateSummary } from "@/ui/lib/tractSummary";
 import { capTractIds, MAX_TRACT_SHAPES } from "@/ui/lib/tractShapes";
 import { BigView } from "./BigView";
 import { CityMap } from "./CityMapLoader";
@@ -74,7 +74,7 @@ function Fine({ heads, causal, lead, onOpen }: { heads: { code: string; column: 
   const bare = heads.some((h) => !h.confidence); // spec §5 rule 7
   return (
     <p className={styles.tractFine}>
-      {lead && `${lead} `}{levels.length > 0 && `Ranges are margins of error: ${levels.join("; ")}.`}{exact && " Property figures are exact (City records)."}{bare && " Without a margin of error, findings can't be separated from noise."}{causal && " Related doesn't mean one causes the other."}{propertyNotes(heads).map((n) => ` ${n}`).join("")} Caveats:{" "}
+      {lead && `${lead} `}{levels.length > 0 && `Ranges are margins of error: ${levels.join("; ")}.`}{exact && " Property figures are exact (City records)."}{bare && " Without a margin of error, findings can't be separated from noise."}{causal && " Related doesn't mean one causes the other."}{propertyNotes(heads).map((n) => ` ${n}`).join("")} {AREA_NOTE} Caveats:{" "}
       {heads.map((h, i) => <span key={h.code}>{i > 0 && " \u00b7 "}<OpenLink code={h.code} onOpen={onOpen} label={h.code} /></span>)}
     </p>
   );
@@ -122,7 +122,7 @@ export function RankCard({ r, onOpen }: { r: RankShown; onOpen: Open }) {
   const tieRow = (t: TractRow) => (
     <tr key={t.geoid} className={styles.tractTie}><td>=</td><td>{t.tract}</td><td>{t.neighborhood ?? "\u2014"} ({exact ? `same figure as #${r.top.length}` : `tied with #${r.top.length} within the margin of error`})</td><td className={styles.num}>{range(t, pct)}</td></tr>
   );
-  const head = ["#", "Tract", "Neighborhood", h.column];
+  const head = ["#", "Tract", "DYCU area", h.column];
   const title = `${r.direction === "high" ? "Highest" : "Lowest"} ${h.column} \u00b7 ${h.place} ${h.year}`;
   const bare = !h.confidence; // no ranges: no ties or unreliable tracts can be found (spec §5 rule 7)
   const summary = rankSummary({ header: h, direction: r.direction, top: r.top.length, tieCount: bare ? 0 : r.tieCount, unreliableCount: bare ? 0 : r.unreliableCount, inline: TIES_INLINE });
@@ -189,7 +189,7 @@ export function ChangeCard({ r, onOpen }: { r: ChangeShown; onOpen: Open }) {
   const bare = noMargin([h]);
   const summary = changeSummary({ header: h, from: r.from, to: r.to, increases: r.increases, decreases: r.decreases, none: r.none });
   const table = changes.length > 0 && (
-    <Table head={["Tract", "Neighborhood", r.from, r.to, "Change"]} title={title}>
+    <Table head={["Tract", "DYCU area", r.from, r.to, "Change"]} title={title}>
       {changes.map((c) => (
         <tr key={c.geoid}>
           <td>{c.tract}</td><td>{c.neighborhood ?? "\u2014"}</td>
@@ -257,7 +257,7 @@ export function RelateCard({ r, onOpen }: { r: RelateShown; onOpen: Open }) {
     </>
   );
   const table = fits.length + close.length > 0 && (
-    <Table head={["Tract", "Neighborhood", a.column, b.column, ""]} title={title}>
+    <Table head={["Tract", "DYCU area", a.column, b.column, ""]} title={title}>
       {fits.map((p) => <PairRow key={p.a.geoid} p={p} pa={pa} pb={pb} label="clear match" />)}
       {close.map((p) => <PairRow key={p.a.geoid} p={p} pa={pa} pb={pb} label="possible match" tie />)}
     </Table>
