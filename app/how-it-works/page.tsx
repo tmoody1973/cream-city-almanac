@@ -14,9 +14,10 @@ const EXAMPLE_CODE = "W01";
 
 export default async function HowItWorksPage() {
   // The explanation must render even when the catalog can't be reached; it then omits the numbers.
-  const [status, example] = await Promise.all([
+  const [status, example, areas] = await Promise.all([
     fetchQuery(api.search.catalogStatus, {}).catch(() => null),
     fetchQuery(api.catalog.familySheet, { code: EXAMPLE_CODE }).catch(() => null),
+    fetchQuery(api.catalog.dycuAreas, {}).catch(() => null),
   ]);
-  return <HowItWorks status={status} example={example} />;
+  return <HowItWorks status={status} example={example} areas={areas} />;
 }

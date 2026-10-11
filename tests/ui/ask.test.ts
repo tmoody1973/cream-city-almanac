@@ -245,6 +245,7 @@ describe("countRecords tool", () => {
     expect(ASK_PROMPT).toContain("countRecords");
     expect(ASK_PROMPT).toMatch(/never repeat or look up an individual/i);
     expect(ASK_PROMPT).toMatch(/explain it to a neighbor/i);
+    expect(ASK_PROMPT).toMatch(/report areas/i);
     expect(ASK_PROMPT).toMatch(/never list properties/i);
     expect(ASK_PROMPT).toContain("Address Search");
     expect(ASK_PROMPT).toContain("itmdapps.milwaukee.gov/AddressSearch");

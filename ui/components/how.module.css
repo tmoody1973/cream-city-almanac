@@ -189,6 +189,11 @@
   padding-left: 1.4em;
 }
 
+.areas { margin-top: 12px; }
+.areas summary { cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.areas ul { margin: 8px 0 0; padding-left: 1.2em; display: grid; gap: 4px; font-variant-numeric: tabular-nums lining-nums; }
+.areaYears { color: var(--muted); }
+
 .tags {
   display: grid;
   gap: 8px;

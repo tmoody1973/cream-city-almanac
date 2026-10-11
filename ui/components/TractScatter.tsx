@@ -50,7 +50,7 @@ export function TractScatter({ points, a, b, cutA, cutB, aSide, bSide, counts, b
     p.b[1] !== null && p.b[2] !== null && <line key="y" x1={s.x(p.a[0])} x2={s.x(p.a[0])} y1={s.y(p.b[1])} y2={s.y(p.b[2])} />,
   ];
   const describe = (p: Point) =>
-    `Tract ${p.tract}${p.neighborhood ? ` (${p.neighborhood})` : ""}: ${a.column} ${spell(p.a, pa)}, ${b.column} ${spell(p.b, pb)}`;
+    `Tract ${p.tract}${p.neighborhood ? ` (DYCU area: ${p.neighborhood})` : ""}: ${a.column} ${spell(p.a, pa)}, ${b.column} ${spell(p.b, pb)}`;
   // A tap on a dot names it under the plot in the big view; a hover names it everywhere. The marked dots (a handful)
   // also take keyboard focus there, Enter or Space naming them; the hundreds of grey ones don't, or Tab would never
   // leave the plot (every marked tract is in the table too).
