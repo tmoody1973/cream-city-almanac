@@ -182,3 +182,7 @@
 .tractSwFit { background: var(--ink); }
 .tractSwClose { background: var(--paper); }
 .tractSwDot { width: 6px; height: 6px; margin: 0 9px 0 3px; background: var(--ink); opacity: 0.45; border: 0; }
+
+/* Follow-up buttons under the newest answer: ruled caps buttons (the EXPAND style), wrapping on phones. */
+.followUps { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 0 0; }
+.pickLabel { font-family: var(--font-caps); font-weight: 700; text-transform: uppercase; }

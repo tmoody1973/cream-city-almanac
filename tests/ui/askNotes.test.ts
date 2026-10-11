@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { earlierCountIds, earlierSheetIds, lastCountId, noteNumbers, noteOrder } from "../../ui/lib/askNotes";
+import { earlierCountIds, earlierSheetIds, lastCountId, newestTurnCallIds, noteNumbers, noteOrder } from "../../ui/lib/askNotes";
 
 const u = (id: string) => ({ id, role: "user", content: "q" });
 const call = (id: string) => ({ id, role: "assistant", content: "", toolCalls: [{ id: `c-${id}` }] });
@@ -59,5 +59,23 @@ describe("repeated sheet cards", () => {
   it("ignores other tools and unreadable arguments", () => {
     const ms = [u("u1"), { id: "a1", role: "assistant", content: "", toolCalls: [{ id: "c1", function: { name: "countRecords", arguments: '{"code":"P08"}' } }, { id: "s1", function: { name: "showDataset", arguments: "{" } }] }];
     expect(earlierSheetIds(ms).size).toBe(0);
+  });
+});
+
+describe("newestTurnCallIds", () => {
+  const call = (id: string, name = "rankTracts") => ({ id, function: { name } });
+  it("returns the tool calls after the last question, never an earlier answer's", () => {
+    const messages = [
+      { id: "u1", role: "user" },
+      { id: "a1", role: "assistant", toolCalls: [call("c1"), call("c2", "countRecords")] },
+      { id: "u2", role: "user" },
+      { id: "a2", role: "assistant", toolCalls: [call("c3")] },
+      { id: "a3", role: "assistant", toolCalls: [call("c4", "showDataset")] },
+    ];
+    expect([...newestTurnCallIds(messages)]).toEqual(["c3", "c4"]);
+  });
+  it("is empty before any tool call and right after a new question", () => {
+    expect(newestTurnCallIds([]).size).toBe(0);
+    expect(newestTurnCallIds([{ id: "u1", role: "user" }, { id: "a1", role: "assistant", toolCalls: [call("c1")] }, { id: "u2", role: "user" }]).size).toBe(0);
   });
 });

@@ -80,3 +80,14 @@ export function earlierSheetIds(messages: (Msg & { toolCalls?: { id: string; fun
   }
   return earlier;
 }
+
+// The newest answer's tool calls (after the last question): only these get follow-up buttons, so the conversation
+// never fills with stale ones.
+export function newestTurnCallIds(messages: CallMsg[]): Set<string> {
+  let turn = new Set<string>();
+  for (const m of messages) {
+    if (m.role === "user") turn = new Set();
+    for (const c of m.toolCalls ?? []) turn.add(c.id);
+  }
+  return turn;
+}

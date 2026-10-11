@@ -5,7 +5,8 @@ import { useQuery } from "convex/react";
 import Link from "next/link";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
-import { earlierCountIds, earlierSheetIds, lastCountId, noteNumbers, noteOrder } from "@/ui/lib/askNotes";
+import { earlierCountIds, earlierSheetIds, lastCountId, newestTurnCallIds, noteNumbers, noteOrder } from "@/ui/lib/askNotes";
+import { NewestTurn, PromptFill } from "./askFill";
 import { readPrompt, withoutPrompt } from "@/ui/lib/askPrompt";
 import { proseBlocks, proseSegments } from "@/ui/lib/askProse";
 import { AskCards, EarlierCounts, EarlierSheets, MapPick, NewestCount } from "./AskCards";
@@ -82,6 +83,7 @@ function Note({ message, messages = [] }: { message: Msg & { toolCalls?: unknown
         </>
       )}
       <div className={styles.results}>
+        <NewestTurn.Provider value={newestTurnCallIds(messages as never)}>
         <NewestCount.Provider value={lastCountId(messages)}>
           <EarlierCounts.Provider value={earlierCountIds(messages)}>
             <EarlierSheets.Provider value={earlierSheetIds(messages as never)}>
@@ -89,6 +91,7 @@ function Note({ message, messages = [] }: { message: Msg & { toolCalls?: unknown
             </EarlierSheets.Provider>
           </EarlierCounts.Provider>
         </NewestCount.Provider>
+        </NewestTurn.Provider>
       </div>
     </div>
   );
@@ -108,7 +111,6 @@ function StatusLine({ left, limit }: { left: number; limit: number }) {
 
 // The guide's examples arrive as ?prompt=…: CopilotChat keeps the input's text in its own state and ignores an
 // inputValue prop, so a thin chat view calls its setter once (as if typed), then focuses the box. Never sends.
-const PromptFill = createContext<{ prompt: string; placed: () => void }>({ prompt: "", placed: () => {} });
 function PrefillChatView(props: CopilotChatViewProps) {
   const { prompt, placed } = useContext(PromptFill);
   const { onInputChange } = props;
@@ -116,7 +118,11 @@ function PrefillChatView(props: CopilotChatViewProps) {
     if (!prompt || !onInputChange) return;
     onInputChange(prompt);
     placed();
-    requestAnimationFrame(() => document.querySelector<HTMLTextAreaElement>('section[aria-label="Ask"] textarea')?.focus());
+    requestAnimationFrame(() => {
+      const box = document.querySelector<HTMLTextAreaElement>('section[aria-label="Ask"] textarea');
+      box?.focus();
+      box?.scrollIntoView({ block: "nearest" });
+    });
   }, [prompt, onInputChange, placed]);
   return <CopilotChatView {...props} />;
 }
@@ -151,7 +157,7 @@ export function AskPanel({ onOpen }: { onOpen?: (search: string) => void }) {
       </Show>
       <Show when="signed-in">
         <ExamplesLine />
-        <PromptFill.Provider value={{ prompt, placed }}>
+        <PromptFill.Provider value={{ prompt, placed, fill: setPrompt }}>
           <MapPick.Provider value={{ picked, pick: (id, newest) => setPicked({ id, newest }) }}>
             <AskChat onOpen={onOpen} />
           </MapPick.Provider>
