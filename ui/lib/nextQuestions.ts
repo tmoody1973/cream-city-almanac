@@ -8,14 +8,16 @@ const MAX = 3;
 export type Col = { code: string; name: string; column: string; meaning: string; place: string; year: string; confidence: string | null };
 const ref = (h: Pick<Col, "code" | "column">) => `(${h.code} ${h.column})`;
 const end = (d: "high" | "low") => (d === "high" ? "highest" : "lowest");
-const rankQ = (h: Col, d: "high" | "low", year = h.year) => `Rank census tracts by ${subject(h)}, ${end(d)} first, ${placeName(h.place)} ${year} ${ref(h)}.`;
+// An exact City figure's year label is "2026 assessment"; the tools take the year alone.
+const yearOf = (h: Col) => (h.confidence === EXACT ? (h.year.match(/\d{4}/)?.[0] ?? h.year) : h.year);
+const rankQ = (h: Col, d: "high" | "low", year = yearOf(h)) => `Rank census tracts by ${subject(h)}, ${end(d)} first, ${placeName(h.place)} ${year} ${ref(h)}.`;
 const goesWith = (h: Col, year: string) => `What else goes with ${subject(h)} across ${placeName(h.place)} census tracts in ${year}? ${ref(h)}`;
 
 export function rankFollowUps(h: Col, direction: "high" | "low"): FollowUp[] {
   const out: FollowUp[] = [{ label: direction === "high" ? "SHOW THE LOWEST" : "SHOW THE HIGHEST", question: rankQ(h, direction === "high" ? "low" : "high") }];
   // Exact City figures hold one assessment: no change over time.
   if (h.confidence !== EXACT) out.push({ label: "WHERE DID IT CHANGE?", question: `Where did ${subject(h)} change most in ${placeName(h.place)}, from an earlier year to ${h.year}? ${ref(h)}` });
-  out.push({ label: "WHAT GOES WITH IT?", question: goesWith(h, h.year) });
+  out.push({ label: "WHAT GOES WITH IT?", question: goesWith(h, yearOf(h)) });
   return out.slice(0, MAX);
 }
 

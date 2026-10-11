@@ -34,6 +34,8 @@ describe("tract tool choices", () => {
     expect(c[0].question).toBe("Does E02 pov_rate go together with percentage of adults food insecure (F02 per_insecure) across Milwaukee County census tracts in 2023?");
     expect(relateChoices(args, { status: "choose-year", available: { a: [], b: [] }, shared: [] })).toEqual([]);
     expect(relateChoices(args, { status: "choose-year", available: { a: [], b: [] }, shared: [{ place: "County", year: "2023" }] })[0].label).toBe("County 2023");
+    // Property x DYCU: the DYCU side's own years are the choice (the property side has none to share).
+    expect(relateChoices(args, { status: "choose-year", dataset: "b", available: [{ place: "County", year: "2024" }] })[0]).toEqual({ label: "County 2024", question: expect.stringContaining("Milwaukee County census tracts in 2024") });
   });
   it("never more than eight, and nothing for an empty list", () => {
     const many = Array.from({ length: 20 }, (_, i) => ({ column: `c${i}`, meaning: "", range: true }));

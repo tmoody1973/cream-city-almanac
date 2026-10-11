@@ -1,12 +1,12 @@
 "use client";
 import { Show, SignInButton, SignOutButton } from "@clerk/nextjs";
-import { CopilotChat, CopilotChatToolCallsView, CopilotChatView, CopilotKitProvider, type CopilotChatViewProps } from "@copilotkit/react-core/v2";
+import { CopilotChat, CopilotChatToolCallsView, CopilotChatView, CopilotKitProvider, useAgent, UseAgentUpdate, type CopilotChatViewProps } from "@copilotkit/react-core/v2";
 import { useQuery } from "convex/react";
 import Link from "next/link";
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
-import { earlierCountIds, earlierSheetIds, lastCountId, newestTurnCallIds, noteNumbers, noteOrder } from "@/ui/lib/askNotes";
-import { NewestTurn, PromptFill } from "./askFill";
+import { earlierCountIds, earlierSheetIds, lastCountId, newestTurnCallIds, noteNumbers, noteOrder, retriedCallIds } from "@/ui/lib/askNotes";
+import { NewestTurn, PromptFill, RetriedCalls } from "./askFill";
 import { readPrompt, withoutPrompt } from "@/ui/lib/askPrompt";
 import { proseBlocks, proseSegments } from "@/ui/lib/askProse";
 import { AskCards, EarlierCounts, EarlierSheets, MapPick, NewestCount } from "./AskCards";
@@ -83,7 +83,6 @@ function Note({ message, messages = [] }: { message: Msg & { toolCalls?: unknown
         </>
       )}
       <div className={styles.results}>
-        <NewestTurn.Provider value={newestTurnCallIds(messages as never)}>
         <NewestCount.Provider value={lastCountId(messages)}>
           <EarlierCounts.Provider value={earlierCountIds(messages)}>
             <EarlierSheets.Provider value={earlierSheetIds(messages as never)}>
@@ -91,9 +90,20 @@ function Note({ message, messages = [] }: { message: Msg & { toolCalls?: unknown
             </EarlierSheets.Provider>
           </EarlierCounts.Provider>
         </NewestCount.Provider>
-        </NewestTurn.Provider>
       </div>
     </div>
+  );
+}
+
+// Which tool calls belong to the newest answer, and which the model retried, from the whole conversation: computed
+// here, above CopilotKit's memoized messages, so a new question reaches every older card (FollowUps).
+function TurnContext({ children }: { children: ReactNode }) {
+  const { agent } = useAgent({ updates: [UseAgentUpdate.OnMessagesChanged] });
+  const messages = agent.messages as never;
+  return (
+    <NewestTurn.Provider value={newestTurnCallIds(messages)}>
+      <RetriedCalls.Provider value={retriedCallIds(messages)}>{children}</RetriedCalls.Provider>
+    </NewestTurn.Provider>
   );
 }
 
@@ -182,6 +192,7 @@ function AskChat({ onOpen }: { onOpen?: (search: string) => void }) {
   return (
     <AnswerArrived.Provider value={clearUnavailable}>
     <CopilotKitProvider runtimeUrl="/api/copilotkit" enableInspector={false}>
+      <TurnContext>
       <AskCards onOpen={onOpen} />
       <CopilotChat
         className={styles.chat}
@@ -199,6 +210,7 @@ function AskChat({ onOpen }: { onOpen?: (search: string) => void }) {
         }}
         onError={() => setUnavailable(true)}
       />
+      </TurnContext>
       {unavailable && <p role="status" className={styles.blocked}>Ask is unavailable right now. Search still works.</p>}
       {blocked && <p role="status" className={styles.blocked}>{blocked}</p>}
       {blocked && <StatusLine left={status.left} limit={status.limit} />}

@@ -66,9 +66,12 @@ export function relateChoices(args: RelateArgs, r: TractRefusal): FollowUp[] {
       return { label: columnLabel(c), question: which === "a" ? relateQ(next, words) : relateQ(next, undefined, words) };
     });
   }
-  // Two datasets: only a place and year both have can work.
-  if (r.status === "choose-year" && "shared" in r)
-    return (r.shared ?? []).slice(0, MAX).map((s) => ({ label: `${s.place} ${s.year}`, question: relateQ({ ...args, place: s.place, year: s.year }) }));
+  // Two datasets: only a place and year both have can work. A property side has no years, so the server sends the DYCU
+  // side's own list (tagged with that side) and every one of those works.
+  if (r.status === "choose-year") {
+    const list = "shared" in r && r.shared ? r.shared : "dataset" in r && r.dataset ? slots(r) : [];
+    return list.slice(0, MAX).map((s) => ({ label: `${s.place} ${s.year}`, question: relateQ({ ...args, place: s.place, year: s.year }) }));
+  }
   return [];
 }
 

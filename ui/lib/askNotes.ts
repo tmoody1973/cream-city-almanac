@@ -91,3 +91,20 @@ export function newestTurnCallIds(messages: CallMsg[]): Set<string> {
   }
   return turn;
 }
+
+// A call the model repeated later in the same answer: it refused (a list of options) and the model fixed it itself,
+// so its "Pick one:" row would read as "Ask couldn't tell" beside the answer that followed.
+export function retriedCallIds(messages: CallMsg[]): Set<string> {
+  const retried = new Set<string>();
+  let lastByTool = new Map<string, string>();
+  for (const m of messages) {
+    if (m.role === "user") lastByTool = new Map();
+    for (const c of m.toolCalls ?? []) {
+      const name = c.function?.name ?? "";
+      const before = lastByTool.get(name);
+      if (before) retried.add(before);
+      lastByTool.set(name, c.id);
+    }
+  }
+  return retried;
+}

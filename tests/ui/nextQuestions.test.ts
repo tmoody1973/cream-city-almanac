@@ -17,6 +17,11 @@ describe("ranking", () => {
     for (const x of f) expect(digitsOk(x.question, pov)).toBe(true);
     expect(rankFollowUps(pov, "low")[0].label).toBe("SHOW THE HIGHEST");
   });
+  it("writes an exact City figure's year as the year alone (the tool's year takes a short label)", () => {
+    const f = rankFollowUps(home, "high");
+    expect(f[0].question).toBe("Rank census tracts by median assessed value of homes (houses and condos), lowest first, the City of Milwaukee 2026 (H28 median_value).");
+    for (const x of f) expect(x.question).not.toContain("assessment");
+  });
   it("never offers change over time for exact City figures", () => {
     expect(rankFollowUps(home, "high").map((x) => x.label)).toEqual(["SHOW THE LOWEST", "WHAT GOES WITH IT?"]);
   });

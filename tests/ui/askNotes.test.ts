@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { earlierCountIds, earlierSheetIds, lastCountId, newestTurnCallIds, noteNumbers, noteOrder } from "../../ui/lib/askNotes";
+import { earlierCountIds, earlierSheetIds, lastCountId, newestTurnCallIds, noteNumbers, retriedCallIds, noteOrder } from "../../ui/lib/askNotes";
 
 const u = (id: string) => ({ id, role: "user", content: "q" });
 const call = (id: string) => ({ id, role: "assistant", content: "", toolCalls: [{ id: `c-${id}` }] });
@@ -77,5 +77,19 @@ describe("newestTurnCallIds", () => {
   it("is empty before any tool call and right after a new question", () => {
     expect(newestTurnCallIds([]).size).toBe(0);
     expect(newestTurnCallIds([{ id: "u1", role: "user" }, { id: "a1", role: "assistant", toolCalls: [call("c1")] }, { id: "u2", role: "user" }]).size).toBe(0);
+  });
+});
+
+describe("retriedCallIds", () => {
+  const call = (id: string, name: string) => ({ id, function: { name } });
+  it("marks a call the model repeated later in the same answer (it fixed its own refusal), never across questions", () => {
+    const messages = [
+      { id: "u1", role: "user" },
+      { id: "a1", role: "assistant", toolCalls: [call("c1", "rankTracts")] },
+      { id: "a2", role: "assistant", toolCalls: [call("c2", "rankTracts"), call("c3", "showDataset")] },
+      { id: "u2", role: "user" },
+      { id: "a3", role: "assistant", toolCalls: [call("c4", "rankTracts")] },
+    ];
+    expect([...retriedCallIds(messages)]).toEqual(["c1"]);
   });
 });
