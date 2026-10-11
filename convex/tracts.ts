@@ -257,7 +257,9 @@ export const compareYears = action({
     // Left out: tracts only one year has, plus the rows each year dropped for having no usable value.
     const leftOut = y1.values.length - matched + (y2.values.length - matched) + y1.leftOut + y2.leftOut;
     const detail: ChangeDetail = {
-      status: "ok", tool: "change", header: header(r1, args.place, `${r1.year}\u2013${r2.year}`, matched, leftOut), note: r1.range ? YEAR_NOTE[r1.range.kind] : null,
+      // A change can only be called clear when both years publish a range; one bare year makes the whole comparison bare.
+      status: "ok", tool: "change", header: { ...header(r1, args.place, `${r1.year}\u2013${r2.year}`, matched, leftOut), ...(r2.range ? {} : { confidence: null }) },
+      note: r1.range && r2.range ? YEAR_NOTE[r1.range.kind] : null,
       from: r1.year, to: r2.year, increases, decreases, none, unreliableCount, changeCount: changes.length, changes, highlighted: changes.map((c) => c.geoid), key,
     };
     await save(detail);

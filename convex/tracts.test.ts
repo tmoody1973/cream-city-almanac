@@ -322,6 +322,16 @@ describe("compareYears", () => {
     return t.withIdentity(reader).action(api.tracts.compareYears, { code: "E02", column: "pov_rate", place: "City", from: "2022", to: "2023" });
   };
 
+  it("reports no confidence when the later year publishes no margin, so the card can't claim 'no clear change'", async () => {
+    const t = await seedTwoYears();
+    const bare = POV_FIELDS.filter((f) => f.name !== "pov_rate_moe");
+    installFakeFetch({
+      columnsFor: (url) => (url.includes("2023") ? bare : POV_FIELDS),
+      tractRows: (url) => (url.includes("2023") ? { features: povertyRows().features.map((f) => ({ attributes: { GEOID: f.attributes.GEOID, pov_rate: f.attributes.pov_rate } })) } : povertyRows()),
+    });
+    const r = await t.withIdentity(reader).action(api.tracts.compareYears, { code: "E02", column: "pov_rate", place: "City", from: "2022", to: "2023" });
+    expect(r).toMatchObject({ status: "ok", header: { confidence: null }, note: null, increases: 0, decreases: 0 });
+  });
   it("counts clear increases and decreases against both years' margins", async () => {
     const t = await seedTwoYears();
     // +10 and -5 clear sqrt(1^2 + 1^2) = 1.41; +0.5 does not. Tract 1 (11) only drops to 6: still reliable.

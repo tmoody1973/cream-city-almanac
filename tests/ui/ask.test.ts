@@ -46,6 +46,13 @@ describe("proseSegments", () => {
     expect(check("Tracts 78 and 4242.")).toEqual(["4242"]);
     expect(flagged("Tract 1860 tops the list.")).toEqual(["1860"]);
   });
+  it("a tract list can't swallow a count that happens to equal a tract number", () => {
+    const data = JSON.stringify({ top: [{ tract: "1860" }, { tract: "78" }, { tract: "40" }] });
+    const check = (t: string) => proseSegments(t, data).filter((s) => s.unverified).map((s) => s.text);
+    expect(check("In tract 1860, 40 tracts come close.")).toEqual(["40"]);
+    expect(check("Tract 1860 and 78 others.")).toEqual(["78"]);
+    expect(check("Tracts 40, 78 and 1860 lead.")).toEqual([]);
+  });
   it("a district or ward number can't swallow a count that follows it", () => {
     expect(flagged("In the district 1,200 homes were vacant.")).toEqual(["1,200"]);
     expect(flagged("Ward 6,520 voters")).toEqual(["6,520"]);

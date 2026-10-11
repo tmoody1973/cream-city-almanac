@@ -47,7 +47,9 @@ function documentedDurations(text: string, data: string): [number, number][] {
 
 // "tract 1860", "tracts 78 and 1601.01": a tract number is a name when a tract tool returned it ("tract":"1860"); one the
 // data never named is the model's own, and flags.
-const TRACTS = /\btracts?\s+\d+(?:\.\d+)?(?:(?:,\s*|,?\s+(?:and|or)\s+)\d+(?:\.\d+)?)*/gi;
+// A number inside a tract list is a tract only when it doesn't read as a count: "40 tracts", "78 others", "12 more" are counts.
+const LISTED = String.raw`\d+(?:\.\d+)?(?![\d.]*\s+(?:tracts?|others?|more|of|percent)\b|[\d.]*%)`;
+const TRACTS = new RegExp(String.raw`\btracts?\s+${LISTED}(?:(?:,\s*|,?\s+(?:and|or)\s+)${LISTED})*`, "gi");
 function namedTracts(text: string, data: string): [number, number][] {
   const plainData = data.replace(/\\"/g, '"'); // tool results can arrive JSON-encoded twice
   return [...text.matchAll(TRACTS)].flatMap((m) =>
