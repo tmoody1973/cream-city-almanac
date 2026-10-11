@@ -48,9 +48,19 @@ export function TractScatter({ points, a, b, cutA, cutB, aSide, bSide, counts, b
   ];
   const describe = (p: Point) =>
     `Tract ${p.tract}${p.neighborhood ? ` (${p.neighborhood})` : ""}: ${a.column} ${spell(p.a, pa)}, ${b.column} ${spell(p.b, pb)}`;
-  // A tap on a dot names it under the plot in the big view; a hover names it everywhere.
+  // A tap on a dot names it under the plot in the big view; a hover names it everywhere. The marked dots (a handful)
+  // also take keyboard focus there, Enter or Space naming them; the hundreds of grey ones don't, or Tab would never
+  // leave the plot (every marked tract is in the table too).
   const dot = (p: Point, el: React.ReactElement) => (
-    <g key={p.geoid} onClick={big ? () => setPicked(p) : undefined} className={big ? styles.tractHit : undefined}>
+    <g
+      key={p.geoid}
+      onClick={big ? () => setPicked(p) : undefined}
+      className={big ? styles.tractHit : undefined}
+      {...(big && p.mark ? {
+        tabIndex: 0, role: "button", "aria-label": describe(p),
+        onKeyDown: (e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setPicked(p); } },
+      } : {})}
+    >
       <title>{describe(p)}</title>
       {big && <circle cx={s.x(p.a[0])} cy={s.y(p.b[0])} r={9} fill="transparent" />}
       {el}

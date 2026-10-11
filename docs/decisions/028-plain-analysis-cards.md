@@ -11,7 +11,7 @@
 
 **What we chose and why:** Option A, Tarik's call on 2026-10-11, from three options Claude laid out. The sentence names the place in full ("Milwaukee County"), the year of the data, and the result in words. Examples: "where the percentage of households with income below the poverty line is higher, the Food Insecurity Prevalence (per_insecure) tends to be higher too. The pattern is strong. That doesn't mean one causes the other."; "Once the survey's margin of error is counted, none is a clear match; 2 are possible matches." The other changes follow common charting and plain-language practice:
 - *Words:* "clear match" and "possible match" replace "clearly fits" and "close, not clear". "Tied with #10 (within the margin of error)" replaces "within range of #10". "Too uncertain to rank" replaces "unreliable: range too wide".
-- *A "How to read this" fold:* it defines a census tract (a small area of usually 1,200 to 8,000 people) and says how each card decided. It is also where Spearman's ρ (a 0-to-1 measure of how alike the two orders are) now lives, explained.
+- *A "How to read this" fold:* it defines a census tract (a small area of usually 1,200 to 8,000 people) and says how each card decided. It is also where Spearman's ρ (a measure from −1 to 1 of how alike the two orders are: 1 the same order, 0 no connection, −1 the opposite) now lives, explained.
 - *The plot:*
   - It is drawn at its real size on screen, so its words are the card's text size, not a picture shrunk to fit.
   - Axis titles are in words, and both axes show their low end, high end and cutoff.

@@ -167,6 +167,7 @@
 [data-scatter="big"] .tractAxisX { max-width: none; }
 .tractCorner { fill: var(--band); }
 .tractHit { cursor: pointer; }
+.tractHit:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .tractPicked { fill: none; stroke: var(--ink); stroke-width: 2; }
 .tractFrame { fill: none; stroke: var(--ink); stroke-width: 1; }
 .tractCut { stroke: var(--ink); stroke-width: 1; stroke-dasharray: 3 3; }
