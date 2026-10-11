@@ -34,8 +34,9 @@ Approved in conversation 2026-10-11 (Tarik), section by section. This is Project
 - **DYCU area** lists every DYCU area whose definition for that year includes the tract, comma-separated, in DYCU's order. "—" means none.
 - **Footer note** under each table: "Neighborhood: the City's official neighborhoods covering at least 10% of the tract, biggest first. DYCU area: the areas DYCU's reports group the tract into." It is followed by the existing "How neighborhoods work" link.
 - **Scatter dot labels:** "Tract 1860 (mostly Hillside; DYCU: Harambee, Hillside, Lindsay Heights)". Either part is omitted when it is empty.
+- **"Mostly" vs "partly":** "mostly X" only when X covers at least 50% of the tract; otherwise "partly X" (tract 1.01 is 42% Northridge, so "partly Northridge").
 - **/how-it-works#neighborhoods** gains a plain-English section on how a tract gets its City neighborhoods: shapes matched weekly, the 10% rule, biggest first, "—" outside the City.
-- **Ask's words:** one prompt rule. When Ask names a tract's place, it says "mostly {first City neighborhood}", and it never calls a DYCU area a City neighborhood. Ask's tools are otherwise unchanged.
+- **Ask's words:** one prompt rule. When Ask names a tract's place, it uses the first City neighborhood with the same "mostly"/"partly" rule, and it never calls a DYCU area a City neighborhood. Ask's tools are otherwise unchanged.
 - **Phones:** the tables scroll sideways inside their card. At 390px the page itself never scrolls sideways.
 
 ## 4. How it's built
@@ -91,7 +92,8 @@ Approved in conversation 2026-10-11 (Tarik), section by section. This is Project
   - the footer note;
   - the `<details>` list with shares;
   - "—" for empty;
-  - scatter labels with either part empty.
+  - scatter labels with either part empty;
+  - "mostly" at 50% and "partly" at 49%.
 - **Browser, on the PR preview** (signed in, scripted model):
   - a ranking card shows "Neighborhood" and "DYCU area" headers;
   - "+N" opens the share list by click and by keyboard (Enter);
