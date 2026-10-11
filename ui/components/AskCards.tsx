@@ -14,6 +14,9 @@ import { LivePreview } from "./LivePreview";
 import { OpenLink, type Open } from "./OpenLink";
 import { ProvenanceTag } from "./ProvenanceTag";
 import { ChangeCard, NEIGHBORHOODS_HELP, RankCard, RelateCard, TractMapSlot } from "./TractCards";
+import { FollowUps, type FollowUp } from "./FollowUps";
+import { changeFollowUps, countFollowUps, datasetFollowUps, numberFollowUps, previewFollowUps, rankFollowUps, relateFollowUps } from "@/ui/lib/nextQuestions";
+import { changeChoices, countChoices, numberChoices, rankChoices, relateChoices } from "@/ui/lib/refusalChoices";
 import styles from "./ask.module.css";
 
 type Value = { estimate: string; moe: string | null } | null;
@@ -242,6 +245,12 @@ function CountCard({ r, id, onOpen, noMap, args }: { r: CountOk; id?: string; on
   );
 }
 
+// A broad first count folds away (EarlierCounts); only the count the reader sees gets next questions.
+function CountFollowUps({ items, id }: { items: FollowUp[]; id?: string }) {
+  const earlier = useContext(EarlierCounts);
+  return id && earlier.has(id) ? null : <FollowUps items={items} id={id} />;
+}
+
 const key = (name: string, props: { toolCallId?: string; result?: string }) => props.toolCallId ?? `${name}:${props.result ?? ""}`;
 
 export function AskCards({ onOpen }: { onOpen?: (search: string) => void }) {
@@ -262,10 +271,15 @@ export function AskCards({ onOpen }: { onOpen?: (search: string) => void }) {
 
   useRenderTool({ name: "showDataset", parameters: z.object({ code: z.string() }), render: (props) => {
     if (props.status !== "complete") return <Busy />;
-    const r = parse<{ status: string; code: string; name: string }>(props.result);
+    const r = parse<{ status: string; code: string; name: string; storyAngles?: string[] }>(props.result);
     if (!r) return <Failed />;
     if (r.status !== "ok") return null;
-    return <Once id={props.toolCallId}><SheetCard code={r.code} name={r.name} onOpen={onOpen} callKey={key("showDataset", props as never)} /></Once>;
+    return (
+      <>
+        <Once id={props.toolCallId}><SheetCard code={r.code} name={r.name} onOpen={onOpen} callKey={key("showDataset", props as never)} /></Once>
+        <Once id={props.toolCallId}><FollowUps items={datasetFollowUps(r)} id={props.toolCallId} /></Once>
+      </>
+    );
   } }, [onOpen]);
 
   useRenderTool({ name: "previewData", parameters: z.object({ code: z.string() }), render: (props) => {
@@ -273,43 +287,57 @@ export function AskCards({ onOpen }: { onOpen?: (search: string) => void }) {
     const r = parse<{ status: string; city?: boolean; code: string; name: string; members: { place: string | null; yearLabel: string | null; featureServerUrl: string | null }[]; fields: string[] }>(props.result);
     if (!r) return <Failed />;
     if (r.status !== "ok") return null;
-    return <Once id={props.toolCallId}><SheetCard code={r.code} name={r.name} onOpen={onOpen} callKey={key("previewData", props as never)} preview={{ members: r.members, fields: r.fields }} source={r.city ? "CITY" : "HUB"} /></Once>;
+    return (
+      <>
+        <Once id={props.toolCallId}><SheetCard code={r.code} name={r.name} onOpen={onOpen} callKey={key("previewData", props as never)} preview={{ members: r.members, fields: r.fields }} source={r.city ? "CITY" : "HUB"} /></Once>
+        <Once id={props.toolCallId}><FollowUps items={previewFollowUps({ code: r.code, name: r.name, fields: r.fields })} id={props.toolCallId} /></Once>
+      </>
+    );
   } }, [onOpen]);
 
   useRenderTool({ name: "getNumber", parameters: z.object({ neighborhood: z.string() }), render: (props) => {
     if (props.status !== "complete") return <Busy />;
     const r = parse<NumberResult>(props.result);
     if (!r) return <Failed />;
-    if (r.status !== "ok") return null; // the model picks from the choices and calls again
-    return <NumberCard r={r} onOpen={onOpen} callKey={key("getNumber", props as never)} />;
+    // A refusal lists neighborhoods, topics or rows: the model asks in words, and the reader can pick one here.
+    if (r.status !== "ok") return <FollowUps pick items={numberChoices(props.parameters as never, r as never)} id={props.toolCallId} />;
+    return (
+      <>
+        <NumberCard r={r} onOpen={onOpen} callKey={key("getNumber", props as never)} />
+        <FollowUps items={numberFollowUps({ topic: r.topic, label: r.label })} id={props.toolCallId} />
+      </>
+    );
   } }, [onOpen]);
 
   useRenderTool({ name: "countRecords", parameters: countParams, render: (props) => {
     if (props.status !== "complete") return <Busy />;
     const r = parse<CountForModel>(props.result);
     if (!r) return <Failed />;
-    if (r.status === "ok") return <CountOrEarlier r={r} id={props.toolCallId} onOpen={onOpen} args={props.parameters} />;
+    if (r.status === "ok") return <><CountOrEarlier r={r} id={props.toolCallId} onOpen={onOpen} args={props.parameters} /><CountFollowUps items={countFollowUps(props.parameters as never, r)} id={props.toolCallId} /></>;
     if (r.status === "outside-coverage") return <p className={styles.failed} data-card="count-outside">{outsideCoverage(r)} <OpenLink code={r.code} onOpen={onOpen} /></p>;
     if (r.status === "unavailable") return <p className={styles.failed}>The City&apos;s data didn&apos;t respond. Try again shortly.</p>;
     if (r.status === "not-live") return <p className={styles.failed}>{r.name} can&apos;t be counted live.{r.note ? ` ${r.note}` : ""} <OpenLink code={r.code} onOpen={onOpen} /></p>;
     if (r.status === "busy") return <p className={styles.failed}>City counts are busy for your account; try again shortly.</p>;
-    if (r.status === "no-neighborhood") return <p className={styles.failed} data-card="count-no-neighborhood">No City neighborhood is called &ldquo;{r.asked}&rdquo;.{r.nearest.length ? ` Nearest: ${r.nearest.join(", ")}.` : ""}</p>;
+    if (r.status === "no-neighborhood") return <><p className={styles.failed} data-card="count-no-neighborhood">No City neighborhood is called &ldquo;{r.asked}&rdquo;.{r.nearest.length ? ` Nearest: ${r.nearest.join(", ")}.` : ""}</p><FollowUps pick items={countChoices(props.parameters as never, r as never)} id={props.toolCallId} /></>;
     if (r.status === "no-locations") return <p className={styles.failed}>{r.name} doesn&apos;t record locations, so it can&apos;t be counted by neighborhood. <OpenLink code={r.code} onOpen={onOpen} /></p>;
     if (r.status === "too-broad") return <p className={styles.failed}>Too many {r.name} records in {r.area} to count at once; try a shorter period.</p>;
-    return null; // choose / bad-column / bad-dates / not-found / not-city: the model asks or retries
+    // choose / bad-column offer the server's options to pick; bad-dates / not-found / not-city have none (the model asks or retries).
+    return <FollowUps pick items={countChoices(props.parameters as never, r as never)} id={props.toolCallId} />;
   } }, [onOpen]);
 
   // The three tract tools: the model handles refusals in words; only an unreachable DYCU gets a line of its own.
-  const tractCard = <T extends { status: string }>(result: unknown, card: (r: Extract<T, { status: "ok" }>) => ReactElement): ReactElement | null => {
+  const tractCard = <T extends { status: string }>(result: unknown, id: string | undefined, card: (r: Extract<T, { status: "ok" }>) => ReactElement, next: (r: Extract<T, { status: "ok" }>) => FollowUp[], choices: (r: T) => FollowUp[]): ReactElement | null => {
     const r = parse<T>(result);
     if (!r) return <Failed />;
     if (r.status === "unavailable") return <p className={styles.source}>DYCU&apos;s data didn&apos;t respond. Try again shortly.</p>;
     if (r.status === "busy") return <p className={styles.failed}>Tract analyses are busy for your account; try again shortly.</p>;
-    return r.status === "ok" ? card(r as Extract<T, { status: "ok" }>) : null;
+    if (r.status === "ok") return <>{card(r as Extract<T, { status: "ok" }>)}<FollowUps items={next(r as Extract<T, { status: "ok" }>)} id={id} /></>;
+    // A refusal the model words; its listed options (columns, place/years) can be picked here.
+    return <FollowUps pick items={choices(r)} id={id} />;
   };
-  useRenderTool({ name: "rankTracts", parameters: rankParams, render: (props) => props.status !== "complete" ? <Busy /> : tractCard<RankResult>(props.result, (r) => <RankCard r={r} onOpen={onOpen} />) }, [onOpen]);
-  useRenderTool({ name: "compareYears", parameters: changeParams, render: (props) => props.status !== "complete" ? <Busy /> : tractCard<ChangeResult>(props.result, (r) => <ChangeCard r={r} onOpen={onOpen} />) }, [onOpen]);
-  useRenderTool({ name: "relateTracts", parameters: relateParams, render: (props) => props.status !== "complete" ? <Busy /> : tractCard<RelateResult>(props.result, (r) => <RelateCard r={r} onOpen={onOpen} />) }, [onOpen]);
+  useRenderTool({ name: "rankTracts", parameters: rankParams, render: (props) => props.status !== "complete" ? <Busy /> : tractCard<RankResult>(props.result, props.toolCallId, (r) => <RankCard r={r} onOpen={onOpen} />, (r) => rankFollowUps(r.header, r.direction), (r) => rankChoices(props.parameters as never, r as never)) }, [onOpen]);
+  useRenderTool({ name: "compareYears", parameters: changeParams, render: (props) => props.status !== "complete" ? <Busy /> : tractCard<ChangeResult>(props.result, props.toolCallId, (r) => <ChangeCard r={r} onOpen={onOpen} />, (r) => changeFollowUps(r.header, r.to), (r) => changeChoices(props.parameters as never, r as never)) }, [onOpen]);
+  useRenderTool({ name: "relateTracts", parameters: relateParams, render: (props) => props.status !== "complete" ? <Busy /> : tractCard<RelateResult>(props.result, props.toolCallId, (r) => <RelateCard r={r} onOpen={onOpen} />, (r) => relateFollowUps({ mode: r.mode, a: r.a, b: r.b, place: (props.parameters as { place: string }).place, year: (props.parameters as { year: string }).year, strength: r.strength, aSide: r.aSide, bSide: r.bSide }), (r) => relateChoices(props.parameters as never, r as never)) }, [onOpen]);
 
   useRenderTool({ name: "readReport", parameters: z.object({ question: z.string() }), render: (props) => {
     if (props.status !== "complete") return <Busy />;

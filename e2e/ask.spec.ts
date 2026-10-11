@@ -305,6 +305,39 @@ test.describe("signed in", () => {
     await expect(card).toContainText("Assessed value is the City's figure for property taxes");
   });
 
+  test("next-question buttons fill the box, never send, and only the newest answer has them", async ({ page }) => {
+    test.skip(!(await dycuUp(page)), "DYCU unreachable");
+    await ask(page, "rank tracts by poverty");
+    const card = page.locator("[data-card=tract-rank]:visible");
+    await expect(card.locator("tbody tr").first()).toBeVisible({ timeout: 60_000 });
+    const left = await page.getByText(/of \d+ questions left today/).first().textContent();
+    const row = page.locator("[data-follow-ups=next]").filter({ visible: true });
+    await row.getByRole("button", { name: "SHOW THE LOWEST" }).click();
+    const box = page.getByPlaceholder("Ask about Milwaukee data");
+    await expect(box).toHaveValue(/lowest first.*\(E02 pov_rate\)/);
+    await expect(box).toBeFocused();
+    // A second button replaces the text; still nothing sent.
+    await row.getByRole("button", { name: "WHAT GOES WITH IT?" }).click();
+    await expect(box).toHaveValue(/^What else goes with .*\(E02 pov_rate\)$/);
+    await expect(page.getByText(/of \d+ questions left today/).first()).toHaveText(left ?? "");
+    // A newer question takes the buttons with it.
+    await box.fill("");
+    await ask(page, "What has the air been like?");
+    await expect(page.locator("[data-card=preview]")).toContainText("Daily Air Quality", { timeout: 30_000 });
+    await expect(page.locator("[data-follow-ups=next]").filter({ visible: true })).toHaveCount(1);
+    await expect(page.locator("[data-follow-ups=next]").filter({ visible: true }).getByRole("button", { name: "SHOW THE LOWEST" })).toHaveCount(0);
+  });
+
+  test("a wrong column offers the server's columns as 'Pick one:' buttons", async ({ page }) => {
+    test.skip(!(await dycuUp(page)), "DYCU unreachable");
+    await ask(page, "wrong column");
+    const pick = page.locator("[data-follow-ups=pick]").filter({ visible: true });
+    await expect(pick).toContainText("Pick one:", { timeout: 60_000 });
+    await expect(pick.getByRole("button", { name: /\(pov_rate\)/ })).toBeVisible();
+    await pick.getByRole("button", { name: /\(pov_rate\)/ }).click();
+    await expect(page.getByPlaceholder("Ask about Milwaukee data")).toHaveValue(/^Rank census tracts by .*\(E02 pov_rate\)\.$/);
+  });
+
   test("shows today's count and a way to sign out", async ({ page }) => {
     await expect(page.getByText(/of \d+ questions left today/)).toBeVisible({ timeout: 20_000 });
     await page.getByTestId("copilot-input-overlay").getByRole("button", { name: "Sign out" }).click();
