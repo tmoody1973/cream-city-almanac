@@ -2,7 +2,8 @@
 // each construct (free, read-only). npx tsx scripts/city-sql-smoke.ts
 import { buildCount } from "../convex/lib/citySql";
 import { datastoreSql } from "../convex/lib/ckan";
-import { planProfile, profileSql, type CityProfile } from "../convex/lib/cityProfile";
+import { MPROP_RID, planProfile, profileSql, type CityProfile } from "../convex/lib/cityProfile";
+import { MEASURES, measureSql, measureValues } from "../convex/lib/propertyMeasures";
 
 const RID = process.env.CRIME_RID ?? "87843297-a6fa-46d4-ba5d-cb342fb2d3bb";
 const today = new Date().toISOString().slice(0, 10);
@@ -82,3 +83,10 @@ for (const sql of [mfd.totalSql, mfd.groupSql].filter((s): s is string => !!s)) 
 const mfdPoints = await datastoreSql<Record<string, unknown>>(mfd.points.sql);
 const [mfdMissing] = await datastoreSql<{ n: string }>(mfd.points.missingSql);
 console.log("OK MFD", mfdPoints.length, "points ·", mfdMissing.n, "unplaced ·", mfd.points.sql.slice(0, 90));
+
+// Property measures (H28, MPROP): every measure's SQL runs, and its tracts pad to DYCU GEOIDs.
+for (const m of MEASURES) {
+  const rows = await datastoreSql<{ t: unknown; v: unknown; n: unknown }>(measureSql(MPROP_RID, m, "2026", m.cutoff ? 200000 : undefined));
+  const r = measureValues(rows);
+  console.log("OK", m.id, rows.length, "tracts ·", r.values.length, "kept ·", r.thin, "thin ·", r.noTract, "no tract · e.g.", r.values[0]);
+}

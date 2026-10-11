@@ -1,6 +1,9 @@
 // A live City dataset's menu for counting: which column is the date, which are districts, the top values of each
 // category column (offense codes, request types), its row count and date range. Only what's here can be counted.
 // The City's SQL refuses casts and NULLIF, so dates are read as ISO text ("2026-06-16 14:51:00"), which sorts correctly.
+
+// The City's Master Property File (MPROP, catalog code H28 on the live site): the one City file joined to census tracts.
+export const MPROP_RID = "0a2c7f31-cd15-4151-8222-09dd57d5f16d";
 const DATE_NAMES = ["incident_date", "creationdate", "casedate", "date", "issue_date", "dateissued", "reportdate", "calldate", "incidentstarted"];
 const DISTRICT = /^(police_?district|ald(erman(ic)?)?_?(dist(rict)?)?|aldermanic_?district|ward|zip(_?code)?|zipcode)$/i;
 // Columns that name or identify a person: they flag the dataset and are never offered for counting.

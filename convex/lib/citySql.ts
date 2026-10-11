@@ -17,7 +17,8 @@ const MAX_OFFENSE_CODES = 5;
 // Only a plain code ("120", "23H") goes inside a LIKE pattern, so no value can carry a wildcard or a quote into it.
 const LIKE_SAFE = /^[0-9A-Z]{2,4}$/;
 export const NUMERIC = "^-?[0-9]+(\\.[0-9]+)?$";
-const num = (c: string) => `(CASE WHEN ${quoteId(c)} ~ ${lit(NUMERIC)} THEN ${quoteId(c)}::float END)`;
+const lit = (s: string) => `'${s.replace(/'/g, "''")}'`;
+export const num = (c: string) => `(CASE WHEN ${quoteId(c)} ~ ${lit(NUMERIC)} THEN ${quoteId(c)}::float END)`;
 const coord = (n: number) => { if (!Number.isFinite(n)) throw new Error("Neighborhood rectangle is not numeric"); return String(n); };
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -30,7 +31,6 @@ export type Built =
   | { ok: false; status: "bad-column"; column: string; columns: string[] }
   | { ok: false; status: "bad-dates"; from: string; to: string };
 
-const lit = (s: string) => `'${s.replace(/'/g, "''")}'`;
 const isoDay = (d: Date) => d.toISOString().slice(0, 10);
 const addDays = (day: string, n: number) => isoDay(new Date(Date.parse(`${day}T00:00:00Z`) + n * 86_400_000));
 const human = (day: string) => { const [y, m, d] = day.split("-").map(Number); return `${MONTHS[m - 1]} ${d}, ${y}`; };
