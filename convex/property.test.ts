@@ -53,7 +53,7 @@ describe("property measures in the tract tools", () => {
     const r = await t.withIdentity(reader).action(api.tracts.rankTracts, { code: "h28", column: "median_value", place: "County", year: "2023", direction: "low" });
     expect(r).toMatchObject({ status: "ok", tool: "rank", header: { code: "H28", column: "median_value", confidence: EXACT, place: "City", year: "2026 assessment", n: 25, leftOut: 2 } });
     if (r.status !== "ok") return;
-    expect(r.top[0]).toMatchObject({ tract: "1860", neighborhood: "Harambee", value: 60000, lo: 60000, hi: 60000, unreliable: false });
+    expect(r.top[0]).toMatchObject({ tract: "1860", dycu: ["Harambee"], value: 60000, lo: 60000, hi: 60000, unreliable: false });
     expect(r.unreliableCount).toBe(0);
     expect(JSON.stringify(r)).not.toMatch(FORBIDDEN);
   });
