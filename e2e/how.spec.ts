@@ -20,6 +20,7 @@ test("it explains the two neighborhood maps and lists DYCU's areas with their tr
   const section = page.locator("#neighborhoods");
   await expect(section).toContainText("190 official neighborhoods");
   await expect(section).toContainText("27 report areas");
+  await expect(section).toContainText("at least 10% of the tract");
   await section.getByText("Which tracts make up each DYCU area").click();
   await expect(section.locator("[data-area='United Community']")).toContainText("47");
 });
