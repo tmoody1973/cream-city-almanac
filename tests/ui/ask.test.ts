@@ -46,6 +46,14 @@ describe("proseSegments", () => {
     expect(check("Tracts 78 and 4242.")).toEqual(["4242"]);
     expect(flagged("Tract 1860 tops the list.")).toEqual(["1860"]);
   });
+  it("treats 311 and 911 as the City's service names, not figures, when the words say so", () => {
+    expect(flagged("Most 311 requests are about potholes.")).toEqual([]);
+    expect(flagged("Use the City's 311 line or call 911.")).toEqual([]);
+    expect(flagged("Residents dial 311 for trash pickup; MKE 311 logs it.")).toEqual([]);
+    expect(flagged("911 calls and 311 service requests are separate datasets.")).toEqual([]);
+    expect(flagged("There were 311 complaints.")).toEqual(["311"]);
+    expect(flagged("About 311 homes.")).toEqual(["311"]);
+  });
   it("a tract list can't swallow a count that happens to equal a tract number", () => {
     const data = JSON.stringify({ top: [{ tract: "1860" }, { tract: "78" }, { tract: "40" }] });
     const check = (t: string) => proseSegments(t, data).filter((s) => s.unverified).map((s) => s.text);
