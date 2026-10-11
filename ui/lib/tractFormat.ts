@@ -9,23 +9,37 @@ export const plainMeaning = (meaning: string) => meaning.split(/\s+Calculation:/
 
 export const isPercent = (meaning: string) => /percent/i.test(meaning); // also matches "percentage"
 
+// How a column's figures print, from DYCU's (or the property file's) own words for it, never guessed from the numbers.
+export type Unit = "percent" | "dollars" | "year" | "plain";
+export const unitOf = (meaning: string): Unit =>
+  isPercent(meaning) ? "percent" : /assessed value/i.test(meaning) ? "dollars" : /\byear built\b/i.test(meaning) ? "year" : "plain";
+// true / false keep the older percent-or-not callers working.
+const asUnit = (u: Unit | boolean): Unit => (u === true ? "percent" : u === false ? "plain" : u);
+
 const plain = (v: number) => sign(Math.abs(v) >= 100 ? Math.round(v).toLocaleString("en-US") : String(Math.round(v * 10) / 10));
 const fixed = (v: number) => sign((Math.round(v * 10) / 10).toFixed(1));
-const num = (v: number, pct: boolean) => (pct ? fixed(v) : plain(v));
+const num = (v: number, u: Unit) => (u === "percent" ? fixed(v) : u === "year" ? String(Math.round(v)) : plain(v));
+const wrap = (s: string, u: Unit) => (u === "dollars" ? (s.startsWith(MINUS) ? `${MINUS}$${s.slice(1)}` : `$${s}`) : s);
 
-export const valueText = (v: number, pct: boolean) => `${num(v, pct)}${pct ? "%" : ""}`;
+export const valueText = (v: number, unit: Unit | boolean) => {
+  const u = asUnit(unit);
+  return `${wrap(num(v, u), u)}${u === "percent" ? "%" : ""}`;
+};
 
-// The % closes the range ("(64.2–82.8%)"), as it does the value.
-export function rangeText(r: { value: number; lo: number | null; hi: number | null }, pct: boolean) {
+// The % closes the range ("(64.2–82.8%)"), as it does the value; dollars mark both ends. An exact value has no range.
+export function rangeText(r: { value: number; lo: number | null; hi: number | null }, unit: Unit | boolean) {
+  const u = asUnit(unit);
+  const exact = r.lo !== null && r.hi !== null && r.lo === r.value && r.hi === r.value;
   return {
-    value: valueText(r.value, pct),
-    span: r.lo === null || r.hi === null ? null : `(${num(r.lo, pct)}–${num(r.hi, pct)}${pct ? "%" : ""})`,
+    value: valueText(r.value, u),
+    span: r.lo === null || r.hi === null || exact ? null : `(${wrap(num(r.lo, u), u)}–${wrap(num(r.hi, u), u)}${u === "percent" ? "%" : ""})`,
   };
 }
 
-export function changeText(change: number, direction: "increase" | "decrease", pct: boolean) {
-  const n = num(Math.abs(change), pct);
-  return `${change < 0 ? MINUS : "+"}${n}${pct ? " points" : ""} (clear ${direction})`;
+export function changeText(change: number, direction: "increase" | "decrease", unit: Unit | boolean) {
+  const u = asUnit(unit);
+  const n = wrap(num(Math.abs(change), u), u);
+  return `${change < 0 ? MINUS : "+"}${n}${u === "percent" ? " points" : ""} (clear ${direction})`;
 }
 
 type Col = { code: string; column: string };

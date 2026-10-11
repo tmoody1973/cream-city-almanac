@@ -1,5 +1,5 @@
 // The honesty rules for tract comparisons (docs/superpowers/specs/2026-10-10-ask-analyzes-design.md §5). Pure: no I/O.
-export type RangeKind = "moe90" | "ci95";
+export type RangeKind = "moe90" | "ci95" | "exact"; // exact: a full count of records (City files), no survey error
 export type TractValue = { geoid: string; value: number; lo: number | null; hi: number | null; kind: RangeKind | null };
 export type Pair = { geoid: string; a: TractValue; b: TractValue };
 

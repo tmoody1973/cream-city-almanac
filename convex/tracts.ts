@@ -6,16 +6,17 @@ import { fetchColumns } from "./lib/arcgis";
 import { chicagoDay } from "./lib/ask";
 import { hashInputs } from "./lib/hash";
 import { columnKind, fetchTractRows, isNumericField, rangeColumns, tractNumber, type RangeCols } from "./lib/tractData";
-import { neighborhoodFor, type DycuDef } from "./lib/tractNames";
+import { latestDefYear, neighborhoodFor, type DycuDef } from "./lib/tractNames";
 import { byClearance, changeOf, isUnreliable, mismatch, rankValues, relationship, spearman, type TractValue } from "./lib/tractStats";
 import { rateLimiter } from "./limits";
+import { loadProperty, NO_PROPERTY, propertyHead, propertySide, type PropertySide } from "./property";
 
 // Ask's tract analyses (docs/superpowers/specs/2026-10-10-ask-analyzes-design.md). The model gets a compact answer;
 // the full one waits in mapCache under a tracts: key for the card (tractDetail), so per-tract points never ride in
 // the conversation.
 
 export type TractRow = { geoid: string; tract: string; neighborhood: string | null; value: number; lo: number | null; hi: number | null; unreliable: boolean };
-export type Header = { code: string; name: string; column: string; meaning: string; kind: "rate" | "count" | "value"; place: string; year: string; n: number; leftOut: number; confidence: string | null; url: string; caveats: string[] };
+export type Header = { code: string; name: string; column: string; meaning: string; kind: "rate" | "count" | "value"; place: string; year: string; n: number; leftOut: number; leftOutWhy?: string; confidence: string | null; url: string; caveats: string[] };
 type Slot = { place: string; year: string };
 // A refusal can say which dataset (relateTracts: "a" or "b") or which year (compareYears: the second) it is about, and
 // relateTracts may carry the other cheap problems it found in the same pass.
@@ -23,7 +24,7 @@ type Tag = { dataset?: "a" | "b"; year?: string; also?: Refusal[] };
 export type Refusal = Tag & (
   | { status: "not-found" }
   | { status: "not-tract" }
-  | { status: "choose-column"; columns: { column: string; meaning: string; range: boolean }[] }
+  | { status: "choose-column"; columns: { column: string; meaning: string; range: boolean }[]; reason?: string }
   | { status: "choose-year"; available: Slot[] | { a: Slot[]; b: Slot[] }; shared?: Slot[]; reason?: string }
   | { status: "unavailable" }
   | { status: "busy" }
@@ -152,6 +153,26 @@ export const header = (r: Resolved, place: string, year: string, n: number, left
   place, year, n, leftOut, confidence: r.range ? CONFIDENCE[r.range.kind] : null, url: r.url, caveats: r.family.caveats,
 });
 
+// One side of a tract tool in two steps, so a problem with either side is found before any rows are fetched. Resolve:
+// a DYCU dataset asks DYCU for its columns (a refusal is an answer); a property side needs nothing.
+type Side = Resolved | PropertySide;
+const resolveSide = (ctx: ActionCtx, picked: PropertySide | Looked, column: string, spend: Spend): Promise<Side | Refusal> =>
+  "measure" in picked ? Promise.resolve(picked) : resolveLooked(ctx, picked, column, spend);
+
+// Load: the side's tract figures, ready to pair. `year` is the DYCU year for naming tracts (null for a property side).
+type Ready = { head: (place: string, n: number, leftOut: number) => Header; year: string | null; rows: Loaded; property: boolean };
+async function loadSide(ctx: ActionCtx, side: Side, spend: Spend): Promise<Ready | Refusal> {
+  if ("measure" in side) {
+    const rows = await loadProperty(ctx, side, spend);
+    if (rows === "busy") return { status: "busy" };
+    if (!rows) return { status: "unavailable" };
+    return { head: (_place, n, leftOut) => propertyHead(side, n, leftOut), year: null, rows, property: true };
+  }
+  const rows = await loadValues(ctx, side);
+  if (!rows) return { status: "unavailable" };
+  return { head: (place, n, leftOut) => header(side, place, side.year, n, leftOut), year: side.year, rows, property: false };
+}
+
 // A card's full answer is a snapshot kept for the day (the key already names it), so a card drawn earlier keeps its
 // detail; DYCU's rows (tractrows:) stay at MAP_TTL_MS.
 const DETAIL_TTL_MS = 24 * 3_600_000;
@@ -161,21 +182,32 @@ export async function store(ctx: ActionCtx, args: unknown) {
 }
 
 export const rankTracts = action({
-  args: { code: v.string(), column: v.string(), place: vPlace, year: v.string(), direction: v.union(v.literal("high"), v.literal("low")) },
+  args: { code: v.string(), column: v.string(), place: vPlace, year: v.string(), direction: v.union(v.literal("high"), v.literal("low")), cutoff: v.optional(v.number()) },
   handler: async (ctx, args): Promise<RankDetail | Refusal> => {
     const spend = await spender(ctx);
-    const r = await resolveTract(ctx, args.code, args.column, args.place, args.year, spend);
-    if ("status" in r) return r;
-    const rows = await loadValues(ctx, r);
-    if (!rows) return { status: "unavailable" };
+    const prop = await propertySide(ctx, args.code, args.column, args.cutoff);
+    if (prop && "status" in prop) return prop;
+    let picked: PropertySide | Looked;
+    if (prop) picked = prop;
+    else {
+      const looked = pickMember(await ctx.runQuery(internal.tracts.familyForTracts, { code: args.code }), args.place, args.year);
+      if ("status" in looked) return looked;
+      picked = looked;
+    }
+    const resolved = await resolveSide(ctx, picked, args.column, spend);
+    if ("status" in resolved) return resolved;
+    const side = await loadSide(ctx, resolved, spend);
+    if ("status" in side) return side;
     const defs = await ctx.runQuery(internal.tracts.dycuDefs, {});
-    const ranked = rankValues(rows.values, args.direction);
-    const { key, save } = await store(ctx, { tool: "rank", ...args, year: r.year, code: r.family.code, column: r.column });
+    const nameYear = side.year ?? String(latestDefYear(defs));
+    const ranked = rankValues(side.rows.values, args.direction);
+    const head = side.head(args.place, side.rows.values.length, side.rows.leftOut);
+    const { key, save } = await store(ctx, { tool: "rank", ...args, year: head.year, code: head.code, column: head.column });
     const detail: RankDetail = {
-      status: "ok", tool: "rank", header: header(r, args.place, r.year, rows.values.length, rows.leftOut), direction: args.direction,
-      top: ranked.top.map((v) => toRow(v, r.year, defs)),
-      ties: ranked.ties.map((v) => toRow(v, r.year, defs)), tieCount: ranked.ties.length,
-      unreliable: ranked.unreliable.map((v) => toRow(v, r.year, defs)), unreliableCount: ranked.unreliable.length,
+      status: "ok", tool: "rank", header: head, direction: args.direction,
+      top: ranked.top.map((v) => toRow(v, nameYear, defs)),
+      ties: ranked.ties.map((v) => toRow(v, nameYear, defs)), tieCount: ranked.ties.length,
+      unreliable: ranked.unreliable.map((v) => toRow(v, nameYear, defs)), unreliableCount: ranked.unreliable.length,
       highlighted: ranked.top.map((v) => v.geoid), key,
     };
     await save(detail); // the card gets every tie and every unreliable tract; the model gets the first three of each, with the totals
@@ -225,6 +257,7 @@ export const compareYears = action({
   args: { code: v.string(), column: v.string(), place: vPlace, from: v.string(), to: v.string() },
   handler: async (ctx, args): Promise<ChangeAnswer | Refusal> => {
     const spend = await spender(ctx); // sign-in check now; the budget is spent once, before the first DYCU fetch
+    if (await propertySide(ctx, args.code, args.column)) return { status: "choose-year", available: [], reason: "The City's property file holds only the current assessment, so it can't show change over time." };
     const fam: Fam | null = await ctx.runQuery(internal.tracts.familyForTracts, { code: args.code });
     const l1 = pickMember(fam, args.place, args.from);
     if ("status" in l1) return l1;
@@ -269,16 +302,20 @@ export const compareYears = action({
 });
 
 const vSide = v.union(v.literal("high"), v.literal("low"));
-const vPick = v.object({ code: v.string(), column: v.string() });
+const vPick = v.object({ code: v.string(), column: v.string(), cutoff: v.optional(v.number()) });
 
 export const relateTracts = action({
   args: { a: vPick, b: vPick, place: vPlace, year: v.string(), mode: v.union(v.literal("relate"), v.literal("mismatch")), aSide: v.optional(vSide), bSide: v.optional(vSide) },
   handler: async (ctx, args): Promise<RelateAnswer | Refusal> => {
     const spend = await spender(ctx); // one charge covers both datasets
-    // Every database-only problem with either dataset comes back at once, before anything is spent or fetched.
-    const [fa, fb]: (Fam | null)[] = await Promise.all([ctx.runQuery(internal.tracts.familyForTracts, { code: args.a.code }), ctx.runQuery(internal.tracts.familyForTracts, { code: args.b.code })]);
-    const pa = pickMember(fa, args.place, args.year);
-    const pb = pickMember(fb, args.place, args.year);
+    // Every database-only problem with either side comes back at once, before anything is spent or fetched.
+    const [qa, qb] = await Promise.all([propertySide(ctx, args.a.code, args.a.column, args.a.cutoff), propertySide(ctx, args.b.code, args.b.column, args.b.cutoff)]);
+    const [fa, fb]: (Fam | null)[] = await Promise.all([
+      qa ? null : ctx.runQuery(internal.tracts.familyForTracts, { code: args.a.code }),
+      qb ? null : ctx.runQuery(internal.tracts.familyForTracts, { code: args.b.code }),
+    ]);
+    const pa = qa ?? pickMember(fa, args.place, args.year);
+    const pb = qb ?? pickMember(fb, args.place, args.year);
     if ("status" in pa || "status" in pb) {
       const found = [...("status" in pa ? [tag(pa, "a")] : []), ...("status" in pb ? [tag(pb, "b")] : [])];
       const hard = found.filter((r) => r.status !== "choose-year");
@@ -286,16 +323,21 @@ export const relateTracts = action({
         const [first, ...rest] = [...hard, ...found.filter((r) => r.status === "choose-year")];
         return rest.length ? { ...first, also: rest } : first;
       }
+      if (qa || qb) return found[0]; // a property side has no years to share: the DYCU side's years are the choice
       const sa = slotsOf(fa);
       return { status: "choose-year", available: { a: sa, b: slotsOf(fb) }, shared: sa.filter((x) => slotsOf(fb).some((y) => y.place === x.place && sameYear(y.year, x.year))) };
     }
-    const ra = await resolveLooked(ctx, pa, args.a.column, spend);
+    // Resolve in order, refusing as soon as a side does; only then load both at once.
+    const resA = await resolveSide(ctx, pa, args.a.column, spend);
+    if ("status" in resA) return tag(resA, "a");
+    const resB = await resolveSide(ctx, pb, args.b.column, spend);
+    if ("status" in resB) return tag(resB, "b");
+    const [ra, rb] = await Promise.all([loadSide(ctx, resA, spend), loadSide(ctx, resB, spend)]);
     if ("status" in ra) return tag(ra, "a");
-    const rb = await resolveLooked(ctx, pb, args.b.column, spend);
     if ("status" in rb) return tag(rb, "b");
-    const [va, vb] = await Promise.all([loadValues(ctx, ra), loadValues(ctx, rb)]);
-    if (!va || !vb) return { status: "unavailable" };
+    const va = ra.rows, vb = rb.rows;
     const defs = await ctx.runQuery(internal.tracts.dycuDefs, {});
+    const nameYear = ra.year ?? rb.year ?? String(latestDefYear(defs));
     const bBy = new Map(vb.values.map((x) => [x.geoid, x]));
     const pairs = va.values.flatMap((a) => (bBy.has(a.geoid) ? [{ geoid: a.geoid, a, b: bBy.get(a.geoid)! }] : []));
     const ok = pairs.filter((p) => !isUnreliable(p.a) && !isUnreliable(p.b));
@@ -308,16 +350,17 @@ export const relateTracts = action({
     const close = mm ? byClearance(mm.close, aSide, bSide, mm.cutA, mm.cutB, "value") : [];
     const fitsIds = new Set(fits.map((p) => p.geoid));
     const closeIds = new Set(close.map((p) => p.geoid));
-    const both = (p: { a: TractValue; b: TractValue }) => ({ a: toRow(p.a, ra.year, defs), b: toRow(p.b, ra.year, defs) });
-    const { key, save } = await store(ctx, { tool: "relate", ...args, year: ra.year, a: { code: ra.family.code, column: ra.column }, b: { code: rb.family.code, column: rb.column } });
+    const both = (p: { a: TractValue; b: TractValue }) => ({ a: toRow(p.a, nameYear, defs), b: toRow(p.b, nameYear, defs) });
+    const { key, save } = await store(ctx, { tool: "relate", ...args, year: nameYear });
     const detail: RelateDetail = {
       status: "ok", tool: "relate", mode: args.mode,
-      a: header(ra, args.place, ra.year, pairs.length, va.values.length + va.leftOut - pairs.length), b: header(rb, args.place, rb.year, pairs.length, vb.values.length + vb.leftOut - pairs.length),
+      a: { ...ra.head(args.place, pairs.length, va.values.length + va.leftOut - pairs.length), ...(rb.property && !ra.property ? { leftOutWhy: NO_PROPERTY } : {}) },
+      b: { ...rb.head(args.place, pairs.length, vb.values.length + vb.leftOut - pairs.length), ...(ra.property && !rb.property ? { leftOutWhy: NO_PROPERTY } : {}) },
       n: ok.length, unreliableCount: pairs.length - ok.length, rho, strength: verdict.strength, direction: verdict.direction,
       ...(mm ? { aSide, bSide, cutA: mm.cutA, cutB: mm.cutB } : {}),
       fits: fits.map(both), fitsCount: fits.length, close: close.map(both), closeCount: close.length,
       points: pairs.map((p) => {
-        const row = toRow(p.a, ra.year, defs);
+        const row = toRow(p.a, nameYear, defs);
         return { geoid: p.geoid, tract: row.tract, neighborhood: row.neighborhood, a: [p.a.value, p.a.lo, p.a.hi], b: [p.b.value, p.b.lo, p.b.hi], unreliable: isUnreliable(p.a) || isUnreliable(p.b), mark: fitsIds.has(p.geoid) ? "fits" : closeIds.has(p.geoid) ? "close" : null };
       }),
       highlighted: [...fitsIds], closeIds: [...closeIds], key,

@@ -3,8 +3,8 @@ import { useQuery } from "convex/react";
 import { type ReactNode, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import type { ChangeAnswer, Header, RankDetail, RelateAnswer, RelateDetail, TractRow } from "@/convex/tracts";
-import { changeText, isPercent, mismatchVerdict, noMargin, plainMeaning, rangeText, tooFew } from "@/ui/lib/tractFormat";
-import { changeSummary, rankSummary, relateSummary } from "@/ui/lib/tractSummary";
+import { changeText, mismatchVerdict, noMargin, plainMeaning, rangeText, tooFew, unitOf, type Unit } from "@/ui/lib/tractFormat";
+import { changeSummary, EXACT, propertyNotes, rankSummary, relateSummary } from "@/ui/lib/tractSummary";
 import { capTractIds, MAX_TRACT_SHAPES } from "@/ui/lib/tractShapes";
 import { BigView } from "./BigView";
 import { CityMap } from "./CityMapLoader";
@@ -18,7 +18,7 @@ import styles from "./ask.module.css";
 // Each card leads with one plain sentence that code writes from the verdict (ui/lib/tractSummary.ts, decision 028);
 // EXPAND opens its plot, map and table at full size (BigView).
 
-const range = (r: { value: number; lo: number | null; hi: number | null }, pct: boolean) => {
+const range = (r: { value: number; lo: number | null; hi: number | null }, pct: Unit) => {
   const t = rangeText(r, pct);
   return t.span ? <>{t.value} <span className={styles.tractNb}>{t.span}</span></> : t.value;
 };
@@ -40,6 +40,9 @@ function useDetail(key: string) {
   return { detail, expired: !detail && d?.status === "expired", loading: d === undefined };
 }
 
+// The property side is the City's own file; every other side is DYCU's.
+const sourceOf = (h: { confidence: string | null }) => (h.confidence === EXACT ? "CITY" : "DYCU");
+
 function Head({ h, title, summary, expand }: { h: Header | Omit<Header, "caveats" | "url">; title: string; summary: string; expand?: ReactNode }) {
   return (
     <>
@@ -49,7 +52,7 @@ function Head({ h, title, summary, expand }: { h: Header | Omit<Header, "caveats
       </div>
       <p className={styles.tractSummary} data-summary>{summary}</p>
       <p className={styles.tractMeta}>
-        {h.code} <b>{h.column}</b> ({plainMeaning(h.meaning) || "no definition in the column guide"}, {KIND[h.kind]}) · {h.place} {h.year} · {h.n} census tracts{h.leftOut ? `, ${h.leftOut} left out (no data)` : ""} <ProvenanceTag source="DYCU" />
+        {h.code} <b>{h.column}</b> ({plainMeaning(h.meaning) || "no definition in the column guide"}, {KIND[h.kind]}) · {h.place} {h.year} · {h.n} census tracts{h.leftOut ? `, ${h.leftOut} left out (${h.leftOutWhy ?? "no data"})` : ""} <ProvenanceTag source={sourceOf(h)} />
       </p>
     </>
   );
@@ -64,12 +67,14 @@ const HowToRead = ({ children }: { children: string }) => (
   </details>
 );
 
-function Fine({ heads, causal, lead, onOpen }: { heads: { code: string; confidence: string | null }[]; causal?: boolean; lead?: string; onOpen: Open }) {
-  const levels = [...new Set(heads.map((h) => h.confidence ?? "no margin of error found for this column"))];
+function Fine({ heads, causal, lead, onOpen }: { heads: { code: string; column: string; confidence: string | null }[]; causal?: boolean; lead?: string; onOpen: Open }) {
+  // Exact City figures have no margin, so only the survey sides are listed as ranges.
+  const levels = [...new Set(heads.filter((h) => h.confidence !== EXACT).map((h) => h.confidence ?? "no margin of error found for this column"))];
+  const exact = heads.some((h) => h.confidence === EXACT);
   const bare = heads.some((h) => !h.confidence); // spec §5 rule 7
   return (
     <p className={styles.tractFine}>
-      {lead && `${lead} `}Ranges are margins of error: {levels.join("; ")}.{bare && " Without a margin of error, findings can't be separated from noise."}{causal && " Related doesn't mean one causes the other."} Caveats:{" "}
+      {lead && `${lead} `}{levels.length > 0 && `Ranges are margins of error: ${levels.join("; ")}.`}{exact && " Property figures are exact (City records)."}{bare && " Without a margin of error, findings can't be separated from noise."}{causal && " Related doesn't mean one causes the other."}{propertyNotes(heads).map((n) => ` ${n}`).join("")} Caveats:{" "}
       {heads.map((h, i) => <span key={h.code}>{i > 0 && " \u00b7 "}<OpenLink code={h.code} onOpen={onOpen} label={h.code} /></span>)}
     </p>
   );
@@ -100,6 +105,7 @@ function MapSlot({ url, fits, close = [], height = 220 }: { url?: string; fits?:
     </div>
   );
 }
+export { MapSlot as TractMapSlot };
 
 const TIES_INLINE = 5;
 
@@ -107,13 +113,14 @@ export function RankCard({ r, onOpen }: { r: RankShown; onOpen: Open }) {
   const { detail } = useDetail(r.key);
   const full = detail?.tool === "rank" ? detail : null;
   const h = full?.header ?? r.header;
-  const pct = isPercent(h.meaning);
+  const pct = unitOf(h.meaning);
   const ties = full?.ties ?? r.ties;
   const unreliable = full?.unreliable ?? r.unreliable;
   const folded = ties.slice(TIES_INLINE);
   const foldedCount = r.tieCount - TIES_INLINE; // from the total, never the list
+  const exact = h.confidence === EXACT; // exact City figures tie only when equal; there is no margin
   const tieRow = (t: TractRow) => (
-    <tr key={t.geoid} className={styles.tractTie}><td>=</td><td>{t.tract}</td><td>{t.neighborhood ?? "\u2014"} (tied with #{r.top.length} within the margin of error)</td><td className={styles.num}>{range(t, pct)}</td></tr>
+    <tr key={t.geoid} className={styles.tractTie}><td>=</td><td>{t.tract}</td><td>{t.neighborhood ?? "\u2014"} ({exact ? `same figure as #${r.top.length}` : `tied with #${r.top.length} within the margin of error`})</td><td className={styles.num}>{range(t, pct)}</td></tr>
   );
   const head = ["#", "Tract", "Neighborhood", h.column];
   const title = `${r.direction === "high" ? "Highest" : "Lowest"} ${h.column} \u00b7 ${h.place} ${h.year}`;
@@ -147,7 +154,7 @@ export function RankCard({ r, onOpen }: { r: RankShown; onOpen: Open }) {
       {bare && <p className={styles.tractCounts}>No margin of error found for this column, so ranks may be ties.</p>}
       {!bare && foldedCount > 0 && (
         <details className={styles.tractMore} data-ties>
-          <summary>{foldedCount} more tied with #{r.top.length} (within the margin of error)</summary>
+          <summary>{exact ? `${foldedCount} more with the same figure as #${r.top.length}` : `${foldedCount} more tied with #${r.top.length} (within the margin of error)`}</summary>
           <Table head={head} title={`${title}: more tied with #${r.top.length}`}>{folded.map(tieRow)}</Table>
           {folded.length < foldedCount && <p className={styles.tractCounts}>{foldedCount - folded.length} more not listed.</p>}
         </details>
@@ -165,7 +172,7 @@ export function RankCard({ r, onOpen }: { r: RankShown; onOpen: Open }) {
       )}
       <MapSlot url={full?.header.url} fits={full?.highlighted} />
       <HowToRead>
-        {`Tracts whose range overlaps the range of #${r.top.length} could really be #${r.top.length}, so they're listed as tied with it. A tract whose margin of error is large next to its estimate is too uncertain to rank, so it's left out of the list.`}
+        {exact ? `Tracts with exactly the same figure as #${r.top.length} are listed beside it.` : `Tracts whose range overlaps the range of #${r.top.length} could really be #${r.top.length}, so they're listed as tied with it. A tract whose margin of error is large next to its estimate is too uncertain to rank, so it's left out of the list.`}
       </HowToRead>
       <Fine heads={[h]} onOpen={onOpen} />
     </div>
@@ -176,7 +183,7 @@ export function ChangeCard({ r, onOpen }: { r: ChangeShown; onOpen: Open }) {
   const { detail } = useDetail(r.key);
   const full = detail?.tool === "change" ? detail : null;
   const h = full?.header ?? r.header;
-  const pct = isPercent(h.meaning);
+  const pct = unitOf(h.meaning);
   const changes = full?.changes ?? r.changes;
   const title = `${h.column} \u00b7 ${h.place} ${r.from} \u2192 ${r.to}`;
   const bare = noMargin([h]);
@@ -236,7 +243,7 @@ export function RelateCard({ r, onOpen }: { r: RelateShown; onOpen: Open }) {
   const a = full?.a ?? r.a, b = full?.b ?? r.b;
   const fits = full?.fits ?? r.fits, close = full?.close ?? r.close;
   const points = full?.points ?? [];
-  const pa = isPercent(a.meaning), pb = isPercent(b.meaning);
+  const pa = unitOf(a.meaning), pb = unitOf(b.meaning);
   const mismatch = r.mode === "mismatch";
   const gated = mismatch && r.cutA === undefined; // fewer than 20 reliable pairs: no cutoffs were drawn
   const side = (s?: "high" | "low") => (s === "low" ? "bottom" : "top");
@@ -276,7 +283,7 @@ export function RelateCard({ r, onOpen }: { r: RelateShown; onOpen: Open }) {
     <div className={`${styles.reference} ${styles.tractCard}`} data-card="tract-relate">
       <Head h={a} title={title} summary={summary} expand={expand} />
       <p className={styles.tractMeta}>
-        {b.code} <b>{b.column}</b> ({plainMeaning(b.meaning) || "no definition in the column guide"}, {KIND[b.kind]}) · {b.place} {b.year} <ProvenanceTag source="DYCU" />
+        {b.code} <b>{b.column}</b> ({plainMeaning(b.meaning) || "no definition in the column guide"}, {KIND[b.kind]}) · {b.place} {b.year} <ProvenanceTag source={sourceOf(b)} />
       </p>
       <p className={styles.tractVerdict}>
         {mismatch ? mismatchVerdict({ fitsCount: r.fitsCount, closeCount: r.closeCount, n: r.n, gated, bare }) : r.strength === "too-few" ? tooFew(r.n) : STRENGTH[r.strength]}
@@ -305,7 +312,7 @@ export function RelateCard({ r, onOpen }: { r: RelateShown; onOpen: Open }) {
   );
 }
 
-function PairRow({ p, pa, pb, label, tie }: { p: { a: TractRow; b: TractRow }; pa: boolean; pb: boolean; label: string; tie?: boolean }) {
+function PairRow({ p, pa, pb, label, tie }: { p: { a: TractRow; b: TractRow }; pa: Unit; pb: Unit; label: string; tie?: boolean }) {
   return (
     <tr className={tie ? styles.tractTie : undefined}>
       <td>{p.a.tract}</td><td>{p.a.neighborhood ?? "—"}</td>

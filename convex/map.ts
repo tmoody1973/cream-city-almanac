@@ -9,7 +9,8 @@ import { rateLimiter } from "./limits";
 
 export const MAP_TTL_MS = 10 * 60_000;
 const vFilter = v.object({ column: v.string(), values: v.array(v.string()) });
-type MapArgs = { code: string; from?: string; to?: string; filters?: { column: string; values: string[] }[]; neighborhood?: string };
+// The public action takes exact-value filters only; the type is wider because Ask's countRecords also keys its cached map by over/under.
+type MapArgs = { code: string; from?: string; to?: string; filters?: { column: string; values?: string[]; over?: number; under?: number }[]; neighborhood?: string };
 
 // The cache key for one map question: same normalized arguments, same Chicago day. Ask's countRecords stores its
 // map under the key its card's mapCells call will compute, so that call is a cache hit.
@@ -18,7 +19,7 @@ export async function mapKey(args: MapArgs) {
     code: args.code.trim().toUpperCase(),
     from: args.from || undefined,
     to: args.to || undefined,
-    filters: (args.filters ?? []).map((f) => ({ column: f.column, values: [...f.values].sort() })).sort((a, b) => a.column.localeCompare(b.column)),
+    filters: (args.filters ?? []).map((f) => ({ column: f.column, values: [...(f.values ?? [])].sort(), ...(f.over !== undefined ? { over: f.over } : {}), ...(f.under !== undefined ? { under: f.under } : {}) })).sort((a, b) => a.column.localeCompare(b.column)),
     neighborhood: args.neighborhood?.trim() ? nameKey(args.neighborhood) : undefined,
   };
   return { input, key: await hashInputs({ ...input, day: chicagoDay(Date.now()) }) };
@@ -27,7 +28,7 @@ export async function mapKey(args: MapArgs) {
 // Anyone can call this, so sizes are bounded before any lookup (the sheet's own controls stay well inside them).
 const oversize = (a: MapArgs) =>
   a.code.length > 16 || (a.from?.length ?? 0) > 10 || (a.to?.length ?? 0) > 10 || (a.neighborhood?.length ?? 0) > 80 ||
-  (a.filters?.length ?? 0) > 4 || (a.filters ?? []).some((f) => f.column.length > 120 || f.values.length > 10 || f.values.some((x) => x.length > 120));
+  (a.filters?.length ?? 0) > 4 || (a.filters ?? []).some((f) => f.column.length > 120 || (f.values ?? []).length > 10 || (f.values ?? []).some((x) => x.length > 120));
 
 // The sheet's map: anyone can use it. Identical requests (same day) come from the cache; new ones spend the
 // site-wide City budget, and only when a City query will actually run (refusals are free). Same logic, refusals and
@@ -41,7 +42,7 @@ export const mapCells = action({
     if (hit) return JSON.parse(hit) as CountResult;
     const plan = await planCount(ctx, { ...input, neighborhood: args.neighborhood });
     if (!("status" in plan) && !(await rateLimiter.limit(ctx, "mapCity")).ok) return { status: "busy" as const };
-    const result = "status" in plan ? plan : await askCity(plan);
+    const result = "status" in plan ? plan : await askCity(ctx, plan);
     // Only answers that ran a City query are worth keeping; refusals are cheaper to recompute than to store.
     if (!("status" in plan) && result.status !== "unavailable") {
       await ctx.runMutation(internal.map.remember, { key, result: JSON.stringify(result), expiresAt: Date.now() + MAP_TTL_MS });

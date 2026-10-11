@@ -17,20 +17,20 @@ const MAX_OFFENSE_CODES = 5;
 // Only a plain code ("120", "23H") goes inside a LIKE pattern, so no value can carry a wildcard or a quote into it.
 const LIKE_SAFE = /^[0-9A-Z]{2,4}$/;
 export const NUMERIC = "^-?[0-9]+(\\.[0-9]+)?$";
-const num = (c: string) => `(CASE WHEN ${quoteId(c)} ~ ${lit(NUMERIC)} THEN ${quoteId(c)}::float END)`;
+const lit = (s: string) => `'${s.replace(/'/g, "''")}'`;
+export const num = (c: string) => `(CASE WHEN ${quoteId(c)} ~ ${lit(NUMERIC)} THEN ${quoteId(c)}::float END)`;
 const coord = (n: number) => { if (!Number.isFinite(n)) throw new Error("Neighborhood rectangle is not numeric"); return String(n); };
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-export interface CountArgs { from?: string; to?: string; filters?: { column: string; values: string[] }[]; groupBy?: string }
+export interface CountArgs { from?: string; to?: string; filters?: { column: string; values?: string[]; over?: number; under?: number }[]; groupBy?: string }
 export type Built =
-  | { ok: true; totalSql: string; groupSql: string | null; futureSql: string | null; period: string; filterLabels: string[]; groupLabel: string | null; overlap: boolean; dateColumn: string | null; coverage: string | null; points: { sql: string; missingSql: string } | null; gridSql: string | null }
+  | { ok: true; totalSql: string; groupSql: string | null; futureSql: string | null; period: string; filterLabels: string[]; groupLabel: string | null; overlap: boolean; dateColumn: string | null; coverage: string | null; points: { sql: string; missingSql: string } | null; gridSql: string | null; ofSql: string | null; tractSql: string | null }
   | { ok: false; status: "no-locations" }
   | { ok: false; status: "outside-coverage"; coverage: string }
   | { ok: false; status: "choose"; column: string; asked: string; choices: string[] }
   | { ok: false; status: "bad-column"; column: string; columns: string[] }
   | { ok: false; status: "bad-dates"; from: string; to: string };
 
-const lit = (s: string) => `'${s.replace(/'/g, "''")}'`;
 const isoDay = (d: Date) => d.toISOString().slice(0, 10);
 const addDays = (day: string, n: number) => isoDay(new Date(Date.parse(`${day}T00:00:00Z`) + n * 86_400_000));
 const human = (day: string) => { const [y, m, d] = day.split("-").map(Number); return `${MONTHS[m - 1]} ${d}, ${y}`; };
@@ -51,7 +51,19 @@ function dataSpan(p: CityProfile, today: string): { min: string; max: string } |
   return { min: p.minDate, max: ongoing || p.maxDate > today ? today : p.maxDate };
 }
 
-export const groupLabelFor = (column: string, value: string) => (isOffenseColumn(column) ? offenseName(value) : value);
+export const groupLabelFor = (column: string, value: string) =>
+  isOffenseColumn(column) ? offenseName(value) : column === "GEO_ALDER" ? `Aldermanic district ${value}` : value;
+// Number filters and district groups in words ("assessed over $200,000", "Aldermanic district 6").
+const NUMBER_WORDS: Record<string, { name: string; unit: "$" | "sq ft" | "" }> = {
+  C_A_TOTAL: { name: "assessed", unit: "$" }, C_A_LAND: { name: "land assessed", unit: "$" }, C_A_IMPRV: { name: "buildings assessed", unit: "$" },
+  BLDG_AREA: { name: "building area", unit: "sq ft" }, NR_UNITS: { name: "units", unit: "" }, YR_BUILT: { name: "built", unit: "" },
+};
+const numberLabel = (column: string, op: "over" | "under", x: number) => {
+  const w = NUMBER_WORDS[column] ?? { name: column, unit: "" as const };
+  if (column === "YR_BUILT") return `${w.name} ${op === "over" ? "after" : "before"} ${x}`;
+  const n = x.toLocaleString("en-US");
+  return w.unit === "$" ? `${w.name} ${op} $${n}` : `${w.name} ${op} ${n}${w.unit ? ` ${w.unit}` : ""}`;
+};
 const filterLabel = (column: string, value: string, districts: string[]) =>
   isOffenseColumn(column) ? offenseName(value) : districts.includes(column) ? `${column.replace(/_/g, " ").toLowerCase().replace(/^\w/, (c) => c.toUpperCase())} ${value}` : value;
 
@@ -63,16 +75,27 @@ export function buildCount(p: CityProfile, a: CountArgs, today: string, area?: B
   if (area && !(p.latColumn && p.lonColumn)) return { ok: false, status: "no-locations" };
   const menu = new Map(p.categories.map((c) => [c.column.toLowerCase(), c]));
   const where: string[] = [];
+  const numberWhere: string[] = [];
   const filterLabels: string[] = [];
   for (const f of a.filters ?? []) {
+    if (f.over !== undefined || f.under !== undefined) {
+      const col = (p.numberColumns ?? []).find((c) => c.toLowerCase() === f.column.toLowerCase());
+      if (!col) return { ok: false, status: "bad-column", column: f.column, columns: [...(p.numberColumns ?? []), ...p.categories.map((c) => c.column)] };
+      // The City writes "0" for "none" (exempt value, unknown year or area), so an over/under only counts a real value.
+      numberWhere.push(col === "YR_BUILT" ? `${num(col)} >= 1800` : `${num(col)} > 0`);
+      if (f.over !== undefined) { numberWhere.push(`${num(col)} > ${coord(f.over)}`); filterLabels.push(numberLabel(col, "over", f.over)); }
+      if (f.under !== undefined) { numberWhere.push(`${num(col)} < ${coord(f.under)}`); filterLabels.push(numberLabel(col, "under", f.under)); }
+      continue;
+    }
+    const values = f.values ?? [];
     const cat = menu.get(f.column.toLowerCase());
     if (!cat) return { ok: false, status: "bad-column", column: f.column, columns: p.categories.map((c) => c.column) };
     const top = () => cat.values.slice(0, 8).map((v) => groupLabelFor(cat.column, v.value));
     // Never silently widen: a filter with nothing to filter on asks the user to choose.
-    if (f.values.length === 0) return { ok: false, status: "choose", column: cat.column, asked: "", choices: top() };
+    if (values.length === 0) return { ok: false, status: "choose", column: cat.column, asked: "", choices: top() };
     const known = new Map(cat.values.map((v) => [v.value.toLowerCase(), v.value]));
     const picked: string[] = [];
-    for (const asked of f.values) {
+    for (const asked of values) {
       const exact = known.get(asked.trim().toLowerCase());
       const viaOffense = isOffenseColumn(cat.column) ? offenseCodes(asked).filter((c) => known.has(c.toLowerCase())) : [];
       if (!exact && viaOffense.length > MAX_OFFENSE_CODES) {
@@ -100,7 +123,11 @@ export function buildCount(p: CityProfile, a: CountArgs, today: string, area?: B
   let period = "all records";
   let futureSql: string | null = null;
   let coverage: string | null = null;
-  if (p.dateColumn) {
+  const current = p.snapshot && p.currentColumn ? p.categories.find((c) => c.column === p.currentColumn)?.values[0]?.value : undefined;
+  if (current) where.push(`${quoteId(p.currentColumn!)} = ${lit(current)}`);
+  const asked = !absent(a.from) || !absent(a.to);
+  if (p.snapshot && !asked) period = current ? `${current} assessment` : "all records";
+  if (p.dateColumn && (!p.snapshot || asked)) {
     const askedTo = absent(a.to) ? undefined : a.to;
     const askedFrom = absent(a.from) ? undefined : a.from;
     const span = dataSpan(p, today);
@@ -121,10 +148,19 @@ export function buildCount(p: CityProfile, a: CountArgs, today: string, area?: B
     const d = quoteId(p.dateColumn);
     const others = where.join(" AND ");
     where.unshift(`${d} >= ${lit(from)} AND ${d} < ${lit(addDays(to, 1))}`);
-    period = `${human(from)} – ${human(to)}${notes.length ? ` (${notes.join("; ")})` : ""}`;
-    if (to === today) futureSql = `SELECT COUNT(*) AS n FROM ${table} WHERE ${d} > ${lit(addDays(today, 1))}${others ? ` AND ${others}` : ""}`;
+    period = `${p.snapshot ? "last sold " : ""}${human(from)} – ${human(to)}${notes.length ? ` (${notes.join("; ")})` : ""}`;
+    if (to === today && !p.snapshot) futureSql = `SELECT COUNT(*) AS n FROM ${table} WHERE ${d} > ${lit(addDays(today, 1))}${others ? ` AND ${others}` : ""}`;
   }
-  const whereSql = where.length ? ` WHERE ${where.join(" AND ")}` : "";
+  // Number filters exist only for files with numberColumns (the property file: a snapshot with no locations), so the
+  // future-date count, the neighborhood points and the grid never see them; the count and its groups always do.
+  // With a number filter the count also sits inside the base (a real total value), so it is always a subset of `of`.
+  const all = [...where, ...(numberWhere.length && p.baseColumn ? [`${num(p.baseColumn)} > 0`] : []), ...numberWhere];
+  const whereSql = all.length ? ` WHERE ${all.join(" AND ")}` : "";
+  const base = p.baseColumn ? [...where, `${num(p.baseColumn)} > 0`] : null;
+  const ofSql = numberWhere.length && base ? `SELECT COUNT(*) AS n FROM ${table} WHERE ${base.join(" AND ")}` : null;
+  const tractSql = numberWhere.length && base && p.tractColumn
+    ? `SELECT ${quoteId(p.tractColumn)} AS t, SUM(CASE WHEN ${numberWhere.join(" AND ")} THEN 1 ELSE 0 END) AS hit, COUNT(*) AS n FROM ${table} WHERE ${base.join(" AND ")} GROUP BY ${quoteId(p.tractColumn)}`
+    : null;
   const totalSql = `SELECT COUNT(*) AS n FROM ${table}${whereSql}`;
 
   let groupSql: string | null = null;
@@ -135,8 +171,9 @@ export function buildCount(p: CityProfile, a: CountArgs, today: string, area?: B
     groupSql = `SELECT left(${quoteId(p.dateColumn)}, ${a.groupBy === "month" ? 7 : 4}) AS g, COUNT(*) AS n FROM ${table}${whereSql} GROUP BY g ORDER BY g DESC LIMIT ${MAX_GROUPS}`;
     groupLabel = a.groupBy;
   } else if (a.groupBy) {
-    const cat = menu.get(a.groupBy.toLowerCase());
-    if (!cat) return { ok: false, status: "bad-column", column: a.groupBy, columns: ["month", "year", ...p.categories.map((c) => c.column)] };
+    const district = p.districtColumns.find((d) => d.toLowerCase() === a.groupBy!.toLowerCase());
+    const cat = menu.get(a.groupBy.toLowerCase()) ?? (district ? { column: district, values: [] } : undefined);
+    if (!cat) return { ok: false, status: "bad-column", column: a.groupBy, columns: ["month", "year", ...p.districtColumns, ...p.categories.map((c) => c.column)] };
     // A record with several values counts once in each of its groups, so the groups overlap.
     const g = cat.multi ? `unnest(string_to_array(${quoteId(cat.column)}, ';'))` : quoteId(cat.column);
     groupSql = `SELECT ${g} AS g, COUNT(*) AS n FROM ${table}${whereSql} GROUP BY g ORDER BY n DESC LIMIT ${MAX_GROUPS}`;
@@ -162,5 +199,5 @@ export function buildCount(p: CityProfile, a: CountArgs, today: string, area?: B
     const filtered = where.length ? `${where.join(" AND ")} AND ` : "";
     gridSql = `SELECT floor(${lat} / ${CELL.dLat}) AS i, floor(${lon} / ${CELL.dLon}) AS j, COUNT(*) AS n FROM ${table} WHERE ${filtered}${lat} IS NOT NULL AND ${lon} IS NOT NULL GROUP BY i, j`;
   }
-  return { ok: true, totalSql, groupSql, futureSql, period, filterLabels, groupLabel, overlap, dateColumn: p.dateColumn, coverage, points, gridSql };
+  return { ok: true, totalSql, groupSql, futureSql, period, filterLabels, groupLabel, overlap, dateColumn: p.dateColumn, coverage, points, gridSql, ofSql, tractSql };
 }

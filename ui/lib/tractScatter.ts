@@ -23,3 +23,7 @@ export function scales(points: Pt[], width: number, height: number, pad: number)
     y: (v: number) => clamp(height - pad - ((v - y0) / (y1 - y0)) * (height - 2 * pad), pad, height - pad),
   };
 }
+
+// The left margin a y axis needs: at least the room for "100.0%", more for longer labels like "$1,250,000". Width is
+// estimated from the type size (a digit is about 0.62em), not measured; the 8 is the tick gap and a little air.
+export const axisLabelRoom = (labels: string[], fs: number) => Math.round(Math.max(fs * 3.4, Math.max(0, ...labels.map((l) => l.length)) * fs * 0.62 + 8));

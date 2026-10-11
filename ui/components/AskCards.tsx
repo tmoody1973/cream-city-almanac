@@ -5,6 +5,7 @@ import { createContext, Fragment, type ReactElement, type ReactNode, useContext,
 import { z } from "zod";
 import { countCoverage, outsideCoverage } from "@/ui/lib/askCount";
 import { passageBlocks } from "@/ui/lib/askPassage";
+import { propertyCountSummary } from "@/ui/lib/tractSummary";
 import { formatPortraitMargin, formatPortraitNumber } from "@/ui/lib/portrait";
 import { api } from "@/convex/_generated/api";
 import { changeParams, countParams, rankParams, relateParams, type ChangeResult, type CountForModel, type CountResult, type RankResult, type RelateResult } from "@/lib/ask/tools";
@@ -12,7 +13,7 @@ import { CityMap } from "./CityMapLoader";
 import { LivePreview } from "./LivePreview";
 import { OpenLink, type Open } from "./OpenLink";
 import { ProvenanceTag } from "./ProvenanceTag";
-import { ChangeCard, RankCard, RelateCard } from "./TractCards";
+import { ChangeCard, RankCard, RelateCard, TractMapSlot } from "./TractCards";
 import styles from "./ask.module.css";
 
 type Value = { estimate: string; moe: string | null } | null;
@@ -157,7 +158,7 @@ export const MapPick = createContext<{ picked: { id: string; newest: string | nu
 function CountMap({ r, id, args }: { r: CountOk; id?: string; args?: CountArgs }) {
   const newest = useContext(NewestCount);
   const { picked, pick } = useContext(MapPick);
-  if (!r.map) return <p className={styles.source} data-map-message>{r.mapError ? "No map for this count." : "No map: this dataset doesn't record locations."}</p>;
+  if (!r.map) return <p className={styles.source} data-map-message>{r.mapError || r.of ? "No map for this count." : "No map: this dataset doesn't record locations."}</p>;
   // A pick lasts until a newer count arrives; then the newest card is live again.
   const live = picked && picked.newest === newest ? picked.id === id : id === newest;
   if (!live) return <button type="button" className={styles.textButton} onClick={() => id && pick(id, newest)} data-show-map>Show map</button>;
@@ -209,6 +210,7 @@ function CountCard({ r, id, onOpen, noMap, args }: { r: CountOk; id?: string; on
       <figcaption className={styles.excerptTitle}>
         {[r.name, ...r.filters, r.period].join(" · ")} <ProvenanceTag source="CITY" />
       </figcaption>
+      {r.of && <p className={styles.tractSummary} data-summary>{propertyCountSummary({ ...r, of: r.of })}</p>}
       <p className={styles.countFigure} data-count>{r.count.toLocaleString("en-US")}</p>
       {r.groups.length > 0 && (
         <table className={styles.excerptTable}>
@@ -224,7 +226,14 @@ function CountCard({ r, id, onOpen, noMap, args }: { r: CountOk; id?: string; on
       {covers && <p className={styles.source} data-coverage>{covers}</p>}
       {r.area && <p className={styles.source} data-area>In {r.area}</p>}
       {r.noLocation > 0 && <p className={styles.source} data-no-location>{r.noLocation.toLocaleString("en-US")} matching records citywide have no location and aren&apos;t included.</p>}
-      {!noMap && <CountMap r={r} id={id} args={args} />}
+      {r.tractMap && !noMap ? (
+        <>
+          <p className={styles.source}>Census tracts where more than half of the properties are {r.filters.join(", ")}: {r.tractMap.total}{r.tractMap.total > r.tractMap.ids.length ? ` (the first ${r.tractMap.ids.length} are drawn)` : ""}.</p>
+          <TractMapSlot url={r.tractMap.url} fits={r.tractMap.ids} />
+        </>
+      ) : (
+        !noMap && <CountMap r={r} id={id} args={args} />
+      )}
       {r.futureExcluded > 0 && <p className={styles.source}>{r.futureExcluded.toLocaleString("en-US")} records dated in the future were left out.</p>}
       {r.caveat && <p className={styles.source}>{r.caveat} <ProvenanceTag source="AI" /></p>}
       <OpenLink code={r.code} onOpen={onOpen} label="Open the data" />

@@ -2,7 +2,8 @@
 // each construct (free, read-only). npx tsx scripts/city-sql-smoke.ts
 import { buildCount } from "../convex/lib/citySql";
 import { datastoreSql } from "../convex/lib/ckan";
-import { planProfile, profileSql, type CityProfile } from "../convex/lib/cityProfile";
+import { MPROP_RID, planProfile, profileSql, withOverrides, type CityProfile } from "../convex/lib/cityProfile";
+import { MEASURES, measureSql, measureValues } from "../convex/lib/propertyMeasures";
 
 const RID = process.env.CRIME_RID ?? "87843297-a6fa-46d4-ba5d-cb342fb2d3bb";
 const today = new Date().toISOString().slice(0, 10);
@@ -82,3 +83,16 @@ for (const sql of [mfd.totalSql, mfd.groupSql].filter((s): s is string => !!s)) 
 const mfdPoints = await datastoreSql<Record<string, unknown>>(mfd.points.sql);
 const [mfdMissing] = await datastoreSql<{ n: string }>(mfd.points.missingSql);
 console.log("OK MFD", mfdPoints.length, "points ·", mfdMissing.n, "unplaced ·", mfd.points.sql.slice(0, 90));
+
+// Property measures (H28, MPROP): every measure's SQL runs, and its tracts pad to DYCU GEOIDs.
+for (const m of MEASURES) {
+  const rows = await datastoreSql<{ t: unknown; v: unknown; n: unknown }>(measureSql(MPROP_RID, m, "2026", m.cutoff ? 200000 : undefined));
+  const r = measureValues(rows);
+  console.log("OK", m.id, rows.length, "tracts ·", r.values.length, "kept ·", r.thin, "thin ·", r.noTract, "no tract · e.g.", r.values[0]);
+}
+
+// The property file's counts: the current assessment, over a cutoff, by district, its base and tract shares.
+const mprop = withOverrides({ familyKey: "x", resourceId: MPROP_RID, columns: [], dateColumn: "CONVEY_DATE", districtColumns: [], categories: [{ column: "YR_ASSMT", values: [{ value: "2026", count: 1 }] }], rowCount: 1, minDate: "1900-01-01", maxDate: today, namesPeople: true, signature: "", updatedAt: Date.now() });
+const pc = buildCount(mprop, { filters: [{ column: "C_A_TOTAL", over: 200000 }], groupBy: "GEO_ALDER" }, today);
+if (!pc.ok) throw new Error(JSON.stringify(pc));
+for (const sql of [pc.totalSql, pc.groupSql, pc.ofSql, pc.tractSql].filter((s): s is string => !!s)) console.log("OK", (await datastoreSql(sql)).length, "rows ·", sql.slice(0, 100));
