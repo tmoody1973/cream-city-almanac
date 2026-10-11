@@ -63,7 +63,7 @@ export function AskGuide({ sample }: { sample: NumberResult | null }) {
 
         <section className={styles.section} aria-labelledby="roles-heading">
           <h3 id="roles-heading" className={start.who}>WHAT TO ASK</h3>
-          <p className={styles.howTo}>Pick a question: it opens Ask with the question typed in. Nothing is sent until you press send.</p>
+          <p className={styles.howTo}>Pick a question: it opens Ask with the question typed in. Nothing is sent until you press send. Buttons under Ask&apos;s answers work the same way: they fill the box with a next question.</p>
           <div className={start.examples}>
             {ASK_ROLES.map((r) => (
               <section key={r.id} className={start.example} data-role={r.id} aria-labelledby={`${r.id}-who`}>
