@@ -16,7 +16,12 @@ const AUTHOR = "https://github.com/tmoody1973";
 const EXAMPLE_QUERY = "kids who can't afford food";
 const NEIGHBORHOOD_QUERY = "Lincoln Park employment status by sex";
 
-export function HowItWorks({ status, example }: { status: CatalogStatus | null; example: SheetData | null }) {
+type Area = { name: string; tracts: string[]; years: number[] };
+const tractList = (t: string[]) => (t.length > 1 ? `${t.slice(0, -1).join(", ")} and ${t.at(-1)}` : t.join(""));
+
+export function HowItWorks({ status, example, areas }: { status: CatalogStatus | null; example: SheetData | null; areas: Area[] | null }) {
+  const riverwest = areas?.find((a) => a.name === "Riverwest");
+  const harambee = areas?.find((a) => a.name === "Harambee");
   const counts = countsLine(status);
   const asOf = asOfPhrase(status);
   return (
@@ -91,6 +96,46 @@ export function HowItWorks({ status, example }: { status: CatalogStatus | null; 
             <p>When nothing is close, it says so instead of listing unrelated data.</p>
           </section>
 
+          {/* The two neighborhood maps (decision 024). Examples come from the same table the tract cards name tracts from. */}
+          <section className={styles.section} id="neighborhoods">
+            <h3 className={styles.heading}>WHAT &ldquo;NEIGHBORHOOD&rdquo; MEANS HERE</h3>
+            <p>Milwaukee has more than one map of its neighborhoods, and this site uses two.</p>
+            <p>
+              <strong>The City&apos;s map.</strong> The City of Milwaukee draws 190 official neighborhoods. When Ask counts City records
+              (crimes, fire calls, 311 requests), it keeps the records whose location falls inside the City&apos;s boundary, and the card
+              says &ldquo;City of Milwaukee boundary.&rdquo;
+            </p>
+            <p>
+              <strong>DYCU&apos;s report areas.</strong> Data You Can Use publishes its numbers (poverty, rent, health) by census tract, a
+              small area the Census Bureau counts, usually 1,200 to 8,000 people. For its Neighborhood Portraits, DYCU groups tracts into
+              {areas?.length ? ` ${areas.length}` : ""} report areas it chose with its neighborhood partners.
+              {riverwest ? ` Riverwest, for example, is tracts ${tractList(riverwest.tracts)}.` : ""} Some names are DYCU&apos;s own, like
+              United Community, and aren&apos;t on the City&apos;s map.
+            </p>
+            <p>
+              <strong>Same name, different ground.</strong> Harambee on the City&apos;s map and Harambee in DYCU&apos;s reports
+              {harambee ? ` (${harambee.tracts.length} tracts)` : ""} don&apos;t cover exactly the same streets. So a number never moves
+              from one map to the other: a City count stays with the City&apos;s boundary, a DYCU number with DYCU&apos;s tracts, and every
+              card names which one it used.
+            </p>
+            <p>
+              <strong>On the tract cards,</strong> each tract shows its number and, when it&apos;s in one of DYCU&apos;s report areas, that
+              area&apos;s name. Other tracts show &ldquo;&mdash;&rdquo;; the site never guesses a name.
+            </p>
+            {areas && areas.length > 0 && (
+              <details className={styles.areas}>
+                <summary>Which tracts make up each DYCU area</summary>
+                <ul>
+                  {areas.map((a) => (
+                    <li key={a.name} data-area={a.name}>
+                      <strong>{a.name}</strong>: tracts {tractList(a.tracts)}
+                      {a.years.length > 0 && <span className={styles.areaYears}> ({Math.min(...a.years)}&ndash;{Math.max(...a.years)} reports)</span>}
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
+          </section>
           <section className={styles.section}>
             <h3 className={styles.heading}>WHAT IT IS</h3>
             <p>

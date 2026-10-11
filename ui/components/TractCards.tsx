@@ -74,11 +74,15 @@ function Fine({ heads, causal, lead, onOpen }: { heads: { code: string; column: 
   const bare = heads.some((h) => !h.confidence); // spec §5 rule 7
   return (
     <p className={styles.tractFine}>
-      {lead && `${lead} `}{levels.length > 0 && `Ranges are margins of error: ${levels.join("; ")}.`}{exact && " Property figures are exact (City records)."}{bare && " Without a margin of error, findings can't be separated from noise."}{causal && " Related doesn't mean one causes the other."}{propertyNotes(heads).map((n) => ` ${n}`).join("")} {AREA_NOTE} Caveats:{" "}
+      {lead && `${lead} `}{levels.length > 0 && `Ranges are margins of error: ${levels.join("; ")}.`}{exact && " Property figures are exact (City records)."}{bare && " Without a margin of error, findings can't be separated from noise."}{causal && " Related doesn't mean one causes the other."}{propertyNotes(heads).map((n) => ` ${n}`).join("")} {AREA_NOTE}{" "}
+      {/* A new tab, so the conversation stays where it is. */}
+      <a href={NEIGHBORHOODS_HELP} target="_blank" rel="noopener">How neighborhoods work</a>. Caveats:{" "}
       {heads.map((h, i) => <span key={h.code}>{i > 0 && " \u00b7 "}<OpenLink code={h.code} onOpen={onOpen} label={h.code} /></span>)}
     </p>
   );
 }
+
+export const NEIGHBORHOODS_HELP = "/how-it-works#neighborhoods";
 
 const Table = ({ head, title, children }: { head: string[]; title: string; children: React.ReactNode }) => (
   <div className={styles.tractScroll} tabIndex={0} role="region" aria-label={`${title}, scroll sideways for more`}>

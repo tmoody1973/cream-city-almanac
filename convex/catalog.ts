@@ -228,3 +228,19 @@ export const landingStats = query({
     };
   },
 });
+
+// How it works: DYCU's report areas and the census tracts its newest definitions use (the same table the tract cards
+// name tracts from), so the page's list can't drift from the cards. The City's boundaries are a different map.
+export const dycuAreas = query({
+  args: {},
+  handler: async (ctx) => {
+    const rows = await ctx.db.query("neighborhoods").withIndex("by_definition_matchKey", (q) => q.eq("definition", "dycu")).collect();
+    const newestYear = (e: { years: number[] }) => Math.max(0, ...e.years);
+    return rows
+      .map((r) => {
+        const newest = [...(r.tracts ?? [])].sort((x, y) => newestYear(y) - newestYear(x))[0];
+        return { name: r.name, tracts: [...(newest?.tracts ?? [])].sort((x, y) => Number(x) - Number(y)), years: newest?.years ?? [] };
+      })
+      .sort((x, y) => x.name.localeCompare(y.name));
+  },
+});

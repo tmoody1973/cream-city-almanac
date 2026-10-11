@@ -1,7 +1,7 @@
 import { expect, test } from "./fixtures";
 
 const NOTES = ["every year & place DYCU publishes", "who wrote this", "live rows from DYCU's Hub", "download the real data"];
-const SECTIONS = ["WHAT IT IS", "WHERE THE DATA COMES FROM", "EACH WEEK", "WHAT THE AI DOES", "HOW SEARCH WORKS", "HOW IT'S BUILT", "LIMITS AND CREDITS"];
+const SECTIONS = ["WHAT “NEIGHBORHOOD” MEANS HERE", "WHAT IT IS", "WHERE THE DATA COMES FROM", "EACH WEEK", "WHAT THE AI DOES", "HOW SEARCH WORKS", "HOW IT'S BUILT", "LIMITS AND CREDITS"];
 
 test("How it works explains the product with live numbers", async ({ page }) => {
   await page.goto("/how-it-works");
@@ -13,6 +13,15 @@ test("How it works explains the product with live numbers", async ({ page }) => 
   for (const name of SECTIONS) await expect(page.getByRole("heading", { name })).toBeVisible();
   await expect(page.getByText(/read the \d+ report PDFs/i)).toBeVisible();
   await expect(page.getByText(/unofficial, phone-first way to find, understand and download/i)).toBeVisible();
+});
+
+test("it explains the two neighborhood maps and lists DYCU's areas with their tracts", async ({ page }) => {
+  await page.goto("/how-it-works#neighborhoods");
+  const section = page.locator("#neighborhoods");
+  await expect(section).toContainText("190 official neighborhoods");
+  await expect(section).toContainText("27 report areas");
+  await section.getByText("Which tracts make up each DYCU area").click();
+  await expect(section.locator("[data-area='United Community']")).toContainText("47");
 });
 
 test("its links go where they say", async ({ page }) => {
@@ -42,6 +51,7 @@ test("sections follow the approved comps' order, the same on every screen", asyn
     "EACH WEEK",
     "WHAT THE AI DOES",
     "HOW SEARCH WORKS",
+    "WHAT “NEIGHBORHOOD” MEANS HERE",
     "WHAT IT IS",
     "WHERE THE DATA COMES FROM",
     "HOW IT'S BUILT",

@@ -235,6 +235,7 @@ test.describe("signed in", () => {
     // Tract names are DYCU's report areas, said so on the card ("United Community" is DYCU's, not a City neighborhood).
     await expect(card.locator("thead")).toContainText("DYCU area");
     await expect(card).toContainText("not the City's official neighborhoods");
+    await expect(card.getByRole("link", { name: "How neighborhoods work" })).toHaveAttribute("href", "/how-it-works#neighborhoods");
     // The plain sentence leads, written by code from the same counts.
     await expect(card.locator("[data-summary]")).toContainText(/^These are the 10 census tracts in Milwaukee County with the highest /);
     // The caveat link keeps the chat: a new tab on a phone, the side pane on a laptop.

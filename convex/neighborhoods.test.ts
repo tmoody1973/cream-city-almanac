@@ -2,7 +2,7 @@
 import { convexTest } from "convex-test";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { installFakeFetch } from "../tests/helpers/fakeFetch";
-import { internal } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import * as sources from "./lib/neighborhoodSources";
 import schema from "./schema";
 
@@ -78,5 +78,20 @@ describe("finish", () => {
     expect(b?.status).toBe("completed");
     expect(b?.notes).toContain("earlier note");
     expect(b?.notes.some((n) => n.startsWith("Neighborhoods refresh failed:") && n.includes("boom"))).toBe(true);
+  });
+});
+
+describe("dycuAreas (How it works: which tracts make up each DYCU area)", () => {
+  it("lists DYCU's areas by name with their newest tracts in number order, and never the City's boundaries", async () => {
+    const t = convexTest(schema, modules);
+    await t.run(async (ctx) => {
+      await ctx.db.insert("neighborhoods", { definition: "dycu", name: "United Community", matchKey: "united community", tracts: [{ years: [2021, 2022, 2023, 2024], tracts: ["68", "42", "47", "1860"] }] });
+      await ctx.db.insert("neighborhoods", { definition: "dycu", name: "Amani", matchKey: "amani", tracts: [{ years: [2019, 2020], tracts: ["1"] }, { years: [2021, 2022], tracts: ["2", "10"] }] });
+      await ctx.db.insert("neighborhoods", { definition: "city", name: "Harambee", matchKey: "harambee", geometry: "{}", bbox: { minLat: 43, maxLat: 43.1, minLon: -88, maxLon: -87.9 } });
+    });
+    expect(await t.query(api.catalog.dycuAreas, {})).toEqual([
+      { name: "Amani", tracts: ["2", "10"], years: [2021, 2022] },
+      { name: "United Community", tracts: ["42", "47", "68", "1860"], years: [2021, 2022, 2023, 2024] },
+    ]);
   });
 });
