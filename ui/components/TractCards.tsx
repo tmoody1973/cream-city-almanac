@@ -118,7 +118,7 @@ export function RankCard({ r, onOpen }: { r: RankShown; onOpen: Open }) {
   const head = ["#", "Tract", "Neighborhood", h.column];
   const title = `${r.direction === "high" ? "Highest" : "Lowest"} ${h.column} \u00b7 ${h.place} ${h.year}`;
   const bare = !h.confidence; // no ranges: no ties or unreliable tracts can be found (spec §5 rule 7)
-  const summary = rankSummary({ header: h, direction: r.direction, top: r.top.length, tieCount: bare ? 0 : r.tieCount, unreliableCount: bare ? 0 : r.unreliableCount });
+  const summary = rankSummary({ header: h, direction: r.direction, top: r.top.length, tieCount: bare ? 0 : r.tieCount, unreliableCount: bare ? 0 : r.unreliableCount, inline: TIES_INLINE });
   const table = (
     <Table head={head} title={title}>
       {r.top.map((t, i) => (
@@ -271,7 +271,7 @@ export function RelateCard({ r, onOpen }: { r: RelateShown; onOpen: Open }) {
   );
   const how = mismatch
     ? "Each measure is split into thirds across the tracts with reliable figures. A clear match is in the third you asked about on both measures, even at the edges of its margin of error. A possible match is there at its estimate, but its margin of error crosses a cutoff (the dashed lines on the plot)."
-    : `To see whether two things go together, the tracts are put in order on each measure and the two orders are compared (Spearman's ρ = ${r.rho.toFixed(2)} across ${r.n} tracts; 1 means the same order, 0 no connection, −1 the opposite order). Below 0.2 is called little relationship, below 0.4 weak, below 0.6 moderate, and 0.6 or more strong.`;
+    : `To see whether two things go together, the tracts are put in order on each measure and the two orders are compared (Spearman's ρ = ${Number.isFinite(r.rho) ? r.rho.toFixed(2) : "not measurable"} across ${r.n} tracts; 1 means the same order, 0 no connection, −1 the opposite order). Below 0.2 is called little relationship, below 0.4 weak, below 0.6 moderate, and 0.6 or more strong.`;
   return (
     <div className={`${styles.reference} ${styles.tractCard}`} data-card="tract-relate">
       <Head h={a} title={title} summary={summary} expand={expand} />

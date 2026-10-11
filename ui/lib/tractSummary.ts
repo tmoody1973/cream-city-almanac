@@ -5,14 +5,15 @@ import { noMargin, plainMeaning } from "./tractFormat";
 type Col = { name: string; column: string; meaning: string; place: string; year: string; confidence: string | null };
 
 const LONGEST = 80; // a meaning longer than this reads as a paragraph, not a name
+const COMMON_LEAD = /^(Percentage|Percent|Number|Median|Mean|Average|Total|Rate|Share|Count|Estimated|Proportion)\b/;
 
 // A column's name in a sentence: DYCU's own meaning when it is a short phrase ("percentage of households with income
-// below the poverty line"), else the dataset's name and the column. A leading capital is lowered only when the next
-// letter is lower case, so "PM2.5" stays as written.
+// below the poverty line"), else the dataset's name and the column. Only a leading word that is plainly a common noun
+// is lowered ("Percentage", "Median"), so names ("Hispanic", "Black", "PM2.5") stay as DYCU wrote them.
 export function subject(c: Pick<Col, "name" | "column" | "meaning">): string {
   const m = plainMeaning(c.meaning).replace(/^estimate\s*-\s*/i, "").replace(/^the\s+/i, "").trim();
   if (!m || m.length > LONGEST) return `${c.name} (${c.column})`;
-  return /^[A-Z][a-z]/.test(m) ? m[0].toLowerCase() + m.slice(1) : m;
+  return COMMON_LEAD.test(m) ? m[0].toLowerCase() + m.slice(1) : m;
 }
 
 // A plot axis: the same words, capitalized, with the dataset code and column so the reader can find it on the sheet.
@@ -48,18 +49,26 @@ export function relateSummary(r: Relate): string {
     return `${looked} ${are(r.fitsCount, "a clear match", "clear matches")}, even at the edges of the margin of error${more}.`;
   }
   if (r.strength === "too-few") return "There aren't enough census tracts with figures for both to say whether they go together.";
-  const across = `Across ${tracts(r.n)} in ${where}`;
-  if (r.strength === "little") return `${across}, the ${A} and the ${B} show little relationship: knowing one tells you almost nothing about the other.`;
+  // n counts the matched tracts with reliable figures on both, not every tract the header counts.
+  const across = `Across ${tracts(r.n)} with reliable figures in ${where}`;
+  if (r.strength === "little") return `${across}, the ${A} and the ${B} show little relationship.`;
   const tends = r.direction === "higher" ? "higher too" : "lower";
   return `${across}, where the ${A} is higher, the ${B} tends to be ${tends}. The pattern is ${r.strength}. That doesn't mean one causes the other.`;
 }
 
-export function rankSummary(r: { header: Col; direction: "high" | "low"; top: number; tieCount: number; unreliableCount: number }): string {
+// `inline` is how many of the ties the table shows itself (the rest fold under it).
+export function rankSummary(r: { header: Col; direction: "high" | "low"; top: number; tieCount: number; unreliableCount: number; inline?: number }): string {
   const h = r.header;
+  if (r.top === 0) {
+    const why = r.unreliableCount ? `: ${r.unreliableCount} ${r.unreliableCount === 1 ? "tract's estimate is" : "tracts' estimates are"} too uncertain` : "";
+    return `No census tract in ${placeName(h.place)} could be ranked on the ${subject(h)} (${h.year} data)${why}.`;
+  }
   const which = r.top === 1 ? "This is the census tract" : `These are the ${tracts(r.top)}`;
   const lead = `${which} in ${placeName(h.place)} with the ${r.direction === "high" ? "highest" : "lowest"} ${subject(h)} (${h.year} data).`;
   if (!h.confidence) return `${lead} There's no margin of error for this column, so tracts close in rank may really be tied.`;
-  const ties = r.tieCount ? ` ${r.tieCount} more ${r.tieCount === 1 ? "is" : "are"} within the margin of error of #${r.top}, so read the top as a group, not an exact order.` : "";
+  const shown = r.inline ?? 5;
+  const first = r.tieCount > shown ? ` (the first ${shown} are in the table)` : "";
+  const ties = r.tieCount ? ` ${r.tieCount} more ${r.tieCount === 1 ? "is" : "are"} within the margin of error of #${r.top}${first}, so read the top as a group, not an exact order.` : "";
   const u = r.unreliableCount;
   const left = u ? ` ${u} ${u === 1 ? "tract is left out because its estimate is" : "tracts are left out because their estimates are"} too uncertain.` : "";
   return lead + ties + left;
@@ -73,6 +82,6 @@ export function changeSummary(r: { header: Col; from: string; to: string; increa
   if (r.increases + r.decreases === 0) return `${when} didn't change by more than the survey's margin of error in any of the ${tracts(r.none)} compared.`;
   const rose = r.increases ? `clearly rose in ${tracts(r.increases)}` : "";
   const fell = r.decreases ? `clearly fell in ${rose ? r.decreases : tracts(r.decreases)}` : "";
-  const rest = r.none ? ` In the other ${r.none}, the change is smaller than the survey's margin of error.` : "";
+  const rest = r.none ? ` In the other ${r.none} compared, the change is smaller than the survey's margin of error.` : "";
   return `${when} ${[rose, fell].filter(Boolean).join(" and ")}.${rest}`;
 }

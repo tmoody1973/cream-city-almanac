@@ -130,9 +130,9 @@
 /* The big view: all of a phone's screen, most of a laptop's window. */
 .big { width: 100%; height: 100%; max-width: none; max-height: none; margin: 0; padding: 0; border: 0; background: var(--paper); color: var(--ink); }
 .big::backdrop { background: rgb(0 0 0 / 0.55); }
-.bigBody { padding: 12px var(--gutter, 16px) 24px; }
+.bigBody { box-sizing: border-box; min-height: 100%; padding: 12px var(--gutter, 16px) 24px; } /* fills the window, so only the backdrop closes it */
 .bigHead { display: flex; justify-content: space-between; align-items: center; gap: 12px; border-bottom: var(--hair); padding-bottom: 8px; position: sticky; top: 0; background: var(--paper); z-index: 1; }
-.bigGrid { display: grid; gap: 16px; align-items: start; }
+.bigGrid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
 @media (min-width: 900px) {
   .big { width: min(1400px, 94vw); height: min(940px, 92vh); margin: auto; border: var(--hair); }
   .bigGrid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }

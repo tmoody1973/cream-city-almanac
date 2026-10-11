@@ -58,10 +58,12 @@ export function TractScatter({ points, a, b, cutA, cutB, aSide, bSide, counts, b
   );
   // Axis numbers: the low and high ends, and the cutoff when there is one; an end too close to the cutoff gives way.
   const ticks = (lo: number, hi: number, cut: number | undefined, at: (v: number) => number, room: number) =>
-    cut === undefined ? [lo, hi] : [lo, cut, hi].filter((v) => v === cut || Math.abs(at(v) - at(cut)) > room);
+    // A cutoff can equal an end (a third of tracts at zero): one label, one key.
+    cut === undefined ? [lo, hi] : [...new Set([lo, cut, hi])].filter((v) => v === cut || Math.abs(at(v) - at(cut)) > room);
   const xt = ticks(s.domain.x[0], s.domain.x[1], mismatch ? cutA : undefined, s.x, fs * 3);
   const yt = ticks(s.domain.y[0], s.domain.y[1], mismatch ? cutB : undefined, s.y, fs * 1.4);
-  const corner = mismatch ? matchCorner(s, cutA, cutB, aSide, bSide, PW, PH) : null;
+  // No counts means a column has no margin of error: no tract can be a clear match, so no corner claims one.
+  const corner = mismatch && counts ? matchCorner(s, cutA, cutB, aSide, bSide, PW, PH) : null;
   return (
     <figure className={styles.tractPlot} data-scatter={big ? "big" : "card"}>
       <p className={styles.tractAxis}>{"↑ "}{axisTitle(b)}</p>
