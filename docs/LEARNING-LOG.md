@@ -31,3 +31,9 @@ Dated entries, written by Tarik. Each answers three things: what did we expect, 
 1. We expected a landing page to be mostly words. What happened: most of the work was moving search to /search without breaking the links people had already shared. What do we now believe?
 2. We expected "redirect any address that has a parameter" to be the safe rule. What happened: it would have sent campaign tags (utm_source and the like) to search; the rule is now an explicit list of the 11 search settings. What do we now believe?
 -->
+
+<!-- Suggested entries (for Tarik to write in his own words), 2026-10-10, Ask analyzes. See decision 027.
+1. We expected to curate a short list of dataset pairs Ask could compare (poverty with food insecurity, and so on). What happened: 32 of DYCU's 46 dataset families share the same census-tract ID, so one general tool covered every pair for less work than a list. What do we now believe?
+2. We expected tract IDs to differ between DYCU's data tables and its report definitions. What happened: one formula connects them (a tract ID is the county code followed by the tract number times 100), so a tract can be named from either. What do we now believe?
+3. We expected a column's margin of error to be named the same way everywhere. What happened: it was not, and a rule that looked for one spelling would have left most columns without a range; matching DYCU's own definitions found 123 of 146. What do we now believe?
+-->

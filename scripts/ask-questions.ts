@@ -39,6 +39,15 @@ export const ASK_QUESTIONS: AskQuestion[] = [
   { q: "How many burglaries were there in Gotham Heights this year?", tool: "countRecords", expect: { status: "no-neighborhood" } },
   { q: "Is there City data on vacant buildings?", tool: "searchCatalog", expect: {} },
   { q: "Who owns the property at 2263 N Lake Dr?", tool: ["searchCatalog", "showDataset"], expect: {} },
+  // Ask analyzes (tract rankings, change over time, relationships): the column the model picks must appear in the card's header.
+  { q: "Where is food insecurity low despite high poverty?", tool: "relateTracts", expect: { code: "E02", column: "pov_rate", mode: "mismatch" }, final: true },
+  { q: "Which census tracts have the highest poverty rate?", tool: "rankTracts", expect: { code: "E02", column: "pov_rate" }, final: true },
+  { q: "Where did poverty grow most from 2022 to 2023?", tool: "compareYears", expect: { code: "E02", column: "pov_rate" }, final: true },
+  { q: "Is asthma higher where poverty is higher?", tool: "relateTracts", expect: { mode: "relate" }, final: true },
+  // Guide examples that made room for the three above, kept on the card.
+  { q: "What did the Harambee neighborhood report say about housing?", tool: "readReport", expect: {} },
+  { q: "How many adults in Harambee finished high school?", tool: "getNumber", expect: { slug: "educational-attainment" } },
+  { q: "How old are the homes in Harambee?", tool: "getNumber", expect: { slug: "bedrooms-and-year" } },
 ];
 
 // The guide's examples (/ask/guide) are graded too: any not already above joins the card.
