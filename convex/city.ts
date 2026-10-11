@@ -6,14 +6,18 @@ import { chicagoDay } from "./lib/ask";
 import { datastoreSql, datastoreSqlPage } from "./lib/ckan";
 import { POINTS_CAP, rankGroups, tallyPoints } from "./lib/cityPoints";
 import { toMapData, type MapData } from "./lib/cityMap";
+import { withOverrides } from "./lib/cityProfile";
 import { buildCount, groupLabelFor, MAX_GROUPS } from "./lib/citySql";
 import type { Bbox, Geometry } from "./lib/geo";
 import { matchName } from "./lib/neighborhoodNames";
+import { MIN_HOMES, tractGeoid } from "./lib/propertyMeasures";
 import { rateLimiter } from "./limits";
 import { MAP_TTL_MS, mapKey } from "./map";
+import type { Fam } from "./tracts";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const vFilter = v.object({ column: v.string(), values: v.array(v.string()) });
+const vFilter = v.object({ column: v.string(), values: v.optional(v.array(v.string())), over: v.optional(v.number()), under: v.optional(v.number()) });
+const MAX_TRACT_SHAPES = 50; // the tract cards' cap (ui/lib/tractShapes.ts)
 
 // Named so the action below can type what it gets back (a function can't infer its own reference's result).
 type CountContext = { code: string; name: string; city: boolean; topic: string; profile: Doc<"cityProfiles"> | null; caveat: string | null } | null;
@@ -27,7 +31,7 @@ export const countContext = internalQuery({
     if (!base.city) return { ...base, profile: null, caveat: null };
     const profile = await ctx.db.query("cityProfiles").withIndex("by_family", (q) => q.eq("familyKey", family.key)).first();
     const card = await ctx.db.query("cards").withIndex("by_family", (q) => q.eq("familyKey", family.key)).first();
-    return { ...base, profile, caveat: card?.caveats[0] ?? null };
+    return { ...base, profile: profile ? withOverrides(profile) : null, caveat: card?.caveats[0] ?? null };
   },
 });
 
@@ -66,6 +70,7 @@ export type CountResult =
       overlap: boolean; period: string; filters: string[]; futureExcluded: number; caveat: string | null;
       dateColumn: string | null; coverage: string | null; resourceName: string | null; namesPeople: boolean;
       area: string | null; noLocation: number; map: MapData | null; mapError?: true;
+      of?: { count: number; label: string }; tractMap?: { url: string; ids: string[]; total: number };
     }
   | { status: "outside-coverage"; code: string; name: string; coverage: string }
   | { status: "choose"; code: string; name: string; column: string; asked: string; choices: string[] }
@@ -91,7 +96,7 @@ const groupName = (label: string | null, g: unknown) => {
 
 // Counts City records live. Arguments are checked against the dataset's profile (convex/lib/citySql.ts); returns
 // counts only, never rows.
-export type CountInput = { code: string; neighborhood?: string; from?: string; to?: string; filters?: { column: string; values: string[] }[]; groupBy?: string };
+export type CountInput = { code: string; neighborhood?: string; from?: string; to?: string; filters?: { column: string; values?: string[]; over?: number; under?: number }[]; groupBy?: string };
 
 export const countRecords = action({
   args: { code: v.string(), neighborhood: v.optional(v.string()), from: v.optional(v.string()), to: v.optional(v.string()), filters: v.optional(v.array(vFilter)), groupBy: v.optional(v.string()) },
@@ -115,7 +120,7 @@ export const countRecords = action({
 // Everything a count does after sign-in and the rate limit; the public map action reuses it.
 export async function runCount(ctx: ActionCtx, input: CountInput): Promise<CountResult> {
   const plan = await planCount(ctx, input);
-  return "status" in plan ? plan : askCity(plan);
+  return "status" in plan ? plan : askCity(ctx, plan);
 }
 
 type Plan = { data: NonNullable<CountContext>; profile: Doc<"cityProfiles">; found: Extract<Found, { kind: "one" }> | null; built: Extract<ReturnType<typeof buildCount>, { ok: true }> };
@@ -148,7 +153,7 @@ export async function planCount(ctx: ActionCtx, { code, neighborhood, ...args }:
   return { data, profile, found, built };
 }
 
-export async function askCity({ data, profile, found, built }: Plan): Promise<CountResult> {
+export async function askCity(ctx: ActionCtx, { data, profile, found, built }: Plan): Promise<CountResult> {
   const { name } = data;
   try {
     if (found && built.points) {
@@ -177,6 +182,23 @@ export async function askCity({ data, profile, found, built }: Plan): Promise<Co
     const groups = (byDate ? [...rows].reverse() : rows).map((r) => ({ label: groupName(built.groupLabel, r.g), count: cityCount(r) }));
     const [future] = built.futureSql ? await datastoreSql<{ n: string }>(built.futureSql) : [{ n: "0" }];
     const futureExcluded = cityCount(future);
+    const of = built.ofSql ? { count: cityCount((await datastoreSql<{ n: string }>(built.ofSql))[0]), label: "with an assessed value" } : undefined;
+    let tractMap: { url: string; ids: string[]; total: number } | undefined;
+    if (built.tractSql) {
+      // Its own try: a failed tract query loses the map, never the count.
+      try {
+        const rows = await datastoreSql<{ t: unknown; hit: unknown; n: unknown }>(built.tractSql);
+        const most = rows
+          .map((r) => ({ id: tractGeoid(r.t), hit: Number(r.hit), n: Number(r.n) }))
+          .filter((r): r is { id: string; hit: number; n: number } => r.id !== null && r.n >= MIN_HOMES && r.hit / r.n > 0.5)
+          .sort((x, y) => y.hit / y.n - x.hit / x.n);
+        const e02: Fam | null = await ctx.runQuery(internal.tracts.familyForTracts, { code: "E02" });
+        const url = (e02?.members ?? []).filter((m) => m.place === "County").sort((x, y) => Number(y.year.slice(0, 4)) - Number(x.year.slice(0, 4)))[0]?.url;
+        if (url) tractMap = { url, ids: most.slice(0, MAX_TRACT_SHAPES).map((r) => r.id), total: most.length };
+      } catch (e) {
+        console.error(`City tract shares failed for ${data.code}: ${e instanceof Error ? e.message : String(e)}`);
+      }
+    }
     let map: MapData | null = null;
     if (built.gridSql) {
       // The map has its own try: a failed grid query loses the map, never the count.
@@ -199,6 +221,7 @@ export async function askCity({ data, profile, found, built }: Plan): Promise<Co
       period: built.period, filters: built.filterLabels, futureExcluded,
       caveat: data.caveat, dateColumn: built.dateColumn, coverage: built.coverage, resourceName: profile.resourceName ?? null, namesPeople: profile.namesPeople,
       area: null, noLocation: 0, map,
+      ...(of ? { of } : {}), ...(tractMap ? { tractMap } : {}),
       // The dataset records locations but this count has no map (the grid failed or was cut off): not "no locations".
       ...(built.gridSql && !map ? { mapError: true as const } : {}),
     };

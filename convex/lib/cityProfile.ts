@@ -70,6 +70,29 @@ export interface CityProfile {
   rowCount: number; minDate: string | null; maxDate: string | null; namesPeople: boolean; signature: string; updatedAt: number;
   resourceName?: string | null; // the file counted, when the City offers several live files
   latColumn?: string | null; lonColumn?: string | null; // set only when the sampled points land in Milwaukee
+  // Per-file settings (OVERRIDES) the profiler can't infer, applied when counting:
+  snapshot?: boolean; // rows describe things as they are now (no default 12-month window; dates mean "last sold")
+  numberColumns?: string[]; // text columns that hold numbers, for over/under filters
+  currentColumn?: string | null; // a snapshot keeps only rows whose value here is this column's most common one
+  tractColumn?: string | null; // the census tract, for the count card's tract map
+  baseColumn?: string | null; // the column whose positive values make "the whole" for a number-filtered count
+}
+
+type Override = Required<Pick<CityProfile, "snapshot" | "numberColumns" | "currentColumn" | "tractColumn" | "baseColumn">> & { districtColumns: string[]; keepCategories: string[] };
+// One entry per file, keyed by the City's resource id (stable across catalog codes). Street names and every other
+// category are dropped from the property file: counts go by aldermanic district, never by street.
+const OVERRIDES: Record<string, Override> = {
+  [MPROP_RID]: {
+    snapshot: true, districtColumns: ["GEO_ALDER"], keepCategories: ["YR_ASSMT"], currentColumn: "YR_ASSMT", tractColumn: "GEO_TRACT", baseColumn: "C_A_TOTAL",
+    numberColumns: ["C_A_TOTAL", "C_A_LAND", "C_A_IMPRV", "BLDG_AREA", "NR_UNITS", "YR_BUILT"],
+  },
+};
+
+export function withOverrides<P extends CityProfile>(p: P): P {
+  const o = OVERRIDES[p.resourceId];
+  if (!o) return p;
+  const { keepCategories, ...set } = o;
+  return { ...p, ...set, categories: p.categories.filter((c) => keepCategories.includes(c.column)) } as P;
 }
 
 export function assembleProfile(
