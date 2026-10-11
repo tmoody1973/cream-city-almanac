@@ -46,10 +46,11 @@ const place = z.enum(["City", "County"]).describe("City or County, as the datase
 const year = z.string().max(9).describe('The year label from the dataset\'s sheet, e.g. "2022"');
 const column = z.string().max(64).describe("A numeric column from the dataset's column guide; prefer a rate over a count when comparing tracts");
 // The tract tools' arguments; their cards read the same ones to fetch more.
-export const rankParams = z.object({ code, column, place, year, direction: z.enum(["high", "low"]) });
+const cutoff = z.number().int().min(1_000).max(10_000_000).optional().describe("Only for H28 share_over / share_under: the cutoff in whole dollars, e.g. 200000");
+export const rankParams = z.object({ code, column, place, year, direction: z.enum(["high", "low"]), cutoff });
 export const changeParams = z.object({ code, column, place, from: year, to: year });
 export const relateParams = z.object({
-  a: z.object({ code, column }), b: z.object({ code, column }), place, year,
+  a: z.object({ code, column, cutoff }), b: z.object({ code, column, cutoff }), place, year,
   mode: z.enum(["relate", "mismatch"]).describe("relate: do they go together; mismatch: tracts high on one but low on the other"),
   aSide: z.enum(["high", "low"]).optional().describe("Which side of dataset a the person asked about (high or low). Always set it in mismatch mode."),
   bSide: z.enum(["high", "low"]).optional().describe("Which side of dataset b the person asked about (high or low). Always set it in mismatch mode."),
@@ -122,7 +123,7 @@ export function askTools(b: AskBackend): AskTool[] {
     },
     {
       name: "rankTracts",
-      description: "Rank census tracts on one DYCU tract dataset's column (highest or lowest), with margins of error and DYCU neighborhood names. If it returns choose-column or choose-year, pick from the list and call again. Returns rows for the card; never restate their numbers. Read the dataset's column guide (showDataset) first and pick a rate over a count.",
+      description: "Rank census tracts on one DYCU tract dataset's column (highest or lowest), with margins of error and DYCU neighborhood names. If it returns choose-column or choose-year, pick from the list and call again. Returns rows for the card; never restate their numbers. Read the dataset's column guide (showDataset) first and pick a rate over a count. The City's property file (H28) also works here, as one side: column median_value (typical home value), share_over or share_under (with cutoff in dollars), owner_share, or median_year_built. Its figures are exact City records for the current assessment and cover City tracts only.",
       parameters: rankParams,
       execute: (a: z.infer<typeof rankParams>) => b.rank(a),
     },
@@ -134,7 +135,7 @@ export function askTools(b: AskBackend): AskTool[] {
     },
     {
       name: "relateTracts",
-      description: "Line two DYCU tract datasets up tract by tract. mode relate: do they go together (a ranked comparison, worded on the card). mode mismatch: tracts high on one but low on the other (aSide, bSide), counted only when their ranges clear both cutoffs. If they share no place/year, it returns the shared ones. In mismatch mode, put the dataset the person says is high as a with aSide \"high\", and the one that is low as b with bSide \"low\" (or whatever sides they named); always set both sides. Example: 'food insecurity low despite high poverty' → a = poverty (E02, a poverty rate), aSide high; b = food insecurity (F02), bSide low. Returns rows for the card; never restate their numbers. Read the dataset's column guide (showDataset) first and pick a rate over a count.",
+      description: "Line two DYCU tract datasets up tract by tract. mode relate: do they go together (a ranked comparison, worded on the card). mode mismatch: tracts high on one but low on the other (aSide, bSide), counted only when their ranges clear both cutoffs. If they share no place/year, it returns the shared ones. In mismatch mode, put the dataset the person says is high as a with aSide \"high\", and the one that is low as b with bSide \"low\" (or whatever sides they named); always set both sides. Example: 'food insecurity low despite high poverty' → a = poverty (E02, a poverty rate), aSide high; b = food insecurity (F02), bSide low. Returns rows for the card; never restate their numbers. Read the dataset's column guide (showDataset) first and pick a rate over a count. The City's property file (H28) also works here, as one side: column median_value (typical home value), share_over or share_under (with cutoff in dollars), owner_share, or median_year_built. Its figures are exact City records for the current assessment and cover City tracts only.",
       parameters: relateParams,
       execute: (a: z.infer<typeof relateParams>) => b.relate(a),
     },
