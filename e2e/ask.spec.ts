@@ -228,6 +228,9 @@ test.describe("signed in", () => {
     // Units only where DYCU says percent; the meaning stops before its formula; extra ties fold away.
     await expect(card.locator("tbody tr").first()).toContainText(/\d%/);
     await expect(card).not.toContainText("Calculation:");
+    // The ten highlighted tracts are drawn from DYCU's own service: the map shows, then its shapes are on it.
+    await expect(card.locator("[data-map]")).toBeVisible();
+    await expect(card.locator("[data-map][data-drawn][data-tracts]")).toHaveCount(1, { timeout: 30_000 });
     await expect(card.locator("details[data-ties]")).toHaveCount(1);
     // The caveat link keeps the chat: a new tab on a phone, the side pane on a laptop.
     const caveat = card.getByRole("link", { name: /E02/ });

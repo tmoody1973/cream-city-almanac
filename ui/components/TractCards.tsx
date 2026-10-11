@@ -5,6 +5,8 @@ import { api } from "@/convex/_generated/api";
 import type { ChangeAnswer, Header, Point, RankDetail, RelateAnswer, RelateDetail, TractRow } from "@/convex/tracts";
 import { changeText, isPercent, plainMeaning, rangeText, scatterLabel } from "@/ui/lib/tractFormat";
 import { scales } from "@/ui/lib/tractScatter";
+import { capTractIds } from "@/ui/lib/tractShapes";
+import { CityMap } from "./CityMapLoader";
 import { OpenLink, type Open } from "./OpenLink";
 import { ProvenanceTag } from "./ProvenanceTag";
 import styles from "./ask.module.css";
@@ -62,8 +64,21 @@ const Table = ({ head, children }: { head: string[]; children: React.ReactNode }
   </div>
 );
 
-// Task 7 draws the highlighted tracts here.
-const MapSlot = () => <div className={styles.tractMap} data-tract-map>{/* map: Task 7 */}</div>;
+// The highlighted tracts, hatched, on the map; near-misses outlined. The ids and url come from tractDetail, so the slot
+// stays empty (and hidden) until the full answer arrives, and when nothing is highlighted.
+function MapSlot({ url, fits, close = [] }: { url?: string; fits?: string[]; close?: string[] }) {
+  const shown = url && fits?.length ? capTractIds(fits, close) : null;
+  return (
+    <div className={styles.tractMap} data-tract-map>
+      {url && shown && (
+        <>
+          <CityMap tracts={{ url, fits: shown.fits, close: shown.close }} height={220} />
+          {shown.capped && <p className={styles.tractCounts}>Showing the first 50 tracts on the map.</p>}
+        </>
+      )}
+    </div>
+  );
+}
 
 const TIES_INLINE = 5;
 
@@ -107,7 +122,7 @@ export function RankCard({ r, onOpen }: { r: RankShown; onOpen: Open }) {
           {r.unreliableCount > unreliable.length && <p className={styles.tractCounts}>{r.unreliableCount - unreliable.length} more not listed.</p>}
         </details>
       )}
-      <MapSlot />
+      <MapSlot url={full?.header.url} fits={full?.highlighted} />
       <Fine heads={[h]} onOpen={onOpen} />
     </div>
   );
@@ -140,7 +155,7 @@ export function ChangeCard({ r, onOpen }: { r: ChangeShown; onOpen: Open }) {
         <p className={styles.tractCounts}>No tract changed clearly.</p>
       )}
       {r.changeCount > changes.length && <p className={styles.tractCounts}>Showing the largest {changes.length} of {r.changeCount} clear changes.</p>}
-      <MapSlot />
+      <MapSlot url={full?.header.url} fits={full?.highlighted} />
       <Fine heads={[h]} onOpen={onOpen} />
     </div>
   );
@@ -246,7 +261,7 @@ export function RelateCard({ r, onOpen }: { r: RelateShown; onOpen: Open }) {
       {(r.fitsCount > fits.length || r.closeCount > close.length) && (
         <p className={styles.tractCounts}>Showing {fits.length} of {r.fitsCount} that clearly fit and {close.length} of {r.closeCount} that come close.</p>
       )}
-      <MapSlot />
+      <MapSlot url={full?.a.url} fits={full?.highlighted} close={full?.closeIds} />
       <Fine
         heads={[a, b]}
         causal
