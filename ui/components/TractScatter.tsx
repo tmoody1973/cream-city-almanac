@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Header, Point } from "@/convex/tracts";
 import { rangeText, scatterLabel, type Unit, unitOf, valueText } from "@/ui/lib/tractFormat";
 import { axisTitle } from "@/ui/lib/tractSummary";
-import { scales } from "@/ui/lib/tractScatter";
+import { axisLabelRoom, scales } from "@/ui/lib/tractScatter";
 import styles from "./ask.module.css";
 
 // The relate card's scatter (DESIGN.md "Analysis cards"). It is drawn at the pixel width it is given, so its words are
@@ -36,11 +36,14 @@ export function TractScatter({ points, a, b, cutA, cutB, aSide, bSide, counts, b
   const { ref, w: W, fs } = useBox();
   const [picked, setPicked] = useState<Point | null>(null);
   const H = Math.round(big ? Math.min(560, Math.max(320, W * 0.62)) : Math.max(220, W * 0.66));
-  const L = Math.round(fs * 3.4), B = Math.round(fs * 1.8), T = Math.round(fs * 0.5), R = Math.round(fs * 0.8);
-  const PW = Math.max(40, W - L - R), PH = Math.max(40, H - T - B);
-  const s = scales(points, PW, PH, 8);
   const pa = unitOf(a.meaning), pb = unitOf(b.meaning);
   const mismatch = cutA !== undefined && cutB !== undefined;
+  // The left margin fits the widest y label drawn ("$1,250,000" is wider than "100.0%"). The y extent doesn't depend
+  // on the plot's size, so any size gives it.
+  const L = axisLabelRoom([...scales(points, 1, 1, 0).domain.y, ...(mismatch ? [cutB] : [])].map((v) => valueText(v, pb)), fs);
+  const B = Math.round(fs * 1.8), T = Math.round(fs * 0.5), R = Math.round(fs * 0.8);
+  const PW = Math.max(40, W - L - R), PH = Math.max(40, H - T - B);
+  const s = scales(points, PW, PH, 8);
   const r = big ? 1.25 : 1;
   const bar = (p: Point) => [
     p.a[1] !== null && p.a[2] !== null && <line key="x" x1={s.x(p.a[1])} x2={s.x(p.a[2])} y1={s.y(p.b[0])} y2={s.y(p.b[0])} />,

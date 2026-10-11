@@ -226,7 +226,7 @@ function CountCard({ r, id, onOpen, noMap, args }: { r: CountOk; id?: string; on
       {covers && <p className={styles.source} data-coverage>{covers}</p>}
       {r.area && <p className={styles.source} data-area>In {r.area}</p>}
       {r.noLocation > 0 && <p className={styles.source} data-no-location>{r.noLocation.toLocaleString("en-US")} matching records citywide have no location and aren&apos;t included.</p>}
-      {r.tractMap ? (
+      {r.tractMap && !noMap ? (
         <>
           <p className={styles.source}>Census tracts where more than half of the properties are {r.filters.join(", ")}: {r.tractMap.total}{r.tractMap.total > r.tractMap.ids.length ? ` (the first ${r.tractMap.ids.length} are drawn)` : ""}.</p>
           <TractMapSlot url={r.tractMap.url} fits={r.tractMap.ids} />

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { scales } from "../../ui/lib/tractScatter";
+import { axisLabelRoom, scales } from "../../ui/lib/tractScatter";
 
 describe("scatter scales", () => {
   it("maps the data's range (marked tracts' ranges included) into the plot box, y up", () => {
@@ -39,5 +39,13 @@ describe("scatter scales with unreliable points", () => {
     expect(s.x(20)).toBeCloseTo(280);
     expect(s.x(500)).toBeCloseTo(280);
     expect(s.y(-300)).toBeCloseTo(180);
+  });
+});
+
+describe("room for y-axis labels", () => {
+  it("gives dollar labels more room than a percent, and never less than the percent's", () => {
+    expect(axisLabelRoom(["$1,250,000"], 14)).toBeGreaterThan(axisLabelRoom(["100.0%"], 14));
+    expect(axisLabelRoom(["5"], 14)).toBe(Math.round(14 * 3.4));
+    expect(axisLabelRoom([], 14)).toBe(Math.round(14 * 3.4));
   });
 });

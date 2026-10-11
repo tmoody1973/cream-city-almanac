@@ -120,6 +120,16 @@ describe("property sentences", () => {
       "Across 180 census tracts with reliable figures in the City of Milwaukee (2026 assessment and 2023 survey), where the median assessed value of homes (houses and condos) is higher, the percentage of households with a broadband internet subscription of any kind tends to be higher too. The pattern is moderate. That doesn't mean one causes the other.",
     );
   });
+  it("names each survey year when two DYCU sides differ", () => {
+    expect(relateSummary({ mode: "relate", a: { ...broadband, year: "2022" }, b: broadband, n: 180, strength: "moderate", direction: "higher", fitsCount: 0, closeCount: 0 })).toContain(
+      "in Milwaukee County (2022 survey and 2023 survey),",
+    );
+  });
+  it("keeps to the City when a County side meets a City side in the same year", () => {
+    expect(relateSummary({ mode: "relate", a: { ...broadband, place: "City" }, b: broadband, n: 180, strength: "moderate", direction: "higher", fitsCount: 0, closeCount: 0 })).toContain(
+      "in the City of Milwaukee (2023 data),",
+    );
+  });
   it("ranks property without calling the assessment 'data'", () => {
     expect(rankSummary({ header: home, direction: "high", top: 10, tieCount: 0, unreliableCount: 0 })).toBe(
       "These are the 10 census tracts in the City of Milwaukee with the highest median assessed value of homes (houses and condos) (2026 assessment).",
