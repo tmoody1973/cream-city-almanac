@@ -1,18 +1,22 @@
 "use client";
 import { useQuery } from "convex/react";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { api } from "@/convex/_generated/api";
-import type { ChangeAnswer, Header, Point, RankDetail, RelateAnswer, RelateDetail, TractRow } from "@/convex/tracts";
-import { changeText, isPercent, mismatchVerdict, noMargin, plainMeaning, rangeText, scatterLabel, tooFew } from "@/ui/lib/tractFormat";
-import { scales } from "@/ui/lib/tractScatter";
+import type { ChangeAnswer, Header, RankDetail, RelateAnswer, RelateDetail, TractRow } from "@/convex/tracts";
+import { changeText, isPercent, mismatchVerdict, noMargin, plainMeaning, rangeText, tooFew } from "@/ui/lib/tractFormat";
+import { changeSummary, rankSummary, relateSummary } from "@/ui/lib/tractSummary";
 import { capTractIds, MAX_TRACT_SHAPES } from "@/ui/lib/tractShapes";
+import { BigView } from "./BigView";
 import { CityMap } from "./CityMapLoader";
 import { OpenLink, type Open } from "./OpenLink";
 import { ProvenanceTag } from "./ProvenanceTag";
+import { TractLegend, TractScatter } from "./TractScatter";
 import styles from "./ask.module.css";
 
 // Ask's three tract cards (spec §7). The tool result is the model's slim copy (<= 10 rows per list, plus totals); the
 // card reads the full lists, header url/caveats, ids and points from tractDetail by key, and shows the totals meanwhile.
+// Each card leads with one plain sentence that code writes from the verdict (ui/lib/tractSummary.ts, decision 028);
+// EXPAND opens its plot, map and table at full size (BigView).
 
 const range = (r: { value: number; lo: number | null; hi: number | null }, pct: boolean) => {
   const t = rangeText(r, pct);
@@ -36,23 +40,36 @@ function useDetail(key: string) {
   return { detail, expired: !detail && d?.status === "expired", loading: d === undefined };
 }
 
-function Head({ h, title }: { h: Header | Omit<Header, "caveats" | "url">; title: string }) {
+function Head({ h, title, summary, expand }: { h: Header | Omit<Header, "caveats" | "url">; title: string; summary: string; expand?: ReactNode }) {
   return (
     <>
-      <p className={styles.tractHead}>{title}</p>
+      <div className={styles.tractTop}>
+        <p className={styles.tractHead}>{title}</p>
+        {expand}
+      </div>
+      <p className={styles.tractSummary} data-summary>{summary}</p>
       <p className={styles.tractMeta}>
-        {h.code} <b>{h.column}</b> ({plainMeaning(h.meaning) || "no definition in the column guide"}, {KIND[h.kind]}) · {h.place} {h.year} · {h.n} tracts{h.leftOut ? `, ${h.leftOut} left out (no data)` : ""} <ProvenanceTag source="DYCU" />
+        {h.code} <b>{h.column}</b> ({plainMeaning(h.meaning) || "no definition in the column guide"}, {KIND[h.kind]}) · {h.place} {h.year} · {h.n} census tracts{h.leftOut ? `, ${h.leftOut} left out (no data)` : ""} <ProvenanceTag source="DYCU" />
       </p>
     </>
   );
 }
+
+// What a census tract is and how the card decided, folded away for whoever wants it.
+const TRACT = "A census tract is a small area, usually 1,200 to 8,000 people, that the Census Bureau reports on. Most of these figures are survey estimates, so each comes with a range, its margin of error: the true value is probably inside it.";
+const HowToRead = ({ children }: { children: string }) => (
+  <details className={styles.tractMore} data-how>
+    <summary>How to read this</summary>
+    <p className={styles.tractCounts}>{TRACT} {children}</p>
+  </details>
+);
 
 function Fine({ heads, causal, lead, onOpen }: { heads: { code: string; confidence: string | null }[]; causal?: boolean; lead?: string; onOpen: Open }) {
   const levels = [...new Set(heads.map((h) => h.confidence ?? "no margin of error found for this column"))];
   const bare = heads.some((h) => !h.confidence); // spec §5 rule 7
   return (
     <p className={styles.tractFine}>
-      {lead && `${lead} `}Ranges: {levels.join("; ")}.{bare && " Without a margin of error, findings can't be separated from noise."}{causal && " Related doesn't mean one causes the other."} Caveats:{" "}
+      {lead && `${lead} `}Ranges are margins of error: {levels.join("; ")}.{bare && " Without a margin of error, findings can't be separated from noise."}{causal && " Related doesn't mean one causes the other."} Caveats:{" "}
       {heads.map((h, i) => <span key={h.code}>{i > 0 && " \u00b7 "}<OpenLink code={h.code} onOpen={onOpen} label={h.code} /></span>)}
     </p>
   );
@@ -69,13 +86,14 @@ const Table = ({ head, title, children }: { head: string[]; title: string; child
 
 // The highlighted tracts, hatched, on the map; near-misses outlined. The ids and url come from tractDetail, so the slot
 // stays empty (and hidden) until the full answer arrives, and when there is neither a highlighted nor a close tract.
-function MapSlot({ url, fits, close = [] }: { url?: string; fits?: string[]; close?: string[] }) {
+const BIG_MAP = "min(62vh, 560px)";
+function MapSlot({ url, fits, close = [], height = 220 }: { url?: string; fits?: string[]; close?: string[]; height?: number | string }) {
   const shown = url && (fits?.length || close.length) ? capTractIds(fits ?? [], close) : null;
   return (
     <div className={styles.tractMap} data-tract-map>
       {url && shown && (
         <>
-          <CityMap tracts={{ url, fits: shown.fits, close: shown.close }} height={220} />
+          <CityMap tracts={{ url, fits: shown.fits, close: shown.close }} height={height} />
           {shown.capped && <p className={styles.tractCounts}>Showing the first {MAX_TRACT_SHAPES} tracts on the map.</p>}
         </>
       )}
@@ -95,40 +113,60 @@ export function RankCard({ r, onOpen }: { r: RankShown; onOpen: Open }) {
   const folded = ties.slice(TIES_INLINE);
   const foldedCount = r.tieCount - TIES_INLINE; // from the total, never the list
   const tieRow = (t: TractRow) => (
-    <tr key={t.geoid} className={styles.tractTie}><td>=</td><td>{t.tract}</td><td>{t.neighborhood ?? "\u2014"} (within range of #10)</td><td className={styles.num}>{range(t, pct)}</td></tr>
+    <tr key={t.geoid} className={styles.tractTie}><td>=</td><td>{t.tract}</td><td>{t.neighborhood ?? "\u2014"} (tied with #{r.top.length} within the margin of error)</td><td className={styles.num}>{range(t, pct)}</td></tr>
   );
   const head = ["#", "Tract", "Neighborhood", h.column];
   const title = `${r.direction === "high" ? "Highest" : "Lowest"} ${h.column} \u00b7 ${h.place} ${h.year}`;
   const bare = !h.confidence; // no ranges: no ties or unreliable tracts can be found (spec §5 rule 7)
+  const summary = rankSummary({ header: h, direction: r.direction, top: r.top.length, tieCount: bare ? 0 : r.tieCount, unreliableCount: bare ? 0 : r.unreliableCount, inline: TIES_INLINE });
+  const table = (
+    <Table head={head} title={title}>
+      {r.top.map((t, i) => (
+        <tr key={t.geoid}><td>{i + 1}</td><td>{t.tract}</td><td>{t.neighborhood ?? "\u2014"}</td><td className={styles.num}>{range(t, pct)}</td></tr>
+      ))}
+      {ties.slice(0, TIES_INLINE).map(tieRow)}
+    </Table>
+  );
+  const expand = full && (
+    <BigView title={title}>
+      {() => (
+        <>
+          <p className={styles.tractSummary}>{summary}</p>
+          <div className={styles.bigGrid}>
+            <MapSlot url={full.header.url} fits={full.highlighted} height={BIG_MAP} />
+            <div>{table}</div>
+          </div>
+        </>
+      )}
+    </BigView>
+  );
   return (
     <div className={`${styles.reference} ${styles.tractCard}`} data-card="tract-rank">
-      <Head h={h} title={title} />
-      <Table head={head} title={title}>
-        {r.top.map((t, i) => (
-          <tr key={t.geoid}><td>{i + 1}</td><td>{t.tract}</td><td>{t.neighborhood ?? "\u2014"}</td><td className={styles.num}>{range(t, pct)}</td></tr>
-        ))}
-        {ties.slice(0, TIES_INLINE).map(tieRow)}
-      </Table>
+      <Head h={h} title={title} summary={summary} expand={expand} />
+      {table}
       {bare && <p className={styles.tractCounts}>No margin of error found for this column, so ranks may be ties.</p>}
       {!bare && foldedCount > 0 && (
         <details className={styles.tractMore} data-ties>
-          <summary>{foldedCount} more within range of #10</summary>
-          <Table head={head} title={`${title}: more within range of #10`}>{folded.map(tieRow)}</Table>
+          <summary>{foldedCount} more tied with #{r.top.length} (within the margin of error)</summary>
+          <Table head={head} title={`${title}: more tied with #${r.top.length}`}>{folded.map(tieRow)}</Table>
           {folded.length < foldedCount && <p className={styles.tractCounts}>{foldedCount - folded.length} more not listed.</p>}
         </details>
       )}
       {!bare && r.unreliableCount > 0 && (
         <details className={styles.tractMore}>
-          <summary>{r.unreliableCount} unreliable: range too wide</summary>
-          <Table head={head} title={`${title}: unreliable`}>
+          <summary>{r.unreliableCount} too uncertain to rank</summary>
+          <Table head={head} title={`${title}: too uncertain to rank`}>
             {unreliable.map((t) => (
-              <tr key={t.geoid} className={styles.tractUnreliable}><td>{"\u2013"}</td><td>{t.tract}</td><td>{t.neighborhood ?? "\u2014"} (unreliable: range too wide)</td><td className={styles.num}>{range(t, pct)}</td></tr>
+              <tr key={t.geoid} className={styles.tractUnreliable}><td>{"\u2013"}</td><td>{t.tract}</td><td>{t.neighborhood ?? "\u2014"} (too uncertain: margin of error too wide)</td><td className={styles.num}>{range(t, pct)}</td></tr>
             ))}
           </Table>
           {r.unreliableCount > unreliable.length && <p className={styles.tractCounts}>{r.unreliableCount - unreliable.length} more not listed.</p>}
         </details>
       )}
       <MapSlot url={full?.header.url} fits={full?.highlighted} />
+      <HowToRead>
+        {`Tracts whose range overlaps the range of #${r.top.length} could really be #${r.top.length}, so they're listed as tied with it. A tract whose margin of error is large next to its estimate is too uncertain to rank, so it's left out of the list.`}
+      </HowToRead>
       <Fine heads={[h]} onOpen={onOpen} />
     </div>
   );
@@ -142,86 +180,55 @@ export function ChangeCard({ r, onOpen }: { r: ChangeShown; onOpen: Open }) {
   const changes = full?.changes ?? r.changes;
   const title = `${h.column} \u00b7 ${h.place} ${r.from} \u2192 ${r.to}`;
   const bare = noMargin([h]);
+  const summary = changeSummary({ header: h, from: r.from, to: r.to, increases: r.increases, decreases: r.decreases, none: r.none });
+  const table = changes.length > 0 && (
+    <Table head={["Tract", "Neighborhood", r.from, r.to, "Change"]} title={title}>
+      {changes.map((c) => (
+        <tr key={c.geoid}>
+          <td>{c.tract}</td><td>{c.neighborhood ?? "\u2014"}</td>
+          <td className={styles.num}>{range(c.from, pct)}</td><td className={styles.num}>{range(c.to, pct)}</td>
+          <td className={styles.num}>{changeText(c.change, c.direction, pct)}</td>
+        </tr>
+      ))}
+    </Table>
+  );
+  const expand = full && full.highlighted.length > 0 && (
+    <BigView title={title}>
+      {() => (
+        <>
+          <p className={styles.tractSummary}>{summary}</p>
+          <div className={styles.bigGrid}>
+            <MapSlot url={full.header.url} fits={full.highlighted} height={BIG_MAP} />
+            <div>{table}</div>
+          </div>
+        </>
+      )}
+    </BigView>
+  );
   return (
     <div className={`${styles.reference} ${styles.tractCard}`} data-card="tract-change">
-      <Head h={h} title={title} />
+      <Head h={h} title={title} summary={summary} expand={expand} />
       {bare ? (
         <p className={styles.tractCounts}><b>Can't tell which tracts changed clearly: {bare}.</b></p>
       ) : (
         <p className={styles.tractCounts}>
           <b>{r.increases} clear increases · {r.decreases} clear decreases · {r.none} no clear change</b>
-          {r.unreliableCount > 0 && ` · ${r.unreliableCount} not compared (range too wide)`}
+          {r.unreliableCount > 0 && ` · ${r.unreliableCount} not compared (too uncertain)`}
         </p>
       )}
       {r.note && <p className={styles.tractCounts}>{r.note}</p>}
-      {changes.length > 0 ? (
-        <Table head={["Tract", "Neighborhood", r.from, r.to, "Change"]} title={title}>
-          {changes.map((c) => (
-            <tr key={c.geoid}>
-              <td>{c.tract}</td><td>{c.neighborhood ?? "\u2014"}</td>
-              <td className={styles.num}>{range(c.from, pct)}</td><td className={styles.num}>{range(c.to, pct)}</td>
-              <td className={styles.num}>{changeText(c.change, c.direction, pct)}</td>
-            </tr>
-          ))}
-        </Table>
-      ) : (
+      {table || (
         !bare && <p className={styles.tractCounts}>No tract changed clearly.</p>
       )}
       {r.changeCount > changes.length && <p className={styles.tractCounts}>Showing the largest {changes.length} of {r.changeCount} clear changes.</p>}
       <MapSlot url={full?.header.url} fits={full?.highlighted} />
+      <HowToRead>
+        {"A change counts as clear only when it is bigger than both years' margins of error combined, the Census Bureau's test. A smaller change could be survey noise, so it isn't listed."}
+      </HowToRead>
       <Fine heads={[h]} onOpen={onOpen} />
     </div>
   );
 }
-
-const W = 300, H = 220, PAD = 24;
-
-function Scatter({ points, cutA, cutB, aSide, bSide, a, b, counts }: { points: Point[]; cutA?: number; cutB?: number; aSide?: "high" | "low"; bSide?: "high" | "low"; a: { code: string; column: string }; b: { code: string; column: string }; counts?: { fits: number; close: number } }) {
-  const s = scales(points, W, H, PAD);
-  const bar = (p: Point, cls?: string) => [
-    p.a[1] !== null && p.a[2] !== null && <line key="x" className={cls} x1={s.x(p.a[1])} x2={s.x(p.a[2])} y1={s.y(p.b[0])} y2={s.y(p.b[0])} />,
-    p.b[1] !== null && p.b[2] !== null && <line key="y" className={cls} x1={s.x(p.a[0])} x2={s.x(p.a[0])} y1={s.y(p.b[1])} y2={s.y(p.b[2])} />,
-  ];
-  const mismatch = cutA !== undefined && cutB !== undefined;
-  const label = scatterLabel(points.length, a, b, mismatch ? counts : undefined);
-  const plain = points.filter((p) => !p.mark);
-  return (
-    <svg className={styles.tractScatter} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={label}>
-      <rect className={styles.tractFrame} x={PAD} y={PAD} width={W - 2 * PAD} height={H - 2 * PAD} />
-      {mismatch && (
-        <>
-          <line className={styles.tractCut} x1={s.x(cutA)} x2={s.x(cutA)} y1={PAD} y2={H - PAD} />
-          <line className={styles.tractCut} x1={PAD} x2={W - PAD} y1={s.y(cutB)} y2={s.y(cutB)} />
-          <text className={styles.tractSvgText} x={s.x(cutA) + (aSide === "low" ? -3 : 3)} y={PAD + 10} textAnchor={aSide === "low" ? "end" : "start"}>
-            {aSide === "low" ? "← bottom" : "top"} third {a.column}{aSide === "low" ? "" : " →"}
-          </text>
-          <text className={styles.tractSvgText} x={W - PAD - 3} y={s.y(cutB) + (bSide === "low" ? 10 : -3)} textAnchor="end">
-            {bSide === "low" ? "\u2193 bottom" : "\u2191 top"} third {b.column}
-          </text>
-        </>
-      )}
-      {plain.map((p) => (p.unreliable
-        ? <circle key={p.geoid} className={styles.tractFaint} cx={s.x(p.a[0])} cy={s.y(p.b[0])} r={2} />
-        : <g key={p.geoid}><g className={styles.tractBars}>{bar(p)}</g><circle className={styles.tractDot} cx={s.x(p.a[0])} cy={s.y(p.b[0])} r={2.5} /></g>))}
-      {points.filter((p) => p.mark).map((p) => (
-        <g key={p.geoid}>
-          <g className={styles.tractBarsInk}>{bar(p)}</g>
-          <circle className={p.mark === "fits" ? styles.tractFit : styles.tractClose} cx={s.x(p.a[0])} cy={s.y(p.b[0])} r={4.5} />
-        </g>
-      ))}
-      <text className={styles.tractSvgText} x={PAD} y={H - 6}>{a.column} ({a.code}) {"→"}</text>
-      <text className={styles.tractSvgText} x={10} y={PAD} transform={`rotate(90 10 ${PAD})`}>{b.column} ({b.code}) {"→"}</text>
-    </svg>
-  );
-}
-
-const Legend = () => (
-  <ul className={styles.tractLegend}>
-    <li><span className={`${styles.tractSw} ${styles.tractSwFit}`} />clearly fits (range clears both cutoffs)</li>
-    <li><span className={`${styles.tractSw} ${styles.tractSwClose}`} />close, not clear</li>
-    <li><span className={`${styles.tractSw} ${styles.tractSwDot}`} />other tracts</li>
-  </ul>
-);
 
 export function RelateCard({ r, onOpen }: { r: RelateShown; onOpen: Open }) {
   const { detail, expired } = useDetail(r.key);
@@ -235,46 +242,59 @@ export function RelateCard({ r, onOpen }: { r: RelateShown; onOpen: Open }) {
   const side = (s?: "high" | "low") => (s === "low" ? "bottom" : "top");
   const bare = noMargin([a, b]);
   const title = `${a.name} vs. ${b.name}`;
+  const summary = relateSummary({ ...r, a, b });
+  const plot = (big?: boolean) => (
+    <>
+      <TractScatter points={points} cutA={r.cutA} cutB={r.cutB} aSide={r.aSide} bSide={r.bSide} a={a} b={b} counts={bare ? undefined : { fits: r.fitsCount, close: r.closeCount }} big={big} />
+      {mismatch && !gated && !bare && <TractLegend />}
+    </>
+  );
+  const table = fits.length + close.length > 0 && (
+    <Table head={["Tract", "Neighborhood", a.column, b.column, ""]} title={title}>
+      {fits.map((p) => <PairRow key={p.a.geoid} p={p} pa={pa} pb={pb} label="clear match" />)}
+      {close.map((p) => <PairRow key={p.a.geoid} p={p} pa={pa} pb={pb} label="possible match" tie />)}
+    </Table>
+  );
+  const expand = full && !expired && points.length > 0 && (
+    <BigView title={title}>
+      {() => (
+        <>
+          <p className={styles.tractSummary}>{summary}</p>
+          <div className={styles.bigGrid}>
+            <div>{plot(true)}</div>
+            <MapSlot url={full.a.url} fits={full.highlighted} close={full.closeIds} height={BIG_MAP} />
+          </div>
+          {table}
+        </>
+      )}
+    </BigView>
+  );
+  const how = mismatch
+    ? "Each measure is split into thirds across the tracts with reliable figures. A clear match is in the third you asked about on both measures, even at the edges of its margin of error. A possible match is there at its estimate, but its margin of error crosses a cutoff (the dashed lines on the plot)."
+    : `To see whether two things go together, the tracts are put in order on each measure and the two orders are compared (Spearman's ρ = ${Number.isFinite(r.rho) ? r.rho.toFixed(2) : "not measurable"} across ${r.n} tracts; 1 means the same order, 0 no connection, −1 the opposite order). Below 0.2 is called little relationship, below 0.4 weak, below 0.6 moderate, and 0.6 or more strong.`;
   return (
     <div className={`${styles.reference} ${styles.tractCard}`} data-card="tract-relate">
-      <Head h={a} title={title} />
+      <Head h={a} title={title} summary={summary} expand={expand} />
       <p className={styles.tractMeta}>
         {b.code} <b>{b.column}</b> ({plainMeaning(b.meaning) || "no definition in the column guide"}, {KIND[b.kind]}) · {b.place} {b.year} <ProvenanceTag source="DYCU" />
       </p>
-      {!mismatch && (
-        <>
-          <p className={styles.tractVerdict}>{r.strength === "too-few" ? tooFew(r.n) : STRENGTH[r.strength]}</p>
-          {r.strength !== "too-few" && r.strength !== "little" && (
-            <p className={styles.tractCounts}>{b.column} is {r.direction} where {a.column} is higher · {"ρ"} = {r.rho.toFixed(2)}, {r.n} tracts</p>
-          )}
-          {r.strength === "little" && <p className={styles.tractCounts}>{"ρ"} = {r.rho.toFixed(2)}, {r.n} tracts</p>}
-        </>
-      )}
-      {mismatch && (
-        <p className={styles.tractVerdict}>{mismatchVerdict({ fitsCount: r.fitsCount, closeCount: r.closeCount, n: r.n, gated, bare })}</p>
-      )}
-      {mismatch && !gated && <p className={styles.tractCounts}>{bare ? `Among ${r.n} tracts.` : `Among ${r.n} tracts with reliable figures.`}</p>}
-      {r.unreliableCount > 0 && <p className={styles.tractCounts}>{r.unreliableCount} tracts have a range too wide to count (shown faint).</p>}
+      <p className={styles.tractVerdict}>
+        {mismatch ? mismatchVerdict({ fitsCount: r.fitsCount, closeCount: r.closeCount, n: r.n, gated, bare }) : r.strength === "too-few" ? tooFew(r.n) : STRENGTH[r.strength]}
+      </p>
+      {r.unreliableCount > 0 && <p className={styles.tractCounts}>{r.unreliableCount} tracts are too uncertain to count (shown faint).</p>}
       {expired ? (
         <p className={styles.tractCounts}>This answer has expired; ask again.</p>
       ) : points.length ? (
-        <>
-          <Scatter points={points} cutA={r.cutA} cutB={r.cutB} aSide={r.aSide} bSide={r.bSide} a={a} b={b} counts={bare ? undefined : { fits: r.fitsCount, close: r.closeCount }} />
-          {mismatch && !gated && !bare && <Legend />}
-        </>
+        plot()
       ) : (
         <p className={styles.busy} aria-busy="true">Drawing the plot…</p>
       )}
-      {fits.length + close.length > 0 && (
-        <Table head={["Tract", "Neighborhood", a.column, b.column, ""]} title={title}>
-          {fits.map((p) => <PairRow key={p.a.geoid} p={p} pa={pa} pb={pb} label="clearly fits" />)}
-          {close.map((p) => <PairRow key={p.a.geoid} p={p} pa={pa} pb={pb} label="close, not clear" tie />)}
-        </Table>
-      )}
+      {table}
       {(r.fitsCount > fits.length || r.closeCount > close.length) && (
-        <p className={styles.tractCounts}>Showing {fits.length} of {r.fitsCount} that clearly fit and {close.length} of {r.closeCount} that come close.</p>
+        <p className={styles.tractCounts}>Showing {fits.length} of {r.fitsCount} clear matches and {close.length} of {r.closeCount} possible matches.</p>
       )}
       <MapSlot url={full?.a.url} fits={full?.highlighted} close={full?.closeIds} />
+      {(mismatch ? !gated : r.strength !== "too-few") && <HowToRead>{how}</HowToRead>}
       <Fine
         heads={[a, b]}
         causal

@@ -29,8 +29,10 @@ export function changeText(change: number, direction: "increase" | "decrease", p
 }
 
 type Col = { code: string; column: string };
+const matches = (n: number, kind: "clear" | "possible") => `${n} ${kind} ${n === 1 ? "match" : "matches"}`;
+// Across and up name the axes for a screen reader the way the plot's own labels do.
 export const scatterLabel = (n: number, a: Col, b: Col, counts?: { fits: number; close: number }) =>
-  `Scatter of ${n} tracts, ${a.column} (${a.code}) against ${b.column} (${b.code})${counts ? `; ${counts.fits} clearly fit, ${counts.close} close` : ""}.`;
+  `Scatter of ${n} census tracts, ${a.column} (${a.code}) across, ${b.column} (${b.code}) up${counts ? `; ${matches(counts.fits, "clear")}, ${matches(counts.close, "possible")}` : ""}.`;
 
 // The columns with no margin of error found (spec §5 rule 7), or null when every column has one. "found", not
 // "published": the pairing of a column with its margin can miss.
@@ -42,9 +44,9 @@ export function noMargin(heads: { column: string; confidence: string | null }[])
 // "fewer than 20 matched" only when that is why; a constant column is too few to say as well.
 export const tooFew = (n: number) => (n < 20 ? "Too few tracts to say (fewer than 20 matched)." : "Too few tracts to say.");
 
-const comeClose = (n: number) => `${n} ${n === 1 ? "comes" : "come"} close`;
 export function mismatchVerdict({ fitsCount, closeCount, n, gated, bare }: { fitsCount: number; closeCount: number; n: number; gated: boolean; bare: string | null }) {
   if (gated) return tooFew(n);
-  if (bare) return `Can't tell which tracts clearly fit: ${bare}.`;
-  return fitsCount === 0 ? `No tract clearly fits; ${comeClose(closeCount)}.` : `${fitsCount} clearly ${fitsCount === 1 ? "fits" : "fit"}; ${comeClose(closeCount)}, not clear.`;
+  if (bare) return `Can't tell which tracts are clear matches: ${bare}.`;
+  const possible = closeCount ? `; ${matches(closeCount, "possible")}` : "";
+  return `${fitsCount === 0 ? "No clear match" : matches(fitsCount, "clear")}${possible}.`;
 }
