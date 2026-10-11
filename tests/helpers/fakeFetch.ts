@@ -10,6 +10,7 @@ export interface FakeOptions {
   hubFeed?: unknown;
   hubStatus?: number;
   columns?: { name: string; alias?: string; type?: string }[];
+  columnsFor?: (url: string) => { name: string; alias?: string; type?: string }[];
   portraitBytes?: Uint8Array;
   portraitStatus?: number;
   cityCatalog?: unknown;
@@ -19,6 +20,8 @@ export interface FakeOptions {
   citySqlTruncated?: (sql: string) => boolean; // the City's own row-limit flag
   cityNeighborhoods?: unknown;
   cityNeighborhoodsStatus?: number;
+  tractRows?: (url: string) => { features: { attributes: Record<string, unknown> }[]; exceededTransferLimit?: boolean };
+  tractStatus?: number;
 }
 
 export const DEFAULT_CARD = {
@@ -74,9 +77,11 @@ export function installFakeFetch(opts: FakeOptions = {}) {
     if (url.includes("/api/feed/dcat-us/")) return json(opts.hubStatus ?? 200, opts.hubFeed ?? hubCatalog);
     if (url.includes("docs.google.com/spreadsheets"))
       return new Response(Uint8Array.from(atob(inventoryBase64), (c) => c.charCodeAt(0)), { status: 200 });
+    if (url.includes("/FeatureServer/0/query?") && opts.tractRows)
+      return json(opts.tractStatus ?? 200, opts.tractRows(url));
     if (url.includes("FeatureServer") && url.endsWith("?f=json"))
       return json(200, {
-        fields: opts.columns ?? [
+        fields: opts.columnsFor?.(url) ?? opts.columns ?? [
           { name: "OBJECTID", type: "esriFieldTypeOID" },
           { name: "GEOID", alias: "GEOID", type: "esriFieldTypeString" },
           { name: "per_obesity", alias: "per_obesity", type: "esriFieldTypeDouble" },

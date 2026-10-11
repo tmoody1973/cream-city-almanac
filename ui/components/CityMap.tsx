@@ -8,6 +8,7 @@ import { api } from "@/convex/_generated/api";
 import type { MapData } from "@/convex/lib/cityMap";
 import { escapeHtml, fetchLayer, labelFields } from "@/ui/lib/arcgisLayer";
 import { cellPopupText, cellsToGeoJSON, SOLID_OPACITY, summarySentence } from "@/ui/lib/mapCells";
+import { geojsonBounds, tractShapesUrl } from "@/ui/lib/tractShapes";
 import { useNight } from "@/ui/lib/useNight";
 import styles from "./map.module.css";
 
@@ -34,9 +35,14 @@ function pattern(color: string, crossed: boolean, size: number): ImageData {
   return x.getImageData(0, 0, size, size);
 }
 
-type Props = { cells?: MapData | null; count?: number; boundary?: string | null; layer?: { url: string; name: string } | null; height?: number; after?: string };
+const TRACT_IDS = ["tracts-fit", "tracts-line"];
+export type TractShapes = { url: string; fits: string[]; close: string[] };
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+const tractSummary = ({ fits, close }: TractShapes) =>
+  fits.length ? `Map of ${plural(fits.length, "highlighted tract")}${close.length ? `, ${close.length} close` : ""}` : `Map of ${plural(close.length, "close tract")}`;
+type Props = { cells?: MapData | null; count?: number; boundary?: string | null; layer?: { url: string; name: string } | null; tracts?: TractShapes | null; height?: number; after?: string };
 
-export default function CityMap({ cells = null, count = 0, boundary = null, layer = null, height = 260, after }: Props) {
+export default function CityMap({ cells = null, count = 0, boundary = null, layer = null, tracts = null, height = 260, after }: Props) {
   const box = useRef<HTMLDivElement>(null);
   const fig = useRef<HTMLElement>(null); // carries data-drawn="day|night" once the cells and boundary are on the current style
   const map = useRef<MapLibreMap | null>(null);
@@ -46,7 +52,13 @@ export default function CityMap({ cells = null, count = 0, boundary = null, laye
   const shape = useQuery(api.map.cityShape, boundary ? { name: boundary } : "skip");
   const [tiles, setTiles] = useState(true);
   const [layerNote, setLayerNote] = useState<string | null>(null);
-  const summary = cells ? summarySentence(cells, count) : null;
+  const [tractNote, setTractNote] = useState<string | null>(null);
+  const [tractData, setTractData] = useState<GeoJSON.FeatureCollection | null>(null);
+  const tractsNow = useRef(tracts);
+  const tractsFitted = useRef(false);
+  tractsNow.current = tracts;
+  const tractKey = tracts ? [tracts.url, tracts.fits.join(","), tracts.close.join(",")].join("|") : ""; // by value: a re-render with the same tracts must not refetch
+  const summary = cells ? summarySentence(cells, count) : tracts ? tractSummary(tracts) : null;
   const edition: "day" | "night" = night ? "night" : "day";
   const editionNow = useRef(edition);
   editionNow.current = edition;
@@ -181,9 +193,68 @@ export default function CityMap({ cells = null, count = 0, boundary = null, laye
     };
   }, [layer, edition]);
 
+  // Tract shapes: fetched once per set of tracts from the dataset's own service, then drawn (and redrawn after a style swap).
+  useEffect(() => {
+    tractsFitted.current = false; // a new set of tracts is framed once, on its first draw
+    setTractData(null);
+    setTractNote(null);
+    const t = tractsNow.current;
+    if (!t) return;
+    const url = tractShapesUrl(t.url, [...t.fits, ...t.close]);
+    if (!url) { setTractNote("Tract map unavailable."); return; }
+    const ctl = new AbortController();
+    (async () => {
+      try {
+        const res = await fetch(url, { signal: ctl.signal });
+        const body = (await res.json()) as GeoJSON.FeatureCollection & { error?: unknown };
+        if (!res.ok || body.error || !Array.isArray(body.features) || !body.features.length) throw new Error("no shapes");
+        setTractData({ type: "FeatureCollection", features: body.features });
+      } catch {
+        if (!ctl.signal.aborted) setTractNote("Tract map unavailable.");
+      }
+    })();
+    return () => ctl.abort();
+  }, [tractKey]);
+
+  // Modeled on the City-layer effect: drawn once the style is ready, and again after a style swap (which drops them).
+  useEffect(() => {
+    const m = map.current;
+    const t = tractsNow.current;
+    if (!m || !t || !tractData) return;
+    let cancelled = false;
+    const draw = () => {
+      if (cancelled || m.getSource("tracts")) return;
+      const ink = INK[edition];
+      if (m.hasImage("tract-hatch")) m.removeImage("tract-hatch");
+      m.addImage("tract-hatch", pattern(ink, false, 8));
+      m.addSource("tracts", { type: "geojson", data: tractData });
+      if (t.fits.length) m.addLayer({ id: "tracts-fit", type: "fill", source: "tracts", filter: ["in", ["get", "GEOID"], ["literal", t.fits]], paint: { "fill-pattern": "tract-hatch" } });
+      m.addLayer({ id: "tracts-line", type: "line", source: "tracts", paint: { "line-color": ink, "line-width": 1.5 } });
+      const box = geojsonBounds(tractData);
+      // Once per set of tracts: a day/night redraw keeps whatever view the person has panned to. Extra room at the
+      // bottom for the attribution.
+      if (box && !tractsFitted.current) {
+        m.fitBounds(box, { padding: { top: 24, right: 24, left: 24, bottom: 44 }, duration: 0 });
+        tractsFitted.current = true;
+      }
+      if (fig.current) fig.current.dataset.tracts = edition; // only after the layers above were added
+    };
+    if (loaded.current && styleEdition.current === edition) draw(); else m.once("style.load", draw);
+    return () => {
+      cancelled = true;
+      m.off("style.load", draw);
+      delete fig.current?.dataset.tracts;
+      if (map.current === m && loaded.current) {
+        for (const id of TRACT_IDS) if (m.getLayer(id)) m.removeLayer(id);
+        if (m.getSource("tracts")) m.removeSource("tracts");
+      }
+    };
+  }, [tractData, edition]);
+
   return (
     <figure ref={fig} className={styles.map} data-map>
       <div ref={box} className={styles.canvas} style={{ height }} role="group" aria-label={summary ?? (layer ? `Map of ${layer.name}` : "Map of Milwaukee")} />
+      {tractNote && <p className={styles.message} data-map-message>{tractNote}</p>}
       {!tiles && <p className={styles.message} data-map-message>Street map unavailable.</p>}
       {layerNote && <p className={styles.message} data-map-message>{layerNote}</p>}
       {cells && (
@@ -192,6 +263,12 @@ export default function CityMap({ cells = null, count = 0, boundary = null, laye
           <li><span className={`${styles.swatch} ${styles.cross}`} />5–19</li>
           <li><span className={`${styles.swatch} ${styles.solid}`} style={{ opacity: SOLID_OPACITY }} />20 or more</li>
           {shape && <li><span className={`${styles.swatch} ${styles.line}`} />{shape.name} (City boundary)</li>}
+        </ul>
+      )}
+      {tracts && (
+        <ul className={styles.key} aria-label="Map key">
+          {tracts.fits.length > 0 && <li><span className={`${styles.swatch} ${styles.hatch}`} />highlighted tract</li>}
+          {tracts.close.length > 0 && <li><span className={styles.swatch} />close, not clear</li>}
         </ul>
       )}
       {summary && <figcaption className={styles.summary} data-map-summary>{summary}{after && ` ${after}`}</figcaption>}

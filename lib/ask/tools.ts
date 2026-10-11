@@ -7,7 +7,10 @@ export type FamilySheet = NonNullable<FunctionReturnType<typeof api.catalog.fami
 export type NumberResult = FunctionReturnType<typeof api.ask.getNumber>;
 export type CountResult = FunctionReturnType<typeof api.city.countRecords>;
 export type ReportResult = FunctionReturnType<typeof api.ask.readReport>;
-export type AskToolName = "searchCatalog" | "showDataset" | "previewData" | "getNumber" | "readReport" | "countRecords";
+export type RankResult = FunctionReturnType<typeof api.tracts.rankTracts>;
+export type ChangeResult = FunctionReturnType<typeof api.tracts.compareYears>;
+export type RelateResult = FunctionReturnType<typeof api.tracts.relateTracts>;
+export type AskToolName = "searchCatalog" | "showDataset" | "previewData" | "getNumber" | "readReport" | "countRecords" | "rankTracts" | "compareYears" | "relateTracts";
 
 export interface AskBackend {
   search(a: { query: string; topic?: string; place?: string; year?: number }): Promise<SearchResponse>;
@@ -15,6 +18,9 @@ export interface AskBackend {
   number(a: { neighborhood: string; topic: string; year?: number; row: string }): Promise<NumberResult>;
   report(a: { question: string; familyCode?: string }): Promise<ReportResult>;
   count(a: { code: string; from?: string; to?: string; filters?: { column: string; values: string[] }[]; groupBy?: string; neighborhood?: string }): Promise<CountResult>;
+  rank(a: z.infer<typeof rankParams>): Promise<RankResult>;
+  change(a: z.infer<typeof changeParams>): Promise<ChangeResult>;
+  relate(a: z.infer<typeof relateParams>): Promise<RelateResult>;
 }
 
 export interface AskTool<P extends z.ZodObject = z.ZodObject> {
@@ -34,6 +40,19 @@ export const countParams = z.object({
   filters: z.array(z.object({ column: z.string(), values: z.array(z.string()).max(10) })).max(4).optional(),
   groupBy: z.string().optional().describe('"month", "year", or a column name'),
   neighborhood: z.string().max(80).optional().describe("A City of Milwaukee neighborhood name, e.g. Harambee"),
+});
+
+const place = z.enum(["City", "County"]).describe("City or County, as the dataset's sheet lists it");
+const year = z.string().max(9).describe('The year label from the dataset\'s sheet, e.g. "2022"');
+const column = z.string().max(64).describe("A numeric column from the dataset's column guide; prefer a rate over a count when comparing tracts");
+// The tract tools' arguments; their cards read the same ones to fetch more.
+export const rankParams = z.object({ code, column, place, year, direction: z.enum(["high", "low"]) });
+export const changeParams = z.object({ code, column, place, from: year, to: year });
+export const relateParams = z.object({
+  a: z.object({ code, column }), b: z.object({ code, column }), place, year,
+  mode: z.enum(["relate", "mismatch"]).describe("relate: do they go together; mismatch: tracts high on one but low on the other"),
+  aSide: z.enum(["high", "low"]).optional().describe("Which side of dataset a the person asked about (high or low). Always set it in mismatch mode."),
+  bSide: z.enum(["high", "low"]).optional().describe("Which side of dataset b the person asked about (high or low). Always set it in mismatch mode."),
 });
 
 // The conversation carries a count without its map's cells: a citywide map is ~50 KB and the whole conversation is
@@ -100,6 +119,24 @@ export function askTools(b: AskBackend): AskTool[] {
         "Count City of Milwaukee records (crimes, crashes, 311 requests, permits …) for one live City dataset, by date range, by values of its listed columns (e.g. Police_District, Offense_All, TITLE), optionally grouped by month, year or one of those columns. Returns counts only. If it returns choices or columns, pick from them and call again. If it returns bad-dates, fix the date range (from must be on or before to) and call again. With neighborhood, counts only records located inside that City of Milwaukee neighborhood's official boundary; if it returns choices, pick one and call again; if no-neighborhood, tell the person and offer the nearest names.",
       parameters: countParams,
       execute: async (a: Parameters<AskBackend["count"]>[0]) => withoutCells(await b.count(a)),
+    },
+    {
+      name: "rankTracts",
+      description: "Rank census tracts on one DYCU tract dataset's column (highest or lowest), with margins of error and DYCU neighborhood names. If it returns choose-column or choose-year, pick from the list and call again. Returns rows for the card; never restate their numbers. Read the dataset's column guide (showDataset) first and pick a rate over a count.",
+      parameters: rankParams,
+      execute: (a: z.infer<typeof rankParams>) => b.rank(a),
+    },
+    {
+      name: "compareYears",
+      description: "Find census tracts whose value on one DYCU tract dataset's column changed clearly between two years (beyond both years' margins of error). Same place both years. Returns rows for the card; never restate their numbers. Read the dataset's column guide (showDataset) first and pick a rate over a count.",
+      parameters: changeParams,
+      execute: (a: z.infer<typeof changeParams>) => b.change(a),
+    },
+    {
+      name: "relateTracts",
+      description: "Line two DYCU tract datasets up tract by tract. mode relate: do they go together (a ranked comparison, worded on the card). mode mismatch: tracts high on one but low on the other (aSide, bSide), counted only when their ranges clear both cutoffs. If they share no place/year, it returns the shared ones. In mismatch mode, put the dataset the person says is high as a with aSide \"high\", and the one that is low as b with bSide \"low\" (or whatever sides they named); always set both sides. Example: 'food insecurity low despite high poverty' → a = poverty (E02, a poverty rate), aSide high; b = food insecurity (F02), bSide low. Returns rows for the card; never restate their numbers. Read the dataset's column guide (showDataset) first and pick a rate over a count.",
+      parameters: relateParams,
+      execute: (a: z.infer<typeof relateParams>) => b.relate(a),
     },
   ];
   return tools as AskTool[];

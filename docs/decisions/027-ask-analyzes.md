@@ -1,0 +1,30 @@
+# 027: Ask ranks, compares years and lines up census tracts, and puts every number on a card
+
+**Decision:** Ask can now rank census tracts, compare two years, and line up two DYCU datasets tract by tract (a "census tract" is a small area the Census Bureau draws, roughly 4,000 people; DYCU's data is published by tract). Every figure appears on a card, never in the AI's sentences, and the rules about what counts as a real finding live in server code, not in the AI's prompt.
+
+**Why this came up:** A reporter asked Ask for "neighborhoods where food insecurity is low despite high poverty." Ask answered "I can't answer this directly," because it could only read one number at a time. The data to answer it exists: 32 of DYCU's 46 dataset families are tract tables that share the same tract ID, so pairs can be lined up exactly. What was at stake: an AI that matches and ranks freely will report differences that are really noise. Every DYCU number is an estimate with a margin of error (the range the true value probably falls in), and many tract figures are shaky.
+
+**Options:**
+- *A. Fetch live from DYCU and keep a copy for 10 minutes (chosen):* always current, no new pipeline to maintain, works for any of the 32 tract datasets without curating pairs. Cost: Ask depends on DYCU's server being up and quick.
+- *B. Copy the tract data into our own database on the Monday build:* faster, works if DYCU is down. Cost: another thing to build, store and keep in step; the data could be days stale.
+- *C. Do the math in the browser:* no server work. Cost: the browser would have to download every tract table, and the honesty rules would live in code a reader can change.
+
+**What we chose and why:** Option A, with the scope Tarik chose on 2026-10-10: all four question types (rankings, change over time, "do they go together", and mismatches like the reporter's), Ask picks the column and the card always shows which one it picked, answers at tract level, and the live-fetch approach. Claude proposed the design; Tarik made each of those calls. The AI sees a short result (a verdict, counts, at most the top 10 rows) and never the per-tract points; the card fetches the full detail itself. The honesty rules are code: a value's range comes from the data; a tract whose range is wider than 40% of its value (coefficient of variation) is "unreliable" and never counts as a finding; ties near the cutoff are listed, not hidden; a year-over-year change is "clear" only when it exceeds the combined margins; "do they go together" uses Spearman (a rank correlation: it asks whether tracts that rank high on one measure also rank high on the other, without being thrown off by a few extreme values) and says "little", "weakly", "moderately" or "strongly related" with the sample size; and a "mismatch" counts as clear only when the tract's whole range sits on its side of the cutoff.
+
+**What live testing changed:** Tests against the real DYCU server changed the rules the spec started with, and showed why they matter.
+- *Margins are found three ways, not one.* The spec looked only for a column named `<col>_moe`. Real tables are not that tidy, so a column's margin is now found by that exact name, else by DYCU's own definitions ("Margin of Error - X" pairs with "Estimate - X"), else by Low/High Confidence Limit columns. With that, 123 of the 146 estimate columns across the 32 tract datasets pair with a range; the other 23 are shown without a range and make no tie, change or mismatch claim.
+- *Counts come from totals, ties fold after five, and a percent sign appears only where DYCU's definition says percent.* A count of people comes from the dataset's total column, not from adding up tract rows, so the numbers match what DYCU publishes; a long run of tied rows folds after five; and a percent sign is never added to a rate unless DYCU's own definition says it is a percent.
+- *The honest answer to the reporter's question is mostly "not clearly."* Poverty (E02, County, 2023) against food insecurity (F02) matched 243 reliable tracts with a Spearman of 0.849 ("strongly related"), and the mismatch the reporter asked for, high poverty with low food insecurity, found "No tract clearly fits; 2 come close." Ranking E02 poverty by County for 2023 covered 300 tracts, with 60 to 80 tracts tied within range of #10 and 57 to 73 marked unreliable. A plain top-10 list would have hidden both facts.
+- *Smaller rulings:* caveat links keep the chat open; maps draw clearly-fitting tracts hatched and near-misses outlined, capped at 50; refusals cost nothing against the question budget until DYCU is actually fetched. E02 is graded in the report card at County level, because its City tables name the poverty rate `Per_Poverty` and its County tables name it `pov_rate`.
+
+**What we gave up:**
+- Tract level only: no neighborhood-level estimates (combining tracts needs its own statistics).
+- Many tracts show no name. DYCU names tracts only for its 28 report neighborhoods, so the rest read "—" until a later upgrade names them by City boundary. We never invent a name.
+- Margins mix two confidence levels: Census figures are 90% and the CDC's are 95%. Each card names the levels it used, but a reader comparing across datasets has to notice that.
+- 23 of 146 estimate columns have no published margin, so nothing can be called clear for them.
+- Ask depends on DYCU's server being up. When it isn't, the card says "DYCU's data didn't respond. Try again shortly." instead of a figure.
+- It can be wrong the way any correlation can: the cards say "Related doesn't mean one causes the other," and that is all they can do.
+
+**How we'll know if this was right:** The four report-card questions pass against the real AI (poverty then food insecurity picked as the high/low pair, a rate chosen over a count, the right column on the card header). No reader reports a tract finding that the ranges don't support. Ask's answer to the reporter's question matches what a careful analyst would say: nearly none clearly fit.
+
+**What actually happened:**

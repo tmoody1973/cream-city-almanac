@@ -46,12 +46,16 @@ import type * as lib_retry from "../lib/retry.js";
 import type * as lib_sources from "../lib/sources.js";
 import type * as lib_text from "../lib/text.js";
 import type * as lib_titles from "../lib/titles.js";
+import type * as lib_tractData from "../lib/tractData.js";
+import type * as lib_tractNames from "../lib/tractNames.js";
+import type * as lib_tractStats from "../lib/tractStats.js";
 import type * as lib_types from "../lib/types.js";
 import type * as lib_xlsx from "../lib/xlsx.js";
 import type * as limits from "../limits.js";
 import type * as map from "../map.js";
 import type * as search from "../search.js";
 import type * as settings from "../settings.js";
+import type * as tracts from "../tracts.js";
 import type * as validators from "../validators.js";
 
 import type {
@@ -99,12 +103,16 @@ declare const fullApi: ApiFromModules<{
   "lib/sources": typeof lib_sources;
   "lib/text": typeof lib_text;
   "lib/titles": typeof lib_titles;
+  "lib/tractData": typeof lib_tractData;
+  "lib/tractNames": typeof lib_tractNames;
+  "lib/tractStats": typeof lib_tractStats;
   "lib/types": typeof lib_types;
   "lib/xlsx": typeof lib_xlsx;
   limits: typeof limits;
   map: typeof map;
   search: typeof search;
   settings: typeof settings;
+  tracts: typeof tracts;
   validators: typeof validators;
 }>;
 

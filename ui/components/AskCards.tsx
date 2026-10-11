@@ -1,20 +1,20 @@
 "use client";
 import { useRenderTool } from "@copilotkit/react-core/v2";
 import { useAction } from "convex/react";
-import { createContext, Fragment, type ReactNode, useContext, useEffect, useState } from "react";
+import { createContext, Fragment, type ReactElement, type ReactNode, useContext, useEffect, useState } from "react";
 import { z } from "zod";
 import { countCoverage, outsideCoverage } from "@/ui/lib/askCount";
 import { passageBlocks } from "@/ui/lib/askPassage";
 import { formatPortraitMargin, formatPortraitNumber } from "@/ui/lib/portrait";
 import { api } from "@/convex/_generated/api";
-import { countParams, type CountForModel, type CountResult } from "@/lib/ask/tools";
+import { changeParams, countParams, rankParams, relateParams, type ChangeResult, type CountForModel, type CountResult, type RankResult, type RelateResult } from "@/lib/ask/tools";
 import { CityMap } from "./CityMapLoader";
 import { LivePreview } from "./LivePreview";
+import { OpenLink, type Open } from "./OpenLink";
 import { ProvenanceTag } from "./ProvenanceTag";
+import { ChangeCard, RankCard, RelateCard } from "./TractCards";
 import styles from "./ask.module.css";
 
-// Laptop passes onOpen (the pane beside the notes shows the answer); a phone omits it (answers sit in the note).
-type Open = ((search: string) => void) | undefined;
 type Value = { estimate: string; moe: string | null } | null;
 export type NumberResult = {
   status: string; code: string; neighborhood: string; place: string; year: number | null; topic: string; slug: string;
@@ -40,22 +40,6 @@ function useOpenOnce(key: string | null, search: string | null, onOpen: Open) {
     opened.add(key);
     onOpen(search);
   }, [key, search, onOpen]);
-}
-
-function OpenLink({ code, query = "", onOpen, label, anchor }: { code: string; query?: string; onOpen: Open; label?: string; anchor?: boolean }) {
-  const params = `open=${code}${query ? `&${query}` : ""}`;
-  return (
-    <a
-      className={styles.open}
-      data-leader-anchor={anchor || undefined}
-      href={onOpen ? `/search?ask=1&${params}` : `/d/${code}${query ? `?${query}` : ""}`}
-      // Phone: the sheet opens in a new tab, so the conversation (paid for in questions) stays.
-      {...(onOpen ? {} : { target: "_blank", rel: "noopener" })}
-      onClick={onOpen ? (e) => { e.preventDefault(); onOpen(params); } : undefined}
-    >
-      {label ?? `Open ${code}`} →
-    </a>
-  );
 }
 
 // A report passage as DYCU wrote it: paragraphs, bullet lists, tables and rules (Firecrawl's markdown, rendered).
@@ -304,6 +288,18 @@ export function AskCards({ onOpen }: { onOpen?: (search: string) => void }) {
     if (r.status === "too-broad") return <p className={styles.failed}>Too many {r.name} records in {r.area} to count at once; try a shorter period.</p>;
     return null; // choose / bad-column / bad-dates / not-found / not-city: the model asks or retries
   } }, [onOpen]);
+
+  // The three tract tools: the model handles refusals in words; only an unreachable DYCU gets a line of its own.
+  const tractCard = <T extends { status: string }>(result: unknown, card: (r: Extract<T, { status: "ok" }>) => ReactElement): ReactElement | null => {
+    const r = parse<T>(result);
+    if (!r) return <Failed />;
+    if (r.status === "unavailable") return <p className={styles.source}>DYCU&apos;s data didn&apos;t respond. Try again shortly.</p>;
+    if (r.status === "busy") return <p className={styles.failed}>Tract analyses are busy for your account; try again shortly.</p>;
+    return r.status === "ok" ? card(r as Extract<T, { status: "ok" }>) : null;
+  };
+  useRenderTool({ name: "rankTracts", parameters: rankParams, render: (props) => props.status !== "complete" ? <Busy /> : tractCard<RankResult>(props.result, (r) => <RankCard r={r} onOpen={onOpen} />) }, [onOpen]);
+  useRenderTool({ name: "compareYears", parameters: changeParams, render: (props) => props.status !== "complete" ? <Busy /> : tractCard<ChangeResult>(props.result, (r) => <ChangeCard r={r} onOpen={onOpen} />) }, [onOpen]);
+  useRenderTool({ name: "relateTracts", parameters: relateParams, render: (props) => props.status !== "complete" ? <Busy /> : tractCard<RelateResult>(props.result, (r) => <RelateCard r={r} onOpen={onOpen} />) }, [onOpen]);
 
   useRenderTool({ name: "readReport", parameters: z.object({ question: z.string() }), render: (props) => {
     if (props.status !== "complete") return <Busy />;
