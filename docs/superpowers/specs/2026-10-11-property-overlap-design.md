@@ -18,7 +18,7 @@ The question, and the stronger ones behind it ("do home values go with broadband
 
 ## 2. Facts this design rests on (verified 2026-10-11)
 
-- **The file.** H28 in the live catalog is the City's Master Property File (MPROP). Its CKAN resource is `0a2c7f31-cd15-4151-8222-09dd57d5f16d`: 159,949 rows, one per property, 2025 assessment. It is already profiled for counting, with `namesPeople: true`.
+- **The file.** H28 in the live catalog is the City's Master Property File (MPROP). Its CKAN resource is `0a2c7f31-cd15-4151-8222-09dd57d5f16d`: 159,949 rows, one per property, the file's current assessment (2026 when checked; read from the profile's most common YR_ASSMT). It is already profiled for counting, with `namesPeople: true`.
 - **Tracts match DYCU's.**
   - `GEO_TRACT` holds the census tract without leading zeros ("101" = `000101`).
   - Padded to 6 digits and prefixed with `55079`, it is DYCU's `GEOID`.
@@ -43,6 +43,7 @@ The question, and the stronger ones behind it ("do home values go with broadband
 - **Masked columns.** TAX_DELQ (`99999`), BI_VIOL (`XXXX`) and RAZE_STATUS (`9`) hold one value on every row in the public file.
 - **Thin tracts.** Only 5 tracts have fewer than 30 class-1 homes (1, 1, 3, 8, 29); the next smallest has 68.
 - **Latent bug.** The live H28 profile's date column is `CONVEY_DATE` (last sale date). With no dates asked, `buildCount` (convex/lib/citySql.ts) counts the last 12 months by that column, so a property count today would count only properties sold in the past year.
+- **Street columns.** `STREET` and `SDIR` were profiled as categories; the H28 override drops them.
 - **District column.** `GEO_ALDER` (aldermanic district) isn't recognized by the profiler's district pattern, so H28 has no district columns today.
 
 ## 3. Words the reader sees
@@ -53,7 +54,7 @@ The question, and the stronger ones behind it ("do home values go with broadband
   - "Owner-occupied share of homes";
   - "Typical year built": the median year built of houses.
 - **Range label:** "exact (City records)".
-- **Years:** "2025 assessment × 2023 survey".
+- **Years:** "2026 assessment and 2023 survey".
 - **Left out:**
   - "N left out (fewer than 30 homes)";
   - "N left out (outside the City)".
@@ -107,7 +108,7 @@ Never shown:
 - **Parameters.** `rankTracts` and `relateTracts` (both sides) accept `code: "H28"` with `column` set to a measure id, plus `cutoff` for the share measures. The change goes in `lib/ask/tools.ts` (zod, bounded).
 - **Wrong measure.** An unknown measure returns `choose-column` with the measure menu: id, plain name, `range: true`.
 - **Owner, address and parcel columns** return `choose-column` like any non-measure. There is no path to them.
-- **Years.** The property side's year is "2025 assessment", whatever `year` was asked. Pairing ignores year matching for that side, and the header names both years.
+- **Years.** The property side's year is the file's current assessment (read from the data; "2026 assessment" when checked), whatever `year` was asked. Pairing ignores year matching for that side, and the header names both years.
 - **Places.**
   - `place: "City"` pairs with DYCU's City members.
   - `place: "County"` pairs with County members; tracts with no property value are left out as "outside the City".
@@ -120,7 +121,7 @@ Never shown:
   - The column must be in the dataset's override list of number columns. Every CKAN column is typed text, so this can't be inferred. For H28: `C_A_TOTAL`, `C_A_LAND`, `C_A_IMPRV`, `BLDG_AREA`, `NR_UNITS`, `YR_BUILT`.
   - SQL uses the existing guarded `num()` cast. The filter label reads "assessed over $200,000" for value columns and "over 2,000" otherwise.
 - **Current-state datasets.** A profile flag `snapshot: true` marks a dataset whose rows describe things as they are now, not events (H28). For a snapshot:
-  - a count with no dates covers every row, and the period reads "the 2025 assessment";
+  - a count with no dates covers every row, and the period reads "the 2026 assessment" (the year is read from the data);
   - asked dates filter the date column and the card says "last sold between …".
 - **H28 districts:** `districtColumns: ["GEO_ALDER"]`, labeled "Aldermanic district N".
 - **Overrides.** The three H28 settings (snapshot, district column, number columns) are set in one small table in `convex/lib/cityProfile.ts`, keyed by resource id. They are not inferred: the profiler's patterns stay as they are.
