@@ -130,7 +130,9 @@ const ExamplesLine = () => (
 export function AskPanel({ onOpen }: { onOpen?: (search: string) => void }) {
   // Read once on mount, before Search's own address writes (the parent's effects run after this one).
   const [prompt, setPrompt] = useState("");
-  useEffect(() => setPrompt(readPrompt(window.location.search)), []);
+  useEffect(() => {
+    setPrompt(readPrompt(window.location.search));
+  }, []);
   // Which count card the reader asked to see the map of ("Show map"); see MapPick in AskCards.
   const [picked, setPicked] = useState<{ id: string; newest: string | null } | null>(null);
   const placed = useCallback(() => {
