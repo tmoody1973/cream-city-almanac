@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { axisTitle, changeSummary, placeName, rankSummary, relateSummary, subject } from "../../ui/lib/tractSummary";
+import { axisTitle, changeSummary, placeName, propertyCountSummary, propertyNotes, rankSummary, relateSummary, subject } from "../../ui/lib/tractSummary";
 
 const pov = { code: "E02", name: "Households Living in Poverty", column: "pov_rate", meaning: "Estimate - Percentage of households with income below the poverty line Calculation: (poverty / households) x 100", place: "County", year: "2023", confidence: "90% confidence (Census)" };
 const food = { code: "F02", name: "Food Insecurity Prevalence", column: "per_insecure", meaning: "Estimate - percentage of population 18 years or older who report that the food that they bought always/usually didn't last and they didn't have money to get more", place: "County", year: "2023", confidence: "95% confidence (CDC)" };
@@ -107,6 +107,39 @@ describe("the change card's sentence", () => {
   it("says it can't tell when the column has no margin of error", () => {
     expect(changeSummary({ ...r, header: { ...pov, column: "Per_Poverty", confidence: null } })).toBe(
       "Can't tell which census tracts changed clearly from 2022 to 2024, because Per_Poverty has no margin of error.",
+    );
+  });
+});
+
+const home = { code: "H28", name: "Master Property File (MPROP)", column: "median_value", meaning: "Median assessed value of homes (houses and condos)", place: "City", year: "2026 assessment", confidence: "exact (City records)" };
+const broadband = { code: "H04", name: "Households with Broadband Internet", column: "per_broadband", meaning: "Estimate - percentage of households with a broadband internet subscription of any kind", place: "County", year: "2023", confidence: "90% confidence (Census)" };
+
+describe("property sentences", () => {
+  it("names both years and keeps to the City when one side is property", () => {
+    expect(relateSummary({ mode: "relate", a: home, b: broadband, n: 180, strength: "moderate", direction: "higher", fitsCount: 0, closeCount: 0 })).toBe(
+      "Across 180 census tracts with reliable figures in the City of Milwaukee (2026 assessment and 2023 survey), where the median assessed value of homes (houses and condos) is higher, the percentage of households with a broadband internet subscription of any kind tends to be higher too. The pattern is moderate. That doesn't mean one causes the other.",
+    );
+  });
+  it("ranks property without calling the assessment 'data'", () => {
+    expect(rankSummary({ header: home, direction: "high", top: 10, tieCount: 0, unreliableCount: 0 })).toBe(
+      "These are the 10 census tracts in the City of Milwaukee with the highest median assessed value of homes (houses and condos) (2026 assessment).",
+    );
+  });
+  it("adds the property notes a card needs, once each", () => {
+    expect(propertyNotes([home, broadband])).toEqual([
+      "Assessed value is the City's figure for property taxes, not what a home would sell for.",
+      "Property figures cover the City of Milwaukee; tracts on the City line count only their City part.",
+      "A pattern across tracts doesn't tell you about any one home or family.",
+    ]);
+    expect(propertyNotes([{ column: "owner_share", confidence: "exact (City records)" }])[0]).toBe(
+      "'Owner-occupied' means the owner's mailing address is the property's address; an owner who gets mail elsewhere isn't counted.",
+    );
+    expect(propertyNotes([{ column: "median_year_built", confidence: "exact (City records)" }])[0]).toBe("Year built is the main building's year.");
+    expect(propertyNotes([broadband])).toEqual([]);
+  });
+  it("says a property count in a sentence, with the whole it came from", () => {
+    expect(propertyCountSummary({ count: 83243, filters: ["assessed over $200,000"], period: "2026 assessment", of: { count: 151500, label: "with an assessed value" } })).toBe(
+      "83,243 properties in the City of Milwaukee are assessed over $200,000 (2026 assessment), out of 151,500 with an assessed value. Assessed value is the City's figure for property taxes, not what a home would sell for.",
     );
   });
 });

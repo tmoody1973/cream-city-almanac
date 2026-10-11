@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { changeText, isPercent, mismatchVerdict, noMargin, plainMeaning, rangeText, scatterLabel, tooFew, valueText } from "../../ui/lib/tractFormat";
+import { changeText, isPercent, mismatchVerdict, noMargin, plainMeaning, rangeText, scatterLabel, tooFew, unitOf, valueText } from "../../ui/lib/tractFormat";
 
 describe("tract card words", () => {
   it("cuts DYCU's meaning at ' Calculation:' and leaves the rest whole", () => {
@@ -51,5 +51,22 @@ describe("tract card words", () => {
   it("says fewer than 20 matched only when that is the reason", () => {
     expect(tooFew(12)).toBe("Too few tracts to say (fewer than 20 matched).");
     expect(tooFew(200)).toBe("Too few tracts to say.");
+  });
+});
+
+describe("units from the column's meaning", () => {
+  it("knows percents, dollars and years, and prints each plainly", () => {
+    expect(unitOf("Percentage of homes (houses and condos) assessed over $200,000")).toBe("percent");
+    expect(unitOf("Median assessed value of homes (houses and condos)")).toBe("dollars");
+    expect(unitOf("Median year built of houses")).toBe("year");
+    expect(unitOf("Number of households")).toBe("plain");
+    expect(valueText(245600, "dollars")).toBe("$245,600");
+    expect(valueText(1925, "year")).toBe("1925");
+    expect(valueText(1925.5, "year")).toBe("1926");
+    expect(valueText(63.157, "percent")).toBe("63.2%");
+  });
+  it("shows no range for an exact value", () => {
+    expect(rangeText({ value: 245600, lo: 245600, hi: 245600 }, "dollars")).toEqual({ value: "$245,600", span: null });
+    expect(rangeText({ value: 12, lo: 9, hi: 16 }, "dollars")).toEqual({ value: "$12", span: "($9–$16)" });
   });
 });

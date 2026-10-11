@@ -24,6 +24,12 @@ export function axisTitle(c: Pick<Col, "name" | "column" | "meaning"> & { code: 
 
 export const placeName = (place: string) => (place === "County" ? "Milwaukee County" : place === "City" ? "the City of Milwaukee" : place);
 
+const isAssessment = (year: string) => /assessment/i.test(year);
+const yearIn = (year: string) => (isAssessment(year) ? year : `${year} data`);
+// "2023 data" when both sides share a year; otherwise each named: "2026 assessment and 2023 survey".
+const yearsIn = (a: { year: string }, b: { year: string }) =>
+  a.year === b.year ? yearIn(a.year) : [a, b].map((s) => (isAssessment(s.year) ? s.year : `${s.year} survey`)).join(" and ");
+
 const tracts = (n: number) => `${n} census ${n === 1 ? "tract" : "tracts"}`;
 const are = (n: number, one: string, many: string) => `${n} ${n === 1 ? `is ${one}` : `are ${many}`}`;
 const capital = (s: string) => s[0].toUpperCase() + s.slice(1);
@@ -36,7 +42,9 @@ type Relate = {
 
 export function relateSummary(r: Relate): string {
   const A = subject(r.a), B = subject(r.b);
-  const where = `${placeName(r.a.place)} (${r.a.year} data)`;
+  // A property side covers the City only, and its year is an assessment, not a survey.
+  const place = r.a.place === "City" || r.b.place === "City" ? "City" : r.a.place;
+  const where = `${placeName(place)} (${yearsIn(r.a, r.b)})`;
   if (r.mode === "mismatch") {
     if (r.cutA === undefined || r.cutB === undefined) return "There aren't enough census tracts with reliable figures for both to look for matches.";
     const third = (s?: "high" | "low") => (s === "low" ? "bottom" : "top");
@@ -61,10 +69,10 @@ export function rankSummary(r: { header: Col; direction: "high" | "low"; top: nu
   const h = r.header;
   if (r.top === 0) {
     const why = r.unreliableCount ? `: ${r.unreliableCount} ${r.unreliableCount === 1 ? "tract's estimate is" : "tracts' estimates are"} too uncertain` : "";
-    return `No census tract in ${placeName(h.place)} could be ranked on the ${subject(h)} (${h.year} data)${why}.`;
+    return `No census tract in ${placeName(h.place)} could be ranked on the ${subject(h)} (${yearIn(h.year)})${why}.`;
   }
   const which = r.top === 1 ? "This is the census tract" : `These are the ${tracts(r.top)}`;
-  const lead = `${which} in ${placeName(h.place)} with the ${r.direction === "high" ? "highest" : "lowest"} ${subject(h)} (${h.year} data).`;
+  const lead = `${which} in ${placeName(h.place)} with the ${r.direction === "high" ? "highest" : "lowest"} ${subject(h)} (${yearIn(h.year)}).`;
   if (!h.confidence) return `${lead} There's no margin of error for this column, so tracts close in rank may really be tied.`;
   const shown = r.inline ?? 5;
   const first = r.tieCount > shown ? ` (the first ${shown} are in the table)` : "";
@@ -85,3 +93,22 @@ export function changeSummary(r: { header: Col; from: string; to: string; increa
   const rest = r.none ? ` In the other ${r.none} compared, the change is smaller than the survey's margin of error.` : "";
   return `${when} ${[rose, fell].filter(Boolean).join(" and ")}.${rest}`;
 }
+
+const EXACT = "exact (City records)";
+const NOTE = {
+  value: "Assessed value is the City's figure for property taxes, not what a home would sell for.",
+  owner: "'Owner-occupied' means the owner's mailing address is the property's address; an owner who gets mail elsewhere isn't counted.",
+  built: "Year built is the main building's year.",
+  city: "Property figures cover the City of Milwaukee; tracts on the City line count only their City part.",
+  pattern: "A pattern across tracts doesn't tell you about any one home or family.",
+};
+// The property file's caveats for a card, in order, each once; nothing for a card without a property side.
+export function propertyNotes(heads: { column: string; confidence: string | null }[]): string[] {
+  const cols = heads.filter((h) => h.confidence === EXACT).map((h) => h.column);
+  if (!cols.length) return [];
+  const own = cols.flatMap((c) => (c === "owner_share" ? [NOTE.owner] : c === "median_year_built" ? [NOTE.built] : [NOTE.value]));
+  return [...new Set([...own, NOTE.city, NOTE.pattern])];
+}
+
+export const propertyCountSummary = (r: { count: number; filters: string[]; period: string; of: { count: number; label: string } }) =>
+  `${r.count.toLocaleString("en-US")} ${r.count === 1 ? "property" : "properties"} in the City of Milwaukee ${r.count === 1 ? "is" : "are"} ${r.filters.join(", ")} (${r.period}), out of ${r.of.count.toLocaleString("en-US")} ${r.of.label}. ${NOTE.value}`;

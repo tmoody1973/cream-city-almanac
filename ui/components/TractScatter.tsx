@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import type { Header, Point } from "@/convex/tracts";
-import { isPercent, rangeText, scatterLabel, valueText } from "@/ui/lib/tractFormat";
+import { rangeText, scatterLabel, type Unit, unitOf, valueText } from "@/ui/lib/tractFormat";
 import { axisTitle } from "@/ui/lib/tractSummary";
 import { scales } from "@/ui/lib/tractScatter";
 import styles from "./ask.module.css";
@@ -39,7 +39,7 @@ export function TractScatter({ points, a, b, cutA, cutB, aSide, bSide, counts, b
   const L = Math.round(fs * 3.4), B = Math.round(fs * 1.8), T = Math.round(fs * 0.5), R = Math.round(fs * 0.8);
   const PW = Math.max(40, W - L - R), PH = Math.max(40, H - T - B);
   const s = scales(points, PW, PH, 8);
-  const pa = isPercent(a.meaning), pb = isPercent(b.meaning);
+  const pa = unitOf(a.meaning), pb = unitOf(b.meaning);
   const mismatch = cutA !== undefined && cutB !== undefined;
   const r = big ? 1.25 : 1;
   const bar = (p: Point) => [
@@ -101,7 +101,7 @@ export function TractScatter({ points, a, b, cutA, cutB, aSide, bSide, counts, b
   );
 }
 
-const spell = (t: [number, number | null, number | null], pct: boolean) => {
+const spell = (t: [number, number | null, number | null], pct: Unit) => {
   const r = rangeText({ value: t[0], lo: t[1], hi: t[2] }, pct);
   return r.span ? `${r.value} ${r.span}` : r.value;
 };
