@@ -30,8 +30,8 @@ describe("tract card words", () => {
   });
   it("labels the scatter with both columns and the counts", () => {
     const a = { code: "E02", column: "pov_rate" }, b = { code: "F02", column: "per_insecure" };
-    expect(scatterLabel(203, a, b, { fits: 2, close: 3 })).toBe("Scatter of 203 tracts, pov_rate (E02) against per_insecure (F02); 2 clearly fit, 3 close.");
-    expect(scatterLabel(203, a, b)).toBe("Scatter of 203 tracts, pov_rate (E02) against per_insecure (F02).");
+    expect(scatterLabel(203, a, b, { fits: 2, close: 3 })).toBe("Scatter of 203 census tracts, pov_rate (E02) across, per_insecure (F02) up; 2 clear matches, 3 possible matches.");
+    expect(scatterLabel(203, a, b)).toBe("Scatter of 203 census tracts, pov_rate (E02) across, per_insecure (F02) up.");
   });
   it("names the columns that have no margin of error, and nothing when every column has one", () => {
     const pov = { column: "Per_Poverty", confidence: null }, food = { column: "per_insecure", confidence: "95% confidence (CDC)" };
@@ -41,10 +41,11 @@ describe("tract card words", () => {
   });
   it("words the mismatch verdict: the limit first when a column has no margin, never a clearly-fits claim", () => {
     expect(mismatchVerdict({ fitsCount: 0, closeCount: 40, n: 200, gated: false, bare: "Per_Poverty has no margin of error" }))
-      .toBe("Can't tell which tracts clearly fit: Per_Poverty has no margin of error.");
-    expect(mismatchVerdict({ fitsCount: 0, closeCount: 1, n: 200, gated: false, bare: null })).toBe("No tract clearly fits; 1 comes close.");
-    expect(mismatchVerdict({ fitsCount: 1, closeCount: 3, n: 200, gated: false, bare: null })).toBe("1 clearly fits; 3 come close, not clear.");
-    expect(mismatchVerdict({ fitsCount: 2, closeCount: 1, n: 200, gated: false, bare: null })).toBe("2 clearly fit; 1 comes close, not clear.");
+      .toBe("Can't tell which tracts are clear matches: Per_Poverty has no margin of error.");
+    expect(mismatchVerdict({ fitsCount: 0, closeCount: 1, n: 200, gated: false, bare: null })).toBe("No clear match; 1 possible match.");
+    expect(mismatchVerdict({ fitsCount: 0, closeCount: 0, n: 200, gated: false, bare: null })).toBe("No clear match.");
+    expect(mismatchVerdict({ fitsCount: 1, closeCount: 3, n: 200, gated: false, bare: null })).toBe("1 clear match; 3 possible matches.");
+    expect(mismatchVerdict({ fitsCount: 2, closeCount: 1, n: 200, gated: false, bare: null })).toBe("2 clear matches; 1 possible match.");
     expect(mismatchVerdict({ fitsCount: 0, closeCount: 0, n: 12, gated: true, bare: null })).toBe("Too few tracts to say (fewer than 20 matched).");
   });
   it("says fewer than 20 matched only when that is the reason", () => {

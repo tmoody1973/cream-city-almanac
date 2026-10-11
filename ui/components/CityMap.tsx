@@ -40,7 +40,7 @@ export type TractShapes = { url: string; fits: string[]; close: string[] };
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 const tractSummary = ({ fits, close }: TractShapes) =>
   fits.length ? `Map of ${plural(fits.length, "highlighted tract")}${close.length ? `, ${close.length} close` : ""}` : `Map of ${plural(close.length, "close tract")}`;
-type Props = { cells?: MapData | null; count?: number; boundary?: string | null; layer?: { url: string; name: string } | null; tracts?: TractShapes | null; height?: number; after?: string };
+type Props = { cells?: MapData | null; count?: number; boundary?: string | null; layer?: { url: string; name: string } | null; tracts?: TractShapes | null; height?: number | string; after?: string };
 
 export default function CityMap({ cells = null, count = 0, boundary = null, layer = null, tracts = null, height = 260, after }: Props) {
   const box = useRef<HTMLDivElement>(null);
@@ -268,7 +268,7 @@ export default function CityMap({ cells = null, count = 0, boundary = null, laye
       {tracts && (
         <ul className={styles.key} aria-label="Map key">
           {tracts.fits.length > 0 && <li><span className={`${styles.swatch} ${styles.hatch}`} />highlighted tract</li>}
-          {tracts.close.length > 0 && <li><span className={styles.swatch} />close, not clear</li>}
+          {tracts.close.length > 0 && <li><span className={styles.swatch} />possible match</li>}
         </ul>
       )}
       {summary && <figcaption className={styles.summary} data-map-summary>{summary}{after && ` ${after}`}</figcaption>}

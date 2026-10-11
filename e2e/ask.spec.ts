@@ -232,6 +232,8 @@ test.describe("signed in", () => {
     await expect(card.locator("[data-map]")).toBeVisible();
     await expect(card.locator("[data-map][data-drawn][data-tracts]")).toHaveCount(1, { timeout: 30_000 });
     await expect(card.locator("details[data-ties]")).toHaveCount(1);
+    // The plain sentence leads, written by code from the same counts.
+    await expect(card.locator("[data-summary]")).toContainText(/^These are the 10 census tracts in Milwaukee County with the highest /);
     // The caveat link keeps the chat: a new tab on a phone, the side pane on a laptop.
     const caveat = card.getByRole("link", { name: /E02/ });
     if (info.project.name === "phone") await expect(caveat).toHaveAttribute("target", "_blank");
@@ -249,17 +251,32 @@ test.describe("signed in", () => {
     await expect(card).toContainText(/\d+ clear increases · \d+ clear decreases · \d+ no clear change/, { timeout: 60_000 });
     await expect(card).toContainText("90% confidence (Census)");
     await expect(card).toContainText("neighboring releases share four years of responses"); // the overlapping-release caveat
+    await expect(card.locator("[data-summary]")).toContainText(/^(From \d{4} to \d{4} in Milwaukee County|Can't tell)/);
   });
 
-  test("a mismatch question draws the scatter and names what clearly fits or says none does", async ({ page }) => {
+  test("a mismatch question draws the scatter, says what it found in plain words, and opens big", async ({ page }, info) => {
     test.skip(!(await dycuUp(page)), "DYCU unreachable");
     await ask(page, "food insecurity low despite high poverty");
     const card = page.locator("[data-card=tract-relate]:visible");
     await expect(card.locator("svg[role=img]")).toBeVisible({ timeout: 60_000 });
-    await expect(card).toContainText(/clearly fit|No tract clearly fits/);
+    await expect(card).toContainText(/clear match|No clear match/);
+    await expect(card.locator("[data-summary]")).toContainText(/^We looked for census tracts in Milwaukee County/);
     await expect(card).toContainText("Related doesn't mean one causes the other.");
     // Near-misses are outlined even when nothing clearly fits: the map is there, with its tracts drawn.
     await expect(card.locator("[data-map][data-tracts]")).toBeVisible({ timeout: 30_000 });
+    // EXPAND: the plot and the map at full size in a modal window; Escape closes it and focus comes back to EXPAND.
+    const expand = card.getByRole("button", { name: /expand/i });
+    await expand.click();
+    const big = page.locator("dialog[data-big-view][open]");
+    await expect(big.locator("[data-scatter=big] svg[role=img]")).toBeVisible();
+    await expect(big.locator("[data-map][data-tracts]")).toBeVisible({ timeout: 30_000 });
+    if (info.project.name !== "phone") {
+      const width = (l: import("@playwright/test").Locator) => l.evaluate((e) => e.getBoundingClientRect().width);
+      expect(await width(big.locator("[data-scatter=big] svg"))).toBeGreaterThan(await width(card.locator("[data-scatter=card] svg")));
+    }
+    await page.keyboard.press("Escape");
+    await expect(big).toHaveCount(0);
+    await expect(expand).toBeFocused();
   });
 
   test("shows today's count and a way to sign out", async ({ page }) => {
