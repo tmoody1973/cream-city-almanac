@@ -1,11 +1,12 @@
 "use client";
 import { Show, SignInButton, SignOutButton } from "@clerk/nextjs";
-import { CopilotChat, CopilotChatToolCallsView, CopilotChatView, CopilotKitProvider, type CopilotChatViewProps } from "@copilotkit/react-core/v2";
+import { CopilotChat, CopilotChatToolCallsView, CopilotChatView, CopilotKitProvider, useAgent, UseAgentUpdate, type CopilotChatViewProps } from "@copilotkit/react-core/v2";
 import { useQuery } from "convex/react";
 import Link from "next/link";
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
-import { earlierCountIds, earlierSheetIds, lastCountId, noteNumbers, noteOrder } from "@/ui/lib/askNotes";
+import { earlierCountIds, earlierSheetIds, lastCountId, newestTurnCallIds, noteNumbers, noteOrder, retriedCallIds } from "@/ui/lib/askNotes";
+import { NewestTurn, PromptFill, RetriedCalls } from "./askFill";
 import { readPrompt, withoutPrompt } from "@/ui/lib/askPrompt";
 import { proseBlocks, proseSegments } from "@/ui/lib/askProse";
 import { AskCards, EarlierCounts, EarlierSheets, MapPick, NewestCount } from "./AskCards";
@@ -94,6 +95,18 @@ function Note({ message, messages = [] }: { message: Msg & { toolCalls?: unknown
   );
 }
 
+// Which tool calls belong to the newest answer, and which the model retried, from the whole conversation: computed
+// here, above CopilotKit's memoized messages, so a new question reaches every older card (FollowUps).
+function TurnContext({ children }: { children: ReactNode }) {
+  const { agent } = useAgent({ updates: [UseAgentUpdate.OnMessagesChanged] });
+  const messages = agent.messages as never;
+  return (
+    <NewestTurn.Provider value={newestTurnCallIds(messages)}>
+      <RetriedCalls.Provider value={retriedCallIds(messages)}>{children}</RetriedCalls.Provider>
+    </NewestTurn.Provider>
+  );
+}
+
 function StatusLine({ left, limit }: { left: number; limit: number }) {
   return (
     <p className={styles.status}>
@@ -108,7 +121,6 @@ function StatusLine({ left, limit }: { left: number; limit: number }) {
 
 // The guide's examples arrive as ?prompt=…: CopilotChat keeps the input's text in its own state and ignores an
 // inputValue prop, so a thin chat view calls its setter once (as if typed), then focuses the box. Never sends.
-const PromptFill = createContext<{ prompt: string; placed: () => void }>({ prompt: "", placed: () => {} });
 function PrefillChatView(props: CopilotChatViewProps) {
   const { prompt, placed } = useContext(PromptFill);
   const { onInputChange } = props;
@@ -116,7 +128,11 @@ function PrefillChatView(props: CopilotChatViewProps) {
     if (!prompt || !onInputChange) return;
     onInputChange(prompt);
     placed();
-    requestAnimationFrame(() => document.querySelector<HTMLTextAreaElement>('section[aria-label="Ask"] textarea')?.focus());
+    requestAnimationFrame(() => {
+      const box = document.querySelector<HTMLTextAreaElement>('section[aria-label="Ask"] textarea');
+      box?.focus();
+      box?.scrollIntoView({ block: "nearest" });
+    });
   }, [prompt, onInputChange, placed]);
   return <CopilotChatView {...props} />;
 }
@@ -151,7 +167,7 @@ export function AskPanel({ onOpen }: { onOpen?: (search: string) => void }) {
       </Show>
       <Show when="signed-in">
         <ExamplesLine />
-        <PromptFill.Provider value={{ prompt, placed }}>
+        <PromptFill.Provider value={{ prompt, placed, fill: setPrompt }}>
           <MapPick.Provider value={{ picked, pick: (id, newest) => setPicked({ id, newest }) }}>
             <AskChat onOpen={onOpen} />
           </MapPick.Provider>
@@ -176,6 +192,7 @@ function AskChat({ onOpen }: { onOpen?: (search: string) => void }) {
   return (
     <AnswerArrived.Provider value={clearUnavailable}>
     <CopilotKitProvider runtimeUrl="/api/copilotkit" enableInspector={false}>
+      <TurnContext>
       <AskCards onOpen={onOpen} />
       <CopilotChat
         className={styles.chat}
@@ -193,6 +210,7 @@ function AskChat({ onOpen }: { onOpen?: (search: string) => void }) {
         }}
         onError={() => setUnavailable(true)}
       />
+      </TurnContext>
       {unavailable && <p role="status" className={styles.blocked}>Ask is unavailable right now. Search still works.</p>}
       {blocked && <p role="status" className={styles.blocked}>{blocked}</p>}
       {blocked && <StatusLine left={status.left} limit={status.limit} />}

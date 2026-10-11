@@ -182,3 +182,9 @@
 .tractSwFit { background: var(--ink); }
 .tractSwClose { background: var(--paper); }
 .tractSwDot { width: 6px; height: 6px; margin: 0 9px 0 3px; background: var(--ink); opacity: 0.45; border: 0; }
+
+/* Follow-up buttons under the newest answer: ruled caps buttons (the EXPAND style), wrapping on phones. */
+.followUps { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 0 0; }
+.pickLabel { font-family: var(--font-caps); font-weight: 700; text-transform: uppercase; }
+/* A long choice (a column's plain meaning) wraps inside its button instead of pushing past a phone's edge. */
+.followUps .expand { flex: 0 1 auto; max-width: 100%; text-align: left; padding: 6px 12px; }

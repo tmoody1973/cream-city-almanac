@@ -13,6 +13,8 @@ test("the guide shows a live sample answer and three roles of examples", async (
   // The made-up figure must not read as the sample's answer: a different subject than kids in poverty.
   await expect(page.getByText(/made-up figure/)).not.toContainText(/children|kids/);
   await expect(page.getByText(/questions a day/)).toContainText("30 questions a day");
+  // Follow-up buttons under answers fill the box the same way (never send).
+  await expect(page.getByText(/Buttons under Ask's answers work the same way/)).toBeVisible();
 });
 
 test("an example opens Ask with its question waiting (signed out)", async ({ page }) => {
