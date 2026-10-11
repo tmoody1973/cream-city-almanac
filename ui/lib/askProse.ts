@@ -45,9 +45,19 @@ function documentedDurations(text: string, data: string): [number, number][] {
   return [...text.matchAll(DURATION)].filter((m) => said.has(norm(m[0]))).map((m): [number, number] => [m.index, m.index + m[0].length]);
 }
 
+// "tract 1860", "tracts 78 and 1601.01": a tract number is a name when a tract tool returned it ("tract":"1860"); one the
+// data never named is the model's own, and flags.
+const TRACTS = /\btracts?\s+\d+(?:\.\d+)?(?:(?:,\s*|,?\s+(?:and|or)\s+)\d+(?:\.\d+)?)*/gi;
+function namedTracts(text: string, data: string): [number, number][] {
+  const plainData = data.replace(/\\"/g, '"'); // tool results can arrive JSON-encoded twice
+  return [...text.matchAll(TRACTS)].flatMap((m) =>
+    [...m[0].matchAll(/\d+(?:\.\d+)?/g)].filter((n) => plainData.includes(`"tract":"${n[0]}"`)).map((n): [number, number] => [m.index + n.index, m.index + n.index + n[0].length]),
+  );
+}
+
 function allowedSpans(text: string, data: string): [number, number][] {
   const defined = DEFINITIONS.flatMap((re) => [...text.matchAll(re)]).map((m): [number, number] => [m.index, m.index + m[0].length]);
-  return [...quotedFromData(text, data), ...defined, ...documentedDurations(text, data)];
+  return [...quotedFromData(text, data), ...defined, ...documentedDurations(text, data), ...namedTracts(text, data)];
 }
 
 // `data` is what the conversation's tools returned (their results as text); quoted labels must come from it.
