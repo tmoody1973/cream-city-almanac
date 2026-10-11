@@ -76,7 +76,10 @@ export function rankSummary(r: { header: Col; direction: "high" | "low"; top: nu
   if (!h.confidence) return `${lead} There's no margin of error for this column, so tracts close in rank may really be tied.`;
   const shown = r.inline ?? 5;
   const first = r.tieCount > shown ? ` (the first ${shown} are in the table)` : "";
-  const ties = r.tieCount ? ` ${r.tieCount} more ${r.tieCount === 1 ? "is" : "are"} within the margin of error of #${r.top}${first}, so read the top as a group, not an exact order.` : "";
+  // Exact City figures tie only when they are equal; there is no margin to read them through.
+  const ties = r.tieCount && h.confidence === EXACT
+    ? ` ${r.tieCount} more ${r.tieCount === 1 ? "has" : "have"} the same figure as #${r.top}${first}.`
+    : r.tieCount ? ` ${r.tieCount} more ${r.tieCount === 1 ? "is" : "are"} within the margin of error of #${r.top}${first}, so read the top as a group, not an exact order.` : "";
   const u = r.unreliableCount;
   const left = u ? ` ${u} ${u === 1 ? "tract is left out because its estimate is" : "tracts are left out because their estimates are"} too uncertain.` : "";
   return lead + ties + left;
@@ -94,7 +97,7 @@ export function changeSummary(r: { header: Col; from: string; to: string; increa
   return `${when} ${[rose, fell].filter(Boolean).join(" and ")}.${rest}`;
 }
 
-const EXACT = "exact (City records)";
+export const EXACT = "exact (City records)";
 const NOTE = {
   value: "Assessed value is the City's figure for property taxes, not what a home would sell for.",
   owner: "'Owner-occupied' means the owner's mailing address is the property's address; an owner who gets mail elsewhere isn't counted.",

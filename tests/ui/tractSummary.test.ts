@@ -135,6 +135,17 @@ describe("property sentences", () => {
       "These are the 10 census tracts in the City of Milwaukee with the highest median assessed value of homes (houses and condos) (2026 assessment).",
     );
   });
+  it("words a property tie as the same figure, never a margin of error", () => {
+    const one = rankSummary({ header: home, direction: "high", top: 10, tieCount: 1, unreliableCount: 0 });
+    expect(one).toContain("1 more has the same figure as #10.");
+    expect(one).not.toContain("margin of error");
+    expect(one).not.toContain("as a group");
+    const many = rankSummary({ header: home, direction: "high", top: 10, tieCount: 8, unreliableCount: 0, inline: 5 });
+    expect(many).toContain("8 more have the same figure as #10 (the first 5 are in the table).");
+    expect(many).not.toContain("margin of error");
+    // DYCU wording is unchanged.
+    expect(rankSummary({ header: broadband, direction: "high", top: 10, tieCount: 1, unreliableCount: 0 })).toContain("within the margin of error of #10");
+  });
   it("adds the property notes a card needs, once each", () => {
     expect(propertyNotes([home, broadband])).toEqual([
       "Assessed value is the City's figure for property taxes, not what a home would sell for.",

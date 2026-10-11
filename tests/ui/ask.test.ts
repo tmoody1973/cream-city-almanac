@@ -249,6 +249,12 @@ describe("countRecords tool", () => {
     expect(ASK_PROMPT).toContain("Address Search");
     expect(ASK_PROMPT).toContain("itmdapps.milwaukee.gov/AddressSearch");
   });
+  it("tells the model the property count says properties, finds the file by name, and what the City doesn't publish", () => {
+    expect(ASK_PROMPT).toContain("call them properties, not homes");
+    expect(ASK_PROMPT).toContain("tax delinquency, code violations or raze orders, say the City doesn't publish them in its property file");
+    expect(ASK_PROMPT).toContain('named exactly "Master Property File (MPROP)"');
+    expect(ASK_PROMPT).not.toContain("H28"); // catalog codes differ by deployment
+  });
   it("the fake model searches then counts for 'thefts'", async () => {
     const model = fakeAskModel() as unknown as { doStream(o: unknown): Promise<{ stream: ReadableStream<{ type: string }> }> };
     const run = async (prompt: unknown[]) => {
@@ -264,6 +270,37 @@ describe("countRecords tool", () => {
     const second = await run([user, tool]);
     expect(second[0].toolName).toBe("countRecords");
     expect(JSON.parse(second[0].input)).toMatchObject({ code: "P07", groupBy: "month" });
+  });
+});
+
+describe("fake model on property questions", () => {
+  const model = fakeAskModel() as unknown as { doStream(o: unknown): Promise<{ stream: ReadableStream<{ type: string }> }> };
+  const run = async (prompt: unknown[]) => {
+    const { stream } = await model.doStream({ prompt });
+    const calls: { toolName: string; input: string }[] = [];
+    const r = stream.getReader();
+    for (;;) { const { done, value } = await r.read(); if (done) break; if (value.type === "tool-call") calls.push(value as never); }
+    return calls;
+  };
+  const found = { role: "tool", content: [{ type: "tool-result", toolCallId: "c", toolName: "searchCatalog", output: { type: "json", value: { rows: [
+    { code: "H29", name: "Master Property File (MPROP) Visualizations", places: ["City"], years: [] },
+    { code: "H23", name: "Master Property File (MPROP)", places: ["City"], years: [] },
+  ] } } }] };
+  it("searches for the property file first, then counts on the row named exactly MPROP", async () => {
+    const user = { role: "user", content: [{ type: "text", text: "how many properties over 200000" }] };
+    const first = await run([user]);
+    expect(first[0].toolName).toBe("searchCatalog");
+    expect(JSON.parse(first[0].input)).toMatchObject({ query: "Master Property File" });
+    const second = await run([user, found]);
+    expect(second[0].toolName).toBe("countRecords");
+    expect(JSON.parse(second[0].input)).toMatchObject({ code: "H23", groupBy: "GEO_ALDER" });
+  });
+  it("does the same for home values, pairing with H04 broadband", async () => {
+    const user = { role: "user", content: [{ type: "text", text: "do home values go with broadband" }] };
+    expect((await run([user]))[0].toolName).toBe("searchCatalog");
+    const second = await run([user, found]);
+    expect(second[0].toolName).toBe("relateTracts");
+    expect(JSON.parse(second[0].input)).toMatchObject({ a: { code: "H23", column: "median_value" }, b: { code: "H04" }, place: "County", year: "2023" });
   });
 });
 

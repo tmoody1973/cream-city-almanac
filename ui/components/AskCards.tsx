@@ -158,7 +158,7 @@ export const MapPick = createContext<{ picked: { id: string; newest: string | nu
 function CountMap({ r, id, args }: { r: CountOk; id?: string; args?: CountArgs }) {
   const newest = useContext(NewestCount);
   const { picked, pick } = useContext(MapPick);
-  if (!r.map) return <p className={styles.source} data-map-message>{r.mapError ? "No map for this count." : "No map: this dataset doesn't record locations."}</p>;
+  if (!r.map) return <p className={styles.source} data-map-message>{r.mapError || r.of ? "No map for this count." : "No map: this dataset doesn't record locations."}</p>;
   // A pick lasts until a newer count arrives; then the newest card is live again.
   const live = picked && picked.newest === newest ? picked.id === id : id === newest;
   if (!live) return <button type="button" className={styles.textButton} onClick={() => id && pick(id, newest)} data-show-map>Show map</button>;
