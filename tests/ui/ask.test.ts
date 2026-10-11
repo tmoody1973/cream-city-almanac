@@ -247,6 +247,7 @@ describe("countRecords tool", () => {
     expect(ASK_PROMPT).toMatch(/explain it to a neighbor/i);
     expect(ASK_PROMPT).toMatch(/never list properties/i);
     expect(ASK_PROMPT).toContain("Address Search");
+    expect(ASK_PROMPT).toContain("itmdapps.milwaukee.gov/AddressSearch");
   });
   it("the fake model searches then counts for 'thefts'", async () => {
     const model = fakeAskModel() as unknown as { doStream(o: unknown): Promise<{ stream: ReadableStream<{ type: string }> }> };
