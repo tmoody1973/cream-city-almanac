@@ -11,6 +11,7 @@ import { buildCount, groupLabelFor, MAX_GROUPS } from "./lib/citySql";
 import type { Bbox, Geometry } from "./lib/geo";
 import { matchName } from "./lib/neighborhoodNames";
 import { MIN_HOMES, tractGeoid } from "./lib/propertyMeasures";
+import { newestCountyUrl } from "./lib/tractPlaces";
 import { rateLimiter } from "./limits";
 import { MAP_TTL_MS, mapKey } from "./map";
 import type { Fam } from "./tracts";
@@ -193,7 +194,7 @@ export async function askCity(ctx: ActionCtx, { data, profile, found, built }: P
           .filter((r): r is { id: string; hit: number; n: number } => r.id !== null && r.n >= MIN_HOMES && r.hit / r.n > 0.5)
           .sort((x, y) => y.hit / y.n - x.hit / x.n);
         const e02: Fam | null = await ctx.runQuery(internal.tracts.familyForTracts, { code: "E02" });
-        const url = (e02?.members ?? []).filter((m) => m.place === "County").sort((x, y) => Number(y.year.slice(0, 4)) - Number(x.year.slice(0, 4)))[0]?.url;
+        const url = newestCountyUrl(e02?.members ?? []);
         if (url) tractMap = { url, ids: most.slice(0, MAX_TRACT_SHAPES).map((r) => r.id), total: most.length };
       } catch (e) {
         console.error(`City tract shares failed for ${data.code}: ${e instanceof Error ? e.message : String(e)}`);
