@@ -37,6 +37,9 @@ function pattern(color: string, crossed: boolean, size: number): ImageData {
 
 const TRACT_IDS = ["tracts-fit", "tracts-line"];
 export type TractShapes = { url: string; fits: string[]; close: string[] };
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+const tractSummary = ({ fits, close }: TractShapes) =>
+  fits.length ? `Map of ${plural(fits.length, "highlighted tract")}${close.length ? `, ${close.length} close` : ""}` : `Map of ${plural(close.length, "close tract")}`;
 type Props = { cells?: MapData | null; count?: number; boundary?: string | null; layer?: { url: string; name: string } | null; tracts?: TractShapes | null; height?: number; after?: string };
 
 export default function CityMap({ cells = null, count = 0, boundary = null, layer = null, tracts = null, height = 260, after }: Props) {
@@ -54,7 +57,7 @@ export default function CityMap({ cells = null, count = 0, boundary = null, laye
   const tractsNow = useRef(tracts);
   tractsNow.current = tracts;
   const tractKey = tracts ? [tracts.url, tracts.fits.join(","), tracts.close.join(",")].join("|") : ""; // by value: a re-render with the same tracts must not refetch
-  const summary = cells ? summarySentence(cells, count) : tracts ? `Map of ${tracts.fits.length} highlighted tracts${tracts.close.length ? `, ${tracts.close.length} close` : ""}` : null;
+  const summary = cells ? summarySentence(cells, count) : tracts ? tractSummary(tracts) : null;
   const edition: "day" | "night" = night ? "night" : "day";
   const editionNow = useRef(edition);
   editionNow.current = edition;
@@ -223,7 +226,7 @@ export default function CityMap({ cells = null, count = 0, boundary = null, laye
       if (m.hasImage("tract-hatch")) m.removeImage("tract-hatch");
       m.addImage("tract-hatch", pattern(ink, false, 8));
       m.addSource("tracts", { type: "geojson", data: tractData });
-      m.addLayer({ id: "tracts-fit", type: "fill", source: "tracts", filter: ["in", ["get", "GEOID"], ["literal", t.fits]], paint: { "fill-pattern": "tract-hatch" } });
+      if (t.fits.length) m.addLayer({ id: "tracts-fit", type: "fill", source: "tracts", filter: ["in", ["get", "GEOID"], ["literal", t.fits]], paint: { "fill-pattern": "tract-hatch" } });
       m.addLayer({ id: "tracts-line", type: "line", source: "tracts", paint: { "line-color": ink, "line-width": 1.5 } });
       const box = geojsonBounds(tractData);
       if (box) m.fitBounds(box, { padding: 24, duration: 0 });
@@ -257,7 +260,7 @@ export default function CityMap({ cells = null, count = 0, boundary = null, laye
       )}
       {tracts && (
         <ul className={styles.key} aria-label="Map key">
-          <li><span className={`${styles.swatch} ${styles.hatch}`} />highlighted tract</li>
+          {tracts.fits.length > 0 && <li><span className={`${styles.swatch} ${styles.hatch}`} />highlighted tract</li>}
           {tracts.close.length > 0 && <li><span className={styles.swatch} />close, not clear</li>}
         </ul>
       )}

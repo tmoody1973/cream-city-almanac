@@ -257,6 +257,8 @@ test.describe("signed in", () => {
     await expect(card.locator("svg[role=img]")).toBeVisible({ timeout: 60_000 });
     await expect(card).toContainText(/clearly fit|No tract clearly fits/);
     await expect(card).toContainText("Related doesn't mean one causes the other.");
+    // Near-misses are outlined even when nothing clearly fits: the map is there, with its tracts drawn.
+    await expect(card.locator("[data-map][data-tracts]")).toBeVisible({ timeout: 30_000 });
   });
 
   test("shows today's count and a way to sign out", async ({ page }) => {

@@ -23,6 +23,7 @@ describe("capTractIds", () => {
     expect(r.fits).toEqual(ids(40));
     expect(r.close).toEqual(ids(10, 100));
     expect(r.capped).toBe(true);
+    expect(capTractIds([], ids(3), 50)).toEqual({ fits: [], close: ids(3), capped: false });
     expect(capTractIds(ids(80), [], 50)).toEqual({ fits: ids(50), close: [], capped: true });
   });
 });

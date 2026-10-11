@@ -65,9 +65,9 @@ const Table = ({ head, children }: { head: string[]; children: React.ReactNode }
 );
 
 // The highlighted tracts, hatched, on the map; near-misses outlined. The ids and url come from tractDetail, so the slot
-// stays empty (and hidden) until the full answer arrives, and when nothing is highlighted.
+// stays empty (and hidden) until the full answer arrives, and when there is neither a highlighted nor a close tract.
 function MapSlot({ url, fits, close = [] }: { url?: string; fits?: string[]; close?: string[] }) {
-  const shown = url && fits?.length ? capTractIds(fits, close) : null;
+  const shown = url && (fits?.length || close.length) ? capTractIds(fits ?? [], close) : null;
   return (
     <div className={styles.tractMap} data-tract-map>
       {url && shown && (
