@@ -51,6 +51,11 @@ export async function loadProperty(ctx: ActionCtx, s: PropertySide, spend: Spend
     return null;
   }
   const m = measureValues(rows);
+  // An answer with no tract in it is the City failing quietly: say so, and don't remember it for a day.
+  if (!m.values.length) {
+    console.error(`Property measure returned no tracts for ${key}`);
+    return null;
+  }
   const loaded = { values: m.values, leftOut: m.thin + m.noTract };
   try {
     await ctx.runMutation(internal.map.remember, { key, result: JSON.stringify(loaded), expiresAt: Date.now() + DAY_MS });

@@ -106,4 +106,13 @@ describe("property measures in the tract tools", () => {
     installFakeFetch({ citySql: () => { throw new Error("City down"); } });
     expect(await t.withIdentity(reader).action(api.tracts.rankTracts, { ...args, column: "owner_share" })).toEqual({ status: "unavailable" });
   });
+  it("doesn't remember an empty answer from the City: it says unavailable and asks again next time", async () => {
+    const t = await seed();
+    let calls = 0;
+    installFakeFetch({ columns: POV_FIELDS, tractRows: povertyRows, citySql: () => { calls++; return []; } });
+    const args = { code: "H28", column: "median_value", place: "City" as const, year: "2023", direction: "high" as const };
+    expect(await t.withIdentity(reader).action(api.tracts.rankTracts, args)).toEqual({ status: "unavailable" });
+    expect(await t.withIdentity(reader).action(api.tracts.rankTracts, args)).toEqual({ status: "unavailable" });
+    expect(calls).toBe(2);
+  });
 });

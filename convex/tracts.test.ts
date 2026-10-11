@@ -303,6 +303,14 @@ describe("relateTracts", () => {
     expect(await as.action(api.tracts.relateTracts, { ...relateArgs, b: { code: "F02", column: "nope" }, mode: "relate" })).toMatchObject({ status: "choose-column", dataset: "b", columns: [{ column: "per_insecure" }] });
     expect(await as.action(api.tracts.relateTracts, { ...relateArgs, a: { code: "E02", column: "nope" }, mode: "relate" })).toMatchObject({ status: "choose-column", dataset: "a" });
   });
+  it("fetches no rows for either dataset while the other still has a column to choose", async () => {
+    const t = await seedPair();
+    let rowFetches = 0;
+    installFakeFetch({ columnsFor: routeFields, tractRows: (url) => { rowFetches++; return routeRows(url); } });
+    const r = await t.withIdentity(reader).action(api.tracts.relateTracts, { ...relateArgs, b: { code: "F02", column: "nope" }, mode: "relate" });
+    expect(r).toMatchObject({ status: "choose-column", dataset: "b" });
+    expect(rowFetches).toBe(0);
+  });
 });
 
 describe("compareYears", () => {

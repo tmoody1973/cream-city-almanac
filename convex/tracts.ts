@@ -153,21 +153,24 @@ export const header = (r: Resolved, place: string, year: string, n: number, left
   place, year, n, leftOut, confidence: r.range ? CONFIDENCE[r.range.kind] : null, url: r.url, caveats: r.family.caveats,
 });
 
-// One side of a tract tool, ready to pair: a DYCU dataset (resolved, rows loaded) or the property file. `year` is the
-// DYCU year for naming tracts (null for a property side).
+// One side of a tract tool in two steps, so a problem with either side is found before any rows are fetched. Resolve:
+// a DYCU dataset asks DYCU for its columns (a refusal is an answer); a property side needs nothing.
+type Side = Resolved | PropertySide;
+const resolveSide = (ctx: ActionCtx, picked: PropertySide | Looked, column: string, spend: Spend): Promise<Side | Refusal> =>
+  "measure" in picked ? Promise.resolve(picked) : resolveLooked(ctx, picked, column, spend);
+
+// Load: the side's tract figures, ready to pair. `year` is the DYCU year for naming tracts (null for a property side).
 type Ready = { head: (place: string, n: number, leftOut: number) => Header; year: string | null; rows: Loaded; property: boolean };
-async function ready(ctx: ActionCtx, picked: PropertySide | Looked, column: string, spend: Spend): Promise<Ready | Refusal> {
-  if ("measure" in picked) {
-    const rows = await loadProperty(ctx, picked, spend);
+async function loadSide(ctx: ActionCtx, side: Side, spend: Spend): Promise<Ready | Refusal> {
+  if ("measure" in side) {
+    const rows = await loadProperty(ctx, side, spend);
     if (rows === "busy") return { status: "busy" };
     if (!rows) return { status: "unavailable" };
-    return { head: (_place, n, leftOut) => propertyHead(picked, n, leftOut), year: null, rows, property: true };
+    return { head: (_place, n, leftOut) => propertyHead(side, n, leftOut), year: null, rows, property: true };
   }
-  const r = await resolveLooked(ctx, picked, column, spend);
-  if ("status" in r) return r;
-  const rows = await loadValues(ctx, r);
+  const rows = await loadValues(ctx, side);
   if (!rows) return { status: "unavailable" };
-  return { head: (place, n, leftOut) => header(r, place, r.year, n, leftOut), year: r.year, rows, property: false };
+  return { head: (place, n, leftOut) => header(side, place, side.year, n, leftOut), year: side.year, rows, property: false };
 }
 
 // A card's full answer is a snapshot kept for the day (the key already names it), so a card drawn earlier keeps its
@@ -191,7 +194,9 @@ export const rankTracts = action({
       if ("status" in looked) return looked;
       picked = looked;
     }
-    const side = await ready(ctx, picked, args.column, spend);
+    const resolved = await resolveSide(ctx, picked, args.column, spend);
+    if ("status" in resolved) return resolved;
+    const side = await loadSide(ctx, resolved, spend);
     if ("status" in side) return side;
     const defs = await ctx.runQuery(internal.tracts.dycuDefs, {});
     const nameYear = side.year ?? String(latestDefYear(defs));
@@ -322,7 +327,12 @@ export const relateTracts = action({
       const sa = slotsOf(fa);
       return { status: "choose-year", available: { a: sa, b: slotsOf(fb) }, shared: sa.filter((x) => slotsOf(fb).some((y) => y.place === x.place && sameYear(y.year, x.year))) };
     }
-    const [ra, rb] = await Promise.all([ready(ctx, pa, args.a.column, spend), ready(ctx, pb, args.b.column, spend)]);
+    // Resolve in order, refusing as soon as a side does; only then load both at once.
+    const resA = await resolveSide(ctx, pa, args.a.column, spend);
+    if ("status" in resA) return tag(resA, "a");
+    const resB = await resolveSide(ctx, pb, args.b.column, spend);
+    if ("status" in resB) return tag(resB, "b");
+    const [ra, rb] = await Promise.all([loadSide(ctx, resA, spend), loadSide(ctx, resB, spend)]);
     if ("status" in ra) return tag(ra, "a");
     if ("status" in rb) return tag(rb, "b");
     const va = ra.rows, vb = rb.rows;
