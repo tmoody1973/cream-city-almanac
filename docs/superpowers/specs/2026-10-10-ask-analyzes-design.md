@@ -56,7 +56,7 @@ cache key the card uses to fetch the full detail.
 
 1. **Ranges.** A value's range comes from the data: a `<column>_moe` field (case-insensitive) → value ± moe, labeled
    "90% confidence (Census)"; `Low_Confidence_Limit` / `High_Confidence_Limit` → those limits, labeled "95% confidence
-   (CDC)". Neither → no range; the card says "no margin of error published", and no tie, clear-change or mismatch claim
+   (CDC)". Neither → no range; the card says "no margin of error found for this column", and no tie, clear-change or mismatch claim
    is made for that column (rule 7).
 2. **Unreliable.** For ACS-style moe ranges, a tract is unreliable when its coefficient of variation exceeds 40%:
    `(moe / 1.645) / value > 0.40` (a value of 0 with a positive moe is unreliable). For CDC limits: half-width /
@@ -109,7 +109,7 @@ Each card sits in Ask's hairline box under the AI's 1–3 sentences:
 
 - `convex/lib/tractStats.ts` — pure math: ranges, reliability, ties, change test, Spearman, thirds, mismatch. No I/O.
 - `convex/lib/tractNames.ts` — `GEOID` → tract number; tract → DYCU neighborhood name for a year.
-- `convex/tracts.ts` — the three actions: check → fetch rows (`<featureServerUrl>/query?where=1=1&outFields=GEOID,<col>,<range cols>&returnGeometry=false&f=json`, paging on `exceededTransferLimit`, 2,000 per page) → math → store the full result in `mapCache` under a `tracts:` key (10 minutes) → return the compact result. A public query `tractDetail({ key })` reads the cached full result for the card (expired → `{ status: "expired" }`, and the card asks the person to re-ask).
+- `convex/tracts.ts` — the three actions: check → fetch rows (`<featureServerUrl>/query?where=1=1&outFields=GEOID,<col>,<range cols>&returnGeometry=false&f=json`, paging on `exceededTransferLimit`, 2,000 per page) → math → store the full result in `mapCache` under a `tracts:` key (24 hours; the key names the day) → return the compact result. A public query `tractDetail({ key })` reads the cached full result for the card (expired → `{ status: "expired" }`, and the card asks the person to re-ask).
 - `lib/ask/tools.ts` — the three tool definitions (zod parameters with bounds); `lib/ask/prompt.ts` — when to use
   them, "pick a rate over a count when comparing places", and the same number rules as today.
 - `ui/components/AskCards.tsx` (+ a new `TractCards.tsx` if it grows past ~400 lines) — the three cards;

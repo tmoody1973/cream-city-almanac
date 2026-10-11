@@ -61,7 +61,7 @@ export function spearman(xs: number[], ys: number[]): number {
     dx += (rx[i] - mx) ** 2;
     dy += (ry[i] - my) ** 2;
   }
-  return dx === 0 || dy === 0 ? 0 : num / Math.sqrt(dx * dy);
+  return dx === 0 || dy === 0 ? NaN : num / Math.sqrt(dx * dy); // a constant column has no order to compare: relationship() says too-few
 }
 
 export function relationship(rho: number, n: number): { strength: "too-few" | "little" | "weak" | "moderate" | "strong"; direction: "higher" | "lower" } {

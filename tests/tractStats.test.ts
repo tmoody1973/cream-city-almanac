@@ -75,6 +75,12 @@ describe("spearman and relationship", () => {
   it("refuses a non-finite correlation", () => {
     expect(relationship(NaN, 40).strength).toBe("too-few");
   });
+  it("has no correlation for a constant column, so the verdict is too-few, not little", () => {
+    const flat = Array.from({ length: 30 }, () => 5);
+    const xs = Array.from({ length: 30 }, (_, i) => i);
+    expect(spearman(xs, flat)).toBeNaN();
+    expect(relationship(spearman(xs, flat), 30).strength).toBe("too-few");
+  });
 });
 
 describe("quantile and mismatch", () => {

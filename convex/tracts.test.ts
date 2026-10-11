@@ -55,10 +55,13 @@ describe("rankTracts", () => {
   });
   it("offers the numeric columns when the column isn't one", async () => {
     const t = await seedTracts();
-    installFakeFetch({ columns: POV_FIELDS, tractRows: povertyRows });
+    const shapes = ["Shape__Area", "Shape__Length", "ALAND", "AWATER"].map((name) => ({ name, type: "esriFieldTypeDouble" }));
+    installFakeFetch({ columns: [...POV_FIELDS, ...shapes], tractRows: povertyRows });
     const r = await t.withIdentity(reader).action(api.tracts.rankTracts, { code: "E02", column: "NAME", place: "City", year: "2022", direction: "high" });
-    expect(r).toMatchObject({ status: "choose-column", columns: expect.arrayContaining([{ column: "pov_rate", meaning: "Share of households below the poverty line." }]) });
+    // Each column says whether it has a margin of error, so the model can prefer one that does.
+    expect(r).toMatchObject({ status: "choose-column", columns: [{ column: "households", meaning: "Number of households.", range: false }, { column: "pov_rate", meaning: "Share of households below the poverty line.", range: true }] });
     expect(JSON.stringify(r)).not.toContain("pov_rate_moe");
+    for (const junk of ["Shape__", "ALAND", "AWATER"]) expect(JSON.stringify(r)).not.toContain(junk);
   });
   it("lists the place/years that exist when asked for one that doesn't (a year with no map service doesn't count)", async () => {
     const t = await seedTracts();
@@ -73,6 +76,14 @@ describe("rankTracts", () => {
     installFakeFetch({ columns: POV_FIELDS, tractRows: povertyRows, tractStatus: 500 });
     expect(await t.withIdentity(reader).action(api.tracts.rankTracts, { code: "E02", column: "pov_rate", place: "City", year: "2022", direction: "high" })).toEqual({ status: "unavailable" });
     await expect(t.action(api.tracts.rankTracts, { code: "E02", column: "pov_rate", place: "City", year: "2022", direction: "high" })).rejects.toThrow(/Sign in/);
+  });
+  it("keeps a card's full answer for the day, long after the 10-minute rows cache", async () => {
+    const t = await seedTracts();
+    installFakeFetch({ columns: POV_FIELDS, tractRows: povertyRows });
+    const r = await t.withIdentity(reader).action(api.tracts.rankTracts, { code: "E02", column: "pov_rate", place: "City", year: "2022", direction: "high" });
+    if (r.status !== "ok") throw new Error("expected ok");
+    expect(await t.query(api.tracts.tractDetail, { key: r.key, now: Date.now() + 11 * 60_000 })).toMatchObject({ status: "ok", tool: "rank" });
+    expect(await t.query(api.tracts.tractDetail, { key: r.key, now: Date.now() + 25 * 3_600_000 })).toEqual({ status: "expired" });
   });
   it("answers an expired or unknown key with expired", async () => {
     const t = await seedTracts();
@@ -92,9 +103,9 @@ describe("rankTracts", () => {
     const r = await t.withIdentity(reader).action(api.tracts.rankTracts, { code: "E02", column: "pov_rate", place: "City", year: "2022", direction: "high" });
     if (r.status !== "ok") throw new Error("expected ok");
     expect(r.top).toHaveLength(10);
-    expect(r.ties).toHaveLength(10);
+    expect(r.ties).toHaveLength(3);
     expect(r.tieCount).toBe(15);
-    expect(r.unreliable).toHaveLength(10);
+    expect(r.unreliable).toHaveLength(3);
     expect(r.unreliableCount).toBe(12);
     const stored = await t.query(api.tracts.tractDetail, { key: r.key, now: Date.now() });
     expect(stored).toMatchObject({ status: "ok", tieCount: 15, unreliableCount: 12 });
@@ -197,6 +208,13 @@ describe("relateTracts", () => {
     installFakeFetch({ columnsFor: routeFields, tractRows: routeRows });
     expect(await t.withIdentity(reader).action(api.tracts.relateTracts, { ...relateArgs, place: "County", year: "2023", mode: "relate" }))
       .toMatchObject({ status: "choose-year", available: { a: [{ place: "City", year: "2022" }], b: [{ place: "City", year: "2022" }] }, shared: [{ place: "City", year: "2022" }] });
+  });
+  it("claims no finding for a column with no margin of error, and tells the model its confidence is null", async () => {
+    const t = await seedPair();
+    const bare = POV_FIELDS.filter((f) => f.name !== "pov_rate_moe");
+    installFakeFetch({ columnsFor: (url) => (url.includes("FoodSecurity") ? F02_FIELDS : bare), tractRows: routeRows });
+    const r = await t.withIdentity(reader).action(api.tracts.relateTracts, { ...relateArgs, mode: "mismatch", aSide: "high", bSide: "low" });
+    expect(r).toMatchObject({ status: "ok", mode: "mismatch", a: { column: "pov_rate", confidence: null }, b: { confidence: "95% confidence (CDC)" }, fitsCount: 0, fits: [] });
   });
   it("says too-few, with nothing to list, when fewer than 20 reliable pairs line up", async () => {
     const t = await seedPair();
@@ -308,7 +326,7 @@ describe("compareYears", () => {
     const t = await seedTwoYears();
     // +10 and -5 clear sqrt(1^2 + 1^2) = 1.41; +0.5 does not. Tract 1 (11) only drops to 6: still reliable.
     const r = await run(t, later((i) => ({ delta: i === 0 ? 10 : i === 1 ? -5 : 0.5 })));
-    expect(r).toMatchObject({ status: "ok", tool: "change", increases: 1, decreases: 1, none: 23, unreliableCount: 0, header: { year: "2022–2023", n: 25 } });
+    expect(r).toMatchObject({ status: "ok", tool: "change", increases: 1, decreases: 1, none: 23, unreliableCount: 0, header: { year: "2022–2023", n: 25 }, note: expect.stringContaining("share four years of responses") });
     if (r.status !== "ok") return;
     expect(r.changes.map((c) => c.direction)).toEqual(["increase", "decrease"]);
     expect(r.changes[0]).toMatchObject({ change: 10, from: { value: 10 }, to: { value: 20 } });

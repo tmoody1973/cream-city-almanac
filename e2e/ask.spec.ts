@@ -248,6 +248,7 @@ test.describe("signed in", () => {
     const card = page.locator("[data-card=tract-change]:visible");
     await expect(card).toContainText(/\d+ clear increases · \d+ clear decreases · \d+ no clear change/, { timeout: 60_000 });
     await expect(card).toContainText("90% confidence (Census)");
+    await expect(card).toContainText("neighboring releases share four years of responses"); // the overlapping-release caveat
   });
 
   test("a mismatch question draws the scatter and names what clearly fits or says none does", async ({ page }) => {

@@ -23,7 +23,7 @@ type Tag = { dataset?: "a" | "b"; year?: string; also?: Refusal[] };
 export type Refusal = Tag & (
   | { status: "not-found" }
   | { status: "not-tract" }
-  | { status: "choose-column"; columns: { column: string; meaning: string }[] }
+  | { status: "choose-column"; columns: { column: string; meaning: string; range: boolean }[] }
   | { status: "choose-year"; available: Slot[] | { a: Slot[]; b: Slot[] }; shared?: Slot[]; reason?: string }
   | { status: "unavailable" }
   | { status: "busy" }
@@ -85,10 +85,12 @@ export async function resolveLooked(ctx: ActionCtx, { fam, member }: Looked, col
   }
   if (!fields.some((f) => f.name.toUpperCase() === "GEOID")) return { status: "not-tract" };
   const meaningOf = (name: string) => fam.glossary.find((g) => g.field.toLowerCase() === name.toLowerCase())?.meaning ?? "";
-  const numeric = fields.filter((f) => isNumericField(f) && !/_moe$|confidence_limit$|(low|high)_confidence$/i.test(f.name));
+  // Margins, confidence limits and the map's own geometry columns (Shape__Area, ALAND, AWATER) are never the question.
+  const numeric = fields.filter((f) => isNumericField(f) && !/_moe$|confidence_limit$|(low|high)_confidence$|^Shape__|^ALAND$|^AWATER$/i.test(f.name));
+  const names = fields.map((f) => f.name);
   const col = numeric.find((f) => f.name.toLowerCase() === column.trim().toLowerCase());
-  if (!col) return { status: "choose-column", columns: numeric.map((f) => ({ column: f.name, meaning: meaningOf(f.name) })) };
-  return { family: { code: fam.code, name: fam.name, caveats: fam.caveats }, url: member.url, year: member.year, column: col.name, meaning: meaningOf(col.name), range: rangeColumns(col.name, fields.map((f) => f.name), fam.glossary) };
+  if (!col) return { status: "choose-column", columns: numeric.map((f) => ({ column: f.name, meaning: meaningOf(f.name), range: rangeColumns(f.name, names, fam.glossary) !== null })) };
+  return { family: { code: fam.code, name: fam.name, caveats: fam.caveats }, url: member.url, year: member.year, column: col.name, meaning: meaningOf(col.name), range: rangeColumns(col.name, names, fam.glossary) };
 }
 
 export async function resolveTract(ctx: ActionCtx, code: string, column: string, place: string, year: string, spend: Spend): Promise<Resolved | Refusal> {
@@ -150,9 +152,12 @@ export const header = (r: Resolved, place: string, year: string, n: number, left
   place, year, n, leftOut, confidence: r.range ? CONFIDENCE[r.range.kind] : null, url: r.url, caveats: r.family.caveats,
 });
 
+// A card's full answer is a snapshot kept for the day (the key already names it), so a card drawn earlier keeps its
+// detail; DYCU's rows (tractrows:) stay at MAP_TTL_MS.
+const DETAIL_TTL_MS = 24 * 3_600_000;
 export async function store(ctx: ActionCtx, args: unknown) {
   const key = `tracts:${await hashInputs({ args, day: chicagoDay(Date.now()) })}`;
-  return { key, save: (detail: unknown) => ctx.runMutation(internal.map.remember, { key, result: JSON.stringify(detail), expiresAt: Date.now() + MAP_TTL_MS }) };
+  return { key, save: (detail: unknown) => ctx.runMutation(internal.map.remember, { key, result: JSON.stringify(detail), expiresAt: Date.now() + DETAIL_TTL_MS }) };
 }
 
 export const rankTracts = action({
@@ -173,12 +178,12 @@ export const rankTracts = action({
       unreliable: ranked.unreliable.map((v) => toRow(v, r.year, defs)), unreliableCount: ranked.unreliable.length,
       highlighted: ranked.top.map((v) => v.geoid), key,
     };
-    await save(detail); // the card gets every tie and every unreliable tract; the model gets the first ten of each, with the totals
-    return { ...detail, ties: detail.ties.slice(0, 10), unreliable: detail.unreliable.slice(0, 10) };
+    await save(detail); // the card gets every tie and every unreliable tract; the model gets the first three of each, with the totals
+    return { ...detail, ties: detail.ties.slice(0, 3), unreliable: detail.unreliable.slice(0, 3) };
   },
 });
 
-// The card's full answer by key. Anyone with the key may read it: it holds public DYCU data and expires in 10 minutes.
+// The card's full answer by key. Anyone with the key may read it: it holds public DYCU data and expires in a day.
 export const tractDetail = query({
   args: { key: v.string(), now: v.number() }, // the page passes its clock: queries don't read the wall clock
   handler: async (ctx, { key, now }): Promise<RankDetail | ChangeDetail | RelateDetail | { status: "expired" }> => {
@@ -189,7 +194,7 @@ export const tractDetail = query({
 });
 
 export type ChangeRow = { geoid: string; tract: string; neighborhood: string | null; from: TractRow; to: TractRow; change: number; direction: "increase" | "decrease" };
-export type ChangeDetail = { status: "ok"; tool: "change"; header: Header; from: string; to: string; increases: number; decreases: number; none: number; unreliableCount: number; changeCount: number; changes: ChangeRow[]; highlighted: string[]; key: string };
+export type ChangeDetail = { status: "ok"; tool: "change"; header: Header; note: string | null; from: string; to: string; increases: number; decreases: number; none: number; unreliableCount: number; changeCount: number; changes: ChangeRow[]; highlighted: string[]; key: string };
 export type Point = { geoid: string; tract: string; neighborhood: string | null; a: [number, number | null, number | null]; b: [number, number | null, number | null]; unreliable: boolean; mark: "fits" | "close" | null };
 export type RelateDetail = {
   status: "ok"; tool: "relate"; mode: "relate" | "mismatch"; a: Header; b: Header; n: number; unreliableCount: number; rho: number;
@@ -207,6 +212,12 @@ const slim = ({ caveats: _caveats, url: _url, ...rest }: Header): SlimHeader => 
 const ANSWER_ROWS = 10;
 // A refusal that came from fetching one dataset says which; running out of allowance isn't about either.
 const tag = (r: Refusal, dataset: "a" | "b"): Refusal => (r.status === "busy" ? r : { ...r, dataset });
+
+// Why a change between releases is not a clean year-to-year comparison; the card shows it and the model may say it.
+const YEAR_NOTE = {
+  moe90: "Each year is a 5-year estimate; neighboring releases share four years of responses, so a change is not a clean year-to-year comparison.",
+  ci95: "Each year is a model estimate; compare releases with care.",
+} as const;
 
 // A change counts only when both years are reliable (spec §5 rule 2); tracts that aren't are counted apart, never listed.
 // The card gets every clear change; the model gets the largest ten and the totals.
@@ -246,7 +257,7 @@ export const compareYears = action({
     // Left out: tracts only one year has, plus the rows each year dropped for having no usable value.
     const leftOut = y1.values.length - matched + (y2.values.length - matched) + y1.leftOut + y2.leftOut;
     const detail: ChangeDetail = {
-      status: "ok", tool: "change", header: header(r1, args.place, `${r1.year}\u2013${r2.year}`, matched, leftOut),
+      status: "ok", tool: "change", header: header(r1, args.place, `${r1.year}\u2013${r2.year}`, matched, leftOut), note: r1.range ? YEAR_NOTE[r1.range.kind] : null,
       from: r1.year, to: r2.year, increases, decreases, none, unreliableCount, changeCount: changes.length, changes, highlighted: changes.map((c) => c.geoid), key,
     };
     await save(detail);
