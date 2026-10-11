@@ -3,6 +3,8 @@ import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { internalAction, type ActionCtx } from "./_generated/server";
 import { fetchColumns, pdfUrl } from "./lib/arcgis";
+import type { Geometry } from "./lib/geo";
+import { allTractsUrl, cityShares, newestCountyUrl, parseTractShapes, type Hood } from "./lib/tractPlaces";
 import {
   assembleCard,
   basicCard,
@@ -309,14 +311,17 @@ export const refreshNeighborhoods = internalAction({
   args: {},
   handler: async (ctx): Promise<string[]> => {
     const notes: string[] = [];
+    let hoods: Hood[] | null = null; // this run's City shapes, for the tract match; null when the layer wasn't read
     try {
       const { rows, skipped } = parseCityNeighborhoods(await (await fetchOk(NEIGHBORHOODS_URL, "City neighborhoods")).json());
       if (rows.length === 0) throw new Error("no neighborhoods in the layer");
       await ctx.runMutation(internal.buildStore.replaceNeighborhoods, { definition: "city", rows });
+      hoods = rows.map((r) => ({ name: r.name, geometry: JSON.parse(r.geometry) as Geometry, bbox: r.bbox }));
       if (skipped.length) notes.push(`City neighborhoods skipped (no usable shape): ${skipped.join(", ")}`);
     } catch (e) {
       notes.push(`City neighborhoods unavailable, kept last week's: ${message(e)}`);
     }
+    notes.push(...(await refreshTractNeighborhoods(ctx, hoods)));
     const { reports, places } = await ctx.runQuery(internal.buildStore.neighborhoodSources, {});
     const found: { name: string; year: number | null; tracts: string[] }[] = [];
     for (const r of reports) {
@@ -329,6 +334,24 @@ export const refreshNeighborhoods = internalAction({
     return [...notes, ...dycu.notes];
   },
 });
+
+// Each tract's City neighborhoods (convex/lib/tractPlaces.ts), from this run's City shapes and DYCU's tract outlines
+// (E02's newest County map). Replaced only when both were read and at least one tract matched.
+async function refreshTractNeighborhoods(ctx: ActionCtx, hoods: Hood[] | null): Promise<string[]> {
+  try {
+    if (!hoods) throw new Error("the City's neighborhoods weren't read this week");
+    const e02 = await ctx.runQuery(internal.tracts.familyForTracts, { code: "E02" });
+    const url = newestCountyUrl(e02?.members ?? []);
+    if (!url) throw new Error("E02 has no County tract map");
+    const tracts = parseTractShapes(await (await fetchOk(allTractsUrl(url), "Tract outlines")).json());
+    const rows = tracts.map((t) => ({ geoid: t.geoid, city: cityShares(t.geometry, hoods) })).filter((r) => r.city.length > 0);
+    if (rows.length === 0) throw new Error("no tract matched a City neighborhood");
+    await ctx.runMutation(internal.buildStore.replaceTractNeighborhoods, { rows });
+    return [];
+  } catch (e) {
+    return [`Tract neighborhoods unavailable, kept last week's: ${message(e)}`];
+  }
+}
 
 async function fetchOk(url: string, label: string): Promise<Response> {
   const res = await fetchWithTimeout(url, {}, SOURCE_FETCH_TIMEOUT_MS);
