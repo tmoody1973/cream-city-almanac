@@ -42,6 +42,27 @@ describe("counting the property file", () => {
     if (!u.ok) throw new Error(JSON.stringify(u));
     expect(u.filterLabels).toEqual(["building area under 1,500 sq ft"]);
   });
+  it("an over/under count skips the City's 0 = none placeholders, so it stays a subset of the base", () => {
+    const u = buildCount(P, { filters: [{ column: "C_A_TOTAL", under: 100000 }] }, today);
+    if (!u.ok) throw new Error(JSON.stringify(u));
+    expect(u.totalSql).toMatch(/"C_A_TOTAL"::float END\) < 100000/);
+    expect(u.totalSql).toMatch(/"C_A_TOTAL"::float END\) > 0/);
+    expect(u.tractSql).toMatch(/> 0 AND .*< 100000 THEN 1/); // the tract hits carry the guard too
+    const y = buildCount(P, { filters: [{ column: "YR_BUILT", under: 1900 }] }, today);
+    if (!y.ok) throw new Error(JSON.stringify(y));
+    expect(y.totalSql).toMatch(/"YR_BUILT"::float END\) >= 1800/);
+    expect(y.totalSql).toMatch(/"C_A_TOTAL"::float END\) > 0/); // the base guard rides along
+    const o = buildCount(P, { filters: [{ column: "C_A_TOTAL", over: 200000 }] }, today);
+    if (!o.ok) throw new Error(JSON.stringify(o));
+    expect(o.totalSql).toMatch(/"C_A_TOTAL"::float END\) > 200000/);
+  });
+  it("words year built as after/before, not over/under", () => {
+    const a = buildCount(P, { filters: [{ column: "YR_BUILT", over: 1950 }] }, today);
+    const b = buildCount(P, { filters: [{ column: "YR_BUILT", under: 1950 }] }, today);
+    if (!a.ok || !b.ok) throw new Error("not ok");
+    expect(a.filterLabels).toEqual(["built after 1950"]);
+    expect(b.filterLabels).toEqual(["built before 1950"]);
+  });
   it("groups by aldermanic district with plain labels", () => {
     const b = buildCount(P, { groupBy: "geo_alder" }, today);
     if (!b.ok) throw new Error(JSON.stringify(b));

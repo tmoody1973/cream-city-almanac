@@ -60,7 +60,8 @@ const NUMBER_WORDS: Record<string, { name: string; unit: "$" | "sq ft" | "" }> =
 };
 const numberLabel = (column: string, op: "over" | "under", x: number) => {
   const w = NUMBER_WORDS[column] ?? { name: column, unit: "" as const };
-  const n = column === "YR_BUILT" ? String(x) : x.toLocaleString("en-US");
+  if (column === "YR_BUILT") return `${w.name} ${op === "over" ? "after" : "before"} ${x}`;
+  const n = x.toLocaleString("en-US");
   return w.unit === "$" ? `${w.name} ${op} $${n}` : `${w.name} ${op} ${n}${w.unit ? ` ${w.unit}` : ""}`;
 };
 const filterLabel = (column: string, value: string, districts: string[]) =>
@@ -80,6 +81,8 @@ export function buildCount(p: CityProfile, a: CountArgs, today: string, area?: B
     if (f.over !== undefined || f.under !== undefined) {
       const col = (p.numberColumns ?? []).find((c) => c.toLowerCase() === f.column.toLowerCase());
       if (!col) return { ok: false, status: "bad-column", column: f.column, columns: [...(p.numberColumns ?? []), ...p.categories.map((c) => c.column)] };
+      // The City writes "0" for "none" (exempt value, unknown year or area), so an over/under only counts a real value.
+      numberWhere.push(col === "YR_BUILT" ? `${num(col)} >= 1800` : `${num(col)} > 0`);
       if (f.over !== undefined) { numberWhere.push(`${num(col)} > ${coord(f.over)}`); filterLabels.push(numberLabel(col, "over", f.over)); }
       if (f.under !== undefined) { numberWhere.push(`${num(col)} < ${coord(f.under)}`); filterLabels.push(numberLabel(col, "under", f.under)); }
       continue;
@@ -150,7 +153,8 @@ export function buildCount(p: CityProfile, a: CountArgs, today: string, area?: B
   }
   // Number filters exist only for files with numberColumns (the property file: a snapshot with no locations), so the
   // future-date count, the neighborhood points and the grid never see them; the count and its groups always do.
-  const all = [...where, ...numberWhere];
+  // With a number filter the count also sits inside the base (a real total value), so it is always a subset of `of`.
+  const all = [...where, ...(numberWhere.length && p.baseColumn ? [`${num(p.baseColumn)} > 0`] : []), ...numberWhere];
   const whereSql = all.length ? ` WHERE ${all.join(" AND ")}` : "";
   const base = p.baseColumn ? [...where, `${num(p.baseColumn)} > 0`] : null;
   const ofSql = numberWhere.length && base ? `SELECT COUNT(*) AS n FROM ${table} WHERE ${base.join(" AND ")}` : null;
