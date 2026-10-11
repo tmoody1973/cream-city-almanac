@@ -46,7 +46,12 @@ export function PortraitTables({ index, focus: requested }: { index: Index; focu
     if (!row) return;
     // In the laptop pane, scroll the pane only (the page and its masthead stay put); on a sheet page, the page.
     const pane = row.closest<HTMLElement>("#sheet-pane");
-    if (!pane) return row.scrollIntoView({ block: "center" });
+    // Scroll, then return nothing: Chrome's scrollIntoView now returns a Promise, and an effect that returns one hands
+    // React a "cleanup" it later calls, which crashed the page when the laptop redirect unmounted this sheet.
+    if (!pane) {
+      row.scrollIntoView({ block: "center" });
+      return;
+    }
     // Only as far as needed: if the row already shows, leave the sheet as it is; otherwise bring the table's own
     // caption to the pane's top so nothing is cut, and if the row is still below, put it in the lower third.
     const p = pane.getBoundingClientRect();
