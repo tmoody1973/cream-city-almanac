@@ -55,6 +55,7 @@ export default function CityMap({ cells = null, count = 0, boundary = null, laye
   const [tractNote, setTractNote] = useState<string | null>(null);
   const [tractData, setTractData] = useState<GeoJSON.FeatureCollection | null>(null);
   const tractsNow = useRef(tracts);
+  const tractsFitted = useRef(false);
   tractsNow.current = tracts;
   const tractKey = tracts ? [tracts.url, tracts.fits.join(","), tracts.close.join(",")].join("|") : ""; // by value: a re-render with the same tracts must not refetch
   const summary = cells ? summarySentence(cells, count) : tracts ? tractSummary(tracts) : null;
@@ -194,6 +195,7 @@ export default function CityMap({ cells = null, count = 0, boundary = null, laye
 
   // Tract shapes: fetched once per set of tracts from the dataset's own service, then drawn (and redrawn after a style swap).
   useEffect(() => {
+    tractsFitted.current = false; // a new set of tracts is framed once, on its first draw
     setTractData(null);
     setTractNote(null);
     const t = tractsNow.current;
@@ -229,7 +231,12 @@ export default function CityMap({ cells = null, count = 0, boundary = null, laye
       if (t.fits.length) m.addLayer({ id: "tracts-fit", type: "fill", source: "tracts", filter: ["in", ["get", "GEOID"], ["literal", t.fits]], paint: { "fill-pattern": "tract-hatch" } });
       m.addLayer({ id: "tracts-line", type: "line", source: "tracts", paint: { "line-color": ink, "line-width": 1.5 } });
       const box = geojsonBounds(tractData);
-      if (box) m.fitBounds(box, { padding: 24, duration: 0 });
+      // Once per set of tracts: a day/night redraw keeps whatever view the person has panned to. Extra room at the
+      // bottom for the attribution.
+      if (box && !tractsFitted.current) {
+        m.fitBounds(box, { padding: { top: 24, right: 24, left: 24, bottom: 44 }, duration: 0 });
+        tractsFitted.current = true;
+      }
       if (fig.current) fig.current.dataset.tracts = edition; // only after the layers above were added
     };
     if (loaded.current && styleEdition.current === edition) draw(); else m.once("style.load", draw);
