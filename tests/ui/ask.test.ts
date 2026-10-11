@@ -245,6 +245,8 @@ describe("countRecords tool", () => {
     expect(ASK_PROMPT).toContain("countRecords");
     expect(ASK_PROMPT).toMatch(/never repeat or look up an individual/i);
     expect(ASK_PROMPT).toMatch(/explain it to a neighbor/i);
+    expect(ASK_PROMPT).toMatch(/never list properties/i);
+    expect(ASK_PROMPT).toContain("Address Search");
   });
   it("the fake model searches then counts for 'thefts'", async () => {
     const model = fakeAskModel() as unknown as { doStream(o: unknown): Promise<{ stream: ReadableStream<{ type: string }> }> };

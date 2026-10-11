@@ -45,6 +45,10 @@ export const ASK_QUESTIONS: AskQuestion[] = [
   { q: "Which census tracts have the highest poverty rate?", tool: "rankTracts", expect: { code: "E02", confidence: "90% confidence (Census)" }, final: true },
   { q: "Where did poverty grow most from 2022 to 2023?", tool: "compareYears", expect: { code: "E02", confidence: "90% confidence (Census)" }, final: true },
   { q: "Is asthma higher where poverty is higher?", tool: "relateTracts", expect: { mode: "relate" }, final: true },
+  // Property (H28): counts and tract measures, never a list of properties.
+  { q: "How many homes in Milwaukee are assessed over $200,000?", tool: "countRecords", expect: { code: "H28", filter: "assessed over $200,000" }, final: true },
+  { q: "Do neighborhoods with higher home values have more broadband?", tool: "relateTracts", expect: { confidence: "exact (City records)", mode: "relate" }, final: true },
+  { q: "Where are home values high but food insecurity is also high?", tool: "relateTracts", expect: { confidence: "exact (City records)", mode: "mismatch" }, final: true },
   // Guide examples that made room for the three above, kept on the card.
   { q: "What did the Harambee neighborhood report say about housing?", tool: "readReport", expect: {} },
   { q: "How many adults in Harambee finished high school?", tool: "getNumber", expect: { slug: "educational-attainment" } },

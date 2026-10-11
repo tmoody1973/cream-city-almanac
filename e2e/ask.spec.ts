@@ -279,6 +279,28 @@ test.describe("signed in", () => {
     await expect(expand).toBeFocused();
   });
 
+  const cityUp = (page: import("@playwright/test").Page) =>
+    page.request.get("https://data.milwaukee.gov/api/3/action/status_show").then((r) => r.ok()).catch(() => false);
+
+  test("a property count says it plainly, by district, with the tracts on the map and no addresses", async ({ page }) => {
+    test.skip(!(await cityUp(page)), "City API unreachable");
+    await ask(page, "how many properties over 200000");
+    const card = page.locator("[data-card=count]:visible");
+    await expect(card.locator("[data-summary]")).toContainText(/^[\d,]+ properties in the City of Milwaukee are assessed over \$200,000 \(\d{4} assessment\), out of [\d,]+ with an assessed value\./, { timeout: 60_000 });
+    await expect(card).toContainText("Aldermanic district");
+    await expect(card.locator("[data-map][data-tracts]")).toBeVisible({ timeout: 30_000 });
+    await expect(card).not.toContainText(/OWNER|TAXKEY/);
+  });
+
+  test("home values line up with broadband as exact City figures", async ({ page }) => {
+    test.skip(!(await cityUp(page)) || !(await dycuUp(page)), "City or DYCU unreachable");
+    await ask(page, "do home values go with broadband");
+    const card = page.locator("[data-card=tract-relate]:visible");
+    await expect(card.locator("[data-summary]")).toContainText("assessment and 2023 survey", { timeout: 60_000 });
+    await expect(card).toContainText("exact (City records)");
+    await expect(card).toContainText("Assessed value is the City's figure for property taxes");
+  });
+
   test("shows today's count and a way to sign out", async ({ page }) => {
     await expect(page.getByText(/of \d+ questions left today/)).toBeVisible({ timeout: 20_000 });
     await page.getByTestId("copilot-input-overlay").getByRole("button", { name: "Sign out" }).click();

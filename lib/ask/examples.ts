@@ -21,7 +21,7 @@ export const ASK_EXAMPLES: { role: AskRole; question: string; tool: AskToolName 
   { role: "nonprofit", question: "Which census tracts have the highest poverty rate?", tool: "rankTracts", expect: { code: "E02" } },
   { role: "citizen", question: "Is asthma higher where poverty is higher?", tool: "relateTracts", expect: { mode: "relate" } },
   { role: "citizen", question: "What has the air been like in Milwaukee lately?", tool: "previewData", expect: { code: "V02" } },
-  { role: "citizen", question: "Is there data on asthma in Milwaukee?", tool: "searchCatalog", expect: { code: "W01" } },
+  { role: "citizen", question: "Do neighborhoods with higher home values have more broadband?", tool: "relateTracts", expect: { confidence: "exact (City records)" } },
   { role: "citizen", question: "What does margin of error mean on these tables?", tool: "readReport", expect: {} },
 ];
 

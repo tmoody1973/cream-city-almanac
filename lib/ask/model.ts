@@ -61,7 +61,7 @@ const text = (s: string) => {
 const call = (toolName: string, input: object) => ({ type: "tool-call" as const, toolCallId: nextId(`call-${toolName}`), toolName, input: JSON.stringify(input) });
 
 // A scripted model: the first step calls the tool the question's keyword names; the next step replies.
-// "rank tracts" → rankTracts, "despite" → relateTracts (mismatch), "grow most" → compareYears (all three before "poverty", which they may contain); "poverty" → getNumber (Harambee); "air" → previewData V02; "twice" → showDataset and previewData V02 in one step;
+// "rank tracts" → rankTracts, "despite" → relateTracts (mismatch), "grow most" → compareYears (all three before "poverty", which they may contain); "poverty" → getNumber (Harambee); "over 200000" → countRecords H28 over $200,000 by district; "home values" → relateTracts H28 median_value × H04 per_broadband (County 2023); "air" → previewData V02; "twice" → showDataset and previewData V02 in one step;
 // "angles" → a reply with two paragraphs and three story angles; "report" → readReport; "unverified" → a reply with a figure; "thefts" and "robberies" → searchCatalog, then countRecords (robberies: a broad count, then robbery in Harambee); else searchCatalog.
 export function fakeAskModel(): LanguageModel {
   return new MockLanguageModelV3({
@@ -103,6 +103,10 @@ export function fakeAskModel(): LanguageModel {
           : [
               ...[question.includes("thefts") || question.includes("robberies")
                 ? call("searchCatalog", { query: "NIBRS crime" })
+                : question.includes("over 200000")
+                ? call("countRecords", { code: "H28", filters: [{ column: "C_A_TOTAL", over: 200000 }], groupBy: "GEO_ALDER" })
+                : question.includes("home values")
+                ? call("relateTracts", { a: { code: "H28", column: "median_value" }, b: { code: "H04", column: "per_broadband" }, place: "County", year: "2023", mode: "relate" })
                 : question.includes("rank tracts")
                 ? call("rankTracts", { code: "E02", column: "pov_rate", place: "County", year: "2023", direction: "high" })
                 : question.includes("despite")
