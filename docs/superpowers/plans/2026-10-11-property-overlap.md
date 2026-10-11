@@ -178,8 +178,8 @@ describe("exact ranges in the honesty rules", () => {
       a: exact(String(i), i), // property side: exact
       b: { geoid: String(i), value: 30 - i, lo: 30 - i - 0.5, hi: 30 - i + 0.5, kind: "moe90" as const },
     }));
-    // A wide-range tract in the corner: high a, low b, but b's range crosses the cutoff.
-    pairs.push({ geoid: "wide", a: exact("wide", 29), b: { geoid: "wide", value: 2, lo: 0.5, hi: 20, kind: "moe90" } });
+    // A tract in the corner whose b range crosses b's cutoff (10, the bottom third) while staying reliable.
+    pairs.push({ geoid: "wide", a: exact("wide", 29), b: { geoid: "wide", value: 10, lo: 8.8, hi: 11.2, kind: "moe90" } });
     const m = mismatch(pairs, "high", "low");
     expect(m.fits.length).toBeGreaterThan(0);
     expect(m.fits.some((p) => p.geoid === "wide")).toBe(false);
@@ -797,7 +797,8 @@ describe("counting the property file", () => {
     ]) {
       const b = buildCount(P, args, today);
       expect(b).toMatchObject({ ok: false, status: "bad-column" });
-      expect(JSON.stringify(b)).not.toMatch(/OWNER|TAXKEY|STREET|SDIR/);
+      // The refusal echoes the asked column; what it offers must never include one.
+      expect(JSON.stringify((b as { columns: string[] }).columns)).not.toMatch(/OWNER|TAXKEY|STREET|SDIR/);
     }
   });
   it("leaves other City files exactly as they were", () => {
