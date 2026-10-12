@@ -6,6 +6,7 @@ import { cityList, dycuText } from "./placeNames";
 import { changeText, plainMeaning, rangeText, unitOf, type Unit } from "./tractFormat";
 import { EXACT, KIND, propertyCountSummary } from "./tractSummary";
 import { cellTime, spanNotes, spanRows, spanSummary, spanTitle, type SpanOk } from "./spanText";
+import { MEASURE_HIDDEN, measureNotes, measureSummary, measureTitle, money, type MeasureOk } from "./measureText";
 
 // One export per card (spec 2026-10-12-card-export-design.md): CSV, text and PNG are all written from it, so they
 // never disagree. It copies the card: its figures, its title and lines, its fine print, caveats and source.
@@ -228,5 +229,31 @@ export function spanExport(r: SpanOk, ctx: Ctx): CardExport {
     },
     notes: [...notes, sourceNote("City of Milwaukee", r.code, r.name, ctx), exported(ctx)],
     filename: safeName([r.code, r.pair.id, ...(r.groupBy ? [r.groupBy] : [])]),
+  };
+}
+
+export function measureExport(r: MeasureOk, ctx: Ctx): CardExport {
+  const m = r.measure, u = m.unit, avg = r.averageAsked;
+  type Row = { label: string; n: number; total: number | null; median: number | null; average: number | null; hidden: boolean };
+  const rows: Row[] = [
+    ...r.groups,
+    ...(r.other ? [{ label: "All other groups", n: r.other.n, total: r.other.total, median: null, average: null, hidden: r.other.hidden }] : []),
+    { label: "All", n: r.all.n, total: r.all.total, median: r.all.median, average: r.all.average, hidden: false },
+  ];
+  const label = (g: Row) => (g.hidden ? `${g.label} (${MEASURE_HIDDEN})` : g.label);
+  const t = (v: number | null, hidden: boolean) => (hidden ? MEASURE_HIDDEN : money(v, u, "table"));
+  return {
+    title: measureTitle(r),
+    lines: [measureSummary(r)],
+    csv: {
+      head: [r.groupBy ?? "Group", "Records", ...(m.summable ? [`Total (${u})`] : []), `Median (${u})`, ...(avg ? [`Average (${u})`] : [])],
+      rows: rows.map((g) => [label(g), g.n, ...(m.summable ? [g.total] : []), g.median, ...(avg ? [g.average] : [])]),
+    },
+    text: {
+      head: [r.groupBy ?? "", "Records", ...(m.summable ? ["Total"] : []), "Median", ...(avg ? ["Average"] : [])],
+      rows: rows.map((g) => [g.label, g.n.toLocaleString("en-US"), ...(m.summable ? [t(g.total, g.hidden)] : []), g.label === "All other groups" ? "" : t(g.median, g.hidden), ...(avg ? [g.label === "All other groups" ? "" : t(g.average, g.hidden)] : [])]),
+    },
+    notes: [...measureNotes(r), sourceNote("City of Milwaukee", r.code, r.name, ctx), exported(ctx)],
+    filename: safeName([r.code, m.id, ...(r.groupBy ? [r.groupBy] : [])]),
   };
 }

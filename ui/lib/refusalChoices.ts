@@ -135,3 +135,11 @@ export function spanChoices(args: SpanArgsIn, r: SpanRefusal): FollowUp[] {
   if (r.status === "choose" && r.choices && r.column) return r.choices.slice(0, MAX).map((v) => ({ label: v, question: `How long does it take in ${where}, only ${r.column} ${v}?` }));
   return [];
 }
+
+type MeasureRefusal = { status: string; code?: string; name?: string; measures?: { id: string; name: string }[]; columns?: string[] };
+export function measureChoices(r: MeasureRefusal): FollowUp[] {
+  const where = `${r.name ?? "this file"} (${r.code ?? ""})`;
+  if (r.status === "choose-measure" && r.measures) return r.measures.slice(0, MAX).map((m) => ({ label: m.name, question: `How much ${m.name} in ${where}? (measure ${m.id})` }));
+  if (r.status === "bad-column" && r.columns) return r.columns.slice(0, MAX).map((c) => ({ label: c, question: `How much in ${where}, by ${c}?` }));
+  return [];
+}
