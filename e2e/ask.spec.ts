@@ -239,6 +239,14 @@ test.describe("signed in", () => {
     await expect(card.getByRole("link", { name: /Open the fact sheet/ })).toHaveAttribute("href", "/n/harambee");
   });
 
+  test("an address question draws where it is, and says where the address went", async ({ page }) => {
+    await ask(page, "What neighborhood is 2400 W Center St in?");
+    const card = page.locator("[data-card=place]:visible");
+    await expect(card).toBeVisible({ timeout: 40_000 });
+    await expect(card).toContainText("Census tract");
+    await expect(card).toContainText("U.S. Census Bureau");
+  });
+
   test("a neighborhood count names the City boundary it used", async ({ page }) => {
     test.skip(!(await page.request.get("https://data.milwaukee.gov/api/3/action/status_show").then((r) => r.ok()).catch(() => false)), "City API unreachable");
     await ask(page, "How many robberies in Harambee this year?");
