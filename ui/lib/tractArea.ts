@@ -14,6 +14,8 @@ const ordinal = (n: number) => {
   return `${n}${v >= 11 && v <= 13 ? "th" : ({ 1: "st", 2: "nd", 3: "rd" } as Record<number, string>)[n % 10] ?? "th"}`;
 };
 export const cityRankText = (r: { position: number; of: number }, direction: "high" | "low") => `${ordinal(r.position)} ${direction === "high" ? "highest" : "lowest"} of ${r.of}`;
+// A rank across the dataset's whole place: the City's tracts, or Milwaukee County's.
+export const rankColumn = (place: string) => (place === "County" ? "Countywide" : "Citywide");
 export const onlyIn = (a: AreaIn) => `Only the tracts in ${areaPhrase(a)}.`;
 export const withArea = (items: FollowUp[], area?: AreaIn): FollowUp[] => (area ? items.map((f) => ({ ...f, question: `${f.question} ${onlyIn(area)}` })) : items);
 export function noTractsText(r: { name: string; map: "city" | "dycu"; years?: number[] }): string {

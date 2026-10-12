@@ -1,5 +1,5 @@
 import { countCoverage } from "./askCount";
-import { areaLine } from "./tractArea";
+import { areaLine, rankColumn } from "./tractArea";
 import { formatPortraitMargin, formatPortraitNumber } from "./portrait";
 import type { CityShare } from "@/convex/lib/tractPlaces";
 import type { ChangeDetail, Header, RankDetail, RelateDetail } from "@/convex/tracts";
@@ -93,7 +93,7 @@ export function rankExport(d: RankDetail, card: TractCardText, ctx: Ctx): CardEx
     title: card.title,
     lines: [...(d.area ? [areaLine(d.area)] : []), metaLine(h), ...card.lines],
     csv: {
-      head: ["Rank", "Tract", "GEOID", "City neighborhoods", "DYCU areas", colHead(h), "Low", "High", "Status", ...(d.area ? ["Citywide rank"] : [])],
+      head: ["Rank", "Tract", "GEOID", "City neighborhoods", "DYCU areas", colHead(h), "Low", "High", "Status", ...(d.area ? [`${rankColumn(h.place)} rank`] : [])],
       rows: all.map(({ t, rank, status }) => [rank, t.tract, t.geoid, cityCell(t.city), t.dycu.join(", "), t.value, t.lo, t.hi, status, ...(d.area ? [t.cityRank ? `${t.cityRank.position} of ${t.cityRank.of}` : null] : [])]),
     },
     text: {

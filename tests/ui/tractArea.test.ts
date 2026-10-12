@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { areaLine, cityRankText, noTractsText, onlyIn, shareText, tooFewText, withArea } from "../../ui/lib/tractArea";
+import { areaLine, cityRankText, noTractsText, onlyIn, rankColumn, shareText, tooFewText, withArea } from "../../ui/lib/tractArea";
 import { changeSummary, rankSummary, relateSummary } from "../../ui/lib/tractSummary";
 import { rankChoices, relateChoices } from "../../ui/lib/refusalChoices";
 
@@ -24,6 +24,13 @@ describe("the card's neighborhood words", () => {
     expect(onlyIn({ name: "Harambee", map: "dycu" })).toBe("Only the tracts in DYCU's Harambee area.");
     expect(withArea([{ label: "SHOW THE LOWEST", question: "Rank census tracts by x." }], bay)).toEqual([{ label: "SHOW THE LOWEST", question: "Rank census tracts by x. Only the tracts in Bay View." }]);
     expect(withArea([{ label: "A", question: "Q?" }], undefined)).toEqual([{ label: "A", question: "Q?" }]);
+  });
+});
+
+describe("the rank column's name", () => {
+  it("says countywide for a County dataset, so a county rank is never called citywide", () => {
+    expect(rankColumn("City")).toBe("Citywide");
+    expect(rankColumn("County")).toBe("Countywide");
   });
 });
 

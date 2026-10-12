@@ -4,7 +4,7 @@ import { type ReactNode, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import type { CityShare } from "@/convex/lib/tractPlaces";
 import type { AreaHead } from "@/convex/lib/tractsIn";
-import { areaLine, cityRankText, shareText } from "@/ui/lib/tractArea";
+import { areaLine, cityRankText, rankColumn, shareText } from "@/ui/lib/tractArea";
 import type { ChangeAnswer, Header, RankDetail, RelateAnswer, RelateDetail, TractRow } from "@/convex/tracts";
 import { cityList, dycuText, placesLabel } from "@/ui/lib/placeNames";
 import { changeText, mismatchVerdict, noMargin, plainMeaning, rangeText, tooFew, unitOf, type Unit } from "@/ui/lib/tractFormat";
@@ -149,7 +149,7 @@ export function RankCard({ r, onOpen }: { r: RankShown; onOpen: Open }) {
     <tr key={t.geoid} className={styles.tractTie}><td>=</td><td>{t.tract}</td><td><Where t={t} area={area} /></td><td>{dycuText(t.dycu)} ({exact ? `same figure as #${r.top.length}` : `tied with #${r.top.length} within the margin of error`})</td><td className={styles.num}>{range(t, pct)}</td>{area && <td>{t.cityRank ? cityRankText(t.cityRank, r.direction) : "\u2014"}</td>}</tr>
   );
   const area = full?.area ?? r.area;
-  const head = ["#", "Tract", "Neighborhood", "DYCU area", h.column, ...(area ? ["Citywide"] : [])];
+  const head = ["#", "Tract", "Neighborhood", "DYCU area", h.column, ...(area ? [rankColumn(h.place)] : [])];
   const title = `${r.direction === "high" ? "Highest" : "Lowest"} ${h.column} \u00b7 ${h.place} ${h.year}`;
   const bare = !h.confidence; // no ranges: no ties or unreliable tracts can be found (spec §5 rule 7)
   const summary = rankSummary({ header: h, direction: r.direction, top: r.top.length, tieCount: bare ? 0 : r.tieCount, unreliableCount: bare ? 0 : r.unreliableCount, inline: TIES_INLINE, area });
