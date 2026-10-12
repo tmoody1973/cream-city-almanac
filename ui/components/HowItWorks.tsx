@@ -80,6 +80,10 @@ export function HowItWorks({ status, example, areas }: { status: CatalogStatus |
             </ul>
             <p>Numbers on a sheet come from the Hub&apos;s data, never from the AI.</p>
             <p>
+              Ask&apos;s number cards can be exported as a CSV, as plain text or as an image. Each export copies the card: its figures, its
+              fine print, the dataset&apos;s caveats and the source. The AI doesn&apos;t write any of it.
+            </p>
+            <p>
               Spreadsheet numbers appear as DYCU wrote them, Estimate ± margin of error, with any problems in DYCU&apos;s file noted
               above the table. No AI touches them.
             </p>

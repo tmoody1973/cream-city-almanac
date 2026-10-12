@@ -77,3 +77,8 @@ test("it explains the neighborhood spreadsheets, and its example lands on one", 
     await expect(page.locator("section[aria-labelledby=portrait-heading] caption")).toHaveText("Lincoln Park, 2021: Employment Status by Sex");
   }
 });
+
+test("it says answers can be exported with their source and caveats", async ({ page }) => {
+  await page.goto("/how-it-works");
+  await expect(page.getByText(/Ask's number cards can be exported as a CSV, as plain text or as an image/)).toBeVisible();
+});
