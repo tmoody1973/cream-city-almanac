@@ -87,3 +87,8 @@ test("it explains how-long answers in plain words", async ({ page }) => {
   await page.goto("/how-it-works");
   await expect(page.getByText(/The median is the middle case: half took less time/)).toBeVisible();
 });
+
+test("it explains totals and hidden small groups", async ({ page }) => {
+  await page.goto("/how-it-works");
+  await expect(page.getByText(/groups of fewer than 5 records are hidden/)).toBeVisible();
+});
