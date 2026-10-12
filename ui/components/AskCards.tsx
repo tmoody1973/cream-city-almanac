@@ -15,6 +15,8 @@ import { OpenLink, type Open } from "./OpenLink";
 import { ProvenanceTag } from "./ProvenanceTag";
 import { ChangeCard, NEIGHBORHOODS_HELP, RankCard, RelateCard, TractMapSlot } from "./TractCards";
 import { FollowUps, type FollowUp } from "./FollowUps";
+import { ExportBar } from "./ExportBar";
+import { countExport, numberExport, quoteText } from "@/ui/lib/cardExport";
 import { changeFollowUps, countFollowUps, datasetFollowUps, numberFollowUps, previewFollowUps, rankFollowUps, relateFollowUps } from "@/ui/lib/nextQuestions";
 import { changeChoices, countChoices, numberChoices, rankChoices, relateChoices } from "@/ui/lib/refusalChoices";
 import styles from "./ask.module.css";
@@ -84,10 +86,13 @@ export function NumberCard({ r, onOpen, callKey }: { r: NumberResult; onOpen: Op
   if (onOpen) {
     // Laptop: the table is open in the pane with this row outlined; the note keeps a reference the leader starts from.
     return (
-      <p className={styles.reference} data-card="number">
-        {title} · {r.label} <ProvenanceTag source="DYCU" />
-        {r.definition && <span className={styles.source} data-definition> {r.neighborhood} as DYCU defines it: {r.definition}</span>} <OpenLink code={r.code} query={query} onOpen={onOpen} anchor />
-      </p>
+      <>
+        <p className={styles.reference} data-card="number">
+          {title} · {r.label} <ProvenanceTag source="DYCU" />
+          {r.definition && <span className={styles.source} data-definition> {r.neighborhood} as DYCU defines it: {r.definition}</span>} <OpenLink code={r.code} query={query} onOpen={onOpen} anchor />
+        </p>
+        <ExportBar make={(ctx) => numberExport(r, ctx)} />
+      </>
     );
   }
   return (
@@ -126,6 +131,7 @@ export function NumberCard({ r, onOpen, callKey }: { r: NumberResult; onOpen: Op
       </table>
       <p className={styles.source}>Census table {r.tableIdText}</p>
       <OpenLink code={r.code} query={query} onOpen={onOpen} label="Open the full table" />
+      <ExportBar make={(ctx) => numberExport(r, ctx)} />
     </figure>
   );
 }
@@ -241,6 +247,7 @@ function CountCard({ r, id, onOpen, noMap, args }: { r: CountOk; id?: string; on
       {r.futureExcluded > 0 && <p className={styles.source}>{r.futureExcluded.toLocaleString("en-US")} records dated in the future were left out.</p>}
       {r.caveat && <p className={styles.source}>{r.caveat} <ProvenanceTag source="AI" /></p>}
       <OpenLink code={r.code} onOpen={onOpen} label="Open the data" />
+      {!noMap && <ExportBar make={(ctx) => countExport(r, ctx)} />}
     </figure>
   );
 }
@@ -352,6 +359,7 @@ export function AskCards({ onOpen }: { onOpen?: (search: string) => void }) {
             <figcaption>
               {p.report}, <i>{p.section}</i> <OpenLink code={p.code} onOpen={onOpen} />
             </figcaption>
+            <ExportBar copy={(ctx) => quoteText(p, ctx)} />
           </figure>
         ))}
       </>
