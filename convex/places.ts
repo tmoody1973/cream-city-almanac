@@ -33,9 +33,8 @@ export const placeAt = internalQuery({
   },
 });
 
-async function locate(ctx: ActionCtx, raw: string): Promise<PlaceResult> {
-  const a = checkAddress(raw);
-  if (!a) return { status: "bad-address" };
+// `a` is already checked (checkAddress): bad input is refused before any allowance is spent.
+async function locate(ctx: ActionCtx, a: string): Promise<PlaceResult> {
   let g;
   try {
     const res = await fetchWithTimeout(geocodeUrl(withCity(a)), {}, TIMEOUT_MS);
@@ -47,7 +46,8 @@ async function locate(ctx: ActionCtx, raw: string): Promise<PlaceResult> {
     return { status: "unavailable" };
   }
   if (!g) return { status: "no-match" };
-  if (!g.geoid || !g.geoid.startsWith(COUNTY)) return { status: "outside-county" };
+  if (!g.geoid) return { status: "unavailable" }; // a match without its tract: the reply was incomplete, not outside the County
+  if (!g.geoid.startsWith(COUNTY)) return { status: "outside-county" };
   const at = await ctx.runQuery(internal.places.placeAt, { lat: g.lat, lon: g.lon, geoid: g.geoid });
   return { status: "ok", matched: g.matched, tract: { geoid: g.geoid, number: tractNumber(g.geoid) }, neighborhood: at.neighborhood, inCity: at.neighborhood !== null, dycu: at.dycu };
 }
@@ -57,15 +57,19 @@ export const findPlace = action({
   handler: async (ctx, { address }): Promise<PlaceResult> => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Sign in to ask");
+    const a = checkAddress(address);
+    if (!a) return { status: "bad-address" };
     if (!(await rateLimiter.limit(ctx, "askPlace", { key: identity.tokenIdentifier })).ok) return { status: "busy" };
-    return locate(ctx, address);
+    return locate(ctx, a);
   },
 });
 
 export const placeForBox = action({
   args: { address: v.string() },
   handler: async (ctx, { address }): Promise<PlaceResult> => {
+    const a = checkAddress(address);
+    if (!a) return { status: "bad-address" };
     if (!(await rateLimiter.limit(ctx, "placePublic")).ok) return { status: "busy" };
-    return locate(ctx, address);
+    return locate(ctx, a);
   },
 });

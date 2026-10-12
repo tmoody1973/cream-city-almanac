@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { PlaceResult } from "@/convex/places";
-import { PLACE_PRIVACY } from "@/ui/lib/placeText";
+import { notInCityText, PLACE_PRIVACY_ASK } from "@/ui/lib/placeText";
 import styles from "./ask.module.css";
 
 // Where an address is: its tract, City neighborhood and DYCU area. Nothing about the property.
@@ -13,12 +13,12 @@ export function PlaceCard({ r }: { r: Extract<PlaceResult, { status: "ok" }> }) 
       <p className={styles.tractMeta}>(as the U.S. Census Bureau matched it)</p>
       <ul>
         <li>Census tract {r.tract.number}</li>
-        <li>{r.neighborhood ? <>City neighborhood: {r.neighborhood} (City of Milwaukee boundary)</> : <>Outside the City of Milwaukee (Milwaukee County)</>}</li>
+        <li>{r.neighborhood ? <>City neighborhood: {r.neighborhood} (City of Milwaukee boundary)</> : <>{notInCityText(r.tract.number)}</>}</li>
         {r.dycu.length > 0
           ? r.dycu.map((d) => <li key={d.name}>DYCU&apos;s area: {d.name}{d.slug && <> · <Link href={`/n/${d.slug}`}>Open the fact sheet →</Link></>}</li>)
           : <li>Not in one of the areas Data You Can Use profiles</li>}
       </ul>
-      <p className={styles.tractMeta}>{PLACE_PRIVACY}</p>
+      <p className={styles.tractMeta}>{PLACE_PRIVACY_ASK}</p>
     </div>
   );
 }

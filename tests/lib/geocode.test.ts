@@ -12,7 +12,7 @@ describe("the address the person typed", () => {
   });
   it("adds Milwaukee when no city, state or ZIP is given", () => {
     expect(withCity("2400 W Center St")).toBe("2400 W Center St, Milwaukee, WI");
-    expect(withCity("2400 W Center St, Milwaukee")).toBe("2400 W Center St, Milwaukee");
+    expect(withCity("2400 W Center St, Milwaukee")).toBe("2400 W Center St, Milwaukee, WI");
     expect(withCity("2400 W Center St 53206")).toBe("2400 W Center St 53206");
     expect(withCity("N 2nd St and W Center St, WI")).toBe("N 2nd St and W Center St, WI");
   });
@@ -28,5 +28,18 @@ describe("the Census geocoder", () => {
     expect(parseGeocode(reply([match("SOMEWHERE", -87.9, 43.0)]))!.geoid).toBeNull();
     expect(parseGeocode(reply([]))).toBeNull();
     expect(() => parseGeocode({ error: "x" })).toThrow();
+  });
+});
+
+describe("Milwaukee's own street names", () => {
+  it("adds the city when 'Wisconsin' or 'Milwaukee' is only part of the street name (checked live: these match only with the city)", () => {
+    expect(withCity("1000 W Wisconsin Ave")).toBe("1000 W Wisconsin Ave, Milwaukee, WI");
+    expect(withCity("200 N Milwaukee St")).toBe("200 N Milwaukee St, Milwaukee, WI");
+    expect(withCity("N 27th St and W Wisconsin Ave")).toBe("N 27th St and W Wisconsin Ave, Milwaukee, WI");
+  });
+  it("leaves a full address alone, and adds only the state to a suburb typed without one", () => {
+    expect(withCity("1000 W Wisconsin Ave, Milwaukee WI 53233")).toBe("1000 W Wisconsin Ave, Milwaukee WI 53233");
+    expect(withCity("1000 W Wisconsin Ave 53233")).toBe("1000 W Wisconsin Ave 53233");
+    expect(withCity("7725 W North Ave, Wauwatosa")).toBe("7725 W North Ave, Wauwatosa, WI");
   });
 });

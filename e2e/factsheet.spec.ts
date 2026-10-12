@@ -41,3 +41,10 @@ test("an address outside DYCU's areas says which City neighborhood it is in", as
   await page.getByRole("button", { name: "Find" }).click();
   await expect(page.locator("[data-place-message]")).toContainText(/neighborhood|Milwaukee County/, { timeout: 20_000 });
 });
+
+test("the address box has a visible label matching its name, and an answer area screen readers already know", async ({ page }) => {
+  await page.goto("/n");
+  await expect(page.getByText("Your address", { exact: true })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Your address" })).toBeVisible();
+  await expect(page.locator("form [role=status]")).toHaveCount(1);
+});

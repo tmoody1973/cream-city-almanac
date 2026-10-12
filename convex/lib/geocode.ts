@@ -7,8 +7,14 @@ export function checkAddress(raw: string): string | null {
   return a.length >= 3 && a.length <= 200 ? a : null;
 }
 
-// The geocoder needs a city; a bare street address means Milwaukee here.
-export const withCity = (a: string) => (/\bmilwaukee\b|\bwi\b|\bwisconsin\b|\b53\d{3}\b/i.test(a) ? a : `${a}, Milwaukee, WI`);
+// The geocoder needs a city and state. Only a state or ZIP at the END counts: "Wisconsin" and "Milwaukee" are also
+// Milwaukee street names (W Wisconsin Ave, N Milwaukee St), which match nothing without the city added.
+const PLACED = /(\b(wi|wisconsin)\.?(\s+\d{5}(-\d{4})?)?|\b\d{5}(-\d{4})?)\s*$/i;
+export function withCity(a: string): string {
+  if (PLACED.test(a)) return a;
+  if (/,\s*[a-z][a-z .'-]*$/i.test(a)) return `${a}, WI`; // a city after a comma ("…, Wauwatosa"): add the state
+  return `${a}, Milwaukee, WI`;
+}
 
 export const geocodeUrl = (a: string) =>
   `${GEOCODER}?address=${encodeURIComponent(a)}&benchmark=Public_AR_Current&vintage=Current_Current&layers=Census%20Tracts&format=json`;

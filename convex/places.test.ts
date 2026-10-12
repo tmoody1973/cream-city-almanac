@@ -72,3 +72,17 @@ describe("findPlace", () => {
     expect(await counts()).toEqual(before);
   });
 });
+
+describe("review fixes", () => {
+  it("says the service didn't respond when a match has no tract, rather than calling it outside the County", async () => {
+    const t = await seed();
+    installFakeFetch({ geocoder: () => ({ result: { addressMatches: [{ matchedAddress: "X", coordinates: { x: -87.94, y: 43.07 }, geographies: {} }] } }) });
+    expect(await t.withIdentity(reader).action(api.places.findPlace, { address: "2400 W Center St" })).toEqual({ status: "unavailable" });
+  });
+  it("checks the address before spending the site-wide allowance", async () => {
+    const t = await seed();
+    installFakeFetch({ geocoder: reply(43.0679, -87.9425, "55079008800") });
+    for (let i = 0; i < 25; i++) await t.action(api.places.placeForBox, { address: " " });
+    expect(await t.action(api.places.placeForBox, { address: "2400 W Center St" })).toMatchObject({ status: "ok" });
+  });
+});
