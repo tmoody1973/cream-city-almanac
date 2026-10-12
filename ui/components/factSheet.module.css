@@ -1,0 +1,151 @@
+/* Fact sheet, from the approved comp: .impeccable/mocks/fact-sheet-a-laptop.webp (1536x1024), -a-phone.webp,
+   -a-print.webp ("the ledger"). Ink and paper; grey band row stripes; red is grease pencil only (verdict ring/underline). */
+.page {
+  max-width: min(1280px, 100%);
+  min-height: 100vh;
+  margin: 0 auto;
+  padding-inline: var(--gutter);
+  display: flex;
+  flex-direction: column;
+}
+.main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+  padding-bottom: 32px;
+}
+@media (min-width: 1024px) {
+  .main { grid-template-columns: minmax(0, 1fr) minmax(240px, 30%); gap: 32px; }
+  .aside { border-left: var(--hair); padding-left: 24px; }
+}
+
+.head { border-bottom: var(--hair); padding-bottom: 8px; margin-top: clamp(12px, 2vw, 24px); }
+.name {
+  margin: 0;
+  font-family: var(--font-caps);
+  font-weight: 700;
+  font-size: clamp(38px, 7vw, 76px);
+  line-height: 0.95;
+  text-transform: uppercase;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 16px;
+}
+.kind {
+  font-size: clamp(22px, 3.4vw, 40px);
+  text-transform: none;
+  border-left: 2px solid var(--ink);
+  padding-left: 16px;
+}
+.period { margin: 8px 0 0; display: flex; flex-wrap: wrap; gap: 4px 24px; align-items: baseline; }
+.years { display: inline-flex; gap: 20px; font-family: var(--font-caps); font-weight: 700; font-size: 20px; }
+.year { color: var(--muted); text-decoration: none; }
+.yearOn { color: var(--ink); text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 0.25em; }
+
+.people { margin: 16px 0 8px; display: flex; align-items: baseline; gap: 12px; }
+.peopleNum { font-family: var(--font-caps); font-weight: 700; font-size: clamp(48px, 8vw, 84px); line-height: 1; }
+.peopleLabel { font-family: var(--font-caps); font-weight: 700; font-size: 22px; text-transform: uppercase; }
+
+.sheet { min-width: 0; }
+.ledger { width: 100%; table-layout: fixed; border-collapse: collapse; border-top: var(--rule); font-variant-numeric: tabular-nums lining-nums; }
+.ledger th, .ledger td { overflow-wrap: anywhere; }
+.ledger thead th:nth-child(1) { width: 32%; }
+.ledger thead th:nth-child(4) { width: 24%; }
+.ledger thead th {
+  font-family: var(--font-caps); font-weight: 700; text-transform: uppercase; font-size: 18px; overflow-wrap: normal;
+  text-align: left; padding: 8px 10px; border-bottom: var(--hair);
+}
+.ledger tbody tr:nth-child(odd) { background: var(--band); }
+.ledger tbody th, .ledger tbody td { padding: 10px; vertical-align: top; text-align: left; border-bottom: 1px solid #d9d9d4; }
+.ledger thead th + th, .ledger tbody td { border-left: var(--hair); }
+.label { font-family: var(--font-caps); font-weight: 700; text-transform: uppercase; font-size: 17px; line-height: 1.15; width: 32%; }
+.meaning { display: block; font-family: inherit; }
+.ledger .meaning { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); } /* read aloud; the comp keeps rows to the label */
+.rate { display: block; font-family: var(--font-caps); font-weight: 700; font-size: 26px; line-height: 1; }
+.cityRate { display: block; font-family: var(--font-caps); font-weight: 700; font-size: 22px; line-height: 1; }
+.margin { display: block; font-size: 14px; }
+.counts { display: block; font-size: 14px; color: var(--muted); }
+.muted { color: var(--muted); }
+
+/* The verdict: printed type. A clear difference gets the grease pencil: a ring (higher) or an underline (lower). */
+.verdict { position: relative; display: inline-block; font-family: var(--font-caps); font-weight: 700; text-transform: uppercase; font-size: 17px; line-height: 1.15; padding: 4px 6px; }
+.ring::after {
+  content: ""; position: absolute; inset: -6px -10px; pointer-events: none;
+  border: 3px solid var(--pencil); border-radius: 50%; transform: rotate(-3deg);
+}
+.under::after { content: ""; position: absolute; left: 2px; right: -6px; bottom: -2px; border-bottom: 3px solid var(--pencil); transform: rotate(-1.5deg); }
+
+.below { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; margin-top: 16px; border-top: var(--hair); padding-top: 16px; }
+@media (min-width: 720px) { .below { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .notes { border-left: var(--hair); padding-left: 16px; } }
+.map { margin: 0; }
+.map figcaption { font-size: 14px; margin-top: 4px; }
+.notes p { margin: 0 0 8px; }
+
+.tables summary { cursor: pointer; text-decoration: underline; text-underline-offset: 3px; margin-top: 8px; }
+.portrait h4 { font-family: var(--font-caps); text-transform: uppercase; margin: 16px 0 4px; }
+.scroll { overflow-x: auto; }
+.scroll table { border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+.scroll th, .scroll td { padding: 4px 8px 4px 0; border-bottom: 1px solid #d9d9d4; text-align: left; white-space: nowrap; }
+.heading th { font-weight: 700; }
+
+.asideHead { font-family: var(--font-caps); font-weight: 700; text-transform: uppercase; font-size: 30px; margin: 12px 0 8px; }
+.aside p { margin: 0 0 10px; }
+.actions { border-top: var(--hair); padding-top: 16px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.print {
+  font-family: var(--font-caps); font-weight: 700; text-transform: uppercase; font-size: 18px;
+  background: var(--paper); color: var(--ink); border: 2px solid var(--ink); padding: 10px 16px; cursor: pointer;
+}
+
+.index { flex: 1; padding-bottom: 32px; }
+.areas { columns: 2 220px; padding-left: 1.2em; }
+.areas li { margin: 4px 0; }
+
+/* Phones: each ledger row stacks: label, the neighborhood, the city, the verdict (never four squeezed columns). */
+@media (max-width: 719px) {
+  .ledger thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .ledger tbody tr { display: grid; grid-template-columns: 1fr 1fr; padding: 10px 0; }
+  .ledger tbody th { grid-column: 1 / -1; width: auto; padding: 0 10px 6px; border: 0; }
+  .ledger tbody td { border: 0; padding: 4px 10px; }
+  .ledger tbody td::before { content: attr(data-col); display: block; font-family: var(--font-caps); font-weight: 700; text-transform: uppercase; font-size: 13px; color: var(--muted); }
+  .ledger tbody td[data-verdict] { grid-column: 1 / -1; }
+}
+
+/* Print: one US Letter page. No site chrome, buttons or folded tables. */
+@media print {
+  @page { size: letter; margin: 0.5in; }
+  .chrome, .actions, .tables, :global(nav) { display: none !important; }
+  .page { padding: 0; max-width: none; }
+  .main { grid-template-columns: 1fr; gap: 8px; }
+  .aside { border: 0; padding: 0; }
+  .ledger tbody tr { break-inside: avoid; }
+  .ledger tbody tr:nth-child(odd) { background: var(--band); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .verdict::after { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  /* Fit one Letter page: smaller type and padding than the screen, no year links, a shorter map. */
+  .years { display: none; }
+  .head { margin-top: 0; }
+  .name { font-size: 34px; }
+  .kind { font-size: 20px; }
+  .period { font-size: 12px; margin-top: 2px; }
+  .people { margin: 6px 0 4px; }
+  .peopleNum { font-size: 34px; }
+  .peopleLabel { font-size: 14px; }
+  .ledger thead th { font-size: 11px; padding: 3px 6px; }
+  .ledger tbody th, .ledger tbody td { padding: 3px 6px; }
+  .label, .verdict { font-size: 11px; }
+  .rate { font-size: 15px; }
+  .cityRate { font-size: 14px; }
+  .margin, .counts { font-size: 9px; display: inline; margin-left: 4px; }
+  .ring::after { inset: -3px -6px; border-width: 2px; }
+  .below { margin-top: 6px; padding-top: 6px; gap: 8px; }
+  .map :global([data-tract-map]) { height: 150px; overflow: hidden; }
+  .notes, .aside p, .map figcaption { font-size: 9.5px; line-height: 1.3; }
+  .asideHead { font-size: 14px; margin: 4px 0 2px; }
+}
+
+/* Grid items default to their content's width; DYCU's folded tables are wide, so every column is capped to its share. */
+.main > *, .below > *, .notes, .tables, .scroll { min-width: 0; max-width: 100%; }
+
+/* Notes, sources and captions at the comp's small text size (the body's large base is for the rundown). */
+.notes, .aside p, .map figcaption, .people + .ledger caption { font-size: 16px; line-height: 1.4; }
