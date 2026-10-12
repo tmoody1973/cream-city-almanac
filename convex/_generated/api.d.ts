@@ -45,6 +45,9 @@ import type * as lib_rank from "../lib/rank.js";
 import type * as lib_report from "../lib/report.js";
 import type * as lib_retry from "../lib/retry.js";
 import type * as lib_sources from "../lib/sources.js";
+import type * as lib_spanPairs from "../lib/spanPairs.js";
+import type * as lib_spanShape from "../lib/spanShape.js";
+import type * as lib_spanSql from "../lib/spanSql.js";
 import type * as lib_text from "../lib/text.js";
 import type * as lib_titles from "../lib/titles.js";
 import type * as lib_tractData from "../lib/tractData.js";
@@ -58,6 +61,7 @@ import type * as map from "../map.js";
 import type * as property from "../property.js";
 import type * as search from "../search.js";
 import type * as settings from "../settings.js";
+import type * as spans from "../spans.js";
 import type * as tracts from "../tracts.js";
 import type * as validators from "../validators.js";
 
@@ -105,6 +109,9 @@ declare const fullApi: ApiFromModules<{
   "lib/report": typeof lib_report;
   "lib/retry": typeof lib_retry;
   "lib/sources": typeof lib_sources;
+  "lib/spanPairs": typeof lib_spanPairs;
+  "lib/spanShape": typeof lib_spanShape;
+  "lib/spanSql": typeof lib_spanSql;
   "lib/text": typeof lib_text;
   "lib/titles": typeof lib_titles;
   "lib/tractData": typeof lib_tractData;
@@ -118,6 +125,7 @@ declare const fullApi: ApiFromModules<{
   property: typeof property;
   search: typeof search;
   settings: typeof settings;
+  spans: typeof spans;
   tracts: typeof tracts;
   validators: typeof validators;
 }>;

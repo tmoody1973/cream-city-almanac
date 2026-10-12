@@ -125,3 +125,13 @@ export function numberChoices(args: NumberArgs, r: NumberRefusal): FollowUp[] {
   if (r.status === "choose-row" && "rows" in r) return pick(r.rows, (v) => ({ ...args, row: v }));
   return [];
 }
+
+type SpanArgsIn = { code: string; groupBy?: string; from?: string; to?: string; pair?: string };
+type SpanRefusal = { status: string; code?: string; name?: string; pairs?: { id: string; name: string; from?: string; to?: string }[]; columns?: string[]; column?: string; choices?: string[] };
+export function spanChoices(args: SpanArgsIn, r: SpanRefusal): FollowUp[] {
+  const where = `${r.name ?? "this file"} (${r.code ?? args.code})`;
+  if (r.status === "choose-pair" && r.pairs) return r.pairs.slice(0, MAX).map((p) => ({ label: p.name, question: `How long is the ${p.name} in ${where}? (pair ${p.id})` }));
+  if (r.status === "bad-column" && r.columns) return r.columns.slice(0, MAX).map((c) => ({ label: c, question: `How long does it take in ${where}, by ${c}?` }));
+  if (r.status === "choose" && r.choices && r.column) return r.choices.slice(0, MAX).map((v) => ({ label: v, question: `How long does it take in ${where}, only ${r.column} ${v}?` }));
+  return [];
+}

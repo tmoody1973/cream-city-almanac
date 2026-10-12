@@ -128,6 +128,7 @@ const backend: AskBackend = {
   rank: async () => ({ status: "busy" }) as never,
   change: async () => ({ status: "busy" }) as never,
   relate: async () => ({ status: "busy" }) as never,
+  span: async () => ({ status: "busy" }) as never,
 };
 const tool = (name: string) => askTools(backend).find((t) => t.name === name)!;
 

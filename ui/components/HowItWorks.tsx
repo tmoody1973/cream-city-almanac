@@ -84,6 +84,11 @@ export function HowItWorks({ status, example, areas }: { status: CatalogStatus |
               fine print, the dataset&apos;s caveats and the source. The AI doesn&apos;t write any of it.
             </p>
             <p>
+              Ask can also say how long things take in a few City files, like complaints, 311 requests, permits and fire calls. The median is
+              the middle case: half took less time. The &ldquo;9 in 10&rdquo; time is how long all but the slowest tenth took. Cases still
+              open aren&apos;t counted, so the slowest ones are missing, and the card says how many.
+            </p>
+            <p>
               Spreadsheet numbers appear as DYCU wrote them, Estimate ± margin of error, with any problems in DYCU&apos;s file noted
               above the table. No AI touches them.
             </p>

@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { askTools, type AskBackend } from "../../lib/ask/tools";
+import { askTools, spanDescription, type AskBackend } from "../../lib/ask/tools";
 
 const backend = (relateResult: unknown): AskBackend => ({
   search: async () => ({ results: [] }) as never, sheet: async () => null, number: async () => ({}) as never, report: async () => ({}) as never, count: async () => ({}) as never,
-  rank: async () => ({ status: "busy" }) as never, change: async () => ({ status: "busy" }) as never, relate: async () => relateResult as never,
+  rank: async () => ({ status: "busy" }) as never, change: async () => ({ status: "busy" }) as never, relate: async () => relateResult as never, span: async () => ({ status: "busy" }) as never,
 });
 
 const row = (i: number) => ({ geoid: `5507910${String(i).padStart(4, "0")}`, tract: String(i), neighborhood: "Harambee", value: 41.2, lo: 35.1, hi: 47.3, unreliable: false });
@@ -36,5 +36,14 @@ describe("tract tools", () => {
     const { caveats: _c, url: _u, ...head } = { code: "E02", name: "Households Living in Poverty", column: "pov_rate", meaning: "Share of households below the poverty line.", kind: "rate", place: "City", year: "2022", n: 300, leftOut: 4, confidence: "90% confidence (Census)", url: "x", caveats: ["c"] };
     const answer = { status: "ok", tool: "relate", mode: "mismatch", a: head, b: { ...head, code: "F02" }, n: 300, rho: 0.71, strength: "strong", direction: "higher", fits: Array.from({ length: 10 }, (_, i) => ({ a: row(i), b: row(i) })), fitsCount: 57, close: Array.from({ length: 10 }, (_, i) => ({ a: row(i), b: row(i) })), closeCount: 31, unreliableCount: 12, key: "tracts:abc", aSide: "high", bSide: "low", cutA: 20.5, cutB: 8.1 };
     expect(JSON.stringify(await call(backend(answer))).length).toBeLessThan(8_000);
+  });
+});
+
+describe("timeSpan", () => {
+  it("is offered, and its description names every approved file and pair id", () => {
+    const tool = askTools(backend({})).find((t) => t.name === "timeSpan");
+    expect(tool).toBeDefined();
+    for (const id of ["complaint-close", "311-close", "permit-issue", "fire-dispatch", "fire-arrive", "fire-clear", "mfd-arrive"]) expect(spanDescription()).toContain(id);
+    expect(spanDescription()).toContain("citizen complaints against the Police and Fire Departments");
   });
 });
