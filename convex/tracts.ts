@@ -35,7 +35,7 @@ export type Refusal = Tag & (
 | { status: "no-tracts"; name: string; map: AreaMap; years?: number[] }
 | { status: "too-few-tracts"; name: string; map: AreaMap; n: number; needed: number }
 );
-export type RankDetail = { status: "ok"; tool: "rank"; header: Header; direction: "high" | "low"; top: TractRow[]; ties: TractRow[]; tieCount: number; unreliable: TractRow[]; unreliableCount: number; highlighted: string[]; key: string };
+export type RankDetail = { status: "ok"; tool: "rank"; header: Header; direction: "high" | "low"; top: TractRow[]; ties: TractRow[]; tieCount: number; unreliable: TractRow[]; unreliableCount: number; highlighted: string[]; key: string; area?: AreaHead };
 
 const vPlace = v.union(v.literal("City"), v.literal("County"));
 const CONFIDENCE = { moe90: "90% confidence (Census)", ci95: "95% confidence (CDC)" } as const;
@@ -231,9 +231,14 @@ export async function store(ctx: ActionCtx, args: unknown) {
 }
 
 export const rankTracts = action({
-  args: { code: v.string(), column: v.string(), place: vPlace, year: v.string(), direction: v.union(v.literal("high"), v.literal("low")), cutoff: v.optional(v.number()) },
+  args: { code: v.string(), column: v.string(), place: vPlace, year: v.string(), direction: v.union(v.literal("high"), v.literal("low")), cutoff: v.optional(v.number()), ...vArea },
   handler: async (ctx, args): Promise<RankDetail | Refusal> => {
     const spend = await spender(ctx);
+    // A neighborhood is checked first, from the database alone: a misspelling or an empty one costs nothing.
+    const area = await areaFor(ctx, args);
+    if (area && "status" in area) return area;
+    const names = await loadNames(ctx);
+    if (area && areaSize(names, area) === 0) return noTracts(area, names);
     const prop = await propertySide(ctx, args.code, args.column, args.cutoff);
     if (prop && "status" in prop) return prop;
     let picked: PropertySide | Looked;
@@ -247,17 +252,28 @@ export const rankTracts = action({
     if ("status" in resolved) return resolved;
     const side = await loadSide(ctx, resolved, spend);
     if ("status" in side) return side;
-    const names = await loadNames(ctx);
     const nameYear = side.year ?? String(latestDefYear(names.defs));
-    const ranked = rankValues(side.rows.values, args.direction);
-    const head = side.head(args.place, side.rows.values.length, side.rows.leftOut);
+    const all = side.rows.values;
+    // In a neighborhood every tract is listed (spec §4.2), with its share and its place across the whole place.
+    const kept = area ? all.filter((x) => shareIn(placesOf(x.geoid, nameYear, names), area) !== null) : all;
+    if (area && kept.length === 0) return noTracts(area, names);
+    const ranked = rankValues(kept, args.direction, area ? kept.length : undefined);
+    const places = area ? placeRanks(all, args.direction) : null;
+    const row = (x: TractValue): TractRow => {
+      const r = toRow(x, nameYear, names);
+      if (!area || !places) return r;
+      const position = places.position.get(x.geoid);
+      return { ...r, share: shareIn(r, area) ?? undefined, ...(position ? { cityRank: { position, of: places.of } } : {}) };
+    };
+    const head = area ? side.head(args.place, kept.length, Math.max(0, areaSize(names, area) - kept.length)) : side.head(args.place, all.length, side.rows.leftOut);
     const { key, save } = await store(ctx, { tool: "rank", ...args, year: head.year, code: head.code, column: head.column });
     const detail: RankDetail = {
       status: "ok", tool: "rank", header: head, direction: args.direction,
-      top: ranked.top.map((v) => toRow(v, nameYear, names)),
-      ties: ranked.ties.map((v) => toRow(v, nameYear, names)), tieCount: ranked.ties.length,
-      unreliable: ranked.unreliable.map((v) => toRow(v, nameYear, names)), unreliableCount: ranked.unreliable.length,
-      highlighted: ranked.top.map((v) => v.geoid), key,
+      top: ranked.top.map(row),
+      ties: ranked.ties.map(row), tieCount: ranked.ties.length,
+      unreliable: ranked.unreliable.map(row), unreliableCount: ranked.unreliable.length,
+      highlighted: ranked.top.map((x) => x.geoid), key,
+      ...(area ? { area: areaHead(area, kept.map((x) => shareIn(placesOf(x.geoid, nameYear, names), area) ?? 0)) } : {}),
     };
     await save(detail); // the card gets every tie and every unreliable tract; the model gets the first three of each, with the totals
     return { ...detail, ties: detail.ties.slice(0, 3), unreliable: detail.unreliable.slice(0, 3) };

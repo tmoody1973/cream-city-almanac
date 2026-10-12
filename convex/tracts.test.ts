@@ -436,3 +436,50 @@ describe("findArea", () => {
     expect(await t.query(internal.tracts.findArea, { asked: "Hillside", map: "dycu" })).toMatchObject({ kind: "none" });
   });
 });
+
+// Bay View: tracts 1000 (100%), 1001 (61%), 1002 (15%), and 1099 (no figure in the data). Buchel Park: no tract.
+async function seedAreas() {
+  const t = await seedTracts();
+  await t.run(async (ctx) => {
+    for (const [name, matchKey] of [["Bay View", "bay view"], ["Hillside", "hillside"], ["Buchel Park", "buchel park"]]) await ctx.db.insert("neighborhoods", { definition: "city", name, matchKey });
+    for (const [geoid, share] of [["55079100000", 100], ["55079100100", 61], ["55079100200", 15], ["55079109900", 100]] as const)
+      await ctx.db.insert("tractNeighborhoods", { geoid, city: [{ name: "Bay View", share }] });
+  });
+  return t;
+}
+const rankArgs = { code: "E02", column: "pov_rate", place: "City" as const, year: "2022", direction: "high" as const };
+
+describe("rankTracts in a neighborhood", () => {
+  it("lists every tract in it with its share and citywide rank, and counts a tract with no figure as left out", async () => {
+    const t = await seedAreas();
+    installFakeFetch({ columns: POV_FIELDS, tractRows: povertyRows });
+    const r = await t.withIdentity(reader).action(api.tracts.rankTracts, { ...rankArgs, neighborhood: "bay view" });
+    expect(r).toMatchObject({ status: "ok", area: { name: "Bay View", map: "city", tracts: 3, partly: 2 }, header: { n: 3, leftOut: 1 } });
+    if (r.status !== "ok") return;
+    expect(r.top.map((x) => [x.tract, x.share, x.cityRank])).toEqual([
+      ["1002", 15, { position: 23, of: 25 }],
+      ["1001", 61, { position: 24, of: 25 }],
+      ["1000", 100, { position: 25, of: 25 }],
+    ]);
+  });
+  it("uses DYCU's area when the name is only DYCU's", async () => {
+    const t = await seedAreas();
+    installFakeFetch({ columns: POV_FIELDS, tractRows: povertyRows });
+    const r = await t.withIdentity(reader).action(api.tracts.rankTracts, { ...rankArgs, neighborhood: "Harambee" });
+    expect(r).toMatchObject({ status: "ok", area: { name: "Harambee", map: "dycu", tracts: 1, partly: 0 }, top: [{ tract: "1860", share: 100 }] });
+  });
+  it("offers the nearest names for a misspelling and says when a neighborhood has no tract, both without asking DYCU", async () => {
+    const t = await seedAreas();
+    const fake = installFakeFetch({ columns: POV_FIELDS, tractRows: povertyRows });
+    expect(await t.withIdentity(reader).action(api.tracts.rankTracts, { ...rankArgs, neighborhood: "Bay Vew" })).toEqual({ status: "no-neighborhood", asked: "Bay Vew", nearest: ["Bay View"] });
+    expect(await t.withIdentity(reader).action(api.tracts.rankTracts, { ...rankArgs, neighborhood: "Buchel Park" })).toEqual({ status: "no-tracts", name: "Buchel Park", map: "city" });
+    expect(fake.calls.length).toBe(0);
+  });
+  it("leaves the answer unchanged without a neighborhood", async () => {
+    const t = await seedAreas();
+    installFakeFetch({ columns: POV_FIELDS, tractRows: povertyRows });
+    const r = await t.withIdentity(reader).action(api.tracts.rankTracts, rankArgs);
+    expect(r).not.toHaveProperty("area");
+    if (r.status === "ok") expect(r.top).toHaveLength(10);
+  });
+});
