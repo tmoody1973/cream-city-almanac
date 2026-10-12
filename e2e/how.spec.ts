@@ -82,3 +82,8 @@ test("it says answers can be exported with their source and caveats", async ({ p
   await page.goto("/how-it-works");
   await expect(page.getByText(/Ask's number cards can be exported as a CSV, as plain text or as an image/)).toBeVisible();
 });
+
+test("it explains how-long answers in plain words", async ({ page }) => {
+  await page.goto("/how-it-works");
+  await expect(page.getByText(/The median is the middle case: half took less time/)).toBeVisible();
+});
