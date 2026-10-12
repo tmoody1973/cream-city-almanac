@@ -29,6 +29,7 @@ const backend: AskBackend = {
   change: async (a) => run("tracts:compareYears", a, true),
   relate: async (a) => run("tracts:relateTracts", a, true),
   span: async (a) => run("spans:timeSpan", a, true),
+  factSheet: async (a) => run("factSheet:findSheet", a),
 };
 const tools = Object.fromEntries(askTools(backend).map((t) => [t.name, tool({ description: t.description, inputSchema: t.parameters, execute: t.execute })]));
 

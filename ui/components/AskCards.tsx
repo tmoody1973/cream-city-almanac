@@ -8,7 +8,7 @@ import { passageBlocks } from "@/ui/lib/askPassage";
 import { propertyCountSummary } from "@/ui/lib/tractSummary";
 import { formatPortraitMargin, formatPortraitNumber } from "@/ui/lib/portrait";
 import { api } from "@/convex/_generated/api";
-import { changeParams, countParams, rankParams, relateParams, spanParams, type ChangeResult, type CountForModel, type CountResult, type RankResult, type RelateResult, type SpanResult } from "@/lib/ask/tools";
+import { changeParams, countParams, rankParams, relateParams, spanParams, type SheetResult, type ChangeResult, type CountForModel, type CountResult, type RankResult, type RelateResult, type SpanResult } from "@/lib/ask/tools";
 import { CityMap } from "./CityMapLoader";
 import { LivePreview } from "./LivePreview";
 import { OpenLink, type Open } from "./OpenLink";
@@ -22,6 +22,7 @@ import { MEASURE_HIDDEN, measureNotes, measureSummary, measureTitle, money, type
 import { cellTime, spanNotes, spanRows, spanSummary, spanTitle, type SpanOk } from "@/ui/lib/spanText";
 import { changeFollowUps, countFollowUps, datasetFollowUps, numberFollowUps, previewFollowUps, rankFollowUps, relateFollowUps, spanFollowUps, measureFollowUps } from "@/ui/lib/nextQuestions";
 import { changeChoices, countChoices, numberChoices, rankChoices, relateChoices, spanChoices, measureChoices, refusalChoicesFor } from "@/ui/lib/refusalChoices";
+import { FactSheetCard } from "./FactSheetCard";
 import styles from "./ask.module.css";
 
 type Value = { estimate: string; moe: string | null } | null;
@@ -381,6 +382,14 @@ export function AskCards({ onOpen }: { onOpen?: (search: string) => void }) {
       </>
     );
   } }, [onOpen]);
+
+  useRenderTool({ name: "factSheet", parameters: z.object({ neighborhood: z.string() }), render: (props) => {
+    if (props.status !== "complete") return <Busy />;
+    const r = parse<SheetResult>(props.result);
+    if (!r) return <Failed />;
+    if (r.status !== "ok") return <FollowUps pick items={r.nearest.map((n) => ({ label: n, question: `Give me a fact sheet for ${n}.` }))} id={props.toolCallId} />;
+    return <FactSheetCard r={r} />;
+  } }, []);
 
   useRenderTool({ name: "getNumber", parameters: z.object({ neighborhood: z.string() }), render: (props) => {
     if (props.status !== "complete") return <Busy />;

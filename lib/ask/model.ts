@@ -141,6 +141,8 @@ export function fakeAskModel(): LanguageModel {
                 ? call("relateTracts", { a: { code: "E02", column: "pov_rate" }, b: { code: "F02", column: "per_insecure" }, place: "County", year: "2023", mode: "mismatch", aSide: "high", bSide: "low" })
                 : question.includes("grow most")
                 ? call("compareYears", { code: "E02", column: "pov_rate", place: "County", from: "2022", to: "2023" })
+                : question.includes("fact sheet")
+                ? call("factSheet", { neighborhood: "Harambee" })
                 : question.includes("poverty")
                 ? call("getNumber", { neighborhood: "Harambee", topic: "Poverty Status by Age", row: "Under 5 years" })
                 : question.includes("twice")

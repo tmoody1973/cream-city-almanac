@@ -5,6 +5,7 @@ import { ASK_PROMPT } from "../../lib/ask/prompt";
 const backend = (relateResult: unknown): AskBackend => ({
   search: async () => ({ results: [] }) as never, sheet: async () => null, number: async () => ({}) as never, report: async () => ({}) as never, count: async () => ({}) as never,
   rank: async () => ({ status: "busy" }) as never, change: async () => ({ status: "busy" }) as never, relate: async () => relateResult as never, span: async () => ({ status: "busy" }) as never,
+  factSheet: async () => ({ status: "no-neighborhood", asked: "", nearest: [] }) as never,
 });
 
 const row = (i: number) => ({ geoid: `5507910${String(i).padStart(4, "0")}`, tract: String(i), neighborhood: "Harambee", value: 41.2, lo: 35.1, hi: 47.3, unreliable: false });
@@ -80,5 +81,14 @@ describe("tract questions by neighborhood", () => {
 describe("DYCU areas with no tracts", () => {
   it("tells the model a DYCU area's no-tracts means its year isn't defined, not that it's small", () => {
     expect(askTools(backend({})).find((t) => t.name === "rankTracts")!.description).toContain("for DYCU's area, that DYCU doesn't define it for that year");
+  });
+});
+
+describe("fact sheets", () => {
+  it("offers a factSheet tool that takes a neighborhood name, and the prompt sends fact-sheet questions to it", () => {
+    const tool = askTools(backend({})).find((t) => t.name === "factSheet")!;
+    expect(tool).toBeDefined();
+    expect((tool.parameters as { shape: Record<string, unknown> }).shape).toHaveProperty("neighborhood");
+    expect(ASK_PROMPT).toContain("factSheet");
   });
 });
