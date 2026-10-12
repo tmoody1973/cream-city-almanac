@@ -49,8 +49,9 @@ The questions document (docs/research/2026-10-12-questions-by-audience.md) marks
 
 **What's missing or unclear**
 - **There is no whole-city portrait,** so a city figure needs another source.
-- **An open data question:** Harambee's 2024 "Sex and Age" rows read 0 in their first value group, while its poverty table counts 18,894 people. Either Ask's reader or DYCU's file causes it.
-- **The portrait listing gives only "2024".** It doesn't say which five-year survey period that is (probably 2019–2023).
+- **Sex and Age totals (resolved during planning):** DYCU's own file has 0 in every Total column of Sex and Age for 2022–2024 (78 of 79 tables); Ask's reader already flags it. The Male and Female columns are filled (Harambee 2024: 9,087 + 9,963).
+- **Survey years (resolved during planning):** DYCU's portraits page says the current portraits use the 2020–2024 ACS five-year release, and each file's `VINTAGE` ("2024") is the release's last year. So a portrait's vintage V matches the Census Bureau's ACS 5-year release V.
+- **Census codes (resolved during planning):** every code in §4 means the same thing in the 2021, 2022, 2023 and 2024 releases, checked against the Census Bureau's variable lists.
 
 ## 3. Decisions (Tarik, 2026-10-12)
 
@@ -80,7 +81,7 @@ A hand-checked list, like F's approved measures list. Each entry has:
 | `degree` | Adults 25+ with a bachelor's degree or more | educational-attainment | bachelor's + graduate ÷ population 25+ |
 | `no-diploma` | Adults 25+ without a high school diploma | educational-attainment | less than 9th + 9th–12th no diploma ÷ population 25+ |
 | `unemployment` | Unemployment rate (ages 20–64) | employment-status-by-sex | DYCU's rate as published, and the Census rate for the same ages |
-| `population` | People | sex-and-age, or poverty's Total if sex-and-age is unusable | a count, with no city comparison |
+| `population` | People | sex-and-age: the Male + Female "Total" rows (DYCU's Total column is blank in its file, and the sheet says so) | a count, with no city comparison |
 
 **Before any code depends on the list,** the plan's first task:
 - confirms every DYCU row label exists in every portrait year;
@@ -93,7 +94,7 @@ An entry that can't be matched is dropped and noted, never guessed.
 
 - **Fetching:** a new build step, `refreshCityFigures`, part of the weekly build and runnable on its own. It asks the Census Bureau's data service (`api.census.gov`, ACS 5-year: detailed, profile and subject tables) for the City of Milwaukee (place 53000, state 55). It requests each entry's variables for each survey period a portrait uses.
 - **Storage:** a new table, `cityFigures`: `{ period, figureId, parts: {estimate, moe}[], of: {estimate, moe} | null, rate?: {estimate, moe} }`.
-- **No key at first:** about 10 figures × 4 periods stays under the service's free, key-free limit. A `CENSUS_API_KEY` environment variable is used when it is set.
+- **A key is required:** found during planning (2026-10-12), the service redirects keyless requests to a "Missing Key" page. Tarik requests a free key (api.census.gov/data/key_signup.html), and it is stored as the Convex environment variable `CENSUS_API_KEY` on development and production, never in code. Without it, `refreshCityFigures` records "no Census key" and the pages show the neighborhood alone.
 - **Failure:** the step keeps the last good figures and records the error. The page shows "City figure unavailable" for a period with nothing stored, and never shows a city figure from a different period.
 
 ## 6. The math (`convex/lib/factMath.ts`, pure)
