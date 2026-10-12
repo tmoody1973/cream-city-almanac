@@ -102,7 +102,7 @@ A made-up address returns zero matches.
 - **The card**, `data-card="place"`, shows:
   - the matched address, with "(as the U.S. Census Bureau matched it)";
   - the tract: "Census tract 88", with a button "How does tract 88 rank on poverty?";
-  - the City neighborhood: "Harambee (City of Milwaukee boundary)", with buttons "Robberies in Harambee this year" and "Harambee's tracts by poverty";
+  - the City neighborhood, e.g. "Amani (City of Milwaukee boundary)" for 2400 W Center St, with buttons "Robberies in Amani this year" and "Amani's tracts by poverty";
   - DYCU's area, with "Open the fact sheet →" when it has a slug;
   - the line "This address was sent to the U.S. Census Bureau's geocoder to find its location; Cream City Almanac doesn't keep it."
 - **The refusal texts:**
@@ -116,7 +116,7 @@ A made-up address returns zero matches.
 
 - **The form:** "Find your neighborhood". A text field and a button, above the list of 27 areas, with the privacy line beneath.
 - **On submit:** it calls `placeForBox`.
-  - **The first DYCU area has a slug:** it goes to `/n/<slug>`.
+  - **A DYCU area has a slug:** it goes to `/n/<slug>`. When the tract is in two DYCU areas (2400 W Center St's tract 88 is in Metcalfe Park and Amani), it opens the one named like the City neighborhood (Amani), else the first.
   - **A City neighborhood DYCU doesn't profile:** "That address is in the City's {neighborhood} neighborhood, which Data You Can Use doesn't profile. Ask about its census tracts →", linking to `/ask` with a starter question.
   - **Outside the City:** "That address is in Milwaukee County but outside the City of Milwaukee (census tract {n})."
   - **The other statuses** show the texts in §5.
@@ -139,7 +139,7 @@ A made-up address returns zero matches.
 - **No table changes after a lookup.**
 
 **Browser (Playwright)**
-- The `/n` box: "2400 W Center St, Milwaukee, WI" lands on `/n/harambee`. This uses the real Census geocoder; the test is skipped when it is unreachable.
+- The `/n` box: "2400 W Center St, Milwaukee, WI" lands on `/n/amani`. This uses the real Census geocoder; the test is skipped when it is unreachable.
 - An address outside DYCU's areas shows the message.
 - Ask's scripted "what neighborhood is 2400 W Center St in?" draws the place card, on phone and desktop.
 
