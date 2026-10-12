@@ -6,7 +6,7 @@ import { chicagoDay } from "./lib/ask";
 import { datastoreSql, datastoreSqlPage } from "./lib/ckan";
 import { POINTS_CAP, rankGroups, tallyPoints } from "./lib/cityPoints";
 import { toMapData, type MapData } from "./lib/cityMap";
-import { withOverrides } from "./lib/cityProfile";
+import { EMPTY_FILE_NOTE, withOverrides } from "./lib/cityProfile";
 import { buildCount, groupLabelFor, MAX_GROUPS } from "./lib/citySql";
 import type { Bbox, Geometry } from "./lib/geo";
 import { matchName } from "./lib/neighborhoodNames";
@@ -135,7 +135,8 @@ export async function planCount(ctx: ActionCtx, { code, neighborhood, ...args }:
   const { name, profile } = data;
   if (!data.city) return { status: "not-city" as const, code: data.code, name };
   if (data.topic === "Elections") return { status: "not-live" as const, code: data.code, name, note: ELECTIONS_NOTE };
-  if (!profile || profile.rowCount === 0) return { status: "not-live" as const, code: data.code, name };
+  if (!profile) return { status: "not-live" as const, code: data.code, name };
+  if (profile.rowCount === 0) return { status: "not-live" as const, code: data.code, name, note: EMPTY_FILE_NOTE };
   let found: Extract<Found, { kind: "one" }> | null = null;
   if (neighborhood?.trim()) {
     const f: Found = await ctx.runQuery(internal.city.findNeighborhood, { asked: neighborhood });
