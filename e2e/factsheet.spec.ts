@@ -26,3 +26,18 @@ test("each figure says what it measures, and DYCU's own data warnings travel wit
   await page.getByText(/All \d+ of DYCU's tables/).click();
   await expect(page.getByText(/may be missing data/).first()).toBeVisible();
 });
+
+test("the fact sheet list finds your neighborhood from an address", async ({ page }) => {
+  await page.goto("/n");
+  await expect(page.getByRole("link", { name: "Harambee" })).toBeVisible();
+  await page.getByLabel("Your address").fill("2400 W Center St");
+  await page.getByRole("button", { name: "Find" }).click();
+  await expect(page).toHaveURL(/\/n\/amani$/, { timeout: 20_000 }); // 2400 W Center St: City neighborhood Amani (dev check)
+});
+
+test("an address outside DYCU's areas says which City neighborhood it is in", async ({ page }) => {
+  await page.goto("/n");
+  await page.getByLabel("Your address").fill("2000 S Kinnickinnic Ave");
+  await page.getByRole("button", { name: "Find" }).click();
+  await expect(page.locator("[data-place-message]")).toContainText(/neighborhood|Milwaukee County/, { timeout: 20_000 });
+});

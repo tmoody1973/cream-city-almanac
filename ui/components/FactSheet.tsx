@@ -6,6 +6,7 @@ import type { Figure, Headline, PortraitTable } from "@/convex/lib/factSheet";
 import { CENSUS_SOURCE, countLine, factSheetExport, margin, MARGIN_NOTE, MISSING, NO_CITY, NOTE_APPROX, pct, populationNote, portraitCell, verdictText } from "@/ui/lib/factText";
 import { CreditFooter } from "./CreditFooter";
 import { ExportBar } from "./ExportBar";
+import { FindPlaceBox } from "./FindPlaceBox";
 import { Masthead } from "./Masthead";
 import { SiteNav } from "./SiteNav";
 import { TractMapSlot } from "./TractCards";
@@ -147,7 +148,8 @@ export function FactSheetIndex({ areas }: { areas: { slug: string; name: string 
       <Masthead side={null} showDate={false} nav={<SiteNav placement="masthead" current={null} />} />
       <main className={styles.index}>
         <h2 className={styles.name}>Neighborhood fact sheets</h2>
-        <p>Fact sheets cover the {areas.length} neighborhoods Data You Can Use profiles. Pick one:</p>
+        <p>Fact sheets cover the {areas.length} neighborhoods Data You Can Use profiles. Find yours from an address, or pick one:</p>
+        <FindPlaceBox />
         <ul className={styles.areas}>{areas.map((a) => <li key={a.slug}><Link href={`/n/${a.slug}`}>{a.name}</Link></li>)}</ul>
       </main>
       <CreditFooter />

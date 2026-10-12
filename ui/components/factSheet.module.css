@@ -152,3 +152,11 @@
 
 /* Notes, sources and captions at the comp's small text size (the body's large base is for the rundown). */
 .notes, .aside p, .map figcaption, .people + .ledger caption { font-size: 16px; line-height: 1.4; }
+
+/* The "Find your neighborhood" box on /n: one field and one button, in the site's form style. */
+.find { border-top: var(--hair); border-bottom: var(--hair); padding: 12px 0; margin: 12px 0 16px; max-width: 640px; }
+.findLabel { display: block; font-family: var(--font-caps); font-weight: 700; text-transform: uppercase; font-size: 20px; margin-bottom: 8px; }
+.findRow { display: flex; gap: 8px; }
+.findRow input { flex: 1; min-width: 0; font: inherit; font-size: 17px; padding: 10px 12px; border: 2px solid var(--ink); background: var(--paper); color: var(--ink); }
+.find [data-place-message] { margin: 10px 0 4px; }
+.find .muted { font-size: 14px; margin: 8px 0 0; }
