@@ -392,6 +392,18 @@ The time-span card (`[data-card=span]`):
 - **Then:** the "Open the data" link, the export line and the follow-ups (BY YEAR, BY {column}).
 - **Units:** minutes read "4.6 minutes" or "1 h 12 min"; days read "0.5 days" or "92 days". Pairs: `convex/lib/spanPairs.ts`. Decision 033.
 
+### Totals
+The measure card (`[data-card=measure]`) is a variant of the count card:
+- **Title:** "{file} · {measure} · by {split}", with the CITY tag.
+- **Summary sentence** written by code ("17,500 accounts total $52.0 million; the median is $2,400").
+- **Table:** Group · Records · Total · Median (Average when asked) in a sideways-scroll region, then "All other groups" and All. The hourly rate has no Total column.
+- **Hidden groups** read "fewer than 5 records" in files that name people.
+- **Notes:** the measure's caveat, unreadable and $0 records, hidden groups, the average note, period and filters.
+- **Then:** "Open the data", the export line, and follow-ups (BY {split}, SHOW THE AVERAGE).
+- **Money:** "$10,230,710" in tables; "$10.2 million" in sentences; "$41.42 an hour".
+
+Measures: `convex/lib/cityMeasures.ts`. Decision 034.
+
 ### Analysis cards (Ask's tract answers)
 Three cards in Ask's hairline box, under the AI's one to three sentences: ranking, change over time, and relationship. Every figure on them is DYCU's, computed by the server, and every card says which column Ask picked. They answer in census tracts, labeled in a "DYCU AREA" column with the name of DYCU's report area when DYCU defines one for that tract (DYCU's own groups of tracts, like "United Community", not the City's 190 official neighborhoods) and "—" otherwise; a name is never guessed. The footer says so: "Area names are Data You Can Use's report areas: groups of census tracts DYCU chose with its neighborhood partners, not the City's official neighborhoods." Words are plain first: a reader who isn't a data person should know what the card found from its first sentence (decision 028).
 - **Header (all three):** a label-size title (the column, place and year, or the two datasets "A vs. B") with a ruled EXPAND button at its right; then **the plain sentence** in body type, slightly larger than the card's small type, which code writes from the verdict and counts (`ui/lib/tractSummary.ts`), never the AI; then one line of small graphite type: the dataset code, the column in bold, its plain-English meaning and whether it is "a rate" or "a count", the place and year, the number of census tracts compared and, when any, "N left out (no data)", ending in the DYCU tag. A percent sign appears only where DYCU's own definition says percent.

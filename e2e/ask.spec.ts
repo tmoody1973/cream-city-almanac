@@ -216,6 +216,22 @@ test.describe("signed in", () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   });
 
+  test("a how-much question draws a measure card with records, total and median", async ({ page }) => {
+    test.skip(!(await page.request.get("https://data.milwaukee.gov/api/3/action/status_show").then((r) => r.ok()).catch(() => false)), "City API unreachable");
+    await ask(page, "How much back property tax is owed, by aldermanic district?");
+    const card = page.locator("[data-card=measure]:visible").first();
+    await expect(card).toBeVisible({ timeout: 40_000 });
+    await expect(card).toContainText("back tax owed · by Ald Dist");
+    await expect(card.locator("thead")).toContainText("Records");
+    await expect(card.locator("thead")).toContainText("Total");
+    await expect(card.locator("thead")).toContainText("Median");
+    await expect(card.locator("[data-summary]")).toContainText(/accounts total \$[\d.,]+ (million|billion)?/);
+    await expect(card).toContainText("owner's mailing ZIP");
+    await expect(card.getByRole("region", { name: /scroll sideways/ })).toBeVisible();
+    await expect(card.locator("[data-export]").getByRole("button", { name: "CSV" })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  });
+
   test("a neighborhood count names the City boundary it used", async ({ page }) => {
     test.skip(!(await page.request.get("https://data.milwaukee.gov/api/3/action/status_show").then((r) => r.ok()).catch(() => false)), "City API unreachable");
     await ask(page, "How many robberies in Harambee this year?");

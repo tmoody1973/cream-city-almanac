@@ -93,6 +93,11 @@ export function HowItWorks({ status, example, areas }: { status: CatalogStatus |
               open aren&apos;t counted, so the slowest ones are missing, and the card says how many.
             </p>
             <p>
+              Ask can also add up a few City money columns, like back property tax owed, City employee pay and property sale prices. It
+              shows the total and the median (the middle value), and the average only when you ask for it. In files that name people,
+              groups of fewer than 5 records are hidden so no one&apos;s figure can be singled out.
+            </p>
+            <p>
               Spreadsheet numbers appear as DYCU wrote them, Estimate ± margin of error, with any problems in DYCU&apos;s file noted
               above the table. No AI touches them.
             </p>

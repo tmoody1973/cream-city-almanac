@@ -4,6 +4,7 @@
 import type { FollowUp } from "@/ui/components/FollowUps";
 import { EXACT, placeName, subject } from "./tractSummary";
 import type { SpanOk } from "./spanText";
+import type { MeasureOk } from "./measureText";
 
 const MAX = 3;
 export type Col = { code: string; name: string; column: string; meaning: string; place: string; year: string; confidence: string | null };
@@ -82,5 +83,12 @@ export function spanFollowUps(args: SpanArgsIn, r: SpanOk): FollowUp[] {
   const out: FollowUp[] = [];
   if (r.groupBy !== "year") out.push({ label: "BY YEAR", question: `${spanBase(r)}, by year?` });
   for (const c of r.columns.filter((c) => c !== r.groupBy).slice(0, 2)) out.push({ label: `BY ${c.replace(/_/g, " ").toUpperCase()}`, question: `${spanBase(r)}, by ${c}?` });
+  return out.slice(0, MAX);
+}
+
+const measureBase = (r: MeasureOk) => `How much ${r.measure.name} in ${r.name} (${r.code})`;
+export function measureFollowUps(r: MeasureOk): FollowUp[] {
+  const out: FollowUp[] = r.splits.filter((s) => s !== r.groupBy).slice(0, 2).map((s) => ({ label: `BY ${s.replace(/_/g, " ").toUpperCase()}`, question: `${measureBase(r)}, by ${s}?` }));
+  if (!r.averageAsked) out.push({ label: "SHOW THE AVERAGE", question: `What is the average ${r.measure.name} in ${r.name} (${r.code})${r.groupBy ? `, by ${r.groupBy}` : ""}?` });
   return out.slice(0, MAX);
 }

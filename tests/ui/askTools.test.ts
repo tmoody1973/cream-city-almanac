@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { askTools, spanDescription, type AskBackend } from "../../lib/ask/tools";
+import { askTools, measureSentence, spanDescription, type AskBackend } from "../../lib/ask/tools";
 
 const backend = (relateResult: unknown): AskBackend => ({
   search: async () => ({ results: [] }) as never, sheet: async () => null, number: async () => ({}) as never, report: async () => ({}) as never, count: async () => ({}) as never,
@@ -45,5 +45,15 @@ describe("timeSpan", () => {
     expect(tool).toBeDefined();
     for (const id of ["complaint-close", "311-close", "permit-issue", "fire-dispatch", "fire-arrive", "fire-clear", "mfd-arrive"]) expect(spanDescription()).toContain(id);
     expect(spanDescription()).toContain("citizen complaints against the Police and Fire Departments");
+  });
+});
+
+describe("City measures", () => {
+  it("lets countRecords take a measure, and its description lists every approved measure", () => {
+    const tool = askTools(backend({})).find((t) => t.name === "countRecords")!;
+    const shape = (tool.parameters as { shape: Record<string, unknown> }).shape;
+    expect(shape.measure).toBeDefined();
+    for (const id of ["tax-owed", "pp-tax-owed", "gross-pay", "hourly-rate", "sale-price", "assessed-value"]) expect(tool.description).toContain(id);
+    expect(measureSentence()).toContain("Never sum");
   });
 });

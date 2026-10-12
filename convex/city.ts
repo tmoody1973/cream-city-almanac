@@ -1,13 +1,16 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
-import { action, internalQuery, type ActionCtx } from "./_generated/server";
+import { action, internalAction, internalQuery, type ActionCtx } from "./_generated/server";
 import { chicagoDay } from "./lib/ask";
 import { datastoreSql, datastoreSqlPage } from "./lib/ckan";
 import { POINTS_CAP, rankGroups, tallyPoints } from "./lib/cityPoints";
 import { toMapData, type MapData } from "./lib/cityMap";
 import { EMPTY_FILE_NOTE, withOverrides } from "./lib/cityProfile";
+import { CITY_MEASURES, MEASURE_FILES, measuresFor } from "./lib/cityMeasures";
 import { buildCount, groupLabelFor, MAX_GROUPS } from "./lib/citySql";
+import { buildMeasure } from "./lib/measureSql";
+import { forModel, shapeMeasure, type MeasureAll, type MeasureGroup, type MeasureOther } from "./lib/measureShape";
 import type { Bbox, Geometry } from "./lib/geo";
 import { matchName } from "./lib/neighborhoodNames";
 import { MIN_HOMES, tractGeoid } from "./lib/propertyMeasures";
@@ -76,16 +79,24 @@ export type CountResult =
   | { status: "outside-coverage"; code: string; name: string; coverage: string }
   | { status: "choose"; code: string; name: string; column: string; asked: string; choices: string[] }
   | { status: "bad-column"; code: string; name: string; column: string; columns: string[] }
-  | { status: "bad-dates"; code: string; name: string; from: string; to: string }
+  | { status: "bad-dates"; code: string; name: string; from: string; to: string; reason?: string }
   | { status: "no-neighborhood"; code: string; name: string; asked: string; nearest: string[] }
   | { status: "no-locations"; code: string; name: string }
-  | { status: "too-broad"; code: string; name: string; area: string }
+  | { status: "too-broad"; code: string; name: string; area?: string }
   | { status: "not-found"; code: string }
   | { status: "not-city"; code: string; name: string }
   | { status: "not-live"; code: string; name: string; note?: string }
   | { status: "unavailable"; code: string; name: string }
   | { status: "busy" }
-  | { status: "bad-input" };
+  | { status: "bad-input" }
+  | {
+      status: "measured"; code: string; name: string;
+      measure: { id: string; name: string; unit: "dollars" | "dollars per hour"; caveat: string; column: string; things: string; summable: boolean; skipZero: boolean; namesPeople: boolean; date: string | null };
+      groupBy: string | null; period: string; filters: string[]; groups: MeasureGroup[]; other: MeasureOther | null; all: MeasureAll; averageAsked: boolean; splits: string[];
+    }
+  | { status: "no-measure"; code: string; name: string; files: string[] }
+  | { status: "no-number-filter"; code: string; name: string; column: string }
+  | { status: "choose-measure"; code: string; name: string; measures: { id: string; name: string }[] };
 
 // Date groups arrive as "2026-08" (month) or "2026" (year) text; column groups are named like the profile names them.
 const groupName = (label: string | null, g: unknown) => {
@@ -100,11 +111,12 @@ const groupName = (label: string | null, g: unknown) => {
 export type CountInput = { code: string; neighborhood?: string; from?: string; to?: string; filters?: { column: string; values?: string[]; over?: number; under?: number }[]; groupBy?: string };
 
 export const countRecords = action({
-  args: { code: v.string(), neighborhood: v.optional(v.string()), from: v.optional(v.string()), to: v.optional(v.string()), filters: v.optional(v.array(vFilter)), groupBy: v.optional(v.string()) },
+  args: { code: v.string(), neighborhood: v.optional(v.string()), from: v.optional(v.string()), to: v.optional(v.string()), filters: v.optional(v.array(vFilter)), groupBy: v.optional(v.string()), measure: v.optional(v.object({ id: v.string(), average: v.optional(v.boolean()) })) },
   handler: async (ctx, args): Promise<CountResult> => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Sign in to ask");
     if (!(await rateLimiter.limit(ctx, "askCity", { key: identity.tokenIdentifier })).ok) return { status: "busy" as const };
+    if (args.measure) return runMeasure(ctx, { ...args, measure: args.measure });
     const result = await runCount(ctx, args);
     // Ask's card draws this map by calling api.map.mapCells with the same arguments; leave the answer where that
     // call looks, so the cells never ride in the conversation and the card's fetch is a free cache hit. Groups don't
@@ -122,6 +134,48 @@ export const countRecords = action({
 export async function runCount(ctx: ActionCtx, input: CountInput): Promise<CountResult> {
   const plan = await planCount(ctx, input);
   return "status" in plan ? plan : askCity(ctx, plan);
+}
+
+// A total / median / average of one approved money column (spec 2026-10-12-city-measures-design.md §6). Same gate and
+// file lookup as counts; never rows, and small groups hidden in files that name people.
+export async function runMeasure(ctx: ActionCtx, { code, neighborhood, measure, ...args }: CountInput & { measure: { id: string; average?: boolean } }): Promise<CountResult> {
+  const wanted = code.trim().toUpperCase();
+  const data: CountContext = await ctx.runQuery(internal.city.countContext, { code: wanted });
+  if (!data) return { status: "not-found" as const, code: wanted };
+  const { name, profile } = data;
+  if (!data.city) return { status: "not-city" as const, code: data.code, name };
+  if (data.topic === "Elections") return { status: "not-live" as const, code: data.code, name, note: ELECTIONS_NOTE };
+  if (!profile) return { status: "not-live" as const, code: data.code, name };
+  if (profile.rowCount === 0) return { status: "not-live" as const, code: data.code, name, note: EMPTY_FILE_NOTE };
+  const options = measuresFor(data.key);
+  if (!options.length) return { status: "no-measure" as const, code: data.code, name, files: MEASURE_FILES };
+  const m = options.find((x) => x.id === measure.id.trim());
+  if (!m) return { status: "choose-measure" as const, code: data.code, name, measures: options.map(({ id, name: label }) => ({ id, name: label })) };
+  if (neighborhood?.trim()) return { status: "no-locations" as const, code: data.code, name };
+  const amount = args.filters?.find((f) => f.over !== undefined || f.under !== undefined);
+  if (amount) return { status: "no-number-filter" as const, code: data.code, name, column: amount.column };
+  const built = buildMeasure(profile, m, { ...args, filters: args.filters?.map(({ column, values }) => ({ column, values })) }, chicagoDay(Date.now()));
+  if (!built.ok) {
+    const { ok: _ok, ...refusal } = built;
+    return { ...refusal, code: data.code, name };
+  }
+  try {
+    const [groupRows, allRows] = await Promise.all([
+      built.groupSql ? datastoreSql<Record<string, unknown>>(built.groupSql) : Promise.resolve(null),
+      datastoreSql<Record<string, unknown>>(built.allSql),
+    ]);
+    const shaped = forModel(shapeMeasure(groupRows, allRows[0], { namesPeople: m.namesPeople, byYear: built.groupLabel === "year" }), { summable: m.summable, average: Boolean(measure.average) });
+    return {
+      status: "measured" as const, code: data.code, name,
+      measure: { id: m.id, name: m.name, unit: m.unit, caveat: m.caveat, column: m.column, things: m.things, summable: m.summable, skipZero: m.skipZero, namesPeople: m.namesPeople, date: m.date },
+      groupBy: built.groupLabel, period: built.period, filters: built.filterLabels, ...shaped,
+      averageAsked: Boolean(measure.average), splits: [...m.splits, ...(m.date ? ["year"] : [])],
+    };
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    console.error(`City measure failed for ${data.code}: ${message}`);
+    return /Timed out/.test(message) ? { status: "too-broad" as const, code: data.code, name } : { status: "unavailable" as const, code: data.code, name };
+  }
 }
 
 type Plan = { data: NonNullable<CountContext>; profile: Doc<"cityProfiles">; found: Extract<Found, { kind: "one" }> | null; built: Extract<ReturnType<typeof buildCount>, { ok: true }> };
@@ -232,3 +286,25 @@ export async function askCity(ctx: ActionCtx, { data, profile, found, built }: P
     return { status: "unavailable" as const, code: data.code, name };
   }
 }
+
+// The live check before a release: every approved measure, whole file, against the City's server. Read-only.
+// Run with `npx convex run city:checkMeasures` (add --prod for the live site).
+export const checkMeasures = internalAction({
+  args: {},
+  handler: async (ctx): Promise<{ id: string; ok: boolean; error?: string; all?: MeasureAll }[]> => {
+    const out: { id: string; ok: boolean; error?: string; all?: MeasureAll }[] = [];
+    for (const m of CITY_MEASURES) {
+      const raw = await ctx.runQuery(internal.spans.profileFor, { familyKey: m.familyKey });
+      if (!raw) { out.push({ id: m.id, ok: false, error: "no profile" }); continue; }
+      const built = buildMeasure(withOverrides(raw), m, {}, chicagoDay(Date.now()));
+      if (!built.ok) { out.push({ id: m.id, ok: false, error: built.status }); continue; }
+      try {
+        const rows = await datastoreSql<Record<string, unknown>>(built.allSql);
+        out.push({ id: m.id, ok: true, all: shapeMeasure(null, rows[0], { namesPeople: m.namesPeople, byYear: false }).all });
+      } catch (e) {
+        out.push({ id: m.id, ok: false, error: e instanceof Error ? e.message : String(e) });
+      }
+    }
+    return out;
+  },
+});
