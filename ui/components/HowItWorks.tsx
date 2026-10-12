@@ -98,6 +98,12 @@ export function HowItWorks({ status, example, areas }: { status: CatalogStatus |
               it is inside: &ldquo;61% of this tract is in Bay View.&rdquo; It never adds tracts together into one neighborhood number.
             </p>
             <p>
+              Each neighborhood Data You Can Use profiles has a fact sheet you can print: its headline figures, each beside the City of
+              Milwaukee&apos;s from the U.S. Census Bureau&apos;s same survey and years. &ldquo;Clearly higher&rdquo; means the gap is larger than
+              both margins of error together; otherwise the sheet says they&apos;re about the same. Code writes every figure and every
+              verdict; the AI writes none of it.
+            </p>
+            <p>
               Ask can also add up a few City money columns, like back property tax owed, City employee pay and property sale prices. It
               shows the total and the median (the middle value), and the average only when you ask for it. In files that name people,
               groups of fewer than 5 records are hidden so no one&apos;s figure can be singled out.
