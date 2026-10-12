@@ -89,6 +89,7 @@ export function SheetBody({ sheet, headingId, focus }: { sheet: SheetData; headi
             </section>
           </div>
 
+          {sheet.portraits && <p><Link href="/n">Open the neighborhood fact sheets →</Link> Each one sets a neighborhood&apos;s headline figures beside the City of Milwaukee&apos;s.</p>}
           {sheet.portraits && <PortraitTables index={sheet.portraits} focus={focus} />}
 
           {card && card.glossary.length > 0 && (

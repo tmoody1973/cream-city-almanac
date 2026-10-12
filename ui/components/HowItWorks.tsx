@@ -98,7 +98,7 @@ export function HowItWorks({ status, example, areas }: { status: CatalogStatus |
               it is inside: &ldquo;61% of this tract is in Bay View.&rdquo; It never adds tracts together into one neighborhood number.
             </p>
             <p>
-              Each neighborhood Data You Can Use profiles has a fact sheet you can print: its headline figures, each beside the City of
+              Each neighborhood Data You Can Use profiles has a <Link href="/n">fact sheet you can print</Link>: its headline figures, each beside the City of
               Milwaukee&apos;s from the U.S. Census Bureau&apos;s same survey and years. &ldquo;Clearly higher&rdquo; means the gap is larger than
               both margins of error together; otherwise the sheet says they&apos;re about the same. Code writes every figure and every
               verdict; the AI writes none of it.
