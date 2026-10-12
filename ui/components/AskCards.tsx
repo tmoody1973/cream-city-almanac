@@ -16,10 +16,11 @@ import { ProvenanceTag } from "./ProvenanceTag";
 import { ChangeCard, NEIGHBORHOODS_HELP, RankCard, RelateCard, TractMapSlot } from "./TractCards";
 import { FollowUps, type FollowUp } from "./FollowUps";
 import { ExportBar } from "./ExportBar";
-import { countExport, numberExport, quoteText, spanExport } from "@/ui/lib/cardExport";
+import { countExport, measureExport, numberExport, quoteText, spanExport } from "@/ui/lib/cardExport";
+import { MEASURE_HIDDEN, measureNotes, measureSummary, measureTitle, money, type MeasureOk } from "@/ui/lib/measureText";
 import { cellTime, spanNotes, spanRows, spanSummary, spanTitle, type SpanOk } from "@/ui/lib/spanText";
-import { changeFollowUps, countFollowUps, datasetFollowUps, numberFollowUps, previewFollowUps, rankFollowUps, relateFollowUps, spanFollowUps } from "@/ui/lib/nextQuestions";
-import { changeChoices, countChoices, numberChoices, rankChoices, relateChoices, spanChoices } from "@/ui/lib/refusalChoices";
+import { changeFollowUps, countFollowUps, datasetFollowUps, numberFollowUps, previewFollowUps, rankFollowUps, relateFollowUps, spanFollowUps, measureFollowUps } from "@/ui/lib/nextQuestions";
+import { changeChoices, countChoices, numberChoices, rankChoices, relateChoices, spanChoices, measureChoices } from "@/ui/lib/refusalChoices";
 import styles from "./ask.module.css";
 
 type Value = { estimate: string; moe: string | null } | null;
@@ -285,6 +286,51 @@ function SpanCard({ r, onOpen }: { r: SpanOk; onOpen: Open }) {
   );
 }
 
+// A total / median of an approved City money column (spec 2026-10-12-city-measures-design.md §7): every figure comes
+// from the City's server through code, never the AI; small groups are hidden in files that name people.
+function MeasureCard({ r, onOpen }: { r: MeasureOk; onOpen: Open }) {
+  const m = r.measure, avg = r.averageAsked;
+  const cell = (v: number | null, hidden: boolean) => (hidden ? MEASURE_HIDDEN : money(v, m.unit, "table"));
+  const rows = [
+    ...r.groups.map((g) => ({ ...g, rest: false })),
+    ...(r.other ? [{ label: "All other groups", n: r.other.n, total: r.other.total, median: null, average: null, hidden: r.other.hidden, rest: true }] : []),
+  ];
+  return (
+    <figure className={styles.excerpt} data-card="measure">
+      <figcaption className={styles.excerptTitle}>{measureTitle(r)} <ProvenanceTag source="CITY" /></figcaption>
+      <p className={styles.tractSummary} data-summary>{measureSummary(r)}</p>
+      <div className={styles.tractScroll} tabIndex={0} role="region" aria-label={`${measureTitle(r)}, scroll sideways for more`}>
+        <table className={styles.excerptTable}>
+          <thead>
+            <tr>
+              <th scope="col">{r.groupBy ?? ""}</th><th scope="col">Records</th>
+              {m.summable && <th scope="col">Total</th>}<th scope="col">Median</th>{avg && <th scope="col">Average</th>}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((g, i) => (
+              <tr key={i}>
+                <th scope="row">{g.label}</th><td>{g.n.toLocaleString("en-US")}</td>
+                {m.summable && <td>{cell(g.total, g.hidden)}</td>}
+                <td>{g.rest ? "" : cell(g.median, g.hidden)}</td>
+                {avg && <td>{g.rest ? "" : cell(g.average, g.hidden)}</td>}
+              </tr>
+            ))}
+            <tr>
+              <th scope="row">All</th><td>{r.all.n.toLocaleString("en-US")}</td>
+              {m.summable && <td>{money(r.all.total, m.unit, "table")}</td>}
+              <td>{money(r.all.median, m.unit, "table")}</td>{avg && <td>{money(r.all.average, m.unit, "table")}</td>}
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      {measureNotes(r).map((n) => <p key={n} className={styles.source}>{n}</p>)}
+      <OpenLink code={r.code} onOpen={onOpen} label="Open the data" />
+      <ExportBar make={(ctx) => measureExport(r, ctx)} />
+    </figure>
+  );
+}
+
 // A broad first count folds away (EarlierCounts); only the count the reader sees gets next questions.
 function CountFollowUps({ items, id }: { items: FollowUp[]; id?: string }) {
   const earlier = useContext(EarlierCounts);
@@ -353,6 +399,8 @@ export function AskCards({ onOpen }: { onOpen?: (search: string) => void }) {
     if (props.status !== "complete") return <Busy />;
     const r = parse<CountForModel>(props.result);
     if (!r) return <Failed />;
+    if (r.status === "measured") return <><MeasureCard r={r} onOpen={onOpen} /><FollowUps items={measureFollowUps(r)} id={props.toolCallId} /></>;
+    if (r.status === "choose-measure") return <FollowUps pick items={measureChoices(r)} id={props.toolCallId} />;
     if (r.status === "ok") return <><CountOrEarlier r={r} id={props.toolCallId} onOpen={onOpen} args={props.parameters} /><CountFollowUps items={countFollowUps(props.parameters as never, r)} id={props.toolCallId} /></>;
     if (r.status === "outside-coverage") return <p className={styles.failed} data-card="count-outside">{outsideCoverage(r)} <OpenLink code={r.code} onOpen={onOpen} /></p>;
     if (r.status === "unavailable") return <p className={styles.failed}>The City&apos;s data didn&apos;t respond. Try again shortly.</p>;
@@ -360,7 +408,7 @@ export function AskCards({ onOpen }: { onOpen?: (search: string) => void }) {
     if (r.status === "busy") return <p className={styles.failed}>City counts are busy for your account; try again shortly.</p>;
     if (r.status === "no-neighborhood") return <><p className={styles.failed} data-card="count-no-neighborhood">No City neighborhood is called &ldquo;{r.asked}&rdquo;.{r.nearest.length ? ` Nearest: ${r.nearest.join(", ")}.` : ""}</p><FollowUps pick items={countChoices(props.parameters as never, r as never)} id={props.toolCallId} /></>;
     if (r.status === "no-locations") return <p className={styles.failed}>{r.name} doesn&apos;t record locations, so it can&apos;t be counted by neighborhood. <OpenLink code={r.code} onOpen={onOpen} /></p>;
-    if (r.status === "too-broad") return <p className={styles.failed}>Too many {r.name} records in {r.area} to count at once; try a shorter period.</p>;
+    if (r.status === "too-broad") return <p className={styles.failed}>Too many {r.name} records{r.area ? ` in ${r.area}` : ""} to count at once; try a shorter period or a filter.</p>;
     // choose / bad-column offer the server's options to pick; bad-dates / not-found / not-city have none (the model asks or retries).
     return <FollowUps pick items={countChoices(props.parameters as never, r as never)} id={props.toolCallId} />;
   } }, [onOpen]);
