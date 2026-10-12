@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { areaLine, cityRankText, noTractsText, onlyIn, rankColumn, shareText, tooFewText, withArea } from "../../ui/lib/tractArea";
+import { areaFollowUps, areaLine, cityRankText, noTractsText, onlyIn, rankColumn, shareText, tooFewText, withArea } from "../../ui/lib/tractArea";
 import { changeSummary, rankSummary, relateSummary } from "../../ui/lib/tractSummary";
 import { rankChoices, relateChoices } from "../../ui/lib/refusalChoices";
 
@@ -55,5 +55,21 @@ describe("buttons keep the neighborhood", () => {
     expect(r).toHaveLength(1);
     expect(r[0].label).toBe("ASK CITYWIDE");
     expect(r[0].question).not.toContain("Harambee");
+  });
+});
+
+describe("review fixes", () => {
+  it("drops the 'goes together' buttons inside a neighborhood, which could only be refused, and keeps the area on the rest", () => {
+    const items = [{ label: "SHOW THE LOWEST", question: "Q1." }, { label: "WHAT GOES WITH IT?", question: "Q2." }, { label: "DO THEY GO TOGETHER?", question: "Q3." }];
+    expect(areaFollowUps(items, bay)).toEqual([{ label: "SHOW THE LOWEST", question: "Q1. Only the tracts in Bay View." }]);
+    expect(areaFollowUps(items, undefined)).toEqual(items);
+  });
+  it("says neighbors in the list may be within each other's margin, and names the neighborhood when nothing could be ranked", () => {
+    expect(rankSummary({ header: h, direction: "high", top: 11, tieCount: 0, unreliableCount: 0, area: bay })).toContain("Tracts next to each other in this list may be within each other's margin of error, so read the order loosely.");
+    expect(rankSummary({ header: h, direction: "high", top: 0, tieCount: 0, unreliableCount: 2, area: bay })).toMatch(/^No census tract in Bay View could be ranked/);
+  });
+  it("names the place on the citywide button: countywide for a County dataset", () => {
+    const r = relateChoices({ a: { code: "E02", column: "pov_rate" }, b: { code: "F02", column: "per_insecure" }, place: "County", year: "2023", mode: "relate", neighborhood: "Harambee" } as never, { status: "too-few-tracts", name: "Harambee", n: 9, needed: 20 } as never);
+    expect(r[0].label).toBe("ASK COUNTYWIDE");
   });
 });

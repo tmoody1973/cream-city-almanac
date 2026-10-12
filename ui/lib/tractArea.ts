@@ -17,6 +17,9 @@ export const cityRankText = (r: { position: number; of: number }, direction: "hi
 // A rank across the dataset's whole place: the City's tracts, or Milwaukee County's.
 export const rankColumn = (place: string) => (place === "County" ? "Countywide" : "Citywide");
 export const onlyIn = (a: AreaIn) => `Only the tracts in ${areaPhrase(a)}.`;
+// Inside a neighborhood the "goes together" test can only refuse (it takes 20 tracts), so those buttons are dropped.
+const GOES_TOGETHER = new Set(["WHAT GOES WITH IT?", "DO THEY GO TOGETHER?"]);
+export const areaFollowUps = (items: FollowUp[], area?: AreaIn): FollowUp[] => (area ? withArea(items.filter((f) => !GOES_TOGETHER.has(f.label)), area) : items);
 export const withArea = (items: FollowUp[], area?: AreaIn): FollowUp[] => (area ? items.map((f) => ({ ...f, question: `${f.question} ${onlyIn(area)}` })) : items);
 export function noTractsText(r: { name: string; map: "city" | "dycu"; years?: number[] }): string {
   if (r.map === "dycu") return `DYCU's ${r.name} area has no tracts in this dataset's year${r.years?.length ? `; DYCU defines it for ${r.years.join(", ")}` : ""}.`;

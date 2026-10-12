@@ -25,3 +25,10 @@ describe("which tracts are in a neighborhood", () => {
     expect(areaYears([{ name: "Harambee", tracts: [{ years: [2022, 2021], tracts: ["1860"] }, { years: [2023], tracts: ["1860"] }] }], "Harambee")).toEqual([2021, 2022, 2023]);
   });
 });
+
+describe("equal figures share a rank", () => {
+  it("gives tied values the same position (1, 1, 3)", () => {
+    const r = placeRanks([tv("a", 1950, 0), tv("b", 1950, 0), tv("c", 1940, 0)], "high");
+    expect([r.position.get("a"), r.position.get("b"), r.position.get("c")]).toEqual([1, 1, 3]);
+  });
+});

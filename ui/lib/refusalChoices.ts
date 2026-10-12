@@ -4,7 +4,7 @@ import type { FollowUp } from "@/ui/components/FollowUps";
 import type { CountArgsIn } from "./nextQuestions";
 import { plainMeaning } from "./tractFormat";
 import { placeName } from "./tractSummary";
-import { onlyIn } from "./tractArea";
+import { onlyIn, rankColumn } from "./tractArea";
 
 const MAX = 8;
 const CUT = 60;
@@ -62,7 +62,7 @@ function relateQ(a: RelateArgs, aWords?: string, bWords?: string) {
 
 export function relateChoices(args: RelateArgs, r: TractRefusal): FollowUp[] {
   if (r.status === "no-neighborhood" && "nearest" in r) return (r.nearest as string[]).slice(0, MAX).map((n) => ({ label: n, question: `${relateQ(args)} ${onlyIn({ name: n, map: args.map ?? "city" })}` }));
-  if (r.status === "too-few-tracts") return [{ label: "ASK CITYWIDE", question: relateQ(args) }];
+  if (r.status === "too-few-tracts") return [{ label: `ASK ${rankColumn(args.place).toUpperCase()}`, question: relateQ(args) }];
   if (r.status === "choose-column" && "columns" in r) {
     const which = r.dataset ?? "a";
     return byMargin(r.columns).slice(0, MAX).map((c) => {

@@ -76,3 +76,9 @@ describe("tract questions by neighborhood", () => {
     expect(ASK_PROMPT).toContain("one figure for a neighborhood DYCU profiles, use getNumber");
   });
 });
+
+describe("DYCU areas with no tracts", () => {
+  it("tells the model a DYCU area's no-tracts means its year isn't defined, not that it's small", () => {
+    expect(askTools(backend({})).find((t) => t.name === "rankTracts")!.description).toContain("for DYCU's area, that DYCU doesn't define it for that year");
+  });
+});

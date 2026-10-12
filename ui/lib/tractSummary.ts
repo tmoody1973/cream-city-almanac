@@ -71,7 +71,7 @@ export function rankSummary(r: { header: Col; direction: "high" | "low"; top: nu
   const h = r.header;
   if (r.top === 0) {
     const why = r.unreliableCount ? `: ${r.unreliableCount} ${r.unreliableCount === 1 ? "tract's estimate is" : "tracts' estimates are"} too uncertain` : "";
-    return `No census tract in ${placeName(h.place)} could be ranked on the ${subject(h)} (${yearIn(h.year)})${why}.`;
+    return `No census tract in ${r.area ? areaPhrase(r.area) : placeName(h.place)} could be ranked on the ${subject(h)} (${yearIn(h.year)})${why}.`;
   }
   const which = r.top === 1 ? "This is the census tract" : `These are the ${tracts(r.top)}`;
   const lead = r.area
@@ -86,7 +86,9 @@ export function rankSummary(r: { header: Col; direction: "high" | "low"; top: nu
     : r.tieCount ? ` ${r.tieCount} more ${r.tieCount === 1 ? "is" : "are"} within the margin of error of #${r.top}${first}, so read the top as a group, not an exact order.` : "";
   const u = r.unreliableCount;
   const left = u ? ` ${u} ${u === 1 ? "tract is left out because its estimate is" : "tracts are left out because their estimates are"} too uncertain.` : "";
-  return lead + ties + left;
+  // A neighborhood lists every tract, so there's no top to tie with; neighbors in the list can still overlap (spec §4.2).
+  const near = r.area && h.confidence !== EXACT ? " Tracts next to each other in this list may be within each other's margin of error, so read the order loosely." : "";
+  return lead + near + ties + left;
 }
 
 export function changeSummary(r: { header: Col; from: string; to: string; increases: number; decreases: number; none: number; area?: { name: string; map: "city" | "dycu" } }): string {

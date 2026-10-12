@@ -417,12 +417,12 @@ describe("compareYears", () => {
     const t = await seedTwoYears();
     await t.run(async (ctx) => {
       await ctx.db.insert("neighborhoods", { definition: "city", name: "Bay View", matchKey: "bay view" });
-      for (const [geoid, share] of [["55079100000", 100], ["55079100100", 61], ["55079100200", 15]] as const)
+      for (const [geoid, share] of [["55079100000", 100], ["55079100100", 61], ["55079100200", 15], ["55079109900", 100]] as const)
         await ctx.db.insert("tractNeighborhoods", { geoid, city: [{ name: "Bay View", share }] });
     });
     installFakeFetch({ columns: POV_FIELDS, tractRows: (url) => (url.includes("2023") ? later((i) => ({ delta: i === 0 || i === 5 ? 5 : 0 }))() : povertyRows()) });
     const r = await t.withIdentity(reader).action(api.tracts.compareYears, { code: "E02", column: "pov_rate", place: "City", from: "2022", to: "2023", neighborhood: "Bay View" });
-    expect(r).toMatchObject({ status: "ok", increases: 1, decreases: 0, none: 2, area: { name: "Bay View", tracts: 3, partly: 2 }, header: { n: 3, leftOut: 0 } });
+    expect(r).toMatchObject({ status: "ok", increases: 1, decreases: 0, none: 2, area: { name: "Bay View", tracts: 3, partly: 2 }, header: { n: 3, leftOut: 1 } }); // 1099 has no figure in either year
     if (r.status === "ok") expect(r.changes.map((c) => [c.tract, c.share])).toEqual([["1000", 100]]);
   });
 });
@@ -517,5 +517,21 @@ describe("rankTracts in a neighborhood", () => {
     const r = await t.withIdentity(reader).action(api.tracts.rankTracts, rankArgs);
     expect(r).not.toHaveProperty("area");
     if (r.status === "ok") expect(r.top).toHaveLength(10);
+  });
+});
+
+describe("review fixes for neighborhoods", () => {
+  it("counts a DYCU area's tracts for the dataset's own year, so a tract from another year isn't 'left out'", async () => {
+    const t = await seedTracts();
+    await t.run(async (ctx) => { await ctx.db.insert("neighborhoods", { definition: "dycu", name: "Amani", matchKey: "amani", tracts: [{ years: [2019, 2020], tracts: ["1860", "1861"] }, { years: [2021, 2022, 2023, 2024], tracts: ["1860"] }] }); });
+    installFakeFetch({ columns: POV_FIELDS, tractRows: povertyRows });
+    const r = await t.withIdentity(reader).action(api.tracts.rankTracts, { ...rankArgs, neighborhood: "Amani", map: "dycu" });
+    expect(r).toMatchObject({ status: "ok", header: { n: 1, leftOut: 0 }, area: { tracts: 1 } });
+  });
+  it("cuts a very long neighborhood name before matching it", async () => {
+    const t = await seedAreas();
+    const r = await t.withIdentity(reader).action(api.tracts.rankTracts, { ...rankArgs, neighborhood: "x".repeat(5000) });
+    expect(r).toMatchObject({ status: "no-neighborhood" });
+    if (r.status === "no-neighborhood") expect(r.asked.length).toBeLessThanOrEqual(80);
   });
 });

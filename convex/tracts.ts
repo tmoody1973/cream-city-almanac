@@ -94,15 +94,19 @@ export const findArea = internalQuery({
 
 const vArea = { neighborhood: v.optional(v.string()), map: v.optional(vMap) };
 async function areaFor(ctx: ActionCtx, a: { neighborhood?: string; map?: AreaMap }): Promise<Area | null | Refusal> {
-  if (!a.neighborhood?.trim()) return null;
-  const f: FoundArea = await ctx.runQuery(internal.tracts.findArea, { asked: a.neighborhood, map: a.map ?? "city" });
-  return f.kind === "one" ? f.area : { status: "no-neighborhood", asked: a.neighborhood, nearest: f.nearest };
+  const asked = a.neighborhood?.trim().slice(0, 80); // a name, not an essay: matching runs before any allowance is spent
+  if (!asked) return null;
+  const f: FoundArea = await ctx.runQuery(internal.tracts.findArea, { asked, map: a.map ?? "city" });
+  return f.kind === "one" ? f.area : { status: "no-neighborhood", asked, nearest: f.nearest };
 }
-// How many tracts the stored names put in the area: the City table's entries, or DYCU's largest year.
-const areaSize = (names: Names, area: Area) =>
-  area.map === "dycu"
-    ? Math.max(0, ...names.defs.filter((d) => d.name === area.name).flatMap((d) => (d.tracts ?? []).map((e) => e.tracts.length)))
-    : [...names.city.values()].filter((c) => c.some((x) => x.name === area.name)).length;
+// How many tracts the stored names put in the area: the City table's entries, or DYCU's list for the dataset's year.
+// Without a year (the free check before fetching), DYCU's largest year: an area defined in any year isn't "empty".
+const areaSize = (names: Names, area: Area, year?: string) => {
+  if (area.map === "city") return [...names.city.values()].filter((c) => c.some((x) => x.name === area.name)).length;
+  const entries = names.defs.filter((d) => d.name === area.name).flatMap((d) => d.tracts ?? []);
+  if (year === undefined) return Math.max(0, ...entries.map((e) => e.tracts.length));
+  return new Set(entries.filter((e) => e.years.includes(yearNumber(year))).flatMap((e) => e.tracts)).size;
+};
 const noTracts = (area: Area, names: Names): Refusal => ({ status: "no-tracts", name: area.name, map: area.map, ...(area.map === "dycu" ? { years: areaYears(names.defs, area.name) } : {}) });
 // A tract's names for a year, without its figures: enough to test membership before building a row.
 const placesOf = (geoid: string, year: string, names: Names) => ({ city: names.city.get(geoid) ?? [], dycu: neighborhoodsFor(tractNumber(geoid), yearNumber(year), names.defs) });
@@ -265,7 +269,7 @@ export const rankTracts = action({
       const position = places.position.get(x.geoid);
       return { ...r, share: shareIn(r, area) ?? undefined, ...(position ? { cityRank: { position, of: places.of } } : {}) };
     };
-    const head = area ? side.head(args.place, kept.length, Math.max(0, areaSize(names, area) - kept.length)) : side.head(args.place, all.length, side.rows.leftOut);
+    const head = area ? side.head(args.place, kept.length, Math.max(0, areaSize(names, area, nameYear) - kept.length)) : side.head(args.place, all.length, side.rows.leftOut);
     const { key, save } = await store(ctx, { tool: "rank", ...args, year: head.year, code: head.code, column: head.column });
     const detail: RankDetail = {
       status: "ok", tool: "rank", header: head, direction: args.direction,
@@ -360,7 +364,7 @@ export const compareYears = action({
     const { key, save } = await store(ctx, { tool: "change", ...args, from: r1.year, to: r2.year, code: r1.family.code, column: r1.column });
     const matched = increases + decreases + none + unreliableCount;
     // Left out: tracts only one year has, plus the rows each year dropped for having no usable value (whole place only).
-    const leftOut = v1.length - matched + (v2.length - matched) + (area ? 0 : y1.leftOut + y2.leftOut);
+    const leftOut = area ? Math.max(0, areaSize(names, area, r2.year) - matched) : v1.length - matched + (v2.length - matched) + y1.leftOut + y2.leftOut;
     const areaShares = area ? v1.filter((x) => later.has(x.geoid)).map((x) => inArea(x.geoid) ?? 0) : [];
     const detail: ChangeDetail = {
       // A change can only be called clear when both years publish a range; one bare year makes the whole comparison bare.
@@ -387,7 +391,7 @@ export const relateTracts = action({
     const names = await loadNames(ctx);
     if (area && areaSize(names, area) === 0) return noTracts(area, names);
     // "Do they go together" needs 20 tracts; a neighborhood has 2 to 11 (spec §4.4).
-    if (area && args.mode === "relate") return { status: "too-few-tracts", name: area.name, map: area.map, n: areaSize(names, area), needed: RELATE_MIN };
+    if (area && args.mode === "relate") return { status: "too-few-tracts", name: area.name, map: area.map, n: areaSize(names, area, args.year), needed: RELATE_MIN };
     // Every database-only problem with either side comes back at once, before anything is spent or fetched.
     const [qa, qb] = await Promise.all([propertySide(ctx, args.a.code, args.a.column, args.a.cutoff), propertySide(ctx, args.b.code, args.b.column, args.b.cutoff)]);
     const [fa, fb]: (Fam | null)[] = await Promise.all([

@@ -20,5 +20,6 @@ export const areaHead = (area: Area, shares: number[]): AreaHead => ({ ...area, 
 // Each reliable tract's place across the whole place, in the ranking's direction ("12th highest of 210").
 export function placeRanks(values: TractValue[], direction: "high" | "low") {
   const ok = values.filter((v) => !isUnreliable(v)).sort((x, y) => (direction === "high" ? y.value - x.value : x.value - y.value));
-  return { of: ok.length, position: new Map(ok.map((v, i) => [v.geoid, i + 1])) };
+  // Equal figures share a place (1, 1, 3): exact City figures tie often.
+  return { of: ok.length, position: new Map(ok.map((v) => [v.geoid, ok.findIndex((w) => w.value === v.value) + 1])) };
 }

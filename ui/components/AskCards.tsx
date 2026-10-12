@@ -17,7 +17,7 @@ import { ChangeCard, NEIGHBORHOODS_HELP, RankCard, RelateCard, TractMapSlot } fr
 import { FollowUps, type FollowUp } from "./FollowUps";
 import { ExportBar } from "./ExportBar";
 import { countExport, measureExport, numberExport, quoteText, spanExport } from "@/ui/lib/cardExport";
-import { noTractsText, tooFewText, withArea } from "@/ui/lib/tractArea";
+import { areaFollowUps, noTractsText, tooFewText } from "@/ui/lib/tractArea";
 import { MEASURE_HIDDEN, measureNotes, measureSummary, measureTitle, money, type MeasureOk } from "@/ui/lib/measureText";
 import { cellTime, spanNotes, spanRows, spanSummary, spanTitle, type SpanOk } from "@/ui/lib/spanText";
 import { changeFollowUps, countFollowUps, datasetFollowUps, numberFollowUps, previewFollowUps, rankFollowUps, relateFollowUps, spanFollowUps, measureFollowUps } from "@/ui/lib/nextQuestions";
@@ -440,9 +440,9 @@ export function AskCards({ onOpen }: { onOpen?: (search: string) => void }) {
     // A refusal the model words; its listed options (columns, place/years) can be picked here.
     return <FollowUps pick items={choices(r)} id={id} />;
   };
-  useRenderTool({ name: "rankTracts", parameters: rankParams, render: (props) => props.status !== "complete" ? <Busy /> : tractCard<RankResult>(props.result, props.toolCallId, (r) => <RankCard r={r} onOpen={onOpen} />, (r) => withArea(rankFollowUps(r.header, r.direction), r.area), (r) => rankChoices(props.parameters as never, r as never)) }, [onOpen]);
-  useRenderTool({ name: "compareYears", parameters: changeParams, render: (props) => props.status !== "complete" ? <Busy /> : tractCard<ChangeResult>(props.result, props.toolCallId, (r) => <ChangeCard r={r} onOpen={onOpen} />, (r) => withArea(changeFollowUps(r.header, r.to), r.area), (r) => changeChoices(props.parameters as never, r as never)) }, [onOpen]);
-  useRenderTool({ name: "relateTracts", parameters: relateParams, render: (props) => props.status !== "complete" ? <Busy /> : tractCard<RelateResult>(props.result, props.toolCallId, (r) => <RelateCard r={r} onOpen={onOpen} />, (r) => withArea(relateFollowUps({ mode: r.mode, a: r.a, b: r.b, place: (props.parameters as { place: string }).place, year: (props.parameters as { year: string }).year, strength: r.strength, aSide: r.aSide, bSide: r.bSide }).filter((f) => !(r.area && f.label === "DO THEY GO TOGETHER?")), r.area), (r) => relateChoices(props.parameters as never, r as never)) }, [onOpen]);
+  useRenderTool({ name: "rankTracts", parameters: rankParams, render: (props) => props.status !== "complete" ? <Busy /> : tractCard<RankResult>(props.result, props.toolCallId, (r) => <RankCard r={r} onOpen={onOpen} />, (r) => areaFollowUps(rankFollowUps(r.header, r.direction), r.area), (r) => rankChoices(props.parameters as never, r as never)) }, [onOpen]);
+  useRenderTool({ name: "compareYears", parameters: changeParams, render: (props) => props.status !== "complete" ? <Busy /> : tractCard<ChangeResult>(props.result, props.toolCallId, (r) => <ChangeCard r={r} onOpen={onOpen} />, (r) => areaFollowUps(changeFollowUps(r.header, r.to), r.area), (r) => changeChoices(props.parameters as never, r as never)) }, [onOpen]);
+  useRenderTool({ name: "relateTracts", parameters: relateParams, render: (props) => props.status !== "complete" ? <Busy /> : tractCard<RelateResult>(props.result, props.toolCallId, (r) => <RelateCard r={r} onOpen={onOpen} />, (r) => areaFollowUps(relateFollowUps({ mode: r.mode, a: r.a, b: r.b, place: (props.parameters as { place: string }).place, year: (props.parameters as { year: string }).year, strength: r.strength, aSide: r.aSide, bSide: r.bSide }), r.area), (r) => relateChoices(props.parameters as never, r as never)) }, [onOpen]);
 
   useRenderTool({ name: "readReport", parameters: z.object({ question: z.string() }), render: (props) => {
     if (props.status !== "complete") return <Busy />;
