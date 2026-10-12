@@ -27,7 +27,8 @@ describe("the measure query", () => {
     expect(b.allSql).toContain("SUM(CASE WHEN v IS NOT NULL AND v <> 0 THEN v END) AS total");
     expect(b.allSql).toContain("percentile_cont(0.5) WITHIN GROUP (ORDER BY CASE WHEN v IS NOT NULL AND v <> 0 THEN v END) AS median");
     expect(b.allSql).toContain("AVG(CASE WHEN v IS NOT NULL AND v <> 0 THEN v END) AS average");
-    expect(b.allSql).toContain("SUM(CASE WHEN bad THEN 1 ELSE 0 END) AS unreadable");
+    expect(b.allSql).toContain("SUM(CASE WHEN v IS NULL THEN 1 ELSE 0 END) AS unreadable"); // a blank cell counts as unreadable, never vanishes
+    expect(b.allSql).not.toContain(" AS bad");
     expect(b.allSql).toContain("SUM(CASE WHEN v = 0 THEN 1 ELSE 0 END) AS zeros");
     expect(b.allSql).toContain(`FROM "${RID}"`);
     expect(b.period).toBe("all records");

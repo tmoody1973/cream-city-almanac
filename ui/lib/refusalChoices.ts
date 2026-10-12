@@ -136,10 +136,17 @@ export function spanChoices(args: SpanArgsIn, r: SpanRefusal): FollowUp[] {
   return [];
 }
 
-type MeasureRefusal = { status: string; code?: string; name?: string; measures?: { id: string; name: string }[]; columns?: string[] };
-export function measureChoices(r: MeasureRefusal): FollowUp[] {
+type MeasureRefusal = { status: string; code?: string; name?: string; measures?: { id: string; name: string }[]; columns?: string[]; column?: string; choices?: string[] };
+export function measureChoices(r: MeasureRefusal, measureId?: string): FollowUp[] {
   const where = `${r.name ?? "this file"} (${r.code ?? ""})`;
+  const keep = measureId ? ` (measure ${measureId})` : "";
   if (r.status === "choose-measure" && r.measures) return r.measures.slice(0, MAX).map((m) => ({ label: m.name, question: `How much ${m.name} in ${where}? (measure ${m.id})` }));
-  if (r.status === "bad-column" && r.columns) return r.columns.slice(0, MAX).map((c) => ({ label: c, question: `How much in ${where}, by ${c}?` }));
+  if (r.status === "bad-column" && r.columns) return r.columns.slice(0, MAX).map((c) => ({ label: c, question: `How much in ${where}, by ${c}?${keep}` }));
+  if (r.status === "choose" && r.choices && r.column) return r.choices.slice(0, MAX).map((v) => ({ label: v, question: `How much in ${where}, only ${r.column} ${v}?${keep}` }));
   return [];
+}
+
+// A refusal from countRecords: a how-much question gets how-much buttons that keep its measure; a count gets count buttons.
+export function refusalChoicesFor(args: CountArgsIn & { measure?: { id: string } }, r: CountRefusal & MeasureRefusal): FollowUp[] {
+  return args.measure ? measureChoices(r, args.measure.id) : countChoices(args, r);
 }

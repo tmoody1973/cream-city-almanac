@@ -8,31 +8,39 @@ export const MIN_GROUP = 5; // groups under this many records are hidden in file
 const count = (x: unknown) => { const n = Number(x); return Number.isFinite(n) ? n : 0; };
 const amount = (x: unknown) => (x === null || x === undefined || x === "" || !Number.isFinite(Number(x)) ? null : Number(x));
 
-// The City's rows as numbers. In a file that names people, a group under 5 records loses its figures; when that hides
-// exactly one group, the next-smallest hides too, so the shown groups can't be subtracted from the All row to recover it.
+// The City's rows as numbers. In a file that names people, a group under 5 records loses its figures, and so does a
+// cut-off "All other groups" line under 5. The hidden lines are one set: while it is a single line, or under 5 records
+// together, the next-smallest group hides too, so nobody can subtract the shown lines from the All row to recover a
+// person or a pair. Fewer than 5 records in all hides the All row's figures.
 export function shapeMeasure(groupRows: Record<string, unknown>[] | null, allRow: Record<string, unknown> | undefined, o: { namesPeople: boolean; byYear: boolean }) {
   const a = allRow ?? {};
-  const all: MeasureAll = { n: count(a.n), total: amount(a.total), median: amount(a.median), average: amount(a.average), unreadable: count(a.unreadable), zeros: count(a.zeros) };
+  const read: MeasureAll = { n: count(a.n), total: amount(a.total), median: amount(a.median), average: amount(a.average), unreadable: count(a.unreadable), zeros: count(a.zeros) };
   const raw = (groupRows ?? [])
     .filter((r) => !(o.byYear && (r.g === null || r.g === undefined) && count(r.n) === 0))
     .map((r) => ({ label: r.g === null || r.g === undefined || r.g === "" ? "(blank)" : String(r.g), n: count(r.n), total: amount(r.total), median: amount(r.median), average: amount(r.average) }));
+  const restN = (groupRows ?? []).length >= MAX_GROUPS ? read.n - raw.reduce((t, g) => t + g.n, 0) : 0;
+  const restHidden = o.namesPeople && restN > 0 && restN < MIN_GROUP;
   const hide = new Set<number>();
   if (o.namesPeople) {
     raw.forEach((g, i) => { if (g.n < MIN_GROUP) hide.add(i); });
-    if (hide.size === 1 && raw.length > 1) {
+    const lines = () => hide.size + (restHidden ? 1 : 0);
+    const people = () => [...hide].reduce((t, i) => t + raw[i].n, restHidden ? restN : 0);
+    while (lines() > 0 && (lines() === 1 || people() < MIN_GROUP)) {
       const next = raw.map((g, i) => ({ g, i })).filter(({ i }) => !hide.has(i)).sort((x, y) => x.g.n - y.g.n)[0];
-      if (next) hide.add(next.i);
+      if (!next) break;
+      hide.add(next.i);
     }
   }
   const groups: MeasureGroup[] = raw.map((g, i) => (hide.has(i) ? { ...g, total: null, median: null, average: null, hidden: true } : { ...g, hidden: false }));
-  let other: MeasureOther | null = null;
-  if ((groupRows ?? []).length >= MAX_GROUPS) {
-    const n = all.n - raw.reduce((s, g) => s + g.n, 0);
-    if (n > 0) {
-      const hidden = o.namesPeople && n < MIN_GROUP;
-      const total = all.total === null ? null : all.total - raw.reduce((s, g) => s + (g.total ?? 0), 0);
-      other = { n, total: hidden ? null : total, hidden };
-    }
-  }
+  const total = read.total === null ? null : read.total - raw.reduce((t, g) => t + (g.total ?? 0), 0);
+  const other: MeasureOther | null = restN > 0 ? { n: restN, total: restHidden ? null : total, hidden: restHidden } : null;
+  const all = o.namesPeople && read.n > 0 && read.n < MIN_GROUP ? { ...read, total: null, median: null, average: null } : read;
   return { groups, other, all };
+}
+
+// What the model is sent: no total for a rate (a sum of hourly rates means nothing) and no average nobody asked for,
+// so it can't repeat a figure the card leaves out.
+export function forModel<T extends { groups: MeasureGroup[]; other: MeasureOther | null; all: MeasureAll }>(s: T, o: { summable: boolean; average: boolean }): T {
+  const trim = <R extends { total: number | null; average?: number | null }>(r: R): R => ({ ...r, ...(o.summable ? {} : { total: null }), ...("average" in r && !o.average ? { average: null } : {}) });
+  return { ...s, groups: s.groups.map(trim), other: s.other ? trim(s.other) : null, all: trim(s.all) };
 }

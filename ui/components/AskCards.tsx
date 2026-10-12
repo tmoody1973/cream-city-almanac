@@ -20,7 +20,7 @@ import { countExport, measureExport, numberExport, quoteText, spanExport } from 
 import { MEASURE_HIDDEN, measureNotes, measureSummary, measureTitle, money, type MeasureOk } from "@/ui/lib/measureText";
 import { cellTime, spanNotes, spanRows, spanSummary, spanTitle, type SpanOk } from "@/ui/lib/spanText";
 import { changeFollowUps, countFollowUps, datasetFollowUps, numberFollowUps, previewFollowUps, rankFollowUps, relateFollowUps, spanFollowUps, measureFollowUps } from "@/ui/lib/nextQuestions";
-import { changeChoices, countChoices, numberChoices, rankChoices, relateChoices, spanChoices, measureChoices } from "@/ui/lib/refusalChoices";
+import { changeChoices, countChoices, numberChoices, rankChoices, relateChoices, spanChoices, measureChoices, refusalChoicesFor } from "@/ui/lib/refusalChoices";
 import styles from "./ask.module.css";
 
 type Value = { estimate: string; moe: string | null } | null;
@@ -410,7 +410,7 @@ export function AskCards({ onOpen }: { onOpen?: (search: string) => void }) {
     if (r.status === "no-locations") return <p className={styles.failed}>{r.name} doesn&apos;t record locations, so it can&apos;t be counted by neighborhood. <OpenLink code={r.code} onOpen={onOpen} /></p>;
     if (r.status === "too-broad") return <p className={styles.failed}>Too many {r.name} records{r.area ? ` in ${r.area}` : ""} to count at once; try a shorter period or a filter.</p>;
     // choose / bad-column offer the server's options to pick; bad-dates / not-found / not-city have none (the model asks or retries).
-    return <FollowUps pick items={countChoices(props.parameters as never, r as never)} id={props.toolCallId} />;
+    return <FollowUps pick items={refusalChoicesFor(props.parameters as never, r as never)} id={props.toolCallId} />;
   } }, [onOpen]);
 
   useRenderTool({ name: "timeSpan", parameters: spanParams, render: (props) => {

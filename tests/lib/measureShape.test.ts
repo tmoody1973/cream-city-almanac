@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { shapeMeasure } from "../../convex/lib/measureShape";
+import { forModel, shapeMeasure } from "../../convex/lib/measureShape";
 
 const row = (g: string | null, n: number | string, total: unknown, extra: Record<string, unknown> = {}) => ({ g, n, total, median: total, average: total, unreadable: "0", zeros: "0", ...extra });
 const people = { namesPeople: true, byYear: false };
@@ -31,5 +31,32 @@ describe("shaping a measure", () => {
     expect(shapeMeasure(full, row(null, "250", "2600"), { namesPeople: false, byYear: false }).other).toEqual({ n: 10, total: 200, hidden: false });
     expect(shapeMeasure(full, row(null, "243", "2450"), people).other).toEqual({ n: 3, total: null, hidden: true });
     expect(shapeMeasure(full.slice(0, 3), row(null, "300", "3000"), people).other).toBeNull();
+  });
+
+  it("hides one more group when the hidden ones together are under 5, so two one-person groups can't be read as a pair", () => {
+    const s = shapeMeasure([row("A", "40", "5000"), row("D", "20", "900"), row("B", "1", "100"), row("C", "1", "70")], row(null, "62", "6070"), people);
+    expect(s.groups.map((g) => [g.label, g.hidden])).toEqual([["A", false], ["D", true], ["B", true], ["C", true]]);
+  });
+  it("counts a hidden 'All other groups' line as hidden, so it can't be recovered from the All row", () => {
+    const full = Array.from({ length: 24 }, (_, i) => row(`G${i}`, String(10 + i), "100"));
+    const s = shapeMeasure(full, row(null, String(full.reduce((t, r) => t + Number(r.n), 0) + 3), "2477"), people);
+    expect(s.other).toMatchObject({ n: 3, hidden: true, total: null });
+    expect(s.groups.filter((g) => g.hidden).map((g) => g.label)).toEqual(["G0"]);
+  });
+  it("hides the All row's figures when fewer than 5 records match in a file that names people", () => {
+    const s = shapeMeasure([row("Mayor", "1", "150000")], row(null, "1", "150000"), people);
+    expect(s.all).toMatchObject({ n: 1, total: null, median: null, average: null });
+    expect(shapeMeasure(null, row(null, "3", "90"), { namesPeople: false, byYear: false }).all.total).toBe(90);
+  });
+});
+
+describe("what the model is sent", () => {
+  it("drops totals for a rate and averages nobody asked for, on every row", () => {
+    const s = shapeMeasure([row("A", "40", "1000")], row(null, "40", "1000"), { namesPeople: false, byYear: false });
+    const rate = forModel({ ...s, other: { n: 9, total: 50, hidden: false } }, { summable: false, average: false });
+    expect([rate.groups[0].total, rate.groups[0].average, rate.all.total, rate.all.average, rate.other?.total]).toEqual([null, null, null, null, null]);
+    expect(rate.all.median).toBe(1000);
+    const asked = forModel(s, { summable: true, average: true });
+    expect([asked.all.total, asked.all.average]).toEqual([1000, 1000]);
   });
 });

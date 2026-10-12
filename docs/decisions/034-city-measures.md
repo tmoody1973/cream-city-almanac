@@ -9,7 +9,7 @@
 2. **Any number-like column.** Cost: confident cards totaling ZIP codes, years or percentages.
 3. **Elections in the same project.** Cost: every election file has different candidate columns; that work moved to the files-by-period project.
 
-**What we chose and why (Tarik, 2026-10-12):** The list, with total and median on every card and the average only on request, because a few very large values pull an average away from what's typical. Groups under 5 records are hidden in files that name people. If that hides exactly one group, the next-smallest hides too, so no one can subtract the visible groups from the total to recover it. The hourly rate never shows a total.
+**What we chose and why (Tarik, 2026-10-12):** The list, with total and median on every card and the average only on request, because a few very large values pull an average away from what's typical. Groups under 5 records are hidden in files that name people. If that hides exactly one group, the next-smallest hides too, so no one can subtract the visible groups from the total to recover it. The final review found three ways around that, and Claude widened the rule: the hidden groups and a hidden "All other groups" line count as one set, which must be at least two lines with at least 5 records between them, and a card with fewer than 5 records in all hides its total too. The hourly rate never shows a total.
 
 **What we gave up:**
 - Only six measures to start.

@@ -10,7 +10,7 @@ import { withOverrides } from "./lib/cityProfile";
 import { CITY_MEASURES, MEASURE_FILES, measuresFor } from "./lib/cityMeasures";
 import { buildCount, groupLabelFor, MAX_GROUPS } from "./lib/citySql";
 import { buildMeasure } from "./lib/measureSql";
-import { shapeMeasure, type MeasureAll, type MeasureGroup, type MeasureOther } from "./lib/measureShape";
+import { forModel, shapeMeasure, type MeasureAll, type MeasureGroup, type MeasureOther } from "./lib/measureShape";
 import type { Bbox, Geometry } from "./lib/geo";
 import { matchName } from "./lib/neighborhoodNames";
 import { MIN_HOMES, tractGeoid } from "./lib/propertyMeasures";
@@ -160,7 +160,7 @@ export async function runMeasure(ctx: ActionCtx, { code, neighborhood, measure, 
       built.groupSql ? datastoreSql<Record<string, unknown>>(built.groupSql) : Promise.resolve(null),
       datastoreSql<Record<string, unknown>>(built.allSql),
     ]);
-    const shaped = shapeMeasure(groupRows, allRows[0], { namesPeople: m.namesPeople, byYear: built.groupLabel === "year" });
+    const shaped = forModel(shapeMeasure(groupRows, allRows[0], { namesPeople: m.namesPeople, byYear: built.groupLabel === "year" }), { summable: m.summable, average: Boolean(measure.average) });
     return {
       status: "measured" as const, code: data.code, name,
       measure: { id: m.id, name: m.name, unit: m.unit, caveat: m.caveat, column: m.column, things: m.things, summable: m.summable, skipZero: m.skipZero, namesPeople: m.namesPeople, date: m.date },

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { measureExport } from "../../ui/lib/cardExport";
 import { measureFollowUps } from "../../ui/lib/nextQuestions";
-import { measureChoices } from "../../ui/lib/refusalChoices";
+import { measureChoices, refusalChoicesFor } from "../../ui/lib/refusalChoices";
 import { measureNotes, measureSummary, measureTitle, money } from "../../ui/lib/measureText";
 
 const base = {
@@ -66,5 +66,43 @@ describe("measure export, follow-ups and choices", () => {
     expect(measureFollowUps(base).map((f) => f.label)).toEqual(["BY LEVY YEAR", "SHOW THE AVERAGE"]);
     expect(measureFollowUps(base)[0].question).toBe("How much back tax owed in Delinquent Real Estate Tax Accounts (H19), by Levy Year?");
     expect(measureChoices({ status: "choose-measure", code: "X36", name: "City Employee Salary Data", measures: [{ id: "gross-pay", name: "gross pay" }] })).toEqual([{ label: "gross pay", question: "How much gross pay in City Employee Salary Data (X36)? (measure gross-pay)" }]);
+  });
+});
+
+describe("the summary's honesty", () => {
+  const sales = { ...base, measure: { ...base.measure, namesPeople: false, things: "sales" } };
+  it("never names a group with fewer than 10 records, or a blank one, as the largest or highest", () => {
+    const r = { ...sales, groups: [
+      { label: "Residential", n: 1000, total: 200000000, median: 180000, average: 200000, hidden: false },
+      { label: "Exempt", n: 1, total: 20000000, median: 20000000, average: 20000000, hidden: false },
+      { label: "(blank)", n: 400, total: 900000000, median: 900000, average: 900000, hidden: false },
+      { label: "Commercial", n: 50, total: 30000000, median: 400000, average: 600000, hidden: false },
+    ] };
+    const text = measureSummary(r);
+    expect(text).not.toMatch(/Exempt|\(blank\)/);
+    expect(text).toContain("The largest total is Residential");
+    expect(text).toContain("the highest median is Commercial");
+  });
+  it("says so when nothing matches, and when fewer than 5 records leave the figures hidden", () => {
+    expect(measureSummary({ ...base, groups: [], groupBy: null, all: { n: 0, total: null, median: null, average: null, unreadable: 0, zeros: 0 } })).toBe("No accounts match.");
+    expect(measureSummary({ ...base, groups: [], groupBy: null, all: { n: 3, total: null, median: null, average: null, unreadable: 0, zeros: 0 } }))
+      .toBe("Fewer than 5 accounts match, so their figures are hidden to protect individuals.");
+  });
+});
+
+describe("a refusal from a how-much question", () => {
+  const args = { code: "H19", groupBy: "Ward", measure: { id: "tax-owed" } };
+  it("offers how-much buttons that keep the measure, not count buttons", () => {
+    const bad = refusalChoicesFor(args, { status: "bad-column", code: "H19", name: "Delinquent Real Estate Tax Accounts", column: "Ward", columns: ["Ald Dist", "Levy Year"] });
+    expect(bad.map((b) => b.question)).toEqual([
+      "How much in Delinquent Real Estate Tax Accounts (H19), by Ald Dist? (measure tax-owed)",
+      "How much in Delinquent Real Estate Tax Accounts (H19), by Levy Year? (measure tax-owed)",
+    ]);
+    const pick = refusalChoicesFor(args, { status: "choose", code: "H19", name: "Delinquent Real Estate Tax Accounts", column: "Levy Year", choices: ["2024"] });
+    expect(pick[0].question).toBe("How much in Delinquent Real Estate Tax Accounts (H19), only Levy Year 2024? (measure tax-owed)");
+  });
+  it("still offers count buttons for a count", () => {
+    const r = refusalChoicesFor({ code: "H19", groupBy: "Ward" }, { status: "bad-column", code: "H19", name: "Delinquent Real Estate Tax Accounts", column: "Ward", columns: ["Ald Dist"] });
+    expect(r[0].question).not.toContain("How much");
   });
 });

@@ -4,6 +4,7 @@ import type { CountResult } from "@/lib/ask/tools";
 export type MeasureOk = Extract<CountResult, { status: "measured" }>;
 type Unit = MeasureOk["measure"]["unit"];
 export const MEASURE_HIDDEN = "fewer than 5 records";
+const NAME_MIN = 10; // the sentence names a group only with this many records, like spans' "too few to say"
 
 export function money(v: number | null, unit: Unit, style: "table" | "sentence"): string {
   if (v === null || !Number.isFinite(v)) return "—";
@@ -20,8 +21,10 @@ export function measureSummary(r: MeasureOk): string {
   const m = r.measure;
   const s = (v: number | null) => money(v, m.unit, "sentence");
   const n = r.all.n.toLocaleString("en-US");
+  if (r.all.n === 0) return `No ${m.things} match.`;
+  if (r.all.median === null && r.all.n < 5) return `Fewer than 5 ${m.things} match, so their figures are hidden to protect individuals.`;
   const head = m.summable ? `${n} ${m.things} total ${s(r.all.total)}; the median is ${s(r.all.median)}.` : `Across ${n} ${m.things}, the median is ${s(r.all.median)}.`;
-  const shown = r.groups.filter((g) => !g.hidden);
+  const shown = r.groups.filter((g) => !g.hidden && g.n >= NAME_MIN && g.label !== "(blank)");
   if (!r.groupBy || shown.length < 2) return head;
   const top = (k: "total" | "median") => [...shown].sort((a, b) => (b[k] ?? -Infinity) - (a[k] ?? -Infinity))[0];
   const med = top("median");

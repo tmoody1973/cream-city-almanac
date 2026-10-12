@@ -62,14 +62,14 @@ export function buildMeasure(p: CityProfile, m: CityMeasure, a: MeasureArgs, tod
   const v = moneyValue(m.column);
   const d = m.date ? `, ${readDate(m.date)} AS d` : "";
   const innerSql = (grouped: boolean) =>
-    `SELECT ${v} AS v, (${cleaned(m.column)} !~ ${lit(NUMBER)}) AS bad${grouped && g ? `, ${g} AS g` : ""}${d} FROM ${table}${inner.length ? ` WHERE ${inner.join(" AND ")}` : ""}`;
+    `SELECT ${v} AS v${grouped && g ? `, ${g} AS g` : ""}${d} FROM ${table}${inner.length ? ` WHERE ${inner.join(" AND ")}` : ""}`;
   const keep = m.skipZero ? "v IS NOT NULL AND v <> 0" : "v IS NOT NULL";
   const measures = [
     `SUM(CASE WHEN ${keep} THEN 1 ELSE 0 END) AS n`,
     `SUM(CASE WHEN ${keep} THEN v END) AS total`,
     `percentile_cont(0.5) WITHIN GROUP (ORDER BY CASE WHEN ${keep} THEN v END) AS median`,
     `AVG(CASE WHEN ${keep} THEN v END) AS average`,
-    "SUM(CASE WHEN bad THEN 1 ELSE 0 END) AS unreadable",
+    "SUM(CASE WHEN v IS NULL THEN 1 ELSE 0 END) AS unreadable", // blank or unreadable: counted, never dropped
     "SUM(CASE WHEN v = 0 THEN 1 ELSE 0 END) AS zeros",
   ].join(", ");
   const outer: string[] = [];
