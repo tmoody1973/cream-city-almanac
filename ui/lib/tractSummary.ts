@@ -115,5 +115,16 @@ export function propertyNotes(heads: { column: string; confidence: string | null
   return [...new Set([...own, NOTE.city, NOTE.pattern])];
 }
 
+export const KIND = { rate: "a rate", count: "a count", value: "a value" } as const;
+
+// The tract cards' fine print, in the card's order; the card adds its links after it, and an export copies it.
+export function fineText(heads: { column: string; confidence: string | null }[], o: { causal?: boolean; lead?: string } = {}): string {
+  // Exact City figures have no margin, so only the survey sides are listed as ranges.
+  const levels = [...new Set(heads.filter((h) => h.confidence !== EXACT).map((h) => h.confidence ?? "no margin of error found for this column"))];
+  const exact = heads.some((h) => h.confidence === EXACT);
+  const bare = heads.some((h) => !h.confidence); // spec §5 rule 7
+  return `${o.lead ? `${o.lead} ` : ""}${levels.length > 0 ? `Ranges are margins of error: ${levels.join("; ")}.` : ""}${exact ? " Property figures are exact (City records)." : ""}${bare ? " Without a margin of error, findings can't be separated from noise." : ""}${o.causal ? " Related doesn't mean one causes the other." : ""}${propertyNotes(heads).map((n) => ` ${n}`).join("")} ${AREA_NOTE}`;
+}
+
 export const propertyCountSummary = (r: { count: number; filters: string[]; period: string; of: { count: number; label: string } }) =>
   `${r.count.toLocaleString("en-US")} ${r.count === 1 ? "property" : "properties"} in the City of Milwaukee ${r.count === 1 ? "is" : "are"} ${r.filters.join(", ")} (${r.period}), out of ${r.of.count.toLocaleString("en-US")} ${r.of.label}. ${NOTE.value}`;
