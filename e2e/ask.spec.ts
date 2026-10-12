@@ -200,6 +200,19 @@ test.describe("signed in", () => {
     await expect(card.getByRole("link", { name: /open the data/i })).toBeVisible();
   });
 
+  test("a how-long question draws a time-span card with medians, open cases and the export line", async ({ page }) => {
+    test.skip(!(await page.request.get("https://data.milwaukee.gov/api/3/action/status_show").then((r) => r.ok()).catch(() => false)), "City API unreachable");
+    await ask(page, "How long do complaints take to close, by department?");
+    const card = page.locator("[data-card=span]:visible").first();
+    await expect(card).toBeVisible({ timeout: 40_000 });
+    await expect(card).toContainText("time to close · by Department");
+    await expect(card.locator("[data-summary]")).toContainText(/half of the complaints measured took [\d,.]+ days? or less to close/);
+    await expect(card.locator("tbody tr").first()).toContainText("Milwaukee Police Department");
+    await expect(card).toContainText(/aren't closed yet/);
+    await expect(card.getByTitle("From the City of Milwaukee's open data")).toBeVisible();
+    await expect(card.locator("[data-export]").getByRole("button", { name: "CSV" })).toBeVisible();
+  });
+
   test("a neighborhood count names the City boundary it used", async ({ page }) => {
     test.skip(!(await page.request.get("https://data.milwaukee.gov/api/3/action/status_show").then((r) => r.ok()).catch(() => false)), "City API unreachable");
     await ask(page, "How many robberies in Harambee this year?");

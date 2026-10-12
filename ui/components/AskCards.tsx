@@ -8,7 +8,7 @@ import { passageBlocks } from "@/ui/lib/askPassage";
 import { propertyCountSummary } from "@/ui/lib/tractSummary";
 import { formatPortraitMargin, formatPortraitNumber } from "@/ui/lib/portrait";
 import { api } from "@/convex/_generated/api";
-import { changeParams, countParams, rankParams, relateParams, type ChangeResult, type CountForModel, type CountResult, type RankResult, type RelateResult } from "@/lib/ask/tools";
+import { changeParams, countParams, rankParams, relateParams, spanParams, type ChangeResult, type CountForModel, type CountResult, type RankResult, type RelateResult, type SpanResult } from "@/lib/ask/tools";
 import { CityMap } from "./CityMapLoader";
 import { LivePreview } from "./LivePreview";
 import { OpenLink, type Open } from "./OpenLink";
@@ -16,9 +16,10 @@ import { ProvenanceTag } from "./ProvenanceTag";
 import { ChangeCard, NEIGHBORHOODS_HELP, RankCard, RelateCard, TractMapSlot } from "./TractCards";
 import { FollowUps, type FollowUp } from "./FollowUps";
 import { ExportBar } from "./ExportBar";
-import { countExport, numberExport, quoteText } from "@/ui/lib/cardExport";
-import { changeFollowUps, countFollowUps, datasetFollowUps, numberFollowUps, previewFollowUps, rankFollowUps, relateFollowUps } from "@/ui/lib/nextQuestions";
-import { changeChoices, countChoices, numberChoices, rankChoices, relateChoices } from "@/ui/lib/refusalChoices";
+import { countExport, numberExport, quoteText, spanExport } from "@/ui/lib/cardExport";
+import { cellTime, spanNotes, spanSummary, spanTitle, type SpanOk } from "@/ui/lib/spanText";
+import { changeFollowUps, countFollowUps, datasetFollowUps, numberFollowUps, previewFollowUps, rankFollowUps, relateFollowUps, spanFollowUps } from "@/ui/lib/nextQuestions";
+import { changeChoices, countChoices, numberChoices, rankChoices, relateChoices, spanChoices } from "@/ui/lib/refusalChoices";
 import styles from "./ask.module.css";
 
 type Value = { estimate: string; moe: string | null } | null;
@@ -252,6 +253,35 @@ function CountCard({ r, id, onOpen, noMap, args }: { r: CountOk; id?: string; on
   );
 }
 
+// How long things take between an approved pair's dates (spec 2026-10-12-time-spans-design.md §7): every time here
+// comes from the City's server through code, never the AI.
+function SpanCard({ r, onOpen }: { r: SpanOk; onOpen: Open }) {
+  const { warning, notes } = spanNotes(r);
+  const u = r.pair.unit;
+  const rows = [...r.groups, ...(r.other > 0 ? [{ label: "Other", cases: r.other, median: null, p90: null, open: 0 }] : [])];
+  return (
+    <figure className={styles.excerpt} data-card="span">
+      <figcaption className={styles.excerptTitle}>{spanTitle(r)} <ProvenanceTag source="CITY" /></figcaption>
+      {warning && <p className={styles.failed} data-span-warning><b>{warning}</b></p>}
+      <p className={styles.tractSummary} data-summary>{spanSummary(r)}</p>
+      <table className={styles.excerptTable}>
+        <thead>
+          <tr><th scope="col">{r.groupBy === "year" ? "Year" : r.groupBy ?? ""}</th><th scope="col">Cases</th><th scope="col">Median</th><th scope="col">9 in 10 within</th></tr>
+        </thead>
+        <tbody>
+          {rows.map((g) => (
+            <tr key={g.label}><th scope="row">{g.label}</th><td>{g.cases.toLocaleString("en-US")}</td><td>{g.label === "Other" ? "" : cellTime(g, g.median, u)}</td><td>{g.label === "Other" ? "" : cellTime(g, g.p90, u)}</td></tr>
+          ))}
+          <tr><th scope="row">All</th><td>{r.all.cases.toLocaleString("en-US")}</td><td>{cellTime(r.all, r.all.median, u)}</td><td>{cellTime(r.all, r.all.p90, u)}</td></tr>
+        </tbody>
+      </table>
+      {notes.map((n) => <p key={n} className={styles.source}>{n}</p>)}
+      <OpenLink code={r.code} onOpen={onOpen} label="Open the data" />
+      <ExportBar make={(ctx) => spanExport(r, ctx)} />
+    </figure>
+  );
+}
+
 // A broad first count folds away (EarlierCounts); only the count the reader sees gets next questions.
 function CountFollowUps({ items, id }: { items: FollowUp[]; id?: string }) {
   const earlier = useContext(EarlierCounts);
@@ -330,6 +360,19 @@ export function AskCards({ onOpen }: { onOpen?: (search: string) => void }) {
     if (r.status === "too-broad") return <p className={styles.failed}>Too many {r.name} records in {r.area} to count at once; try a shorter period.</p>;
     // choose / bad-column offer the server's options to pick; bad-dates / not-found / not-city have none (the model asks or retries).
     return <FollowUps pick items={countChoices(props.parameters as never, r as never)} id={props.toolCallId} />;
+  } }, [onOpen]);
+
+  useRenderTool({ name: "timeSpan", parameters: spanParams, render: (props) => {
+    if (props.status !== "complete") return <Busy />;
+    const r = parse<SpanResult>(props.result);
+    if (!r) return <Failed />;
+    if (r.status === "ok") return <><SpanCard r={r} onOpen={onOpen} /><FollowUps items={spanFollowUps(props.parameters as never, r)} id={props.toolCallId} /></>;
+    if (r.status === "unavailable") return <p className={styles.failed}>The City&apos;s data didn&apos;t respond. Try again shortly.</p>;
+    if (r.status === "too-broad") return <p className={styles.failed}>Too many {r.name} records to measure at once; try a shorter period.</p>;
+    if (r.status === "busy") return <p className={styles.failed}>City questions are busy for your account; try again shortly.</p>;
+    if (r.status === "outside-coverage") return <p className={styles.failed}>{r.name}: the City&apos;s data here covers {r.coverage}, so there is nothing to measure for that period. <OpenLink code={r.code} onOpen={onOpen} /></p>;
+    // no-pair, not-found, not-city and not-live are said by the model; the rest offer their options to pick.
+    return <FollowUps pick items={spanChoices(props.parameters as never, r as never)} id={props.toolCallId} />;
   } }, [onOpen]);
 
   // The three tract tools: the model handles refusals in words; only an unreachable DYCU gets a line of its own.
