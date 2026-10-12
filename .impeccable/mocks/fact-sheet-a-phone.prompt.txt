@@ -1,0 +1,18 @@
+Mobile web page, portrait phone viewport 390x844 scaled up, rendered flat as a real UI screenshot, no device frame. Masthead collapses to the wordmark and a MENU button.
+
+Direction A, "THE LEDGER": a newspaper data table. Under the title, one ruled table: columns FIGURE | HARAMBEE | CITY OF MILWAUKEE | COMPARED. Each row: the label in bold sans, the Harambee percent large with "± 3.2" small beneath and "6,520 of 18,894" in muted small text, the city figure in the next column, the verdict words in the last column. Grease-pencil red circles around the six "clearly higher" verdicts, a red underline under "clearly lower", nothing on "about the same". People (19,050) sits above the table as a big Saira numeral. Map and sources below in two columns.
+
+CONTENT (real figures; use them exactly):
+Title: HARAMBEE — Neighborhood fact sheet. Subtitle: 2020–2024 American Community Survey · year switcher 2024 2023 2022 2021 (2024 selected).
+Headline figures, each: label · Harambee · City of Milwaukee · verdict · counts:
+- People: 19,050 (no city comparison)
+- People in poverty: 34.5% ± 3.2 · city 22.8% ± 0.8 · clearly higher than the city · 6,520 of 18,894
+- Households earning under $25,000: 37.9% ± 4.9 · city 23.1% ± 0.8 · clearly higher · 3,034 of 8,000
+- Renter households: 71.8% ± 3.5 · city 58.2% ± 0.7 · clearly higher · 5,745 of 8,000
+- Vacant homes: 15.4% ± 2.3 · city 10.3% ± 0.5 · clearly higher · 1,457 of 9,457
+- Renters paying 30% or more of income on rent: 58.0% ± 6.5 · city 50.9% ± 1.5 · clearly higher · 3,220 of 5,549
+- Households with no vehicle: 32.3% ± 3.8 · city 16.2% ± 0.6 · clearly higher · 2,586 of 8,000
+- Adults 25+ with a bachelor's degree or more: 20.1% ± 3.4 · city 27.4% ± 0.6 · clearly lower · 2,206 of 10,991
+- Adults 25+ without a high school diploma: 14.4% ± 2.7 · city 14.5% ± 0.5 · about the same as the city (within the margin of error) · 1,586 of 10,991
+Then: a small map of Harambee's 10 census tracts (hatched), one line "The neighborhood is part of the city, so this comparison is approximate. Margins of error are at 90% confidence." Then a folded list "All 16 of DYCU's tables for 2024 ▸". Sources: "Data You Can Use, 2024 Harambee Neighborhood Portrait Spreadsheet" and "U.S. Census Bureau, American Community Survey 5-year estimates, City of Milwaukee". Buttons: PRINT OR SAVE AS PDF · CSV · COPY TEXT.
+SYSTEM (from the reference screenshot; keep it): Cream City Almanac masthead and nav exactly as in the reference; white paper, black ink, warm grey band #ededea for row stripes; Saira Extra Condensed uppercase display type for headings and labels, a plain sans for body; hairline black rules; NO cards, NO shadows, NO rounded corners, NO color fills except the grey band; red (#d7261e) ONLY as hand-drawn grease-pencil marks (circles, underlines, short handwritten notes), never as UI color. Do not copy the reference page's content (its catalog list or place-by-year grid).

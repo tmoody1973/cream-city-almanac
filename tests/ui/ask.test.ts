@@ -129,6 +129,7 @@ const backend: AskBackend = {
   change: async () => ({ status: "busy" }) as never,
   relate: async () => ({ status: "busy" }) as never,
   span: async () => ({ status: "busy" }) as never,
+  factSheet: async () => ({ status: "no-neighborhood", asked: "", nearest: [] }) as never,
 };
 const tool = (name: string) => askTools(backend).find((t) => t.name === name)!;
 

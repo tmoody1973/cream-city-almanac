@@ -115,6 +115,13 @@ export default defineSchema({
 
   // Each census tract's City neighborhoods (≥10% of its area, biggest first), matched weekly from the City's shapes
   // and DYCU's tract outlines (convex/lib/tractPlaces.ts). Tracts outside the City aren't stored.
+  // The City of Milwaukee's ACS figures for the fact sheet, by portrait period (vintage), raw by variable code.
+  cityFigures: defineTable({
+    period: v.number(),
+    values: v.record(v.string(), v.object({ estimate: v.number(), moe: v.union(v.number(), v.null()) })),
+    fetchedAt: v.number(),
+  }).index("by_period", ["period"]),
+
   tractNeighborhoods: defineTable({
     geoid: v.string(),
     city: v.array(v.object({ name: v.string(), share: v.number() })),

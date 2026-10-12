@@ -106,3 +106,9 @@ test("it explains asking about a neighborhood's tracts", async ({ page }) => {
   await page.goto("/how-it-works");
   await expect(page.getByText(/61% of this tract is in Bay View/)).toBeVisible();
 });
+
+test("it explains fact sheets and where the city figure comes from", async ({ page }) => {
+  await page.goto("/how-it-works");
+  await expect(page.getByText(/fact sheet/i).first()).toBeVisible();
+  await expect(page.getByText(/U\.S\. Census Bureau/)).toBeVisible();
+});
