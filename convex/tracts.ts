@@ -31,9 +31,9 @@ export type Refusal = Tag & (
   | { status: "choose-year"; available: Slot[] | { a: Slot[]; b: Slot[] }; shared?: Slot[]; reason?: string }
   | { status: "unavailable" }
   | { status: "busy" }
-| { status: "no-neighborhood"; asked: string; nearest: string[] }
-| { status: "no-tracts"; name: string; map: AreaMap; years?: number[] }
-| { status: "too-few-tracts"; name: string; map: AreaMap; n: number; needed: number }
+  | { status: "no-neighborhood"; asked: string; nearest: string[] }
+  | { status: "no-tracts"; name: string; map: AreaMap; years?: number[] }
+  | { status: "too-few-tracts"; name: string; map: AreaMap; n: number; needed: number }
 );
 export type RankDetail = { status: "ok"; tool: "rank"; header: Header; direction: "high" | "low"; top: TractRow[]; ties: TractRow[]; tieCount: number; unreliable: TractRow[]; unreliableCount: number; highlighted: string[]; key: string; area?: AreaHead };
 
@@ -290,8 +290,8 @@ export const tractDetail = query({
   },
 });
 
-export type ChangeRow = { geoid: string; tract: string; city: CityShare[]; dycu: string[]; from: TractRow; to: TractRow; change: number; direction: "increase" | "decrease" };
-export type ChangeDetail = { status: "ok"; tool: "change"; header: Header; note: string | null; from: string; to: string; increases: number; decreases: number; none: number; unreliableCount: number; changeCount: number; changes: ChangeRow[]; highlighted: string[]; key: string };
+export type ChangeRow = { geoid: string; tract: string; city: CityShare[]; dycu: string[]; from: TractRow; to: TractRow; change: number; direction: "increase" | "decrease"; share?: number };
+export type ChangeDetail = { status: "ok"; tool: "change"; header: Header; note: string | null; from: string; to: string; increases: number; decreases: number; none: number; unreliableCount: number; changeCount: number; changes: ChangeRow[]; highlighted: string[]; key: string; area?: AreaHead };
 export type Point = { geoid: string; tract: string; city: CityShare[]; dycu: string[]; a: [number, number | null, number | null]; b: [number, number | null, number | null]; unreliable: boolean; mark: "fits" | "close" | null };
 export type RelateDetail = {
   status: "ok"; tool: "relate"; mode: "relate" | "mismatch"; a: Header; b: Header; n: number; unreliableCount: number; rho: number;
@@ -319,9 +319,13 @@ const YEAR_NOTE = {
 // A change counts only when both years are reliable (spec §5 rule 2); tracts that aren't are counted apart, never listed.
 // The card gets every clear change; the model gets the largest ten and the totals.
 export const compareYears = action({
-  args: { code: v.string(), column: v.string(), place: vPlace, from: v.string(), to: v.string() },
+  args: { code: v.string(), column: v.string(), place: vPlace, from: v.string(), to: v.string(), ...vArea },
   handler: async (ctx, args): Promise<ChangeAnswer | Refusal> => {
     const spend = await spender(ctx); // sign-in check now; the budget is spent once, before the first DYCU fetch
+    const area = await areaFor(ctx, args);
+    if (area && "status" in area) return area;
+    const names = await loadNames(ctx);
+    if (area && areaSize(names, area) === 0) return noTracts(area, names);
     if (await propertySide(ctx, args.code, args.column)) return { status: "choose-year", available: [], reason: "The City's property file holds only the current assessment, so it can't show change over time." };
     const fam: Fam | null = await ctx.runQuery(internal.tracts.familyForTracts, { code: args.code });
     const l1 = pickMember(fam, args.place, args.from);
@@ -335,11 +339,14 @@ export const compareYears = action({
     if ("status" in r2) return r2.status === "busy" ? r2 : { ...r2, year: args.to };
     const [y1, y2] = await Promise.all([loadValues(ctx, r1), loadValues(ctx, r2)]);
     if (!y1 || !y2) return { status: "unavailable" };
-    const names = await loadNames(ctx);
-    const later = new Map(y2.values.map((x) => [x.geoid, x]));
+    // In a neighborhood, only its tracts are compared or counted (spec §4.3); membership uses the later year's names.
+    const inArea = (geoid: string) => (area ? shareIn(placesOf(geoid, r2.year, names), area) : 100);
+    const v1 = y1.values.filter((x) => inArea(x.geoid) !== null);
+    const v2 = y2.values.filter((x) => inArea(x.geoid) !== null);
+    const later = new Map(v2.map((x) => [x.geoid, x]));
     let increases = 0, decreases = 0, none = 0, unreliableCount = 0;
     const changes: ChangeRow[] = [];
-    for (const a of y1.values) {
+    for (const a of v1) {
       const b = later.get(a.geoid);
       if (!b) continue;
       if (isUnreliable(a) || isUnreliable(b)) { unreliableCount++; continue; }
@@ -347,18 +354,20 @@ export const compareYears = action({
       if (d === "none") { none++; continue; }
       if (d === "increase") increases++; else decreases++;
       const to = toRow(b, r2.year, names);
-      changes.push({ geoid: a.geoid, tract: to.tract, city: to.city, dycu: to.dycu, from: toRow(a, r1.year, names), to, change: b.value - a.value, direction: d });
+      changes.push({ geoid: a.geoid, tract: to.tract, city: to.city, dycu: to.dycu, from: toRow(a, r1.year, names), to, change: b.value - a.value, direction: d, ...(area ? { share: inArea(a.geoid) ?? undefined } : {}) });
     }
     changes.sort((p, q) => Math.abs(q.change) - Math.abs(p.change));
     const { key, save } = await store(ctx, { tool: "change", ...args, from: r1.year, to: r2.year, code: r1.family.code, column: r1.column });
     const matched = increases + decreases + none + unreliableCount;
-    // Left out: tracts only one year has, plus the rows each year dropped for having no usable value.
-    const leftOut = y1.values.length - matched + (y2.values.length - matched) + y1.leftOut + y2.leftOut;
+    // Left out: tracts only one year has, plus the rows each year dropped for having no usable value (whole place only).
+    const leftOut = v1.length - matched + (v2.length - matched) + (area ? 0 : y1.leftOut + y2.leftOut);
+    const areaShares = area ? v1.filter((x) => later.has(x.geoid)).map((x) => inArea(x.geoid) ?? 0) : [];
     const detail: ChangeDetail = {
       // A change can only be called clear when both years publish a range; one bare year makes the whole comparison bare.
       status: "ok", tool: "change", header: { ...header(r1, args.place, `${r1.year}\u2013${r2.year}`, matched, leftOut), ...(r2.range ? {} : { confidence: null }) },
       note: r1.range && r2.range ? YEAR_NOTE[r1.range.kind] : null,
       from: r1.year, to: r2.year, increases, decreases, none, unreliableCount, changeCount: changes.length, changes, highlighted: changes.map((c) => c.geoid), key,
+      ...(area ? { area: areaHead(area, areaShares) } : {}),
     };
     await save(detail);
     const { highlighted: _highlighted, ...rest } = detail;

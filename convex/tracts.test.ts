@@ -389,6 +389,18 @@ describe("compareYears", () => {
     expect(await as.action(api.tracts.compareYears, { code: "E02", column: "pov_rate", place: "City", from: "2022", to: "2031" })).toMatchObject({ status: "choose-year", year: "2031", available: [{ place: "City", year: "2022" }, { place: "City", year: "2023" }] });
     expect(await as.action(api.tracts.compareYears, { code: "E02", column: "pov_rate", place: "City", from: "2022", to: "2022" })).toMatchObject({ status: "choose-year", reason: "pick two different years" });
   });
+  it("compares only the tracts in a neighborhood, with their share", async () => {
+    const t = await seedTwoYears();
+    await t.run(async (ctx) => {
+      await ctx.db.insert("neighborhoods", { definition: "city", name: "Bay View", matchKey: "bay view" });
+      for (const [geoid, share] of [["55079100000", 100], ["55079100100", 61], ["55079100200", 15]] as const)
+        await ctx.db.insert("tractNeighborhoods", { geoid, city: [{ name: "Bay View", share }] });
+    });
+    installFakeFetch({ columns: POV_FIELDS, tractRows: (url) => (url.includes("2023") ? later((i) => ({ delta: i === 0 || i === 5 ? 5 : 0 }))() : povertyRows()) });
+    const r = await t.withIdentity(reader).action(api.tracts.compareYears, { code: "E02", column: "pov_rate", place: "City", from: "2022", to: "2023", neighborhood: "Bay View" });
+    expect(r).toMatchObject({ status: "ok", increases: 1, decreases: 0, none: 2, area: { name: "Bay View", tracts: 3, partly: 2 }, header: { n: 3, leftOut: 0 } });
+    if (r.status === "ok") expect(r.changes.map((c) => [c.tract, c.share])).toEqual([["1000", 100]]);
+  });
 });
 
 describe("tractDetail", () => {
