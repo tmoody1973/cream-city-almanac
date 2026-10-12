@@ -77,18 +77,26 @@ export function previewFollowUps(r: { code: string; name: string; fields: string
   return [...(tract ? [{ label: "RANK TRACTS ON THIS", question: `Which census tracts rank highest on ${r.code} ${r.name}?` }] : []), caveats(r)];
 }
 
-type SpanArgsIn = { code: string; groupBy?: string; from?: string; to?: string };
+// The card's own filters and period, in the words count buttons use, so a follow-up asks about the same records.
+type Scope = { from?: string; to?: string; filters?: { column: string; values?: string[] }[] };
+const scope = (a: Scope) =>
+  `${a.filters?.length ? ` where ${a.filters.map((f) => `${f.column} is ${(f.values ?? []).join(" or ")}`).join(" and ")}` : ""}${a.from || a.to ? `, ${[a.from && `from ${a.from}`, a.to && `to ${a.to}`].filter(Boolean).join(" ")}` : ""}`;
+const filtered = (a: Scope) => new Set((a.filters ?? []).map((f) => f.column));
+
+type SpanArgsIn = Scope & { code: string; groupBy?: string };
 const spanBase = (r: SpanOk) => `How long did ${r.pair.things} take ${r.pair.toWhat} in ${r.name} (${r.code})`;
 export function spanFollowUps(args: SpanArgsIn, r: SpanOk): FollowUp[] {
   const out: FollowUp[] = [];
-  if (r.groupBy !== "year") out.push({ label: "BY YEAR", question: `${spanBase(r)}, by year?` });
-  for (const c of r.columns.filter((c) => c !== r.groupBy).slice(0, 2)) out.push({ label: `BY ${c.replace(/_/g, " ").toUpperCase()}`, question: `${spanBase(r)}, by ${c}?` });
+  const base = `${spanBase(r)}${scope(args)}`;
+  if (r.groupBy !== "year") out.push({ label: "BY YEAR", question: `${base}, by year?` });
+  for (const c of r.columns.filter((c) => c !== r.groupBy && !filtered(args).has(c)).slice(0, 2)) out.push({ label: `BY ${c.replace(/_/g, " ").toUpperCase()}`, question: `${base}, by ${c}?` });
   return out.slice(0, MAX);
 }
 
 const measureBase = (r: MeasureOk) => `How much ${r.measure.name} in ${r.name} (${r.code})`;
-export function measureFollowUps(r: MeasureOk): FollowUp[] {
-  const out: FollowUp[] = r.splits.filter((s) => s !== r.groupBy).slice(0, 2).map((s) => ({ label: `BY ${s.replace(/_/g, " ").toUpperCase()}`, question: `${measureBase(r)}, by ${s}?` }));
-  if (!r.averageAsked) out.push({ label: "SHOW THE AVERAGE", question: `What is the average ${r.measure.name} in ${r.name} (${r.code})${r.groupBy ? `, by ${r.groupBy}` : ""}?` });
+export function measureFollowUps(args: Scope & { code: string; groupBy?: string }, r: MeasureOk): FollowUp[] {
+  const where = scope(args);
+  const out: FollowUp[] = r.splits.filter((s) => s !== r.groupBy && !filtered(args).has(s)).slice(0, 2).map((s) => ({ label: `BY ${s.replace(/_/g, " ").toUpperCase()}`, question: `${measureBase(r)}${where}, by ${s}?` }));
+  if (!r.averageAsked) out.push({ label: "SHOW THE AVERAGE", question: `What is the average ${r.measure.name} in ${r.name} (${r.code})${where}${r.groupBy ? `, by ${r.groupBy}` : ""}?` });
   return out.slice(0, MAX);
 }

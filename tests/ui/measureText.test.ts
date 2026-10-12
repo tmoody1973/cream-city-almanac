@@ -63,8 +63,8 @@ describe("measure export, follow-ups and choices", () => {
     expect(rate.csv.head).toEqual(["Ald Dist", "Records", "Median (dollars per hour)"]);
   });
   it("offers another split and the average, and turns choose-measure into buttons", () => {
-    expect(measureFollowUps(base).map((f) => f.label)).toEqual(["BY LEVY YEAR", "SHOW THE AVERAGE"]);
-    expect(measureFollowUps(base)[0].question).toBe("How much back tax owed in Delinquent Real Estate Tax Accounts (H19), by Levy Year?");
+    expect(measureFollowUps({ code: "H19", groupBy: "Ald Dist" }, base).map((f) => f.label)).toEqual(["BY LEVY YEAR", "SHOW THE AVERAGE"]);
+    expect(measureFollowUps({ code: "H19", groupBy: "Ald Dist" }, base)[0].question).toBe("How much back tax owed in Delinquent Real Estate Tax Accounts (H19), by Levy Year?");
     expect(measureChoices({ status: "choose-measure", code: "X36", name: "City Employee Salary Data", measures: [{ id: "gross-pay", name: "gross pay" }] })).toEqual([{ label: "gross pay", question: "How much gross pay in City Employee Salary Data (X36)? (measure gross-pay)" }]);
   });
 });
@@ -114,5 +114,18 @@ describe("a refusal from a how-much question", () => {
   it("still offers count buttons for a count", () => {
     const r = refusalChoicesFor({ code: "H19", groupBy: "Ward" }, { status: "bad-column", code: "H19", name: "Delinquent Real Estate Tax Accounts", column: "Ward", columns: ["Ald Dist"] });
     expect(r[0].question).not.toContain("How much");
+  });
+});
+
+describe("measure follow-ups keep the card's filters and period", () => {
+  it("carries a filter into the question, and skips a split the card is already filtered to", () => {
+    const f = measureFollowUps({ code: "H19", groupBy: "Ald Dist", filters: [{ column: "Levy Year", values: ["2024"] }] }, base);
+    expect(f.map((x) => x.label)).toEqual(["SHOW THE AVERAGE"]);
+    expect(f[0].question).toBe("What is the average back tax owed in Delinquent Real Estate Tax Accounts (H19) where Levy Year is 2024, by Ald Dist?");
+  });
+  it("carries the period", () => {
+    const sales = { ...base, code: "X12", name: "Property Sales Data", groupBy: "District", splits: ["District", "PropType", "year"], measure: { ...base.measure, name: "sale price" } };
+    const f = measureFollowUps({ code: "X12", groupBy: "District", from: "2025-01-01", to: "2025-06-30" }, sales);
+    expect(f[0].question).toBe("How much sale price in Property Sales Data (X12), from 2025-01-01 to 2025-06-30, by PropType?");
   });
 });

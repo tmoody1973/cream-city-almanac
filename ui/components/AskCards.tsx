@@ -399,7 +399,7 @@ export function AskCards({ onOpen }: { onOpen?: (search: string) => void }) {
     if (props.status !== "complete") return <Busy />;
     const r = parse<CountForModel>(props.result);
     if (!r) return <Failed />;
-    if (r.status === "measured") return <><MeasureCard r={r} onOpen={onOpen} /><FollowUps items={measureFollowUps(r)} id={props.toolCallId} /></>;
+    if (r.status === "measured") return <><MeasureCard r={r} onOpen={onOpen} /><FollowUps items={measureFollowUps(props.parameters as never, r)} id={props.toolCallId} /></>;
     if (r.status === "choose-measure") return <FollowUps pick items={measureChoices(r)} id={props.toolCallId} />;
     if (r.status === "ok") return <><CountOrEarlier r={r} id={props.toolCallId} onOpen={onOpen} args={props.parameters} /><CountFollowUps items={countFollowUps(props.parameters as never, r)} id={props.toolCallId} /></>;
     if (r.status === "outside-coverage") return <p className={styles.failed} data-card="count-outside">{outsideCoverage(r)} <OpenLink code={r.code} onOpen={onOpen} /></p>;

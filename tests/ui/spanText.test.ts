@@ -71,6 +71,11 @@ describe("span follow-ups and choices", () => {
     expect(f.map((x) => x.label)).toEqual(["BY YEAR", "BY STATUS"]);
     expect(f[0].question).toBe("How long did complaints take to close in Citizen Complaints (P24), by year?");
   });
+  it("keeps the card's filters and period, and skips a column the card is already filtered to", () => {
+    const f = spanFollowUps({ code: "P24", groupBy: "Department", from: "2024-01-01", filters: [{ column: "Status", values: ["Closed"] }] }, r);
+    expect(f.map((x) => x.label)).toEqual(["BY YEAR"]);
+    expect(f[0].question).toBe("How long did complaints take to close in Citizen Complaints (P24) where Status is Closed, from 2024-01-01, by year?");
+  });
   it("turns a choose-pair refusal into one button per pair", () => {
     const c = spanChoices({ code: "P04" }, { status: "choose-pair", code: "P04", name: "Fire Incident Detail", pairs: [{ id: "fire-arrive", name: "time to arrive", from: "Date_Received", to: "Date_Arrived" }] });
     expect(c).toEqual([{ label: "time to arrive", question: "How long is the time to arrive in Fire Incident Detail (P04)? (pair fire-arrive)" }]);
