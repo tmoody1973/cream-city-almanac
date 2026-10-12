@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { askTools, measureSentence, spanDescription, type AskBackend } from "../../lib/ask/tools";
+import { ASK_PROMPT } from "../../lib/ask/prompt";
 
 const backend = (relateResult: unknown): AskBackend => ({
   search: async () => ({ results: [] }) as never, sheet: async () => null, number: async () => ({}) as never, report: async () => ({}) as never, count: async () => ({}) as never,
@@ -55,5 +56,23 @@ describe("City measures", () => {
     expect(shape.measure).toBeDefined();
     for (const id of ["tax-owed", "pp-tax-owed", "gross-pay", "hourly-rate", "sale-price", "assessed-value"]) expect(tool.description).toContain(id);
     expect(measureSentence()).toContain("Never sum");
+  });
+});
+
+describe("tract questions by neighborhood", () => {
+  it("gives all three tract tools a neighborhood and a map, and says what their refusals mean", () => {
+    for (const name of ["rankTracts", "compareYears", "relateTracts"]) {
+      const tool = askTools(backend({})).find((t) => t.name === name)!;
+      const shape = (tool.parameters as { shape: Record<string, unknown> }).shape;
+      expect(shape).toHaveProperty("neighborhood");
+      expect(shape).toHaveProperty("map");
+      expect(tool.description).toContain("neighborhood");
+      expect(tool.description).toContain("no-neighborhood");
+    }
+    expect(askTools(backend({})).find((t) => t.name === "relateTracts")!.description).toContain("too-few-tracts");
+  });
+  it("keeps one figure for a DYCU neighborhood on getNumber, and sends its tracts to the tract tools", () => {
+    expect(ASK_PROMPT).toContain("For a neighborhood's tracts");
+    expect(ASK_PROMPT).toContain("one figure for a neighborhood DYCU profiles, use getNumber");
   });
 });
