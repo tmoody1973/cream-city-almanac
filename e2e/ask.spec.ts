@@ -1,4 +1,5 @@
 // The shared fixtures add the Vercel preview bypass in CI.
+import { readFile } from "node:fs/promises";
 import { expect, test } from "./fixtures";
 
 test("signed out, Ask offers sign-in and search stays public", async ({ page }, info) => {
@@ -79,6 +80,8 @@ test.describe("signed in", () => {
     await expect(passage).toBeVisible({ timeout: 30_000 });
     expect(await passage.locator("p, li, tr").count()).toBeGreaterThan(1);
     await expect(passage).not.toContainText("| --- |");
+    // A quote copies as text only: no CSV, no image.
+    await expect(passage.locator("[data-export]").getByRole("button")).toHaveText(["Copy text"]);
   });
 
   test("a reply keeps its paragraphs and its list of story angles", async ({ page }) => {
@@ -337,6 +340,34 @@ test.describe("signed in", () => {
     await expect(page.locator("[data-card=preview]")).toContainText("Daily Air Quality", { timeout: 30_000 });
     await expect(page.locator("[data-follow-ups=next]").filter({ visible: true })).toHaveCount(1);
     await expect(page.locator("[data-follow-ups=next]").filter({ visible: true }).getByRole("button", { name: "SHOW THE LOWEST" })).toHaveCount(0);
+  });
+
+  test("a tract card exports CSV, text and a PNG, each with its source", async ({ page, context }, info) => {
+    test.skip(!(await dycuUp(page)), "DYCU unreachable");
+    await ask(page, "rank tracts by poverty");
+    const card = page.locator("[data-card=tract-rank]:visible");
+    await expect(card.locator("tbody tr").first()).toBeVisible({ timeout: 60_000 });
+    const bar = card.locator("[data-export]");
+    await expect(bar.getByRole("button", { name: "CSV" })).toBeEnabled({ timeout: 30_000 });
+
+    const [csv] = await Promise.all([page.waitForEvent("download"), bar.getByRole("button", { name: "CSV" }).click()]);
+    expect(csv.suggestedFilename()).toBe("almanac_E02-pov_rate_County-2023_rank.csv");
+    const text = (await readFile(await csv.path())).toString("utf8");
+    expect(text).toContain("Rank,Tract,GEOID,City neighborhoods,DYCU areas,pov_rate (percent),Low,High,Status");
+    expect(text).toContain("Source: DYCU, E02");
+
+    const [png] = await Promise.all([page.waitForEvent("download"), bar.getByRole("button", { name: "PNG" }).click()]);
+    expect(png.suggestedFilename()).toBe("almanac_E02-pov_rate_County-2023_rank.png");
+    expect([...(await readFile(await png.path())).subarray(0, 8)]).toEqual([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+
+    // Only Chromium lets a test read the clipboard; the phone project runs WebKit.
+    if (info.project.name !== "phone") {
+      await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+      await bar.getByRole("button", { name: "Copy text" }).click();
+      await expect(bar.getByRole("status")).toHaveText("Copied");
+      expect(await page.evaluate(() => navigator.clipboard.readText())).toMatch(/^Highest pov_rate · County 2023\n/);
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   });
 
   test("a wrong column offers the server's columns as 'Pick one:' buttons", async ({ page }) => {

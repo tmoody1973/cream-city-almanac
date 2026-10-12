@@ -6,10 +6,12 @@ import type { CityShare } from "@/convex/lib/tractPlaces";
 import type { ChangeAnswer, Header, RankDetail, RelateAnswer, RelateDetail, TractRow } from "@/convex/tracts";
 import { cityList, dycuText, placesLabel } from "@/ui/lib/placeNames";
 import { changeText, mismatchVerdict, noMargin, plainMeaning, rangeText, tooFew, unitOf, type Unit } from "@/ui/lib/tractFormat";
-import { AREA_NOTE, changeSummary, EXACT, propertyNotes, rankSummary, relateSummary } from "@/ui/lib/tractSummary";
+import { changeSummary, EXACT, fineText, KIND, rankSummary, relateSummary } from "@/ui/lib/tractSummary";
 import { capTractIds, MAX_TRACT_SHAPES } from "@/ui/lib/tractShapes";
+import { changeExport, rankExport, relateExport } from "@/ui/lib/cardExport";
 import { BigView } from "./BigView";
 import { CityMap } from "./CityMapLoader";
+import { ExportBar } from "./ExportBar";
 import { OpenLink, type Open } from "./OpenLink";
 import { ProvenanceTag } from "./ProvenanceTag";
 import { TractLegend, TractScatter } from "./TractScatter";
@@ -24,7 +26,6 @@ const range = (r: { value: number; lo: number | null; hi: number | null }, pct: 
   const t = rangeText(r, pct);
   return t.span ? <>{t.value} <span className={styles.tractNb}>{t.span}</span></> : t.value;
 };
-const KIND = { rate: "a rate", count: "a count", value: "a value" } as const;
 const STRENGTH = { little: "Little relationship", weak: "Weakly related", moderate: "Moderately related", strong: "Strongly related" } as const;
 
 export type RankShown = RankDetail;
@@ -70,13 +71,9 @@ const HowToRead = ({ children }: { children: string }) => (
 );
 
 function Fine({ heads, causal, lead, onOpen }: { heads: { code: string; column: string; confidence: string | null }[]; causal?: boolean; lead?: string; onOpen: Open }) {
-  // Exact City figures have no margin, so only the survey sides are listed as ranges.
-  const levels = [...new Set(heads.filter((h) => h.confidence !== EXACT).map((h) => h.confidence ?? "no margin of error found for this column"))];
-  const exact = heads.some((h) => h.confidence === EXACT);
-  const bare = heads.some((h) => !h.confidence); // spec §5 rule 7
   return (
     <p className={styles.tractFine}>
-      {lead && `${lead} `}{levels.length > 0 && `Ranges are margins of error: ${levels.join("; ")}.`}{exact && " Property figures are exact (City records)."}{bare && " Without a margin of error, findings can't be separated from noise."}{causal && " Related doesn't mean one causes the other."}{propertyNotes(heads).map((n) => ` ${n}`).join("")} {AREA_NOTE}{" "}
+      {fineText(heads, { causal, lead })}{" "}
       {/* A new tab, so the conversation stays where it is. */}
       <a href={NEIGHBORHOODS_HELP} target="_blank" rel="noopener">How neighborhoods work</a>. Caveats:{" "}
       {heads.map((h, i) => <span key={h.code}>{i > 0 && " \u00b7 "}<OpenLink code={h.code} onOpen={onOpen} label={h.code} /></span>)}
@@ -128,8 +125,10 @@ function Places({ city }: { city?: CityShare[] }) {
 
 const TIES_INLINE = 5;
 
+const BARE_RANK = "No margin of error found for this column, so ranks may be ties.";
+
 export function RankCard({ r, onOpen }: { r: RankShown; onOpen: Open }) {
-  const { detail } = useDetail(r.key);
+  const { detail, expired } = useDetail(r.key);
   const full = detail?.tool === "rank" ? detail : null;
   const h = full?.header ?? r.header;
   const pct = unitOf(h.meaning);
@@ -170,7 +169,7 @@ export function RankCard({ r, onOpen }: { r: RankShown; onOpen: Open }) {
     <div className={`${styles.reference} ${styles.tractCard}`} data-card="tract-rank">
       <Head h={h} title={title} summary={summary} expand={expand} />
       {table}
-      {bare && <p className={styles.tractCounts}>No margin of error found for this column, so ranks may be ties.</p>}
+      {bare && <p className={styles.tractCounts}>{BARE_RANK}</p>}
       {!bare && foldedCount > 0 && (
         <details className={styles.tractMore} data-ties>
           <summary>{exact ? `${foldedCount} more with the same figure as #${r.top.length}` : `${foldedCount} more tied with #${r.top.length} (within the margin of error)`}</summary>
@@ -194,12 +193,13 @@ export function RankCard({ r, onOpen }: { r: RankShown; onOpen: Open }) {
         {exact ? `Tracts with exactly the same figure as #${r.top.length} are listed beside it.` : `Tracts whose range overlaps the range of #${r.top.length} could really be #${r.top.length}, so they're listed as tied with it. A tract whose margin of error is large next to its estimate is too uncertain to rank, so it's left out of the list.`}
       </HowToRead>
       <Fine heads={[h]} onOpen={onOpen} />
+      <ExportBar expired={expired} make={full && ((ctx) => rankExport(full, { title, lines: bare ? [summary, BARE_RANK] : [summary], fine: fineText([full.header]) }, ctx))} />
     </div>
   );
 }
 
 export function ChangeCard({ r, onOpen }: { r: ChangeShown; onOpen: Open }) {
-  const { detail } = useDetail(r.key);
+  const { detail, expired } = useDetail(r.key);
   const full = detail?.tool === "change" ? detail : null;
   const h = full?.header ?? r.header;
   const pct = unitOf(h.meaning);
@@ -207,6 +207,9 @@ export function ChangeCard({ r, onOpen }: { r: ChangeShown; onOpen: Open }) {
   const title = `${h.column} \u00b7 ${h.place} ${r.from} \u2192 ${r.to}`;
   const bare = noMargin([h]);
   const summary = changeSummary({ header: h, from: r.from, to: r.to, increases: r.increases, decreases: r.decreases, none: r.none });
+  const counts = bare
+    ? `Can't tell which tracts changed clearly: ${bare}.`
+    : `${r.increases} clear increases · ${r.decreases} clear decreases · ${r.none} no clear change${r.unreliableCount > 0 ? ` · ${r.unreliableCount} not compared (too uncertain)` : ""}`;
   const table = changes.length > 0 && (
     <Table head={["Tract", "Neighborhood", "DYCU area", r.from, r.to, "Change"]} title={title}>
       {changes.map((c) => (
@@ -252,6 +255,7 @@ export function ChangeCard({ r, onOpen }: { r: ChangeShown; onOpen: Open }) {
         {"A change counts as clear only when it is bigger than both years' margins of error combined, the Census Bureau's test. A smaller change could be survey noise, so it isn't listed."}
       </HowToRead>
       <Fine heads={[h]} onOpen={onOpen} />
+      <ExportBar expired={expired} make={full && ((ctx) => changeExport(full, { title, lines: [summary, counts], fine: fineText([full.header]) }, ctx))} />
     </div>
   );
 }
@@ -269,6 +273,8 @@ export function RelateCard({ r, onOpen }: { r: RelateShown; onOpen: Open }) {
   const bare = noMargin([a, b]);
   const title = `${a.name} vs. ${b.name}`;
   const summary = relateSummary({ ...r, a, b });
+  const verdict = mismatch ? mismatchVerdict({ fitsCount: r.fitsCount, closeCount: r.closeCount, n: r.n, gated, bare }) : r.strength === "too-few" ? tooFew(r.n) : STRENGTH[r.strength];
+  const lead = mismatch && !gated ? `Cutoffs: ${side(r.aSide)} third on ${a.column}, ${side(r.bSide)} third on ${b.column}.` : undefined;
   const plot = (big?: boolean) => (
     <>
       <TractScatter points={points} cutA={r.cutA} cutB={r.cutB} aSide={r.aSide} bSide={r.bSide} a={a} b={b} counts={bare ? undefined : { fits: r.fitsCount, close: r.closeCount }} big={big} />
@@ -305,7 +311,7 @@ export function RelateCard({ r, onOpen }: { r: RelateShown; onOpen: Open }) {
         {b.code} <b>{b.column}</b> ({plainMeaning(b.meaning) || "no definition in the column guide"}, {KIND[b.kind]}) · {b.place} {b.year} <ProvenanceTag source={sourceOf(b)} />
       </p>
       <p className={styles.tractVerdict}>
-        {mismatch ? mismatchVerdict({ fitsCount: r.fitsCount, closeCount: r.closeCount, n: r.n, gated, bare }) : r.strength === "too-few" ? tooFew(r.n) : STRENGTH[r.strength]}
+        {verdict}
       </p>
       {r.unreliableCount > 0 && <p className={styles.tractCounts}>{r.unreliableCount} tracts are too uncertain to count (shown faint).</p>}
       {expired ? (
@@ -321,12 +327,8 @@ export function RelateCard({ r, onOpen }: { r: RelateShown; onOpen: Open }) {
       )}
       <MapSlot url={full?.a.url} fits={full?.highlighted} close={full?.closeIds} />
       {(mismatch ? !gated : r.strength !== "too-few") && <HowToRead>{how}</HowToRead>}
-      <Fine
-        heads={[a, b]}
-        causal
-        onOpen={onOpen}
-        lead={mismatch && !gated ? `Cutoffs: ${side(r.aSide)} third on ${a.column}, ${side(r.bSide)} third on ${b.column}.` : undefined}
-      />
+      <Fine heads={[a, b]} causal onOpen={onOpen} lead={lead} />
+      <ExportBar expired={expired} make={full && ((ctx) => relateExport(full, { title, lines: [summary, verdict, ...(r.unreliableCount > 0 ? [`${r.unreliableCount} tracts are too uncertain to count (shown faint).`] : [])], fine: fineText([full.a, full.b], { causal: true, lead }) }, ctx))} />
     </div>
   );
 }

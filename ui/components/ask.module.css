@@ -191,3 +191,8 @@
 .pickLabel { font-family: var(--font-caps); font-weight: 700; text-transform: uppercase; }
 /* A long choice (a column's plain meaning) wraps inside its button instead of pushing past a phone's edge. */
 .followUps .expand { flex: 0 1 auto; max-width: 100%; text-align: left; padding: 6px 12px; }
+
+/* Export a card (spec 2026-10-12): small underlined text buttons under the card, wrapping on phones. */
+.exportBar { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; margin: 8px 0 0; color: var(--muted); }
+.exportBar button { min-height: 32px; padding: 0; background: none; border: 0; font: inherit; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.exportBar button:disabled { color: var(--muted); text-decoration: none; cursor: default; }

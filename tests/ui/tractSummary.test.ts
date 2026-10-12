@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { axisTitle, changeSummary, placeName, propertyCountSummary, propertyNotes, rankSummary, relateSummary, subject } from "../../ui/lib/tractSummary";
+import { AREA_NOTE, axisTitle, changeSummary, EXACT, fineText, placeName, propertyCountSummary, propertyNotes, rankSummary, relateSummary, subject } from "../../ui/lib/tractSummary";
 
 const pov = { code: "E02", name: "Households Living in Poverty", column: "pov_rate", meaning: "Estimate - Percentage of households with income below the poverty line Calculation: (poverty / households) x 100", place: "County", year: "2023", confidence: "90% confidence (Census)" };
 const food = { code: "F02", name: "Food Insecurity Prevalence", column: "per_insecure", meaning: "Estimate - percentage of population 18 years or older who report that the food that they bought always/usually didn't last and they didn't have money to get more", place: "County", year: "2023", confidence: "95% confidence (CDC)" };
@@ -162,5 +162,20 @@ describe("property sentences", () => {
     expect(propertyCountSummary({ count: 83243, filters: ["assessed over $200,000"], period: "2026 assessment", of: { count: 151500, label: "with an assessed value" } })).toBe(
       "83,243 properties in the City of Milwaukee are assessed over $200,000 (2026 assessment), out of 151,500 with an assessed value. Assessed value is the City's figure for property taxes, not what a home would sell for.",
     );
+  });
+});
+
+describe("fine print", () => {
+  const poverty = { column: "pov_rate", confidence: "90% confidence (Census)" };
+  it("names the margin's confidence, then the area note", () => {
+    expect(fineText([poverty])).toBe(`Ranges are margins of error: 90% confidence (Census). ${AREA_NOTE}`);
+  });
+  it("adds the cutoffs, exact City figures, 'related isn't caused' and the property notes, in the card's order", () => {
+    expect(fineText([poverty, { column: "median_assessed", confidence: EXACT }], { causal: true, lead: "Cutoffs: top third on pov_rate, bottom third on median_assessed." })).toBe(
+      "Cutoffs: top third on pov_rate, bottom third on median_assessed. Ranges are margins of error: 90% confidence (Census). Property figures are exact (City records). Related doesn't mean one causes the other. Assessed value is the City's figure for property taxes, not what a home would sell for. Property figures cover the City of Milwaukee; tracts on the City line count only their City part. A pattern across tracts doesn't tell you about any one home or family. " + AREA_NOTE,
+    );
+  });
+  it("says when a column has no margin of error", () => {
+    expect(fineText([{ column: "x", confidence: null }])).toBe(`Ranges are margins of error: no margin of error found for this column. Without a margin of error, findings can't be separated from noise. ${AREA_NOTE}`);
   });
 });
