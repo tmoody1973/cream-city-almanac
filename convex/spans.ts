@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import { action } from "./_generated/server";
+import { action, internalAction, internalQuery } from "./_generated/server";
 import { chicagoDay } from "./lib/ask";
 import { datastoreSql } from "./lib/ckan";
 import { buildSpan } from "./lib/spanSql";
@@ -60,5 +60,32 @@ export const timeSpan = action({
       console.error(`City time span failed for ${data.code}: ${message}`);
       return { status: /Timed out/.test(message) ? "too-broad" : "unavailable", code: data.code, name };
     }
+  },
+});
+
+export const profileFor = internalQuery({
+  args: { familyKey: v.string() },
+  handler: (ctx, { familyKey }) => ctx.db.query("cityProfiles").withIndex("by_family", (q) => q.eq("familyKey", familyKey)).first(),
+});
+
+// The live check before a release (spec §9): every approved pair, measured whole, against the City's server.
+// Read-only. Run with `npx convex run spans:checkPairs` (add --prod for the live site).
+export const checkPairs = internalAction({
+  args: {},
+  handler: async (ctx): Promise<{ id: string; ok: boolean; error?: string; all?: SpanAll }[]> => {
+    const out: { id: string; ok: boolean; error?: string; all?: SpanAll }[] = [];
+    for (const pair of SPAN_PAIRS) {
+      const profile = await ctx.runQuery(internal.spans.profileFor, { familyKey: pair.familyKey });
+      if (!profile) { out.push({ id: pair.id, ok: false, error: "no profile" }); continue; }
+      const built = buildSpan(profile, pair, {}, chicagoDay(Date.now()));
+      if (!built.ok) { out.push({ id: pair.id, ok: false, error: built.status }); continue; }
+      try {
+        const rows = await datastoreSql<Record<string, unknown>>(built.allSql);
+        out.push({ id: pair.id, ok: true, all: shapeSpan(null, rows[0], false, false).all });
+      } catch (e) {
+        out.push({ id: pair.id, ok: false, error: e instanceof Error ? e.message : String(e) });
+      }
+    }
+    return out;
   },
 });

@@ -3,7 +3,7 @@ import rateLimiterTest from "@convex-dev/rate-limiter/test";
 import { convexTest } from "convex-test";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { installFakeFetch } from "../tests/helpers/fakeFetch";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import schema from "./schema";
 
 const modules = import.meta.glob("./**/*.*s");
@@ -61,5 +61,16 @@ describe("timeSpan", () => {
     expect(await t.withIdentity(reader).action(api.spans.timeSpan, { code: "P24" })).toMatchObject({ status: "unavailable", code: "P24" });
     vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("Timed out after 10s: https://data.milwaukee.gov/…"); }));
     expect(await t.withIdentity(reader).action(api.spans.timeSpan, { code: "P24" })).toMatchObject({ status: "too-broad", code: "P24" });
+  });
+});
+
+describe("checkPairs", () => {
+  it("measures every approved pair that has a profile, and says which have none", async () => {
+    const t = await seed();
+    installFakeFetch({ citySql: () => all });
+    const out = await t.action(internal.spans.checkPairs, {});
+    expect(out.find((x) => x.id === "complaint-close")).toMatchObject({ ok: true, all: { cases: 2731 } });
+    expect(out.find((x) => x.id === "311-close")).toMatchObject({ ok: false, error: "no profile" });
+    expect(out).toHaveLength(7);
   });
 });
