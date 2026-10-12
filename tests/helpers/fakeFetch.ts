@@ -24,6 +24,8 @@ export interface FakeOptions {
   tractStatus?: number;
   tractShapes?: unknown; // DYCU's tract outlines (f=geojson)
   tractShapesStatus?: number;
+  geocoder?: (url: string) => unknown; // the Census Bureau's address geocoder
+  geocoderStatus?: number;
   census?: (url: string) => unknown; // the Census Bureau's ACS API (City of Milwaukee figures)
   censusStatus?: number;
 }
@@ -129,6 +131,7 @@ export function installFakeFetch(opts: FakeOptions = {}) {
       const status = opts.portraitStatus ?? 200;
       return new Response(status === 200 ? new Uint8Array(opts.portraitBytes ?? portraitBytes(2023)) : "down", { status });
     }
+    if (url.includes("geocoding.geo.census.gov")) return json(opts.geocoderStatus ?? 200, opts.geocoder?.(url) ?? { result: { addressMatches: [] } });
     if (url.includes("api.census.gov")) return json(opts.censusStatus ?? 200, opts.census?.(url) ?? []);
     return json(404, { error: `unexpected URL in test: ${url}` });
   });

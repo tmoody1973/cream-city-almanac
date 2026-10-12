@@ -104,6 +104,11 @@ export function HowItWorks({ status, example, areas }: { status: CatalogStatus |
               verdict; the AI writes none of it.
             </p>
             <p>
+              You can type an address or intersection to find which census tract, City neighborhood and Data You Can Use area it&apos;s in.
+              The address goes to the U.S. Census Bureau&apos;s geocoder to find its location; Cream City Almanac doesn&apos;t keep it, and
+              never shows anything about the property itself.
+            </p>
+            <p>
               Ask can also add up a few City money columns, like back property tax owed, City employee pay and property sale prices. It
               shows the total and the median (the middle value), and the average only when you ask for it. In files that name people,
               groups of fewer than 5 records are hidden so no one&apos;s figure can be singled out.

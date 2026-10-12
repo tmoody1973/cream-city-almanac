@@ -8,7 +8,7 @@ import { passageBlocks } from "@/ui/lib/askPassage";
 import { propertyCountSummary } from "@/ui/lib/tractSummary";
 import { formatPortraitMargin, formatPortraitNumber } from "@/ui/lib/portrait";
 import { api } from "@/convex/_generated/api";
-import { changeParams, countParams, rankParams, relateParams, spanParams, type SheetResult, type ChangeResult, type CountForModel, type CountResult, type RankResult, type RelateResult, type SpanResult } from "@/lib/ask/tools";
+import { changeParams, countParams, rankParams, relateParams, spanParams, type SheetResult, type PlaceAnswer, type ChangeResult, type CountForModel, type CountResult, type RankResult, type RelateResult, type SpanResult } from "@/lib/ask/tools";
 import { CityMap } from "./CityMapLoader";
 import { LivePreview } from "./LivePreview";
 import { OpenLink, type Open } from "./OpenLink";
@@ -23,6 +23,8 @@ import { cellTime, spanNotes, spanRows, spanSummary, spanTitle, type SpanOk } fr
 import { changeFollowUps, countFollowUps, datasetFollowUps, numberFollowUps, previewFollowUps, rankFollowUps, relateFollowUps, spanFollowUps, measureFollowUps } from "@/ui/lib/nextQuestions";
 import { changeChoices, countChoices, numberChoices, rankChoices, relateChoices, spanChoices, measureChoices, refusalChoicesFor } from "@/ui/lib/refusalChoices";
 import { FactSheetCard } from "./FactSheetCard";
+import { PlaceCard } from "./PlaceCard";
+import { placeFollowUps, placeRefusal } from "@/ui/lib/placeText";
 import styles from "./ask.module.css";
 
 type Value = { estimate: string; moe: string | null } | null;
@@ -382,6 +384,14 @@ export function AskCards({ onOpen }: { onOpen?: (search: string) => void }) {
       </>
     );
   } }, [onOpen]);
+
+  useRenderTool({ name: "findPlace", parameters: z.object({ address: z.string() }), render: (props) => {
+    if (props.status !== "complete") return <Busy />;
+    const r = parse<PlaceAnswer>(props.result);
+    if (!r) return <Failed />;
+    if (r.status !== "ok") return <p className={styles.failed} data-card="place-refusal">{placeRefusal(r.status)}</p>;
+    return <><PlaceCard r={r} /><FollowUps items={placeFollowUps(r)} id={props.toolCallId} /></>;
+  } }, []);
 
   useRenderTool({ name: "factSheet", parameters: z.object({ neighborhood: z.string() }), render: (props) => {
     if (props.status !== "complete") return <Busy />;

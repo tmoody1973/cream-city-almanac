@@ -418,6 +418,14 @@ From the approved comp, direction A, "the ledger" (`.impeccable/mocks/fact-sheet
 - **Phones:** each row stacks: the label, then the neighborhood's and the city's figures side by side, then the verdict. Never four squeezed columns.
 - **Print:** one US Letter page. There's no site chrome, buttons, year links or folded tables, and type and padding are smaller.
 
+### Address lookup
+
+- **The place card** (Ask, `data-card="place"`) uses the tract card's type.
+  - It lists: the matched address with "(as the U.S. Census Bureau matched it)"; the census tract; the City neighborhood with its boundary named, or "Outside the City of Milwaukee"; and DYCU's area with "Open the fact sheet →".
+  - The privacy line closes it in muted text.
+  - Follow-ups ask about the places, never the property.
+- **The `/n` box:** "Find your neighborhood" in Saira caps, one field and one Find button in the site's boxed-button style, with the answer under it and the privacy line in muted small text. A match opens the fact sheet directly.
+
 ### Analysis cards (Ask's tract answers)
 Three cards in Ask's hairline box, under the AI's one to three sentences: ranking, change over time, and relationship. Every figure on them is DYCU's, computed by the server, and every card says which column Ask picked. They answer in census tracts, labeled in a "DYCU AREA" column with the name of DYCU's report area when DYCU defines one for that tract (DYCU's own groups of tracts, like "United Community", not the City's 190 official neighborhoods) and "—" otherwise; a name is never guessed. The footer says so: "Area names are Data You Can Use's report areas: groups of census tracts DYCU chose with its neighborhood partners, not the City's official neighborhoods." Words are plain first: a reader who isn't a data person should know what the card found from its first sentence (decision 028).
 - **Header (all three):** a label-size title (the column, place and year, or the two datasets "A vs. B") with a ruled EXPAND button at its right; then **the plain sentence** in body type, slightly larger than the card's small type, which code writes from the verdict and counts (`ui/lib/tractSummary.ts`), never the AI; then one line of small graphite type: the dataset code, the column in bold, its plain-English meaning and whether it is "a rate" or "a count", the place and year, the number of census tracts compared and, when any, "N left out (no data)", ending in the DYCU tag. A percent sign appears only where DYCU's own definition says percent.

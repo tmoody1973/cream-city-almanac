@@ -29,7 +29,7 @@ const N03 = "document:neighborhood-portrait-spreadsheet";
 const CARD_FACTS = ["poverty", "rent-burden", "no-car"];
 
 // DYCU's profiled areas: every portrait member with a place, newest year first per area.
-async function areas(ctx: QueryCtx) {
+export async function portraitAreas(ctx: QueryCtx) {
   const members = await ctx.db.query("members").withIndex("by_family", (q) => q.eq("familyKey", N03)).collect();
   // One area per placeKey: DYCU spells some areas differently by year ("Silver City, Burnham Park, and Layton Park" in
   // 2021, "Silver City, Layton Park, and Burnham Park" after). The newest file's spelling names it; every spelling's slug opens it.
@@ -51,7 +51,7 @@ async function tractMap(ctx: QueryCtx, name: string, year: number) {
   return url && tracts.length ? { url, geoids: tracts.map(tractGeoid) } : null;
 }
 
-async function assemble(ctx: QueryCtx, area: Awaited<ReturnType<typeof areas>>[number], year?: number) {
+async function assemble(ctx: QueryCtx, area: Awaited<ReturnType<typeof portraitAreas>>[number], year?: number) {
   const withTables = [];
   for (const m of area.members) if ((await tablesFor(ctx, m.hubId)).length) withTables.push(m);
   const pick = withTables.find((m) => m.years[0] === year) ?? withTables[0];
@@ -69,7 +69,7 @@ async function assemble(ctx: QueryCtx, area: Awaited<ReturnType<typeof areas>>[n
 export const sheet = query({
   args: { slug: v.string(), year: v.optional(v.number()) },
   handler: async (ctx, { slug, year }) => {
-    const all = await areas(ctx);
+    const all = await portraitAreas(ctx);
     const asked = slug.trim().toLowerCase();
     const area = all.find((a) => a.slugs.includes(asked));
     const got = area ? await assemble(ctx, area, year) : null;
@@ -80,7 +80,7 @@ export const sheet = query({
 export const findSheet = query({
   args: { neighborhood: v.string() },
   handler: async (ctx, { neighborhood }) => {
-    const all = await areas(ctx);
+    const all = await portraitAreas(ctx);
     const m0 = matchName(neighborhood.slice(0, 80), all.map((a) => ({ ...a, matchKey: nameKey(a.name) })));
     // A part of the name ("Silver City") that fits only one area is that area.
     const words = m0.kind === "choose" && m0.names.length === 1 ? nameKey(m0.names[0]).split(" ") : [];

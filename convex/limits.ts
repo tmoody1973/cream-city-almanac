@@ -21,6 +21,10 @@ export const ASK_RUNS_ALL = { kind: "token bucket" as const, rate: 1200, period:
 // Sheet maps are public: identical requests come from a 10-minute cache; this caps live map requests site-wide.
 // One token is one map request, which is 2–3 City queries (count, grid, future-dated) or 2 for a neighborhood.
 export const MAP_CITY = { kind: "token bucket" as const, rate: 60, period: 60_000, capacity: 20 };
+// An address lookup in Ask: one Census geocoder request, per person.
+export const ASK_PLACE = { kind: "token bucket" as const, rate: 60, period: HOUR, capacity: 20 };
+// The public "Find your neighborhood" box: one geocoder request, site-wide, so the box can't hammer the Census.
+export const PLACE_PUBLIC = { kind: "token bucket" as const, rate: 60, period: 60_000, capacity: 20 };
 
 export const rateLimiter = new RateLimiter(components.rateLimiter, {
   searchEmbeds: SEARCH_EMBEDS,
@@ -30,4 +34,6 @@ export const rateLimiter = new RateLimiter(components.rateLimiter, {
   askRuns: ASK_RUNS,
   askRunsAll: ASK_RUNS_ALL,
   mapCity: MAP_CITY,
+  askPlace: ASK_PLACE,
+  placePublic: PLACE_PUBLIC,
 });
