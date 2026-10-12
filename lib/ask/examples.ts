@@ -12,7 +12,7 @@ export const ASK_ROLES: { id: AskRole; who: string; purpose: string }[] = [
 
 export const ASK_EXAMPLES: { role: AskRole; question: string; tool: AskToolName | AskToolName[]; expect: Record<string, string | number> }[] = [
   { role: "journalist", question: "Give me story angles about old housing and health in Milwaukee", tool: "showDataset", expect: { code: "H05" } },
-  { role: "journalist", question: "What are the caveats on Housing Built Before 1950?", tool: "showDataset", expect: { code: "H05" } },
+  { role: "journalist", question: "How long do citizen complaints take to close, by department?", tool: "timeSpan", expect: { groupBy: "Department", pair: "complaint-close" } },
   { role: "journalist", question: "How many kids under 5 live in poverty in Harambee?", tool: "getNumber", expect: { neighborhood: "Harambee", slug: "poverty-status-by-age" } },
   { role: "journalist", question: "Where is food insecurity low despite high poverty?", tool: "relateTracts", expect: { mode: "mismatch" } },
   { role: "nonprofit", question: "How many households in Harambee have no car?", tool: "getNumber", expect: { slug: "vehicles-per-household" } },
