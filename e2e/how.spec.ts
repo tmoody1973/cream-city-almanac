@@ -112,3 +112,8 @@ test("it explains fact sheets and where the city figure comes from", async ({ pa
   await expect(page.getByText(/fact sheet/i).first()).toBeVisible();
   await expect(page.getByText(/U\.S\. Census Bureau/)).toBeVisible();
 });
+
+test("it says where an address goes when you look one up", async ({ page }) => {
+  await page.goto("/how-it-works");
+  await expect(page.getByText(/geocoder/)).toBeVisible();
+});
