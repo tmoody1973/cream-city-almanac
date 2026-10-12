@@ -71,6 +71,10 @@ export function HowItWorks({ status, example, areas }: { status: CatalogStatus |
 
           <section className={styles.section}>
             <h3 className={styles.heading}>WHAT THE AI DOES</h3>
+            <p>
+              See <a href="/how-ask-works.html">the diagram of how Ask answers a question</a>: the AI picks a tested tool, code does
+              the math, and every number on the card comes from that code.
+            </p>
             <p>Every fact carries a tag saying who wrote it:</p>
             <ul className={styles.tags}>
               <li><ProvenanceTag source="DYCU" /> DYCU&apos;s own definition, from its inventory sheet.</li>

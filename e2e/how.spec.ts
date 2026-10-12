@@ -87,3 +87,12 @@ test("it explains how-long answers in plain words", async ({ page }) => {
   await page.goto("/how-it-works");
   await expect(page.getByText(/The median is the middle case: half took less time/)).toBeVisible();
 });
+
+test("it links to the diagram of how Ask answers a question, and the diagram opens", async ({ page }) => {
+  await page.goto("/how-it-works");
+  const link = page.getByRole("link", { name: "the diagram of how Ask answers a question" });
+  await expect(link).toHaveAttribute("href", "/how-ask-works.html");
+  await page.goto("/how-ask-works.html");
+  await expect(page).toHaveTitle(/How Cream City Almanac answers a question/);
+  await expect(page.locator("svg text", { hasText: "Code does the math" }).first()).toBeVisible();
+});
