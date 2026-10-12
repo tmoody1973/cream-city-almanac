@@ -28,7 +28,7 @@ type MemberDoc = Doc<"members">;
 
 const tableView = ({ _id, _creationTime, hubId, modified, ...rest }: Doc<"portraitTables">) => rest;
 
-async function tablesFor(ctx: QueryCtx, hubId: string) {
+export async function tablesFor(ctx: QueryCtx, hubId: string) {
   return (await ctx.db.query("portraitTables").withIndex("by_hubId", (q) => q.eq("hubId", hubId)).collect())
     .sort((a, b) => a.order - b.order)
     .map(tableView);

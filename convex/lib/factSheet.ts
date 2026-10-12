@@ -2,7 +2,7 @@ import { shareOf, sumOf, versus, type Est, type Verdict } from "./factMath";
 
 // The fact sheet's headline figures (spec 2026-10-12-neighborhood-fact-sheet §4): hand-checked against DYCU's portrait
 // rows and the Census variables (2021–2024). Rows are matched exactly; an entry that doesn't match is dropped, never guessed.
-export type PortraitTable = { slug: string; groups: string[]; rows: { label: string; heading: boolean; values: ({ estimate: string; moe: string } | null)[] }[] };
+export type PortraitTable = { slug: string; groups: string[]; rows: { label: string; heading: boolean; values: ({ estimate: string; moe: string | null } | null)[] }[] };
 export type CensusPick = { kind: "" | "/profile" | "/subject"; parts: string[]; of: string };
 export type FactEntry = { id: string; label: string; meaning: string; topic: string; parts: string[]; of?: string; groups?: number[]; census: CensusPick | null };
 
@@ -18,7 +18,7 @@ export const FACTS: FactEntry[] = [
   { id: "no-diploma", label: "Adults 25+ without a high school diploma", meaning: "Adults 25 and older who didn't finish high school or an equivalency.", topic: "educational-attainment", parts: ["Less than 9th grade", "9th to 12th grade, no diploma"], of: "Population 25 years and over", census: { kind: "/subject", parts: ["S1501_C01_007", "S1501_C01_008"], of: "S1501_C01_006" } },
 ];
 
-const num = (s: string | undefined) => (s === undefined || s.trim() === "" ? Number.NaN : Number(s));
+const num = (s: string | null | undefined) => (s === undefined || s === null || s.trim() === "" ? Number.NaN : Number(s));
 // One row by its exact label (trimmed), its estimate and margin summed over the given value groups.
 export function readRow(t: PortraitTable, label: string, groups: number[]): Est | null {
   const row = t.rows.find((r) => !r.heading && r.label.trim() === label);

@@ -55,3 +55,10 @@ describe("names and tracts", () => {
     expect(tractGeoid("1865.02")).toBe("55079186502");
   });
 });
+
+describe("rows with no margin", () => {
+  it("reads a row whose margin is empty as an estimate with no margin, never a crash", () => {
+    const tbl: PortraitTable = { slug: "x", groups: [""], rows: [{ label: "Total", heading: false, values: [{ estimate: "100", moe: null }] }] };
+    expect(readRow(tbl, "Total", [0])).toEqual({ estimate: 100, moe: null });
+  });
+});
