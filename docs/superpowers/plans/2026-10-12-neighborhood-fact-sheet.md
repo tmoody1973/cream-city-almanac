@@ -72,6 +72,7 @@
 **Rulings carried from planning (re-ledger at execution):**
 - **Unemployment is dropped from the headline list.** DYCU's employment table holds rates with implausible margins (Harambee 2024: 13.4% ± 32.9 points), consistent with the formula-error warning Ask already shows. Spec §4 says an unmatched entry is dropped and noted. Cost if wrong: one figure missing; it can return once DYCU fixes the file.
 - **Population is the Male + Female "Total" rows of Sex and Age.** DYCU's Total column is 0 in 78 of 79 tables. The sheet notes it.
+- **City figures are stored raw by Census code** (`values: Record<code, Est>`), not in the spec §5 shape (`parts`/`of`/`rate` per figure). The same `FACTS` entries then compute both the neighborhood and the city side at read time, so the two can't drift, and a changed headline needs no refetch. Cost if wrong: none to the page; one schema field differs from the spec's text.
 - **Testing the margin formulas:** the spec cites the Census guide's worked examples; the tests use hand-computed cases of the same formulas (in Task 1), because the guide's numbers aren't in the repo. Cost if wrong: none to the math, which the formula pins.
 
 ---
