@@ -46,4 +46,15 @@ describe("refreshCityFigures", () => {
     expect((await t.action(internal.cityFigures.refreshCityFigures, {}))[0]).toMatch(/CENSUS_API_KEY is not set/);
     expect(fake.count("api.census.gov")).toBe(0);
   });
+  it("never stores the Census key in a note, and stops at the first network failure", async () => {
+    const t = await seed();
+    process.env.CENSUS_API_KEY = "SECRET123";
+    const fetch = vi.fn(async (url: string) => { throw new Error(`Request timed out after 30000ms: ${url}`); });
+    vi.stubGlobal("fetch", fetch);
+    const notes = await t.action(internal.cityFigures.refreshCityFigures, {});
+    expect(notes.join(" ")).not.toContain("SECRET123");
+    expect(notes).toHaveLength(1);
+    expect(notes[0]).toMatch(/Census unreachable; city figures not refreshed/);
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
 });

@@ -18,3 +18,11 @@ test("the year switcher picks another year, and an unknown name lists the areas"
   await page.goto("/n/nowhere");
   await expect(page.getByRole("link", { name: "Harambee" })).toBeVisible();
 });
+
+test("each figure says what it measures, and DYCU's own data warnings travel with its tables", async ({ page }) => {
+  await page.goto("/n/harambee");
+  const meaning = page.locator("[data-fact=poverty]").getByText("below the federal poverty line");
+  expect((await meaning.boundingBox())?.width ?? 0).toBeGreaterThan(80);
+  await page.getByText(/All \d+ of DYCU's tables/).click();
+  await expect(page.getByText(/may be missing data/).first()).toBeVisible();
+});

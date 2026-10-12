@@ -31,9 +31,15 @@ const CARD_FACTS = ["poverty", "rent-burden", "no-car"];
 // DYCU's profiled areas: every portrait member with a place, newest year first per area.
 async function areas(ctx: QueryCtx) {
   const members = await ctx.db.query("members").withIndex("by_family", (q) => q.eq("familyKey", N03)).collect();
+  // One area per placeKey: DYCU spells some areas differently by year ("Silver City, Burnham Park, and Layton Park" in
+  // 2021, "Silver City, Layton Park, and Burnham Park" after). The newest file's spelling names it; every spelling's slug opens it.
   const by = new Map<string, typeof members>();
-  for (const m of members) if (m.place) by.set(m.place, [...(by.get(m.place) ?? []), m]);
-  return [...by].map(([name, ms]) => ({ name, slug: areaSlug(name), members: ms.sort((a, b) => (b.years[0] ?? 0) - (a.years[0] ?? 0)) })).sort((a, b) => a.name.localeCompare(b.name));
+  for (const m of members) if (m.place) by.set(placeKey(m.place), [...(by.get(placeKey(m.place)) ?? []), m]);
+  return [...by.values()].map((ms) => {
+    const sorted = ms.sort((a, b) => (b.years[0] ?? 0) - (a.years[0] ?? 0));
+    const name = sorted[0].place as string;
+    return { name, slug: areaSlug(name), slugs: [...new Set(sorted.map((m) => areaSlug(m.place as string)))], members: sorted };
+  }).sort((a, b) => a.name.localeCompare(b.name));
 }
 
 async function tractMap(ctx: QueryCtx, name: string, year: number) {
@@ -64,7 +70,8 @@ export const sheet = query({
   args: { slug: v.string(), year: v.optional(v.number()) },
   handler: async (ctx, { slug, year }) => {
     const all = await areas(ctx);
-    const area = all.find((a) => a.slug === slug.trim().toLowerCase());
+    const asked = slug.trim().toLowerCase();
+    const area = all.find((a) => a.slugs.includes(asked));
     const got = area ? await assemble(ctx, area, year) : null;
     return got ?? { status: "not-found" as const, areas: all.map(({ slug: s, name }) => ({ slug: s, name })) };
   },
@@ -74,8 +81,12 @@ export const findSheet = query({
   args: { neighborhood: v.string() },
   handler: async (ctx, { neighborhood }) => {
     const all = await areas(ctx);
-    const m = matchName(neighborhood.slice(0, 80), all.map((a) => ({ ...a, matchKey: nameKey(a.name) })));
-    if (m.kind !== "one") return { status: "no-neighborhood" as const, asked: neighborhood.slice(0, 80), nearest: m.kind === "choose" ? m.names.slice(0, 3) : m.nearest };
+    const m0 = matchName(neighborhood.slice(0, 80), all.map((a) => ({ ...a, matchKey: nameKey(a.name) })));
+    // A part of the name ("Silver City") that fits only one area is that area.
+    const words = m0.kind === "choose" && m0.names.length === 1 ? nameKey(m0.names[0]).split(" ") : [];
+    const fits = words.length > 0 && nameKey(neighborhood).split(" ").every((w) => words.includes(w)); // whole words only: "Harambe" is a typo, not a part
+    const m = fits && m0.kind === "choose" ? { kind: "one" as const, row: all.find((a) => a.name === m0.names[0])! } : m0;
+    if (m.kind !== "one") return { status: "no-neighborhood" as const, asked: neighborhood.slice(0, 80), nearest: m0.kind === "choose" ? m0.names.slice(0, 3) : m0.kind === "none" ? m0.nearest : [] };
     const got = await assemble(ctx, m.row);
     if (!got) return { status: "no-neighborhood" as const, asked: neighborhood.slice(0, 80), nearest: [] };
     return { status: "ok" as const, slug: got.slug, name: got.name, year: got.year, period: got.period, headlines: got.headlines.filter((h) => CARD_FACTS.includes(h.id)) };

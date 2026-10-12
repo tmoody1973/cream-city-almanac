@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { Est } from "@/convex/lib/factMath";
 import type { Figure, Headline, PortraitTable } from "@/convex/lib/factSheet";
-import { CENSUS_SOURCE, countLine, factSheetExport, margin, MARGIN_NOTE, MISSING, NO_CITY, NOTE_APPROX, pct, verdictText } from "@/ui/lib/factText";
+import { CENSUS_SOURCE, countLine, factSheetExport, margin, MARGIN_NOTE, MISSING, NO_CITY, NOTE_APPROX, pct, populationNote, portraitCell, verdictText } from "@/ui/lib/factText";
 import { CreditFooter } from "./CreditFooter";
 import { ExportBar } from "./ExportBar";
 import { Masthead } from "./Masthead";
@@ -59,6 +59,7 @@ function Tables({ tables, year }: { tables: PortraitTable[]; year: number }) {
       {tables.map((t) => (
         <section key={t.slug} className={styles.portrait}>
           <h4>{t.slug.replace(/-/g, " ")}</h4>
+          {(t as PortraitTable & { issues?: string[] }).issues?.map((issue) => <p key={issue} className={styles.issue}>{issue}</p>)}
           <div className={styles.scroll} tabIndex={0} role="region" aria-label={`${t.slug.replace(/-/g, " ")}, scroll sideways for more`}>
             <table>
               {t.groups.some(Boolean) && <thead><tr><th scope="col" />{t.groups.map((g, i) => <th key={i} scope="col">{g}</th>)}</tr></thead>}
@@ -66,7 +67,7 @@ function Tables({ tables, year }: { tables: PortraitTable[]; year: number }) {
                 {t.rows.map((r, i) => (
                   <tr key={i} className={r.heading ? styles.heading : undefined}>
                     <th scope="row">{r.label}</th>
-                    {r.values.map((v, j) => <td key={j}>{v ? `${v.estimate}${v.moe ? ` ± ${Math.round(Number(v.moe)).toLocaleString("en-US")}` : ""}` : ""}</td>)}
+                    {r.values.map((v, j) => <td key={j}>{portraitCell(v)}</td>)}
                   </tr>
                 ))}
               </tbody>
@@ -120,7 +121,7 @@ export function FactSheet({ s }: { s: SheetOk }) {
             )}
             <div className={styles.notes}>
               <p>{NOTE_APPROX} {MARGIN_NOTE}</p>
-              {people?.hood && <p className={styles.muted}>People: DYCU&apos;s Total column is blank in its file, so this adds its Male and Female columns.</p>}
+              {people?.hood && populationNote(s.tables) && <p className={styles.muted}>{populationNote(s.tables)}</p>}
               <Tables tables={s.tables} year={s.year} />
             </div>
           </div>

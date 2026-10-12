@@ -51,7 +51,15 @@ export const refreshCityFigures = internalAction({
         }
         await ctx.runMutation(internal.cityFigures.storeCityFigures, { period, values });
       } catch (e) {
-        notes.push(`City figures for ${period} unavailable, kept last week's: ${e instanceof Error ? e.message : String(e)}`);
+        // Never store the key: error text from fetch can include the full request URL.
+        const why = (e instanceof Error ? e.message : String(e)).replace(/key=[^&\s]+/g, "key=\u2026");
+        // An HTTP error is about one period; a timeout or network failure means the service is down, so stop
+        // rather than wait out every remaining request inside the weekly build.
+        if (!why.startsWith("Census request failed:")) {
+          notes.push(`Census unreachable; city figures not refreshed, kept the last ones stored: ${why}`);
+          break;
+        }
+        notes.push(`City figures for ${period} unavailable, kept last week's: ${why}`);
       }
     }
     return notes;

@@ -25,8 +25,10 @@ beforeEach(async () => {
     await ctx.db.insert("families", { key: N03, code: "N03", name: "Neighborhood Portrait Spreadsheet", kind: "document", topic: "Neighborhoods", keywords: [], places: [], years: [2023, 2024], latestModified: "2026-01-22", baseSearchText: "", searchText: "", dictionaryTab: null });
     await ctx.db.insert("members", member("h23", "Harambee", 2023));
     await ctx.db.insert("members", member("h24", "Harambee", 2024));
-    await ctx.db.insert("members", member("s24", "Silver City, Burnham Park, and Layton Park", 2024));
-    for (const r of [...harambeeRows("h23"), ...harambeeRows("h24"), ...harambeeRows("s24")]) await ctx.db.insert("portraitTables", r);
+    // DYCU spells this area two ways across years (2021 vs 2022–2024); it is one area.
+    await ctx.db.insert("members", member("s21", "Silver City, Burnham Park, and Layton Park", 2021));
+    await ctx.db.insert("members", member("s24", "Silver City, Layton Park, and Burnham Park", 2024));
+    for (const r of [...harambeeRows("h23"), ...harambeeRows("h24"), ...harambeeRows("s21"), ...harambeeRows("s24")]) await ctx.db.insert("portraitTables", r);
     await ctx.db.insert("cityFigures", { period: 2024, fetchedAt: 1, values: { B17001_001: { estimate: 552601, moe: 503 }, B17001_002: { estimate: 125891, moe: 4212 } } });
     await ctx.db.insert("neighborhoods", { definition: "dycu", name: "Harambee", matchKey: "harambee", tracts: [{ years: [2024], tracts: ["1860"] }] });
     await ctx.db.insert("families", { key: "e02", code: "E02", name: "Households Living in Poverty", kind: "dataset", topic: "Economy", keywords: [], places: ["County"], years: [2023], latestModified: "2024-01-01", baseSearchText: "", searchText: "", dictionaryTab: null });
@@ -49,11 +51,17 @@ describe("the fact sheet's data", () => {
     expect(r.cityFetchedAt).toBeNull();
   });
   it("round-trips a long name and lists the areas for an unknown slug", async () => {
-    expect(await t.query(api.factSheet.sheet, { slug: "silver-city-burnham-park-and-layton-park" })).toMatchObject({ status: "ok", name: "Silver City, Burnham Park, and Layton Park" });
+    expect(await t.query(api.factSheet.sheet, { slug: "silver-city-burnham-park-and-layton-park" })).toMatchObject({ status: "ok", name: "Silver City, Layton Park, and Burnham Park", slug: "silver-city-layton-park-and-burnham-park", years: [2024, 2021] });
+    expect(await t.query(api.factSheet.sheet, { slug: "silver-city-layton-park-and-burnham-park" })).toMatchObject({ status: "ok", years: [2024, 2021] });
+    const index = await t.query(api.factSheet.sheet, { slug: "nowhere" });
+    if (index.status === "not-found") expect(index.areas).toHaveLength(2);
     expect(await t.query(api.factSheet.sheet, { slug: "nowhere" })).toMatchObject({ status: "not-found", areas: expect.arrayContaining([{ slug: "harambee", name: "Harambee" }]) });
   });
   it("finds a sheet by a typed name for Ask, and offers the nearest names on a miss", async () => {
     expect(await t.query(api.factSheet.findSheet, { neighborhood: "harambee" })).toMatchObject({ status: "ok", slug: "harambee", headlines: [{ id: "poverty" }, { id: "rent-burden" }, { id: "no-car" }] });
     expect(await t.query(api.factSheet.findSheet, { neighborhood: "Harambe" })).toMatchObject({ status: "no-neighborhood", nearest: expect.arrayContaining(["Harambee"]) });
+  });
+  it("finds an area Ask names by part of its name", async () => {
+    expect(await t.query(api.factSheet.findSheet, { neighborhood: "Silver City" })).toMatchObject({ status: "ok", slug: "silver-city-layton-park-and-burnham-park" });
   });
 });
