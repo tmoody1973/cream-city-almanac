@@ -11,13 +11,13 @@ import { CELL } from "./cityMap";
 // CASE guard. City dates are ISO text
 // ("2026-06-16 14:51:00"), which sorts correctly as text, so the period filter is a plain text comparison.
 export const MAX_GROUPS = 24;
-const RID = /^[0-9a-f-]{36}$/;
+export const RID = /^[0-9a-f-]{36}$/;
 // Offense words wider than this ("theft" is six codes) ask which one instead of counting them all.
 const MAX_OFFENSE_CODES = 5;
 // Only a plain code ("120", "23H") goes inside a LIKE pattern, so no value can carry a wildcard or a quote into it.
 const LIKE_SAFE = /^[0-9A-Z]{2,4}$/;
 export const NUMERIC = "^-?[0-9]+(\\.[0-9]+)?$";
-const lit = (s: string) => `'${s.replace(/'/g, "''")}'`;
+export const lit = (s: string) => `'${s.replace(/'/g, "''")}'`;
 export const num = (c: string) => `(CASE WHEN ${quoteId(c)} ~ ${lit(NUMERIC)} THEN ${quoteId(c)}::float END)`;
 const coord = (n: number) => { if (!Number.isFinite(n)) throw new Error("Neighborhood rectangle is not numeric"); return String(n); };
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -32,10 +32,10 @@ export type Built =
   | { ok: false; status: "bad-dates"; from: string; to: string };
 
 const isoDay = (d: Date) => d.toISOString().slice(0, 10);
-const addDays = (day: string, n: number) => isoDay(new Date(Date.parse(`${day}T00:00:00Z`) + n * 86_400_000));
-const human = (day: string) => { const [y, m, d] = day.split("-").map(Number); return `${MONTHS[m - 1]} ${d}, ${y}`; };
+export const addDays = (day: string, n: number) => isoDay(new Date(Date.parse(`${day}T00:00:00Z`) + n * 86_400_000));
+export const human = (day: string) => { const [y, m, d] = day.split("-").map(Number); return `${MONTHS[m - 1]} ${d}, ${y}`; };
 // A real calendar day only: "2025-02-30" and "2025-13-45" are not.
-const isDay = (s: string) => {
+export const isDay = (s: string) => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
   const t = Date.parse(`${s}T00:00:00Z`); // NaN for month 13; rolls over for Feb 30, which the round-trip catches
   return Number.isFinite(t) && isoDay(new Date(t)) === s;
@@ -45,7 +45,7 @@ const absent = (s: string | undefined) => !s || !s.trim();
 // The days the data covers. The profile is a week old at most, so a feed whose newest record was within a month of
 // profiling is treated as running to today; one that had stopped well before then ends at its last record.
 // ponytail: a 31-day heuristic; a live MAX() per count would be exact at the cost of one more City query.
-function dataSpan(p: CityProfile, today: string): { min: string; max: string } | null {
+export function dataSpan(p: CityProfile, today: string): { min: string; max: string } | null {
   if (!p.minDate || !p.maxDate) return null;
   const ongoing = p.maxDate >= addDays(isoDay(new Date(p.updatedAt)), -31);
   return { min: p.minDate, max: ongoing || p.maxDate > today ? today : p.maxDate };
@@ -67,6 +67,44 @@ const numberLabel = (column: string, op: "over" | "under", x: number) => {
 const filterLabel = (column: string, value: string, districts: string[]) =>
   isOffenseColumn(column) ? offenseName(value) : districts.includes(column) ? `${column.replace(/_/g, " ").toLowerCase().replace(/^\w/, (c) => c.toUpperCase())} ${value}` : value;
 
+// One value filter, checked against the profile: only profiled values get in, quoted; an unknown value asks to choose.
+export function valueFilter(p: CityProfile, f: { column: string; values?: string[] }):
+  | { ok: true; where: string; labels: string[] }
+  | { ok: false; status: "bad-column"; column: string; columns: string[] }
+  | { ok: false; status: "choose"; column: string; asked: string; choices: string[] } {
+  const values = f.values ?? [];
+  const cat = p.categories.find((c) => c.column.toLowerCase() === f.column.toLowerCase());
+  if (!cat) return { ok: false, status: "bad-column", column: f.column, columns: p.categories.map((c) => c.column) };
+  const top = () => cat.values.slice(0, 8).map((v) => groupLabelFor(cat.column, v.value));
+  // Never silently widen: a filter with nothing to filter on asks the user to choose.
+  if (values.length === 0) return { ok: false, status: "choose", column: cat.column, asked: "", choices: top() };
+  const known = new Map(cat.values.map((v) => [v.value.toLowerCase(), v.value]));
+  const picked: string[] = [];
+  for (const asked of values) {
+    const exact = known.get(asked.trim().toLowerCase());
+    const viaOffense = isOffenseColumn(cat.column) ? offenseCodes(asked).filter((c) => known.has(c.toLowerCase())) : [];
+    if (!exact && viaOffense.length > MAX_OFFENSE_CODES) {
+      return { ok: false, status: "choose", column: cat.column, asked, choices: viaOffense.slice(0, 8).map((c) => groupLabelFor(cat.column, c)) };
+    }
+    const hits = exact ? [exact] : viaOffense;
+    if (cat.multi && hits.some((h) => !LIKE_SAFE.test(h))) {
+      return { ok: false, status: "choose", column: cat.column, asked, choices: cat.values.filter((v) => LIKE_SAFE.test(v.value)).slice(0, 8).map((v) => groupLabelFor(cat.column, v.value)) };
+    }
+    if (hits.length === 0) {
+      const word = asked.trim().toLowerCase();
+      const near = word ? cat.values.filter((v) => groupLabelFor(cat.column, v.value).toLowerCase().includes(word)).map((v) => groupLabelFor(cat.column, v.value)) : [];
+      return { ok: false, status: "choose", column: cat.column, asked, choices: near.length ? near.slice(0, 8) : top() };
+    }
+    picked.push(...hits);
+  }
+  const uniq = [...new Set(picked)];
+  // A ';'-separated column ("13A;120") matches a record holding the code anywhere in its list.
+  const where = cat.multi
+    ? `(${uniq.map((v) => `';' || ${quoteId(cat.column)} || ';' LIKE ${lit(`%;${v};%`)}`).join(" OR ")})`
+    : `${quoteId(cat.column)} IN (${uniq.map(lit).join(", ")})`;
+  return { ok: true, where, labels: uniq.map((v) => filterLabel(cat.column, v, p.districtColumns)) };
+}
+
 export function buildCount(p: CityProfile, a: CountArgs, today: string, area?: Bbox): Built {
   if (!RID.test(p.resourceId)) throw new Error("Not a CKAN resource id");
   const table = quoteId(p.resourceId);
@@ -87,37 +125,10 @@ export function buildCount(p: CityProfile, a: CountArgs, today: string, area?: B
       if (f.under !== undefined) { numberWhere.push(`${num(col)} < ${coord(f.under)}`); filterLabels.push(numberLabel(col, "under", f.under)); }
       continue;
     }
-    const values = f.values ?? [];
-    const cat = menu.get(f.column.toLowerCase());
-    if (!cat) return { ok: false, status: "bad-column", column: f.column, columns: p.categories.map((c) => c.column) };
-    const top = () => cat.values.slice(0, 8).map((v) => groupLabelFor(cat.column, v.value));
-    // Never silently widen: a filter with nothing to filter on asks the user to choose.
-    if (values.length === 0) return { ok: false, status: "choose", column: cat.column, asked: "", choices: top() };
-    const known = new Map(cat.values.map((v) => [v.value.toLowerCase(), v.value]));
-    const picked: string[] = [];
-    for (const asked of values) {
-      const exact = known.get(asked.trim().toLowerCase());
-      const viaOffense = isOffenseColumn(cat.column) ? offenseCodes(asked).filter((c) => known.has(c.toLowerCase())) : [];
-      if (!exact && viaOffense.length > MAX_OFFENSE_CODES) {
-        return { ok: false, status: "choose", column: cat.column, asked, choices: viaOffense.slice(0, 8).map((c) => groupLabelFor(cat.column, c)) };
-      }
-      const hits = exact ? [exact] : viaOffense;
-      if (cat.multi && hits.some((h) => !LIKE_SAFE.test(h))) {
-        return { ok: false, status: "choose", column: cat.column, asked, choices: cat.values.filter((v) => LIKE_SAFE.test(v.value)).slice(0, 8).map((v) => groupLabelFor(cat.column, v.value)) };
-      }
-      if (hits.length === 0) {
-        const word = asked.trim().toLowerCase();
-        const near = word ? cat.values.filter((v) => groupLabelFor(cat.column, v.value).toLowerCase().includes(word)).map((v) => groupLabelFor(cat.column, v.value)) : [];
-        return { ok: false, status: "choose", column: cat.column, asked, choices: near.length ? near.slice(0, 8) : top() };
-      }
-      picked.push(...hits);
-    }
-    const uniq = [...new Set(picked)];
-    // A ';'-separated column ("13A;120") matches a record holding the code anywhere in its list.
-    where.push(cat.multi
-      ? `(${uniq.map((v) => `';' || ${quoteId(cat.column)} || ';' LIKE ${lit(`%;${v};%`)}`).join(" OR ")})`
-      : `${quoteId(cat.column)} IN (${uniq.map(lit).join(", ")})`);
-    filterLabels.push(...uniq.map((v) => filterLabel(cat.column, v, p.districtColumns)));
+    const r = valueFilter(p, f);
+    if (!r.ok) return r;
+    where.push(r.where);
+    filterLabels.push(...r.labels);
   }
 
   let period = "all records";

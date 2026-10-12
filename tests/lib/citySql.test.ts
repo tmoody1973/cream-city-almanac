@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CityProfile } from "../../convex/lib/cityProfile";
-import { buildCount } from "../../convex/lib/citySql";
+import { buildCount, valueFilter } from "../../convex/lib/citySql";
 
 const RID = "87843297-a6fa-46d4-ba5d-cb342fb2d3bb";
 const P: CityProfile = {
@@ -215,5 +215,17 @@ describe("neighborhood rectangle", () => {
     expect(b.gridSql).toMatch(/ GROUP BY i, j$/);
     const plain = buildCount(P, {}, "2026-10-10");
     expect(plain.ok && plain.gridSql).toBeNull();
+  });
+});
+
+describe("valueFilter", () => {
+  it("lets in only profiled values, quoted, and names them in words", () => {
+    expect(valueFilter(P, { column: "police_district", values: ["6"] })).toEqual({ ok: true, where: `"Police_District" IN ('6')`, labels: ["Police district 6"] });
+    expect(valueFilter(P, { column: "TITLE", values: ["children's services"] })).toEqual({ ok: true, where: `"TITLE" IN ('Children''s Services')`, labels: ["Children's Services"] });
+  });
+  it("refuses an unknown column and asks to choose when a value isn't known", () => {
+    expect(valueFilter(P, { column: "Nope", values: ["x"] })).toMatchObject({ ok: false, status: "bad-column", column: "Nope" });
+    expect(valueFilter(P, { column: "Police_District", values: ["99"] })).toMatchObject({ ok: false, status: "choose", column: "Police_District", asked: "99" });
+    expect(valueFilter(P, { column: "Police_District" })).toMatchObject({ ok: false, status: "choose", asked: "" });
   });
 });
