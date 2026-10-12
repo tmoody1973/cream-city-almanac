@@ -298,7 +298,13 @@ export const finish = internalAction({
     } catch (e) {
       neighborhoodNotes = [`Neighborhoods refresh failed: ${message(e)}`];
     }
-    await ctx.runMutation(internal.buildStore.completeBuild, { buildId, orphanChunksDeleted: deleted, notes: neighborhoodNotes });
+    let cityNotes: string[];
+    try {
+      cityNotes = await ctx.runAction(internal.cityFigures.refreshCityFigures, {});
+    } catch (e) {
+      cityNotes = [`City figures refresh failed: ${message(e)}`];
+    }
+    await ctx.runMutation(internal.buildStore.completeBuild, { buildId, orphanChunksDeleted: deleted, notes: [...neighborhoodNotes, ...cityNotes] });
   },
 });
 
