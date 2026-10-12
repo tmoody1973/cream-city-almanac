@@ -131,7 +131,9 @@ describe("relate export", () => {
     ({ geoid, tract, city: geoid === hillside.geoid ? hillside.city : [], dycu: geoid === hillside.geoid ? hillside.dycu : [], a: [a, a - 5, a + 5] as [number, number, number], b: [b, b, b] as [number, number, number], unreliable, mark });
   const d: RelateDetail = {
     status: "ok", tool: "relate", mode: "mismatch", a: pov, b: value, n: 3, unreliableCount: 1, rho: 0.1, strength: "weak", direction: "higher",
-    aSide: "high", bSide: "high", cutA: 30, cutB: 80000, fits: [], fitsCount: 1, close: [], closeCount: 1,
+    aSide: "high", bSide: "high", cutA: 30, cutB: 80000, fitsCount: 1, closeCount: 1,
+    fits: [{ a: hillside, b: { ...tractRow("55079186000", "1860", 60000), lo: 60000, hi: 60000 } }],
+    close: [{ a: tractRow("55079009300", "93", 40), b: { ...tractRow("55079009300", "93", 70000), lo: 70000, hi: 70000 } }],
     points: [point("55079000101", "1.01", 30, 90000, null), point("55079186000", "1860", 41.25, 60000, "fits"), point("55079009300", "93", 40, 70000, "close", true)],
     highlighted: [], closeIds: [], key: "r",
   };
@@ -143,11 +145,22 @@ describe("relate export", () => {
   });
   it("shows an exact City figure without a range, and names both sources", () => {
     expect(e.text.rows[0][4]).toBe("$60,000");
-    expect(e.text.rows[1][5]).toBe("possible match (too uncertain)");
+    expect(e.text.rows[1][5]).toBe("possible match");
     expect(e.lines[1]).toBe("H28 median_assessed (Median assessed value, a value) · County 2023");
     expect(e.notes).toContain("Source: City of Milwaukee, H28 Master Property File: https://almanac.test/d/H28");
     expect(e.notes).toContain("Source: DYCU, E02 Households Living in Poverty: https://almanac.test/d/E02");
     expect(e.filename).toBe("almanac_E02-pov_rate_H28-median_assessed_County-2023_relate");
+  });
+  it("copies the card's table for text and PNG: clear matches, then possible ones, in the server's order", () => {
+    expect(e.text.rows.map((r) => r[0])).toEqual(["1860", "93"]);
+    expect(e.csv.rows).toHaveLength(3);
+  });
+  it("has no text rows when the card shows no table, and says the CSV has every tract", () => {
+    const plain = relateExport({ ...d, mode: "relate", fits: [], close: [], fitsCount: 0, closeCount: 0 }, card, ctx);
+    expect(plain.text.rows).toEqual([]);
+    expect(plain.text.head).toEqual([]);
+    expect(plain.lines).toContain("All 3 tracts' figures are in the CSV.");
+    expect(plain.csv.rows).toHaveLength(3);
   });
 });
 

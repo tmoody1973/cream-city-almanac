@@ -127,20 +127,24 @@ const ORDER = { fits: 0, close: 1 } as const;
 export function relateExport(d: RelateDetail, card: TractCardText, ctx: Ctx): CardExport {
   const { a, b } = d, ua = unitOf(a.meaning), ub = unitOf(b.meaning);
   const side = (h: Header) => [`${h.code} ${colHead(h)}`, `${h.code} low`, `${h.code} high`];
-  const range = ([value, lo, hi]: [number, number | null, number | null]) => ({ value, lo, hi });
-  // Clear matches, then possible ones, then the rest, each in the server's order.
+  // CSV: every tract, clear matches first, then possible ones, then the rest.
   const points = [...d.points].sort((x, y) => (x.mark ? ORDER[x.mark] : 2) - (y.mark ? ORDER[y.mark] : 2));
+  // Text and PNG copy the card's table: its clear matches, then possible ones, in the server's order. A card with no
+  // table (plain relate mode) exports no text rows; the CSV has every tract.
+  const pairs = [...d.fits.map((p) => ({ p, label: MATCH.fits })), ...d.close.map((p) => ({ p, label: MATCH.close }))];
   return {
     title: card.title,
-    lines: [metaLine(a), metaLine(b, false), ...card.lines],
+    lines: [metaLine(a), metaLine(b, false), ...card.lines, ...(pairs.length ? [] : [`All ${d.points.length} tracts' figures are in the CSV.`])],
     csv: {
       head: ["Tract", "GEOID", "City neighborhoods", "DYCU areas", ...side(a), ...side(b), "Match", "Status"],
       rows: points.map((p) => [p.tract, p.geoid, cityCell(p.city), p.dycu.join(", "), ...p.a, ...p.b, p.mark ? MATCH[p.mark] : "", p.unreliable ? "too uncertain" : ""]),
     },
-    text: {
-      head: ["Tract", "Neighborhood", "DYCU area", a.column, b.column, "Match"],
-      rows: points.map((p) => [p.tract, places(p.city), dycuText(p.dycu), shown(range(p.a), ua), shown(range(p.b), ub), [p.mark ? MATCH[p.mark] : "", p.unreliable ? "(too uncertain)" : ""].filter(Boolean).join(" ")]),
-    },
+    text: pairs.length
+      ? {
+          head: ["Tract", "Neighborhood", "DYCU area", a.column, b.column, "Match"],
+          rows: pairs.map(({ p, label }) => [p.a.tract, places(p.a.city), dycuText(p.a.dycu), shown(p.a, ua), shown(p.b, ub), label]),
+        }
+      : { head: [], rows: [] },
     notes: tractNotes([a, b], card.fine, ctx),
     filename: safeName([`${a.code}-${a.column}`, `${b.code}-${b.column}`, `${a.place}-${a.year}`, "relate"]),
   };
