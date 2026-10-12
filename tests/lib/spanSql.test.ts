@@ -1,0 +1,93 @@
+import { describe, expect, it } from "vitest";
+import type { CityProfile } from "../../convex/lib/cityProfile";
+import { SPAN_PAIRS } from "../../convex/lib/spanPairs";
+import { buildSpan, readDate } from "../../convex/lib/spanSql";
+
+const RID = "5cb9ea51-c23f-4171-ad2d-9e9b1bfde280";
+const complaints = SPAN_PAIRS.find((p) => p.id === "complaint-close")!;
+const arrive = SPAN_PAIRS.find((p) => p.id === "fire-arrive")!;
+const P: CityProfile = {
+  familyKey: complaints.familyKey, resourceId: RID, columns: [], dateColumn: null, districtColumns: [],
+  categories: [
+    { column: "Department", values: [{ value: "Milwaukee Police Department", count: 2569 }, { value: "Milwaukee Fire Department", count: 64 }] },
+    { column: "Category1", values: [{ value: "Department Services", count: 369 }], multi: true },
+  ],
+  rowCount: 2919, minDate: null, maxDate: null, namesPeople: false, signature: "", updatedAt: 0,
+};
+const FIRE: CityProfile = { ...P, familyKey: arrive.familyKey, dateColumn: "Date_Received", minDate: "2021-01-01", maxDate: "2021-12-31", updatedAt: Date.parse("2026-10-01"), categories: [{ column: "ZIP_Code", values: [{ value: "53206", count: 900 }] }] };
+const TODAY = "2026-10-12";
+const ok = (b: ReturnType<typeof buildSpan>) => { if (!b.ok) throw new Error(`refused: ${b.status}`); return b; };
+
+describe("reading dates", () => {
+  it("reads ISO and month/day/year text, with the year floor inside the pattern", () => {
+    const d = readDate("DateReported");
+    expect(d).toContain(`"DateReported" ~ '^(19|20)[0-9]{2}-`);
+    expect(d).toContain(`"DateReported"::timestamp`);
+    expect(d).toContain(`to_timestamp("DateReported", 'MM/DD/YYYY')::timestamp`);
+  });
+});
+
+describe("the span query", () => {
+  it("measures every record when nothing is asked: cases, median, 9-in-10, open, unreadable, wrong order", () => {
+    const b = ok(buildSpan(P, complaints, {}, TODAY));
+    expect(b.groupSql).toBeNull();
+    expect(b.allSql).toContain("percentile_cont(0.5) WITHIN GROUP (ORDER BY CASE WHEN t >= f THEN date_part('epoch', t - f) / 86400 END) AS median");
+    expect(b.allSql).toContain("percentile_cont(0.9)");
+    expect(b.allSql).toContain("SUM(CASE WHEN hf AND NOT ht THEN 1 ELSE 0 END) AS open");
+    expect(b.allSql).toContain("SUM(CASE WHEN (hf AND f IS NULL) OR (ht AND t IS NULL) THEN 1 ELSE 0 END) AS unreadable");
+    expect(b.allSql).toContain("SUM(CASE WHEN t < f THEN 1 ELSE 0 END) AS backwards");
+    expect(b.allSql).toContain(`FROM "${RID}"`);
+    expect(b.period).toBe("all records");
+    expect(b.coverage).toBeNull();
+  });
+  it("measures minutes for a minutes pair", () => {
+    expect(ok(buildSpan(FIRE, arrive, {}, TODAY)).allSql).toContain("/ 60 END");
+  });
+  it("groups by a column, merging labels that differ only in capitals and punctuation", () => {
+    const b = ok(buildSpan(P, complaints, { groupBy: "department" }, TODAY));
+    expect(b.groupSql).toContain(`"Department" AS g`);
+    expect(b.groupSql).toContain("upper(regexp_replace(g, '[^A-Za-z0-9]+', '', 'g')) AS k, min(g) AS label");
+    expect(b.groupSql).toContain("GROUP BY k ORDER BY cases DESC LIMIT 24");
+    expect(b.groupLabel).toBe("Department");
+    expect(b.overlap).toBe(false);
+    expect(b.allSql).not.toContain(" AS g");
+  });
+  it("splits a ;-separated column into overlapping groups, but never in the All row", () => {
+    const b = ok(buildSpan(P, complaints, { groupBy: "Category1" }, TODAY));
+    expect(b.groupSql).toContain(`unnest(string_to_array("Category1", ';')) AS g`);
+    expect(b.overlap).toBe(true);
+    expect(b.allSql).not.toContain("unnest");
+  });
+  it("groups by the year of the parsed 'from' date, newest first", () => {
+    const b = ok(buildSpan(P, complaints, { groupBy: "year" }, TODAY));
+    expect(b.groupSql).toContain("to_char(f, 'YYYY') AS k, min(to_char(f, 'YYYY')) AS label");
+    expect(b.groupSql).toContain("ORDER BY k DESC");
+    expect(b.groupLabel).toBe("year");
+  });
+  it("filters a period on the parsed 'from' date, even when the profile has no date column", () => {
+    const b = ok(buildSpan(P, complaints, { from: "2023-01-01", to: "2024-12-31" }, TODAY));
+    expect(b.allSql).toContain(") s WHERE f >= '2023-01-01' AND f < '2025-01-01'");
+    expect(b.period).toBe("Jan 1, 2023 – Dec 31, 2024");
+    expect(ok(buildSpan(P, complaints, { from: "2023-01-01" }, TODAY)).period).toBe("since Jan 1, 2023");
+  });
+  it("filters by profiled values inside the inner query", () => {
+    const b = ok(buildSpan(P, complaints, { filters: [{ column: "Department", values: ["milwaukee fire department"] }] }, TODAY));
+    expect(b.allSql).toContain(`FROM "${RID}" WHERE "Department" IN ('Milwaukee Fire Department')) s`);
+    expect(b.filterLabels).toEqual(["Milwaukee Fire Department"]);
+  });
+  it("offers the file's columns for a split, and refuses bad ones", () => {
+    expect(ok(buildSpan(P, complaints, {}, TODAY)).columns).toEqual(["Department"]);
+    expect(buildSpan(P, complaints, { groupBy: "Nope" }, TODAY)).toMatchObject({ ok: false, status: "bad-column", columns: ["year", "Department", "Category1"] });
+    expect(buildSpan(P, complaints, { from: "2025-02-30" }, TODAY)).toMatchObject({ ok: false, status: "bad-dates" });
+    expect(buildSpan(P, complaints, { from: "2025-05-01", to: "2025-01-01" }, TODAY)).toMatchObject({ ok: false, status: "bad-dates" });
+  });
+  it("refuses a period outside the file's data when the profile's date column is the 'from' date", () => {
+    expect(buildSpan(FIRE, arrive, { from: "2024-01-01" }, TODAY)).toMatchObject({ ok: false, status: "outside-coverage", coverage: "Jan 1, 2021 – Dec 31, 2021" });
+    expect(ok(buildSpan(FIRE, arrive, {}, TODAY)).coverage).toBe("Jan 1, 2021 – Dec 31, 2021");
+  });
+  it("never writes what the City's server or its firewall refuses", () => {
+    const all = [buildSpan(P, complaints, { groupBy: "year", from: "2023-01-01" }, TODAY), buildSpan(P, complaints, { groupBy: "Category1" }, TODAY), buildSpan(FIRE, arrive, { groupBy: "ZIP_Code" }, TODAY)]
+      .map((b) => { const x = ok(b); return `${x.groupSql} ${x.allSql}`; }).join(" ");
+    for (const banned of ["FILTER", "trim(", "extract(", "= 1", "= 0", ">= '19", "left("]) expect(all).not.toContain(banned);
+  });
+});
