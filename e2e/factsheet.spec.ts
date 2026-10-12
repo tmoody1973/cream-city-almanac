@@ -48,3 +48,11 @@ test("the address box has a visible label matching its name, and an answer area 
   await expect(page.getByRole("textbox", { name: "Your address" })).toBeVisible();
   await expect(page.locator("form [role=status]")).toHaveCount(1);
 });
+
+test("the fact sheets are linked from the footer, How it works and the neighborhood spreadsheet's page", async ({ page }) => {
+  for (const [from, name] of [["/", "Neighborhood fact sheets"], ["/how-it-works", "fact sheet you can print"], ["/d/N03", "Open the neighborhood fact sheets →"]] as const) {
+    await page.goto(from);
+    const link = page.getByRole("link", { name }).first();
+    await expect(link).toHaveAttribute("href", "/n");
+  }
+});
