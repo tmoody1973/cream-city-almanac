@@ -10,13 +10,14 @@ import { readDate } from "./spanSql";
 export type MeasureArgs = { from?: string; to?: string; filters?: { column: string; values?: string[] }[]; groupBy?: string };
 export type MeasureBuilt =
   | { ok: true; groupSql: string | null; allSql: string; period: string; filterLabels: string[]; groupLabel: string | null }
-  | { ok: false; status: "bad-dates"; from: string; to: string }
+  | { ok: false; status: "bad-dates"; from: string; to: string; reason?: string }
   | { ok: false; status: "bad-column"; column: string; columns: string[] }
   | { ok: false; status: "choose"; column: string; asked: string; choices: string[] };
 
 const NUMBER = "^-?[0-9]+([.][0-9]+)?$";
 const absent = (s: string | undefined) => !s || !s.trim();
 const cleaned = (c: string) => `regexp_replace(${quoteId(c)}, '[$, ]', '', 'g')`;
+const NO_DATES = "This file has no dates, so it can't be limited to a period. Leave out from and to.";
 export const moneyValue = (c: string) => `CASE WHEN ${cleaned(c)} ~ ${lit(NUMBER)} THEN ${cleaned(c)}::float END`;
 
 export function buildMeasure(p: CityProfile, m: CityMeasure, a: MeasureArgs, today: string): MeasureBuilt {
@@ -26,7 +27,8 @@ export function buildMeasure(p: CityProfile, m: CityMeasure, a: MeasureArgs, tod
   const askedTo = absent(a.to) ? undefined : a.to!;
   if (askedFrom || askedTo) {
     // A period needs a date; a file without one refuses rather than quietly measuring everything.
-    if (!m.date || (askedFrom && !isDay(askedFrom)) || (askedTo && !isDay(askedTo)) || (askedFrom && askedTo && askedFrom > askedTo)) {
+    if (!m.date) return { ok: false, status: "bad-dates", from: a.from ?? "", to: a.to ?? "", reason: NO_DATES };
+    if ((askedFrom && !isDay(askedFrom)) || (askedTo && !isDay(askedTo)) || (askedFrom && askedTo && askedFrom > askedTo)) {
       return { ok: false, status: "bad-dates", from: a.from ?? "", to: a.to ?? "" };
     }
   }

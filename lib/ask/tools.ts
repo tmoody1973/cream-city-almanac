@@ -68,7 +68,7 @@ export const spanParams = z.object({
 // Generated from the approved measures, so Ask's list can't drift from what the tool totals.
 export function measureSentence(): string {
   const list = CITY_MEASURES.map((m) => `${m.file}: ${m.name} (measure ${m.id}${m.summable ? "" : ", median and average only"}; split by ${[...m.splits, ...(m.date ? ["year"] : [])].join(", ")})`);
-  return ` For "how much", "total", "median", "average", "pay" or "owed" questions, pass measure with one of these approved measures instead of counting: ${list.join("; ")}. Set average only when the person asks for an average. Never sum or average any other column yourself; if it returns no-measure, say the file's numbers aren't set up to be totaled.`;
+  return ` For "how much", "total", "median", "average", "pay" or "owed" questions, pass measure with one of these approved measures instead of counting: ${list.join("; ")}. Set average only when the person asks for an average. Measures take no over/under filters; if it returns no-number-filter, offer the total without that limit. Never sum or average any other column yourself; if it returns no-measure, say the file's numbers aren't set up to be totaled.`;
 }
 
 // Generated from the approved pairs, so Ask's list can't drift from what the tool measures.

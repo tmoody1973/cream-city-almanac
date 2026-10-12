@@ -79,7 +79,7 @@ export type CountResult =
   | { status: "outside-coverage"; code: string; name: string; coverage: string }
   | { status: "choose"; code: string; name: string; column: string; asked: string; choices: string[] }
   | { status: "bad-column"; code: string; name: string; column: string; columns: string[] }
-  | { status: "bad-dates"; code: string; name: string; from: string; to: string }
+  | { status: "bad-dates"; code: string; name: string; from: string; to: string; reason?: string }
   | { status: "no-neighborhood"; code: string; name: string; asked: string; nearest: string[] }
   | { status: "no-locations"; code: string; name: string }
   | { status: "too-broad"; code: string; name: string; area?: string }
@@ -95,6 +95,7 @@ export type CountResult =
       groupBy: string | null; period: string; filters: string[]; groups: MeasureGroup[]; other: MeasureOther | null; all: MeasureAll; averageAsked: boolean; splits: string[];
     }
   | { status: "no-measure"; code: string; name: string; files: string[] }
+  | { status: "no-number-filter"; code: string; name: string; column: string }
   | { status: "choose-measure"; code: string; name: string; measures: { id: string; name: string }[] };
 
 // Date groups arrive as "2026-08" (month) or "2026" (year) text; column groups are named like the profile names them.
@@ -151,6 +152,8 @@ export async function runMeasure(ctx: ActionCtx, { code, neighborhood, measure, 
   const m = options.find((x) => x.id === measure.id.trim());
   if (!m) return { status: "choose-measure" as const, code: data.code, name, measures: options.map(({ id, name: label }) => ({ id, name: label })) };
   if (neighborhood?.trim()) return { status: "no-locations" as const, code: data.code, name };
+  const amount = args.filters?.find((f) => f.over !== undefined || f.under !== undefined);
+  if (amount) return { status: "no-number-filter" as const, code: data.code, name, column: amount.column };
   const built = buildMeasure(profile, m, { ...args, filters: args.filters?.map(({ column, values }) => ({ column, values })) }, chicagoDay(Date.now()));
   if (!built.ok) {
     const { ok: _ok, ...refusal } = built;

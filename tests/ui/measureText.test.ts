@@ -69,6 +69,16 @@ describe("measure export, follow-ups and choices", () => {
   });
 });
 
+describe("money at the edges", () => {
+  it("rounds before choosing the unit, and puts a minus sign before the dollar sign", () => {
+    expect(money(999960000, "dollars", "sentence")).toBe("$1.0 billion");
+    expect(money(999.996, "dollars", "table")).toBe("$1,000");
+    expect(money(-1234, "dollars", "table")).toBe("-$1,234");
+    expect(money(-2500000, "dollars", "sentence")).toBe("-$2.5 million");
+    expect(money(-12.5, "dollars per hour", "table")).toBe("-$12.50");
+  });
+});
+
 describe("the summary's honesty", () => {
   const sales = { ...base, measure: { ...base.measure, namesPeople: false, things: "sales" } };
   it("never names a group with fewer than 10 records, or a blank one, as the largest or highest", () => {

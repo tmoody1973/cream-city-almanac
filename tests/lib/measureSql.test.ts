@@ -58,7 +58,7 @@ describe("the measure query", () => {
     expect(buildMeasure(sales, by("sale-price"), { groupBy: "Nope" }, TODAY)).toMatchObject({ ok: false, status: "bad-column", columns: ["District", "PropType", "year"] });
   });
   it("refuses a period when the measure has no date column", () => {
-    expect(buildMeasure(base(), by("gross-pay"), { from: "2025-01-01" }, TODAY)).toMatchObject({ ok: false, status: "bad-dates" });
+    expect(buildMeasure(base(), by("gross-pay"), { from: "2025-01-01" }, TODAY)).toMatchObject({ ok: false, status: "bad-dates", reason: "This file has no dates, so it can't be limited to a period. Leave out from and to." });
     expect(buildMeasure(base(), by("gross-pay"), { groupBy: "year" }, TODAY)).toMatchObject({ ok: false, status: "bad-column" });
   });
   it("keeps the property file to its current assessment, like counts", () => {

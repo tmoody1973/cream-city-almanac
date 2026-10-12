@@ -408,6 +408,7 @@ export function AskCards({ onOpen }: { onOpen?: (search: string) => void }) {
     if (r.status === "busy") return <p className={styles.failed}>City counts are busy for your account; try again shortly.</p>;
     if (r.status === "no-neighborhood") return <><p className={styles.failed} data-card="count-no-neighborhood">No City neighborhood is called &ldquo;{r.asked}&rdquo;.{r.nearest.length ? ` Nearest: ${r.nearest.join(", ")}.` : ""}</p><FollowUps pick items={countChoices(props.parameters as never, r as never)} id={props.toolCallId} /></>;
     if (r.status === "no-locations") return <p className={styles.failed}>{r.name} doesn&apos;t record locations, so it can&apos;t be counted by neighborhood. <OpenLink code={r.code} onOpen={onOpen} /></p>;
+    if (r.status === "no-number-filter") return <p className={styles.failed}>Totals can&apos;t be limited to a range of {r.column} yet. Ask without &ldquo;over&rdquo; or &ldquo;under&rdquo;, or count the records instead.</p>;
     if (r.status === "too-broad") return <p className={styles.failed}>Too many {r.name} records{r.area ? ` in ${r.area}` : ""} to count at once; try a shorter period or a filter.</p>;
     // choose / bad-column offer the server's options to pick; bad-dates / not-found / not-city have none (the model asks or retries).
     return <FollowUps pick items={refusalChoicesFor(props.parameters as never, r as never)} id={props.toolCallId} />;

@@ -66,6 +66,13 @@ describe("countRecords with a measure", () => {
     expect(await t.withIdentity(reader).action(api.city.countRecords, { code: "X36", measure: { id: "gross-pay" } })).toMatchObject({ status: "not-live", note: "The City's current file for this dataset is empty, so there's nothing to count right now." });
     expect(fake.calls.length).toBe(0);
   });
+  it("refuses an over/under amount filter plainly, without asking the City", async () => {
+    const t = await seed();
+    const fake = installFakeFetch({ citySql: () => all });
+    expect(await t.withIdentity(reader).action(api.city.countRecords, { code: "X36", measure: { id: "gross-pay" }, filters: [{ column: "Total Gross", over: 100000 }] }))
+      .toMatchObject({ status: "no-number-filter", code: "X36", column: "Total Gross" });
+    expect(fake.calls.length).toBe(0);
+  });
   it("says unavailable when the City fails, and too-broad when it times out", async () => {
     const t = await seed();
     installFakeFetch({ cityStatus: 403 });

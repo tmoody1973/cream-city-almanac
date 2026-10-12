@@ -8,11 +8,14 @@ const NAME_MIN = 10; // the sentence names a group only with this many records, 
 
 export function money(v: number | null, unit: Unit, style: "table" | "sentence"): string {
   if (v === null || !Number.isFinite(v)) return "—";
-  if (unit === "dollars per hour") return `$${v.toFixed(2)}${style === "sentence" ? " an hour" : ""}`;
+  const sign = v < 0 ? "-" : "";
   const a = Math.abs(v);
-  if (style === "sentence" && a >= 1e9) return `$${(v / 1e9).toFixed(1)} billion`;
-  if (style === "sentence" && a >= 1e6) return `$${(v / 1e6).toFixed(1)} million`;
-  return a >= 1000 ? `$${Math.round(v).toLocaleString("en-US")}` : `$${v.toFixed(2)}`;
+  if (unit === "dollars per hour") return `${sign}$${a.toFixed(2)}${style === "sentence" ? " an hour" : ""}`;
+  // Round first, then pick the unit, so $999.96 million reads "$1.0 billion", never "$1000.0 million".
+  const millions = Number((a / 1e6).toFixed(1));
+  if (style === "sentence" && millions >= 1000) return `${sign}$${(a / 1e9).toFixed(1)} billion`;
+  if (style === "sentence" && millions >= 1) return `${sign}$${millions.toFixed(1)} million`;
+  return Number(a.toFixed(2)) >= 1000 ? `${sign}$${Math.round(a).toLocaleString("en-US")}` : `${sign}$${a.toFixed(2)}`;
 }
 
 export const measureTitle = (r: MeasureOk) => [r.name, r.measure.name, ...(r.groupBy ? [`by ${r.groupBy}`] : [])].join(" · ");
