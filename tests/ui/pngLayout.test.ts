@@ -39,3 +39,20 @@ describe("PNG layout", () => {
     expect(l.height).toBeGreaterThan(Math.max(...l.items.map((i) => i.y)));
   });
 });
+
+describe("PNG columns", () => {
+  it("shrinks the long text column, never the rank or the figures", () => {
+    const wide: CardExport = {
+      ...e(1),
+      text: {
+        head: ["#", "Tract", "Neighborhood", "DYCU area", "pov_rate", "Status"],
+        rows: [["1", "1860", "Hillside 51% · Halyard Park 27% · Triangle North 13% · Harambee 9% · Brewers Hill 8%", "Harambee, Hillside, Lindsay Heights", "34.5% (28.1–40.9%)", "ranked"]],
+      },
+    };
+    const l = pngLayout(wide, measure);
+    const texts = l.items.map((i) => i.text);
+    for (const kept of ["#", "1", "1860", "34.5% (28.1–40.9%)", "Status", "ranked"]) expect(texts).toContain(kept);
+    expect(texts.some((t) => t.startsWith("Hillside") && t.endsWith("…"))).toBe(true);
+    for (const i of l.items) expect(i.x + measure(i.text, i.font)).toBeLessThanOrEqual(PNG_WIDTH - PNG_PAD + 0.001);
+  });
+});

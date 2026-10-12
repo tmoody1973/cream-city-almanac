@@ -51,11 +51,15 @@ export function pngLayout(e: CardExport, measure: Measure): Layout {
 
   const { head, rows } = e.text;
   const drawn = rows.slice(0, PNG_ROWS);
-  // Each column as wide as its widest cell; when the table is wider than the page, every column shrinks in proportion.
+  // Each column as wide as its widest cell. When the table is wider than the page, the widest columns give way first
+  // (a long neighborhood list), so short ones (rank, figures) keep their full width and are never cut.
   const natural = head.map((h, i) => Math.max(measure(h, "bold"), ...drawn.map((r) => measure(r[i] ?? "", "body"))));
   const room = avail - GAP * (head.length - 1);
-  const total = natural.reduce((a, b) => a + b, 0);
-  const widths = natural.map((w) => (total > room ? (w * room) / total : w));
+  const used = (cap: number) => natural.reduce((a, w) => a + Math.min(w, cap), 0);
+  let cap = Math.max(0, ...natural);
+  // ponytail: steps a pixel at a time, at most a page width of steps; a binary search if tables ever get huge.
+  while (cap > 0 && used(cap) > room) cap -= 1;
+  const widths = natural.map((w) => Math.min(w, cap));
   const xs = widths.map((_, i) => PNG_PAD + widths.slice(0, i).reduce((a, b) => a + b, 0) + GAP * i);
   const row = (cells: string[], font: Font) => {
     y += SIZE[font] * LEADING;
