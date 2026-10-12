@@ -22,6 +22,31 @@ A reporter asked Ask: "How long do complaints take to go from being reported to 
   - Every one of these date columns is typed `text`.
 - **Dataset codes are assigned per database.** Complaints is P01 in development and P24 on the live site. Pairs must name files by their stable family key, never by code.
 
+### 2.1 What the City's server allows (checked 2026-10-12 while planning)
+- **Blocked functions:** `FILTER`, `trim` and `extract` ("Not authorized to call function …").
+- **Allowed:** `regexp_replace`, `upper`, `min`, `date_part('epoch', …)`, `to_char(…, 'YYYY')`, `to_timestamp`, `::timestamp`, `percentile_cont`, subqueries, `unnest(string_to_array(…))`.
+- **The firewall** in front of data.milwaukee.gov answers some query text with an HTML 403 page instead of data:
+  - `CASE WHEN 1 = 1`
+  - `AND left(x, 4) >= '1900'`
+  - numeric flags compared as `hf = 1 AND ht = 0`
+
+  The query therefore keeps flags as booleans (`hf AND NOT ht`), and puts the year floor inside the date pattern (`(19|20)[0-9]{2}`) instead of comparing text.
+- **The proven query shape:** an inner `SELECT` reads both dates once per row (`f`, `t`, the booleans `hf` and `ht`, and the raw group value `g`). The outer `SELECT` groups and computes:
+  - `SUM(CASE WHEN t >= f THEN 1 ELSE 0 END)` for cases;
+  - `percentile_cont(0.5 | 0.9) WITHIN GROUP (ORDER BY CASE WHEN t >= f THEN date_part('epoch', t - f) / 86400 | 60 END)`;
+  - open: `hf AND NOT ht`;
+  - unreadable: `(hf AND f IS NULL) OR (ht AND t IS NULL)`;
+  - wrong order: `t < f`.
+- **Group keys:**
+  - by column: `upper(regexp_replace(g, '[^A-Za-z0-9]+', '', 'g'))`, with `min(g)` as the label;
+  - by year: `to_char(f, 'YYYY')`, computed in the outer query;
+  - a `;`-separated column is split with `unnest(string_to_array(…, ';'))` in the inner query. Its groups overlap, so no "Other" sum.
+- **The period filter** is `f >= 'YYYY-MM-DD' AND f < 'YYYY-MM-DD'` in the outer query. Value filters are `IN (…)` in the inner query.
+- **Live results with this shape:**
+  - Complaints by Department: Police, 2,437 cases, median 92.0 days, 9 in 10 within 478.4, 105 open; Non-employee (4 spellings merged), 198, 1.0 days.
+  - Complaints by year: 2023 median 159 days with 1 open; 2025 median 52 days with 79 open.
+  - Fire received → arrived by call type: EMS 60,846 cases, 6.1 minutes, with 23,637 EMS calls having no arrival time.
+
 ## 3. Decisions (Tarik, 2026-10-12)
 - **Chosen pairs.** A short code list of known "from → to" pairs, checked by hand, each with a plain name, a unit and its own caveat. Ask never pairs arbitrary date columns.
 - **Measures per group:** cases measured, the median ("half took less than this"), the 9-in-10 ("9 in 10 took less than this"), still open, unreadable dates, and dates in the wrong order.
@@ -105,6 +130,7 @@ A span is measured only when both dates are readable and "to" is not before "fro
   4. The pair's caveat.
   5. Coverage and the period.
   6. Filters in plain words.
+  7. By year only: "Recent years look faster than they are: their slowest cases aren't closed yet." Shown whenever the newest year has open cases.
 - **Provenance:** a CITY tag and a link to the dataset sheet.
 - **Exports:** CSV · Copy text · PNG through C1's `ExportBar`, with a `spanExport` builder. The CSV carries unrounded medians and the unit in the heading.
 - **Follow-ups:** "By year" (when split by a column), "By {another category column}" (up to 2), and "Since {latest year}".
