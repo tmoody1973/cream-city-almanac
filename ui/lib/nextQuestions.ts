@@ -3,6 +3,7 @@
 // names the dataset code and column so Ask asks for exactly what the button meant. No figures of our own.
 import type { FollowUp } from "@/ui/components/FollowUps";
 import { EXACT, placeName, subject } from "./tractSummary";
+import type { SpanOk } from "./spanText";
 
 const MAX = 3;
 export type Col = { code: string; name: string; column: string; meaning: string; place: string; year: string; confidence: string | null };
@@ -73,4 +74,13 @@ export function datasetFollowUps(r: { code: string; name: string; storyAngles?: 
 export function previewFollowUps(r: { code: string; name: string; fields: string[] }): FollowUp[] {
   const tract = r.fields.some((f) => f.toUpperCase() === "GEOID");
   return [...(tract ? [{ label: "RANK TRACTS ON THIS", question: `Which census tracts rank highest on ${r.code} ${r.name}?` }] : []), caveats(r)];
+}
+
+type SpanArgsIn = { code: string; groupBy?: string; from?: string; to?: string };
+const spanBase = (r: SpanOk) => `How long did ${r.pair.things} take ${r.pair.toWhat} in ${r.name} (${r.code})`;
+export function spanFollowUps(args: SpanArgsIn, r: SpanOk): FollowUp[] {
+  const out: FollowUp[] = [];
+  if (r.groupBy !== "year") out.push({ label: "BY YEAR", question: `${spanBase(r)}, by year?` });
+  for (const c of r.columns.filter((c) => c !== r.groupBy).slice(0, 2)) out.push({ label: `BY ${c.replace(/_/g, " ").toUpperCase()}`, question: `${spanBase(r)}, by ${c}?` });
+  return out.slice(0, MAX);
 }

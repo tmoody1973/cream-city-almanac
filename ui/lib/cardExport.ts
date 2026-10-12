@@ -5,6 +5,7 @@ import type { ChangeDetail, Header, RankDetail, RelateDetail } from "@/convex/tr
 import { cityList, dycuText } from "./placeNames";
 import { changeText, plainMeaning, rangeText, unitOf, type Unit } from "./tractFormat";
 import { EXACT, KIND, propertyCountSummary } from "./tractSummary";
+import { cellTime, spanNotes, spanSummary, spanTitle, type SpanOk } from "./spanText";
 
 // One export per card (spec 2026-10-12-card-export-design.md): CSV, text and PNG are all written from it, so they
 // never disagree. It copies the card: its figures, its title and lines, its fine print, caveats and source.
@@ -209,3 +210,23 @@ export function countExport(r: CountCardData, ctx: Ctx): CardExport {
 
 export const quoteText = (p: { quote: string; section: string; report: string; code: string }, ctx: Ctx) =>
   [`“${p.quote}”`, `${p.report}, ${p.section}`, sourceNote("DYCU", p.code, null, ctx), exported(ctx)].join("\n");
+
+export function spanExport(r: SpanOk, ctx: Ctx): CardExport {
+  const u = r.pair.unit;
+  const rows = [...r.groups, ...(r.other > 0 ? [{ label: "Other", cases: r.other, median: null, p90: null, open: 0 }] : []), r.all];
+  const { warning, notes } = spanNotes(r);
+  return {
+    title: spanTitle(r),
+    lines: [...(warning ? [warning] : []), spanSummary(r)],
+    csv: {
+      head: [r.groupBy === "year" ? "Year" : r.groupBy ?? "Group", "Cases", `Median (${u})`, `9 in 10 within (${u})`, "Still open"],
+      rows: rows.map((g) => [g.label, g.cases, g.median, g.p90, g.open]),
+    },
+    text: {
+      head: [r.groupBy === "year" ? "Year" : r.groupBy ?? "", "Cases", "Median", "9 in 10 within", "Still open"],
+      rows: rows.map((g) => [g.label, g.cases.toLocaleString("en-US"), g.label === "Other" ? "" : cellTime(g, g.median, u), g.label === "Other" ? "" : cellTime(g, g.p90, u), g.open.toLocaleString("en-US")]),
+    },
+    notes: [...notes, sourceNote("City of Milwaukee", r.code, r.name, ctx), exported(ctx)],
+    filename: safeName([r.code, r.pair.id, ...(r.groupBy ? [r.groupBy] : [])]),
+  };
+}
