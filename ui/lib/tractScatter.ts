@@ -4,11 +4,13 @@ type Pt = { a: Triple; b: Triple; unreliable?: boolean; mark?: "fits" | "close" 
 // Linear scales for the relate card's scatter: the x/y extents cover the reliable points' values and the marked
 // points' ranges, the only ranges drawn (unreliable points don't stretch the plot; they're clamped into it), and y
 // grows upward. `domain` is each axis's low and high end.
-export function scales(points: Pt[], width: number, height: number, pad: number) {
+// `cuts`: a mismatch's cutoffs, which come from the whole place and can fall outside a neighborhood's points; the axis
+// stretches to include them so no tract sits under the wrong label.
+export function scales(points: Pt[], width: number, height: number, pad: number, cuts: { a?: number; b?: number } = {}) {
   const reliable = points.filter((p) => !p.unreliable);
   const sized = reliable.length ? reliable : points;
   const ext = (k: "a" | "b"): [number, number] => {
-    const all = sized.flatMap((p) => (p.mark ? p[k] : [p[k][0]])).filter((v): v is number => v !== null);
+    const all = [...sized.flatMap((p) => (p.mark ? p[k] : [p[k][0]])), cuts[k] ?? null].filter((v): v is number => v !== null);
     if (!all.length) return [0, 1];
     const lo = Math.min(...all);
     const hi = Math.max(...all);

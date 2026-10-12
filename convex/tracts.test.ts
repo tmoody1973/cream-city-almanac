@@ -3,7 +3,7 @@ import rateLimiterTest from "@convex-dev/rate-limiter/test";
 import { convexTest } from "convex-test";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { installFakeFetch } from "../tests/helpers/fakeFetch";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import { rateLimiter } from "./limits";
 import schema from "./schema";
 
@@ -314,6 +314,30 @@ describe("relateTracts", () => {
     expect(r).toMatchObject({ status: "choose-column", dataset: "b" });
     expect(rowFetches).toBe(0);
   });
+  it("keeps the citywide cutoffs and lists only the neighborhood's matches", async () => {
+    const t = await seedPair();
+    await t.run(async (ctx) => {
+      await ctx.db.insert("neighborhoods", { definition: "city", name: "Hillside", matchKey: "hillside" });
+      await ctx.db.insert("neighborhoods", { definition: "city", name: "Bay View", matchKey: "bay view" });
+      await ctx.db.insert("tractNeighborhoods", { geoid: "55079100000", city: [{ name: "Bay View", share: 100 }] });
+    });
+    installFakeFetch({ columnsFor: routeFields, tractRows: routeRows });
+    const all = await t.withIdentity(reader).action(api.tracts.relateTracts, { ...relateArgs, mode: "mismatch", aSide: "high", bSide: "low" });
+    const hill = await t.withIdentity(reader).action(api.tracts.relateTracts, { ...relateArgs, mode: "mismatch", aSide: "high", bSide: "low", neighborhood: "Hillside" });
+    const bay = await t.withIdentity(reader).action(api.tracts.relateTracts, { ...relateArgs, mode: "mismatch", aSide: "high", bSide: "low", neighborhood: "Bay View" });
+    if (all.status !== "ok" || hill.status !== "ok" || bay.status !== "ok") throw new Error("expected ok");
+    expect([hill.cutA, hill.cutB]).toEqual([all.cutA, all.cutB]);
+    expect(hill).toMatchObject({ area: { name: "Hillside", tracts: 1, partly: 1 }, fitsCount: 1, fits: [{ a: { tract: "1860", share: 51 } }] });
+    expect(bay).toMatchObject({ fitsCount: 0, fits: [] });
+  });
+  it("refuses 'do they go together' inside a neighborhood without asking DYCU", async () => {
+    const t = await seedPair();
+    await t.run(async (ctx) => { await ctx.db.insert("neighborhoods", { definition: "city", name: "Hillside", matchKey: "hillside" }); });
+    const fake = installFakeFetch({ columnsFor: routeFields, tractRows: routeRows });
+    expect(await t.withIdentity(reader).action(api.tracts.relateTracts, { ...relateArgs, mode: "relate", neighborhood: "Hillside" }))
+      .toEqual({ status: "too-few-tracts", name: "Hillside", map: "city", n: 1, needed: 20 });
+    expect(fake.calls.length).toBe(0);
+  });
 });
 
 describe("compareYears", () => {
@@ -389,6 +413,18 @@ describe("compareYears", () => {
     expect(await as.action(api.tracts.compareYears, { code: "E02", column: "pov_rate", place: "City", from: "2022", to: "2031" })).toMatchObject({ status: "choose-year", year: "2031", available: [{ place: "City", year: "2022" }, { place: "City", year: "2023" }] });
     expect(await as.action(api.tracts.compareYears, { code: "E02", column: "pov_rate", place: "City", from: "2022", to: "2022" })).toMatchObject({ status: "choose-year", reason: "pick two different years" });
   });
+  it("compares only the tracts in a neighborhood, with their share", async () => {
+    const t = await seedTwoYears();
+    await t.run(async (ctx) => {
+      await ctx.db.insert("neighborhoods", { definition: "city", name: "Bay View", matchKey: "bay view" });
+      for (const [geoid, share] of [["55079100000", 100], ["55079100100", 61], ["55079100200", 15], ["55079109900", 100]] as const)
+        await ctx.db.insert("tractNeighborhoods", { geoid, city: [{ name: "Bay View", share }] });
+    });
+    installFakeFetch({ columns: POV_FIELDS, tractRows: (url) => (url.includes("2023") ? later((i) => ({ delta: i === 0 || i === 5 ? 5 : 0 }))() : povertyRows()) });
+    const r = await t.withIdentity(reader).action(api.tracts.compareYears, { code: "E02", column: "pov_rate", place: "City", from: "2022", to: "2023", neighborhood: "Bay View" });
+    expect(r).toMatchObject({ status: "ok", increases: 1, decreases: 0, none: 2, area: { name: "Bay View", tracts: 3, partly: 2 }, header: { n: 3, leftOut: 1 } }); // 1099 has no figure in either year
+    if (r.status === "ok") expect(r.changes.map((c) => [c.tract, c.share])).toEqual([["1000", 100]]);
+  });
 });
 
 describe("tractDetail", () => {
@@ -412,5 +448,90 @@ describe("the rows cache is best-effort", () => {
     await t.run(async (ctx) => { for (const r of await ctx.db.query("mapCache").collect()) if (r.key.startsWith("tractrows:")) await ctx.db.patch(r._id, { result: "{not json" }); });
     expect(await ask()).toMatchObject({ status: "ok" });
     expect(fetched).toBe(2);
+  });
+});
+
+describe("findArea", () => {
+  async function seedNames() {
+    const t = await seedTracts();
+    await t.run(async (ctx) => {
+      await ctx.db.insert("neighborhoods", { definition: "city", name: "Bay View", matchKey: "bay view" });
+      await ctx.db.insert("neighborhoods", { definition: "city", name: "Hillside", matchKey: "hillside" });
+    });
+    return t;
+  }
+  it("finds a City neighborhood by name, and offers the nearest on a near miss", async () => {
+    const t = await seedNames();
+    expect(await t.query(internal.tracts.findArea, { asked: "bay view", map: "city" })).toEqual({ kind: "one", area: { name: "Bay View", map: "city" } });
+    expect(await t.query(internal.tracts.findArea, { asked: "Bay Vew", map: "city" })).toEqual({ kind: "none", nearest: ["Bay View"] });
+  });
+  it("uses DYCU's area for a name only DYCU has, and DYCU's map when asked", async () => {
+    const t = await seedNames();
+    expect(await t.query(internal.tracts.findArea, { asked: "Harambee", map: "city" })).toEqual({ kind: "one", area: { name: "Harambee", map: "dycu" } });
+    expect(await t.query(internal.tracts.findArea, { asked: "Harambee", map: "dycu" })).toEqual({ kind: "one", area: { name: "Harambee", map: "dycu" } });
+    expect(await t.query(internal.tracts.findArea, { asked: "Hillside", map: "dycu" })).toMatchObject({ kind: "none" });
+  });
+});
+
+// Bay View: tracts 1000 (100%), 1001 (61%), 1002 (15%), and 1099 (no figure in the data). Buchel Park: no tract.
+async function seedAreas() {
+  const t = await seedTracts();
+  await t.run(async (ctx) => {
+    for (const [name, matchKey] of [["Bay View", "bay view"], ["Hillside", "hillside"], ["Buchel Park", "buchel park"]]) await ctx.db.insert("neighborhoods", { definition: "city", name, matchKey });
+    for (const [geoid, share] of [["55079100000", 100], ["55079100100", 61], ["55079100200", 15], ["55079109900", 100]] as const)
+      await ctx.db.insert("tractNeighborhoods", { geoid, city: [{ name: "Bay View", share }] });
+  });
+  return t;
+}
+const rankArgs = { code: "E02", column: "pov_rate", place: "City" as const, year: "2022", direction: "high" as const };
+
+describe("rankTracts in a neighborhood", () => {
+  it("lists every tract in it with its share and citywide rank, and counts a tract with no figure as left out", async () => {
+    const t = await seedAreas();
+    installFakeFetch({ columns: POV_FIELDS, tractRows: povertyRows });
+    const r = await t.withIdentity(reader).action(api.tracts.rankTracts, { ...rankArgs, neighborhood: "bay view" });
+    expect(r).toMatchObject({ status: "ok", area: { name: "Bay View", map: "city", tracts: 3, partly: 2 }, header: { n: 3, leftOut: 1 } });
+    if (r.status !== "ok") return;
+    expect(r.top.map((x) => [x.tract, x.share, x.cityRank])).toEqual([
+      ["1002", 15, { position: 23, of: 25 }],
+      ["1001", 61, { position: 24, of: 25 }],
+      ["1000", 100, { position: 25, of: 25 }],
+    ]);
+  });
+  it("uses DYCU's area when the name is only DYCU's", async () => {
+    const t = await seedAreas();
+    installFakeFetch({ columns: POV_FIELDS, tractRows: povertyRows });
+    const r = await t.withIdentity(reader).action(api.tracts.rankTracts, { ...rankArgs, neighborhood: "Harambee" });
+    expect(r).toMatchObject({ status: "ok", area: { name: "Harambee", map: "dycu", tracts: 1, partly: 0 }, top: [{ tract: "1860", share: 100 }] });
+  });
+  it("offers the nearest names for a misspelling and says when a neighborhood has no tract, both without asking DYCU", async () => {
+    const t = await seedAreas();
+    const fake = installFakeFetch({ columns: POV_FIELDS, tractRows: povertyRows });
+    expect(await t.withIdentity(reader).action(api.tracts.rankTracts, { ...rankArgs, neighborhood: "Bay Vew" })).toEqual({ status: "no-neighborhood", asked: "Bay Vew", nearest: ["Bay View"] });
+    expect(await t.withIdentity(reader).action(api.tracts.rankTracts, { ...rankArgs, neighborhood: "Buchel Park" })).toEqual({ status: "no-tracts", name: "Buchel Park", map: "city" });
+    expect(fake.calls.length).toBe(0);
+  });
+  it("leaves the answer unchanged without a neighborhood", async () => {
+    const t = await seedAreas();
+    installFakeFetch({ columns: POV_FIELDS, tractRows: povertyRows });
+    const r = await t.withIdentity(reader).action(api.tracts.rankTracts, rankArgs);
+    expect(r).not.toHaveProperty("area");
+    if (r.status === "ok") expect(r.top).toHaveLength(10);
+  });
+});
+
+describe("review fixes for neighborhoods", () => {
+  it("counts a DYCU area's tracts for the dataset's own year, so a tract from another year isn't 'left out'", async () => {
+    const t = await seedTracts();
+    await t.run(async (ctx) => { await ctx.db.insert("neighborhoods", { definition: "dycu", name: "Amani", matchKey: "amani", tracts: [{ years: [2019, 2020], tracts: ["1860", "1861"] }, { years: [2021, 2022, 2023, 2024], tracts: ["1860"] }] }); });
+    installFakeFetch({ columns: POV_FIELDS, tractRows: povertyRows });
+    const r = await t.withIdentity(reader).action(api.tracts.rankTracts, { ...rankArgs, neighborhood: "Amani", map: "dycu" });
+    expect(r).toMatchObject({ status: "ok", header: { n: 1, leftOut: 0 }, area: { tracts: 1 } });
+  });
+  it("cuts a very long neighborhood name before matching it", async () => {
+    const t = await seedAreas();
+    const r = await t.withIdentity(reader).action(api.tracts.rankTracts, { ...rankArgs, neighborhood: "x".repeat(5000) });
+    expect(r).toMatchObject({ status: "no-neighborhood" });
+    if (r.status === "no-neighborhood") expect(r.asked.length).toBeLessThanOrEqual(80);
   });
 });

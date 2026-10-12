@@ -104,6 +104,12 @@ describe("rank export", () => {
     ]);
     expect(e.filename).toBe("almanac_E02-pov_rate_County-2023_rank");
   });
+  it("adds the neighborhood line and a citywide rank column when the card is limited to one", () => {
+    const inArea = rankExport({ ...d, top: [{ ...hillside, share: 51, cityRank: { position: 3, of: 210 } }], area: { name: "Hillside", map: "city", tracts: 1, partly: 1 } }, card, ctx);
+    expect(inArea.lines[0]).toBe("Hillside (City of Milwaukee boundary) · 1 tract, 1 partly inside");
+    expect(inArea.csv.head.at(-1)).toBe(`${d.header.place === "County" ? "Countywide" : "Citywide"} rank`);
+    expect(inArea.csv.rows[0].at(-1)).toBe("3 of 210");
+  });
 });
 
 describe("change export", () => {

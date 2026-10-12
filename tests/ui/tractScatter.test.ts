@@ -49,3 +49,13 @@ describe("room for y-axis labels", () => {
     expect(axisLabelRoom([], 14)).toBe(Math.round(14 * 3.4));
   });
 });
+
+describe("scatter scales in a neighborhood", () => {
+  it("stretches each axis to include its citywide cutoff, so no tract sits under the wrong label", () => {
+    const pts = [5, 10, 20].map((v) => ({ a: [v, v - 1, v + 1] as [number, number, number], b: [v, v - 1, v + 1] as [number, number, number] }));
+    const s = scales(pts, 400, 400, 0, { a: 30, b: 2 });
+    expect(s.domain.x).toEqual([5, 30]);
+    expect(s.domain.y).toEqual([2, 20]);
+    expect(s.x(20)).toBeLessThan(s.x(30));
+  });
+});

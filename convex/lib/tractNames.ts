@@ -7,3 +7,7 @@ export const neighborhoodsFor = (tract: string, year: number, defs: DycuDef[]): 
 
 // The newest year DYCU's definitions cover: names for figures from a year DYCU hasn't defined (the City's current file).
 export const latestDefYear = (defs: DycuDef[]) => Math.max(0, ...defs.flatMap((d) => (d.tracts ?? []).flatMap((e) => e.years)));
+
+// The years DYCU defines an area for, oldest first: what a "no tracts this year" refusal names.
+export const areaYears = (defs: DycuDef[], name: string): number[] =>
+  [...new Set(defs.filter((d) => d.name === name).flatMap((d) => (d.tracts ?? []).flatMap((e) => e.years)))].sort((a, b) => a - b);

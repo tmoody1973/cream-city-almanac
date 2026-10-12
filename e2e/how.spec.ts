@@ -101,3 +101,8 @@ test("it links to the diagram of how Ask answers a question, and the diagram ope
   await expect(page).toHaveTitle(/How Cream City Almanac answers a question/);
   await expect(page.locator("svg text", { hasText: "Code does the math" }).first()).toBeVisible();
 });
+
+test("it explains asking about a neighborhood's tracts", async ({ page }) => {
+  await page.goto("/how-it-works");
+  await expect(page.getByText(/61% of this tract is in Bay View/)).toBeVisible();
+});

@@ -93,6 +93,11 @@ export function HowItWorks({ status, example, areas }: { status: CatalogStatus |
               open aren&apos;t counted, so the slowest ones are missing, and the card says how many.
             </p>
             <p>
+              You can also ask about one neighborhood&apos;s census tracts, like &ldquo;the poverty rate in Bay View&apos;s tracts.&rdquo; Ask
+              lists every tract with at least 10% of its area in the neighborhood, each with its own figure and range, and says how much of
+              it is inside: &ldquo;61% of this tract is in Bay View.&rdquo; It never adds tracts together into one neighborhood number.
+            </p>
+            <p>
               Ask can also add up a few City money columns, like back property tax owed, City employee pay and property sale prices. It
               shows the total and the median (the middle value), and the average only when you ask for it. In files that name people,
               groups of fewer than 5 records are hidden so no one&apos;s figure can be singled out.

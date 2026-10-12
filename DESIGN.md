@@ -404,6 +404,12 @@ The measure card (`[data-card=measure]`) is a variant of the count card:
 
 Measures: `convex/lib/cityMeasures.ts`. Decision 034.
 
+### A neighborhood's tracts
+
+- A tract card limited to a neighborhood opens with one line: "Bay View (City of Milwaukee boundary) · 11 tracts, 6 partly inside", or "Harambee (DYCU's area) · 9 tracts".
+- Each partly-inside row adds a muted line under its neighborhoods: "61% of this tract is in Bay View". At 100% nothing is added.
+- A ranking adds a "Citywide" column ("12th highest of 210"), or "Countywide" for a County dataset, so a reader can tell whether high is high for Milwaukee.
+
 ### Analysis cards (Ask's tract answers)
 Three cards in Ask's hairline box, under the AI's one to three sentences: ranking, change over time, and relationship. Every figure on them is DYCU's, computed by the server, and every card says which column Ask picked. They answer in census tracts, labeled in a "DYCU AREA" column with the name of DYCU's report area when DYCU defines one for that tract (DYCU's own groups of tracts, like "United Community", not the City's 190 official neighborhoods) and "—" otherwise; a name is never guessed. The footer says so: "Area names are Data You Can Use's report areas: groups of census tracts DYCU chose with its neighborhood partners, not the City's official neighborhoods." Words are plain first: a reader who isn't a data person should know what the card found from its first sentence (decision 028).
 - **Header (all three):** a label-size title (the column, place and year, or the two datasets "A vs. B") with a ruled EXPAND button at its right; then **the plain sentence** in body type, slightly larger than the card's small type, which code writes from the verdict and counts (`ui/lib/tractSummary.ts`), never the AI; then one line of small graphite type: the dataset code, the column in bold, its plain-English meaning and whether it is "a rate" or "a count", the place and year, the number of census tracts compared and, when any, "N left out (no data)", ending in the DYCU tag. A percent sign appears only where DYCU's own definition says percent.

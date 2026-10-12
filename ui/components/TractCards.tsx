@@ -3,6 +3,8 @@ import { useQuery } from "convex/react";
 import { type ReactNode, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import type { CityShare } from "@/convex/lib/tractPlaces";
+import type { AreaHead } from "@/convex/lib/tractsIn";
+import { areaLine, cityRankText, rankColumn, shareText } from "@/ui/lib/tractArea";
 import type { ChangeAnswer, Header, RankDetail, RelateAnswer, RelateDetail, TractRow } from "@/convex/tracts";
 import { cityList, dycuText, placesLabel } from "@/ui/lib/placeNames";
 import { changeText, mismatchVerdict, noMargin, plainMeaning, rangeText, tooFew, unitOf, type Unit } from "@/ui/lib/tractFormat";
@@ -123,6 +125,12 @@ function Places({ city }: { city?: CityShare[] }) {
   );
 }
 
+// A tract's City neighborhoods, plus how much of it is in the card's neighborhood when the card is limited to one.
+function Where({ t, area }: { t: { city: CityShare[]; share?: number }; area?: AreaHead }) {
+  return <><Places city={t.city} />{area && t.share !== undefined && t.share < 100 && <span className={styles.tractShare}>{shareText(t.share, area.name)}</span>}</>;
+}
+const AreaLine = ({ area }: { area?: AreaHead }) => (area ? <p className={styles.tractMeta} data-area>{areaLine(area)}</p> : null);
+
 const TIES_INLINE = 5;
 
 const BARE_RANK = "No margin of error found for this column, so ranks may be ties.";
@@ -138,16 +146,17 @@ export function RankCard({ r, onOpen }: { r: RankShown; onOpen: Open }) {
   const foldedCount = r.tieCount - TIES_INLINE; // from the total, never the list
   const exact = h.confidence === EXACT; // exact City figures tie only when equal; there is no margin
   const tieRow = (t: TractRow) => (
-    <tr key={t.geoid} className={styles.tractTie}><td>=</td><td>{t.tract}</td><td><Places city={t.city} /></td><td>{dycuText(t.dycu)} ({exact ? `same figure as #${r.top.length}` : `tied with #${r.top.length} within the margin of error`})</td><td className={styles.num}>{range(t, pct)}</td></tr>
+    <tr key={t.geoid} className={styles.tractTie}><td>=</td><td>{t.tract}</td><td><Where t={t} area={area} /></td><td>{dycuText(t.dycu)} ({exact ? `same figure as #${r.top.length}` : `tied with #${r.top.length} within the margin of error`})</td><td className={styles.num}>{range(t, pct)}</td>{area && <td>{t.cityRank ? cityRankText(t.cityRank, r.direction) : "\u2014"}</td>}</tr>
   );
-  const head = ["#", "Tract", "Neighborhood", "DYCU area", h.column];
+  const area = full?.area ?? r.area;
+  const head = ["#", "Tract", "Neighborhood", "DYCU area", h.column, ...(area ? [rankColumn(h.place)] : [])];
   const title = `${r.direction === "high" ? "Highest" : "Lowest"} ${h.column} \u00b7 ${h.place} ${h.year}`;
   const bare = !h.confidence; // no ranges: no ties or unreliable tracts can be found (spec §5 rule 7)
-  const summary = rankSummary({ header: h, direction: r.direction, top: r.top.length, tieCount: bare ? 0 : r.tieCount, unreliableCount: bare ? 0 : r.unreliableCount, inline: TIES_INLINE });
+  const summary = rankSummary({ header: h, direction: r.direction, top: r.top.length, tieCount: bare ? 0 : r.tieCount, unreliableCount: bare ? 0 : r.unreliableCount, inline: TIES_INLINE, area });
   const table = (
     <Table head={head} title={title}>
       {r.top.map((t, i) => (
-        <tr key={t.geoid}><td>{i + 1}</td><td>{t.tract}</td><td><Places city={t.city} /></td><td>{dycuText(t.dycu)}</td><td className={styles.num}>{range(t, pct)}</td></tr>
+        <tr key={t.geoid}><td>{i + 1}</td><td>{t.tract}</td><td><Where t={t} area={area} /></td><td>{dycuText(t.dycu)}</td><td className={styles.num}>{range(t, pct)}</td>{area && <td>{t.cityRank ? cityRankText(t.cityRank, r.direction) : "\u2014"}</td>}</tr>
       ))}
       {ties.slice(0, TIES_INLINE).map(tieRow)}
     </Table>
@@ -168,6 +177,7 @@ export function RankCard({ r, onOpen }: { r: RankShown; onOpen: Open }) {
   return (
     <div className={`${styles.reference} ${styles.tractCard}`} data-card="tract-rank">
       <Head h={h} title={title} summary={summary} expand={expand} />
+      <AreaLine area={area} />
       {table}
       {bare && <p className={styles.tractCounts}>{BARE_RANK}</p>}
       {!bare && foldedCount > 0 && (
@@ -182,7 +192,7 @@ export function RankCard({ r, onOpen }: { r: RankShown; onOpen: Open }) {
           <summary>{r.unreliableCount} too uncertain to rank</summary>
           <Table head={head} title={`${title}: too uncertain to rank`}>
             {unreliable.map((t) => (
-              <tr key={t.geoid} className={styles.tractUnreliable}><td>{"\u2013"}</td><td>{t.tract}</td><td><Places city={t.city} /></td><td>{dycuText(t.dycu)} (too uncertain: margin of error too wide)</td><td className={styles.num}>{range(t, pct)}</td></tr>
+              <tr key={t.geoid} className={styles.tractUnreliable}><td>{"\u2013"}</td><td>{t.tract}</td><td><Where t={t} area={area} /></td><td>{dycuText(t.dycu)} (too uncertain: margin of error too wide)</td><td className={styles.num}>{range(t, pct)}</td>{area && <td>{t.cityRank ? cityRankText(t.cityRank, r.direction) : "\u2014"}</td>}</tr>
             ))}
           </Table>
           {r.unreliableCount > unreliable.length && <p className={styles.tractCounts}>{r.unreliableCount - unreliable.length} more not listed.</p>}
@@ -206,7 +216,8 @@ export function ChangeCard({ r, onOpen }: { r: ChangeShown; onOpen: Open }) {
   const changes = full?.changes ?? r.changes;
   const title = `${h.column} \u00b7 ${h.place} ${r.from} \u2192 ${r.to}`;
   const bare = noMargin([h]);
-  const summary = changeSummary({ header: h, from: r.from, to: r.to, increases: r.increases, decreases: r.decreases, none: r.none });
+  const area = full?.area ?? r.area;
+  const summary = changeSummary({ header: h, from: r.from, to: r.to, increases: r.increases, decreases: r.decreases, none: r.none, area });
   const counts = bare
     ? `Can't tell which tracts changed clearly: ${bare}.`
     : `${r.increases} clear increases · ${r.decreases} clear decreases · ${r.none} no clear change${r.unreliableCount > 0 ? ` · ${r.unreliableCount} not compared (too uncertain)` : ""}`;
@@ -214,7 +225,7 @@ export function ChangeCard({ r, onOpen }: { r: ChangeShown; onOpen: Open }) {
     <Table head={["Tract", "Neighborhood", "DYCU area", r.from, r.to, "Change"]} title={title}>
       {changes.map((c) => (
         <tr key={c.geoid}>
-          <td>{c.tract}</td><td><Places city={c.city} /></td><td>{dycuText(c.dycu)}</td>
+          <td>{c.tract}</td><td><Where t={c} area={area} /></td><td>{dycuText(c.dycu)}</td>
           <td className={styles.num}>{range(c.from, pct)}</td><td className={styles.num}>{range(c.to, pct)}</td>
           <td className={styles.num}>{changeText(c.change, c.direction, pct)}</td>
         </tr>
@@ -237,6 +248,7 @@ export function ChangeCard({ r, onOpen }: { r: ChangeShown; onOpen: Open }) {
   return (
     <div className={`${styles.reference} ${styles.tractCard}`} data-card="tract-change">
       <Head h={h} title={title} summary={summary} expand={expand} />
+      <AreaLine area={area} />
       {bare ? (
         <p className={styles.tractCounts}><b>Can't tell which tracts changed clearly: {bare}.</b></p>
       ) : (
@@ -272,7 +284,8 @@ export function RelateCard({ r, onOpen }: { r: RelateShown; onOpen: Open }) {
   const side = (s?: "high" | "low") => (s === "low" ? "bottom" : "top");
   const bare = noMargin([a, b]);
   const title = `${a.name} vs. ${b.name}`;
-  const summary = relateSummary({ ...r, a, b });
+  const area = full?.area ?? r.area;
+  const summary = relateSummary({ ...r, a, b, area });
   const verdict = mismatch ? mismatchVerdict({ fitsCount: r.fitsCount, closeCount: r.closeCount, n: r.n, gated, bare }) : r.strength === "too-few" ? tooFew(r.n) : STRENGTH[r.strength];
   const lead = mismatch && !gated ? `Cutoffs: ${side(r.aSide)} third on ${a.column}, ${side(r.bSide)} third on ${b.column}.` : undefined;
   const plot = (big?: boolean) => (
@@ -283,8 +296,8 @@ export function RelateCard({ r, onOpen }: { r: RelateShown; onOpen: Open }) {
   );
   const table = fits.length + close.length > 0 && (
     <Table head={["Tract", "Neighborhood", "DYCU area", a.column, b.column, ""]} title={title}>
-      {fits.map((p) => <PairRow key={p.a.geoid} p={p} pa={pa} pb={pb} label="clear match" />)}
-      {close.map((p) => <PairRow key={p.a.geoid} p={p} pa={pa} pb={pb} label="possible match" tie />)}
+      {fits.map((p) => <PairRow key={p.a.geoid} p={p} pa={pa} pb={pb} label="clear match" area={area} />)}
+      {close.map((p) => <PairRow key={p.a.geoid} p={p} pa={pa} pb={pb} label="possible match" tie area={area} />)}
     </Table>
   );
   const expand = full && !expired && points.length > 0 && (
@@ -307,6 +320,7 @@ export function RelateCard({ r, onOpen }: { r: RelateShown; onOpen: Open }) {
   return (
     <div className={`${styles.reference} ${styles.tractCard}`} data-card="tract-relate">
       <Head h={a} title={title} summary={summary} expand={expand} />
+      <AreaLine area={area} />
       <p className={styles.tractMeta}>
         {b.code} <b>{b.column}</b> ({plainMeaning(b.meaning) || "no definition in the column guide"}, {KIND[b.kind]}) · {b.place} {b.year} <ProvenanceTag source={sourceOf(b)} />
       </p>
@@ -333,10 +347,10 @@ export function RelateCard({ r, onOpen }: { r: RelateShown; onOpen: Open }) {
   );
 }
 
-function PairRow({ p, pa, pb, label, tie }: { p: { a: TractRow; b: TractRow }; pa: Unit; pb: Unit; label: string; tie?: boolean }) {
+function PairRow({ p, pa, pb, label, tie, area }: { p: { a: TractRow; b: TractRow }; pa: Unit; pb: Unit; label: string; tie?: boolean; area?: AreaHead }) {
   return (
     <tr className={tie ? styles.tractTie : undefined}>
-      <td>{p.a.tract}</td><td><Places city={p.a.city} /></td><td>{dycuText(p.a.dycu)}</td>
+      <td>{p.a.tract}</td><td><Where t={p.a} area={area} /></td><td>{dycuText(p.a.dycu)}</td>
       <td className={styles.num}>{range(p.a, pa)}</td><td className={styles.num}>{range(p.b, pb)}</td><td>{label}</td>
     </tr>
   );

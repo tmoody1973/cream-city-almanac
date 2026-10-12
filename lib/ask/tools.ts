@@ -85,13 +85,19 @@ const year = z.string().max(9).describe('The year label from the dataset\'s shee
 const column = z.string().max(64).describe("A numeric column from the dataset's column guide; prefer a rate over a count when comparing tracts");
 // The tract tools' arguments; their cards read the same ones to fetch more.
 const cutoff = z.number().int().min(1_000).max(10_000_000).optional().describe("Only for the Master Property File (MPROP) share_over / share_under: the cutoff in whole dollars, e.g. 200000");
-export const rankParams = z.object({ code, column, place, year, direction: z.enum(["high", "low"]), cutoff });
-export const changeParams = z.object({ code, column, place, from: year, to: year });
+// A tract question limited to one neighborhood: the City's official one, or DYCU's area when the person says so.
+const area = {
+  neighborhood: z.string().max(80).optional().describe("A neighborhood name, when the person asks about its tracts (e.g. \"Bay View's tracts\")"),
+  map: z.enum(["city", "dycu"]).optional().describe('"dycu" only when the person says DYCU\'s area (e.g. "DYCU\'s Harambee"); otherwise leave it out for the City\'s official neighborhood'),
+};
+export const rankParams = z.object({ code, column, place, year, direction: z.enum(["high", "low"]), cutoff, ...area });
+export const changeParams = z.object({ code, column, place, from: year, to: year, ...area });
 export const relateParams = z.object({
   a: z.object({ code, column, cutoff }), b: z.object({ code, column, cutoff }), place, year,
   mode: z.enum(["relate", "mismatch"]).describe("relate: do they go together; mismatch: tracts high on one but low on the other"),
   aSide: z.enum(["high", "low"]).optional().describe("Which side of dataset a the person asked about (high or low). Always set it in mismatch mode."),
   bSide: z.enum(["high", "low"]).optional().describe("Which side of dataset b the person asked about (high or low). Always set it in mismatch mode."),
+  ...area,
 });
 
 // The conversation carries a count without its map's cells: a citywide map is ~50 KB and the whole conversation is
@@ -167,19 +173,19 @@ export function askTools(b: AskBackend): AskTool[] {
     },
     {
       name: "rankTracts",
-      description: "Rank census tracts on one DYCU tract dataset's column (highest or lowest), with margins of error, each tract's City neighborhoods and DYCU areas. If it returns choose-column or choose-year, pick from the list and call again. Returns rows for the card; never restate their numbers. Read the dataset's column guide (showDataset) first and pick a rate over a count. The City's Master Property File (MPROP; find its code with searchCatalog, choosing the dataset named exactly \"Master Property File (MPROP)\", not the \"Visualizations\" one) also works here, as one side: column median_value (typical home value), share_over or share_under (with cutoff in dollars), owner_share, or median_year_built. Its figures are exact City records for the current assessment and cover City tracts only.",
+      description: "Rank census tracts on one DYCU tract dataset's column (highest or lowest), with margins of error, each tract's City neighborhoods and DYCU areas. If it returns choose-column or choose-year, pick from the list and call again. Returns rows for the card; never restate their numbers. Read the dataset's column guide (showDataset) first and pick a rate over a count. The City's Master Property File (MPROP; find its code with searchCatalog, choosing the dataset named exactly \"Master Property File (MPROP)\", not the \"Visualizations\" one) also works here, as one side: column median_value (typical home value), share_over or share_under (with cutoff in dollars), owner_share, or median_year_built. Its figures are exact City records for the current assessment and cover City tracts only. With neighborhood, only the tracts in that neighborhood are used (the City's boundary, or DYCU's area with map dycu), each with how much of it is inside; if it returns no-neighborhood, offer the names it returned; if no-tracts, say the neighborhood is smaller than any tract or, for DYCU's area, that DYCU doesn't define it for that year.",
       parameters: rankParams,
       execute: (a: z.infer<typeof rankParams>) => b.rank(a),
     },
     {
       name: "compareYears",
-      description: "Find census tracts whose value on one DYCU tract dataset's column changed clearly between two years (beyond both years' margins of error). Same place both years. Returns rows for the card; never restate their numbers. Read the dataset's column guide (showDataset) first and pick a rate over a count.",
+      description: "Find census tracts whose value on one DYCU tract dataset's column changed clearly between two years (beyond both years' margins of error). Same place both years. Returns rows for the card; never restate their numbers. Read the dataset's column guide (showDataset) first and pick a rate over a count. With neighborhood, only the tracts in that neighborhood are used (the City's boundary, or DYCU's area with map dycu), each with how much of it is inside; if it returns no-neighborhood, offer the names it returned; if no-tracts, say the neighborhood is smaller than any tract or, for DYCU's area, that DYCU doesn't define it for that year.",
       parameters: changeParams,
       execute: (a: z.infer<typeof changeParams>) => b.change(a),
     },
     {
       name: "relateTracts",
-      description: "Line two DYCU tract datasets up tract by tract. mode relate: do they go together (a ranked comparison, worded on the card). mode mismatch: tracts high on one but low on the other (aSide, bSide), counted only when their ranges clear both cutoffs. If they share no place/year, it returns the shared ones. In mismatch mode, put the dataset the person says is high as a with aSide \"high\", and the one that is low as b with bSide \"low\" (or whatever sides they named); always set both sides. Example: 'food insecurity low despite high poverty' → a = poverty (E02, a poverty rate), aSide high; b = food insecurity (F02), bSide low. Returns rows for the card; never restate their numbers. Read the dataset's column guide (showDataset) first and pick a rate over a count. The City's Master Property File (MPROP; find its code with searchCatalog, choosing the dataset named exactly \"Master Property File (MPROP)\", not the \"Visualizations\" one) also works here, as one side: column median_value (typical home value), share_over or share_under (with cutoff in dollars), owner_share, or median_year_built. Its figures are exact City records for the current assessment and cover City tracts only.",
+      description: "Line two DYCU tract datasets up tract by tract. mode relate: do they go together (a ranked comparison, worded on the card). mode mismatch: tracts high on one but low on the other (aSide, bSide), counted only when their ranges clear both cutoffs. If they share no place/year, it returns the shared ones. In mismatch mode, put the dataset the person says is high as a with aSide \"high\", and the one that is low as b with bSide \"low\" (or whatever sides they named); always set both sides. Example: 'food insecurity low despite high poverty' → a = poverty (E02, a poverty rate), aSide high; b = food insecurity (F02), bSide low. Returns rows for the card; never restate their numbers. Read the dataset's column guide (showDataset) first and pick a rate over a count. The City's Master Property File (MPROP; find its code with searchCatalog, choosing the dataset named exactly \"Master Property File (MPROP)\", not the \"Visualizations\" one) also works here, as one side: column median_value (typical home value), share_over or share_under (with cutoff in dollars), owner_share, or median_year_built. Its figures are exact City records for the current assessment and cover City tracts only. With neighborhood, only the tracts in that neighborhood are used (the City's boundary, or DYCU's area with map dycu), each with how much of it is inside; if it returns no-neighborhood, offer the names it returned; if no-tracts, say the neighborhood is smaller than any tract or, for DYCU's area, that DYCU doesn't define it for that year. Inside a neighborhood, mode relate returns too-few-tracts (it takes 20 tracts): say so and offer the citywide question.",
       parameters: relateParams,
       execute: (a: z.infer<typeof relateParams>) => b.relate(a),
     },
