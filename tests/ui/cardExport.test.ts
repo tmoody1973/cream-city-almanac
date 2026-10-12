@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { changeExport, csvCell, exportState, exported, rankExport, relateExport, safeName, sourceNote, toCsv, toText, type CardExport } from "../../ui/lib/cardExport";
+import { changeExport, countExport, csvCell, exportState, exported, numberExport, quoteText, rankExport, relateExport, safeName, sourceNote, toCsv, toText, type CardExport } from "../../ui/lib/cardExport";
 import type { ChangeDetail, Header, RankDetail, RelateDetail, TractRow } from "../../convex/tracts";
 import { EXACT } from "../../ui/lib/tractSummary";
 
@@ -148,5 +148,64 @@ describe("relate export", () => {
     expect(e.notes).toContain("Source: City of Milwaukee, H28 Master Property File: https://almanac.test/d/H28");
     expect(e.notes).toContain("Source: DYCU, E02 Households Living in Poverty: https://almanac.test/d/E02");
     expect(e.filename).toBe("almanac_E02-pov_rate_H28-median_assessed_County-2023_relate");
+  });
+});
+
+describe("neighborhood figure export", () => {
+  const r = {
+    code: "N03", neighborhood: "Harambee", year: 2023, topic: "Poverty Status by Age", tableIdText: "B17001", definition: "tracts 1860, 90", groups: ["Below poverty"],
+    nearby: [{ label: "Under 5 years", values: [{ estimate: "608", moe: "120" }], marked: true }, { label: "5 years", values: [{ estimate: "-", moe: null }], marked: false }],
+  };
+  const e = numberExport(r, ctx);
+  it("keeps numbers as numbers and Census text cells as guarded text", () => {
+    expect(e.csv.head).toEqual(["Row", "Below poverty estimate", "Below poverty margin", "Asked for"]);
+    expect(e.csv.rows).toEqual([["Under 5 years", 608, 120, "yes"], ["5 years", "-", null, ""]]);
+    expect(toCsv(e)).toContain("\r\n5 years,'-,,\r\n");
+  });
+  it("shows the card's formatting and marks the asked-for row", () => {
+    expect(e.text.head).toEqual(["", "Below poverty estimate", "± Margin"]);
+    expect(e.text.rows[0]).toEqual(["Under 5 years (asked for)", "608", "±120"]);
+    expect(e.title).toBe("Harambee, 2023 · Poverty Status by Age");
+    expect(e.lines).toEqual(["Harambee as DYCU defines it: tracts 1860, 90"]);
+    expect(e.notes).toEqual(["Census table B17001", "Source: DYCU, N03: https://almanac.test/d/N03", "Exported from Cream City Almanac on October 12, 2026."]);
+    expect(e.filename).toBe("almanac_N03_Harambee-2023");
+  });
+});
+
+describe("City count export", () => {
+  const r = {
+    code: "P32", name: "NIBRS crimes", count: 1234, groups: [{ label: "2026-09", count: 1000 }], other: 234, otherLabel: "Earlier", overlap: false,
+    period: "2025-10-01 to 2026-09-30", filters: ["Theft"], futureExcluded: 2, caveat: "Theft includes shoplifting.", dateColumn: "ReportedDate",
+    coverage: "2005 to 2026", resourceName: "wibr", area: "Harambee", noLocation: 5,
+  };
+  const e = countExport(r, ctx);
+  it("gives the total, each group and the rest", () => {
+    expect(e.title).toBe("NIBRS crimes · Theft · 2025-10-01 to 2026-09-30");
+    expect(e.csv.rows).toEqual([["Total", 1234], ["2026-09", 1000], ["Earlier", 234]]);
+    expect(e.text.rows[0]).toEqual(["Total", "1,234"]);
+  });
+  it("copies the card's notes, labels the AI's caveat, and names the City as the source", () => {
+    expect(e.notes).toEqual([
+      "Counted by ReportedDate. The City's data here covers 2005 to 2026, from the City's 'wibr' file.",
+      "In Harambee",
+      "5 matching records citywide have no location and aren't included.",
+      "2 records dated in the future were left out.",
+      "Theft includes shoplifting. (written by AI)",
+      "Source: City of Milwaukee, P32 NIBRS crimes: https://almanac.test/d/P32",
+      "Exported from Cream City Almanac on October 12, 2026.",
+    ]);
+    expect(e.filename).toBe("almanac_P32_count");
+  });
+  it("leads a property count with its summary sentence", () => {
+    const p = countExport({ ...r, groups: [], other: 0, caveat: null, of: { count: 160000, label: "properties" } }, ctx);
+    expect(p.lines[0]).toMatch(/^1,234 properties in the City of Milwaukee are Theft/);
+  });
+});
+
+describe("report quote", () => {
+  it("is the quote, where it's from, the source and the date", () => {
+    expect(quoteText({ quote: "Rents rose.", section: "Housing", report: "Harambee 2023", code: "R05" }, ctx)).toBe(
+      "“Rents rose.”\nHarambee 2023, Housing\nSource: DYCU, R05: https://almanac.test/d/R05\nExported from Cream City Almanac on October 12, 2026.",
+    );
   });
 });

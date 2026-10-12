@@ -1,8 +1,10 @@
+import { countCoverage } from "./askCount";
+import { formatPortraitMargin, formatPortraitNumber } from "./portrait";
 import type { CityShare } from "@/convex/lib/tractPlaces";
 import type { ChangeDetail, Header, RankDetail, RelateDetail } from "@/convex/tracts";
 import { cityList, dycuText } from "./placeNames";
 import { changeText, plainMeaning, rangeText, unitOf, type Unit } from "./tractFormat";
-import { EXACT, KIND } from "./tractSummary";
+import { EXACT, KIND, propertyCountSummary } from "./tractSummary";
 
 // One export per card (spec 2026-10-12-card-export-design.md): CSV, text and PNG are all written from it, so they
 // never disagree. It copies the card: its figures, its title and lines, its fine print, caveats and source.
@@ -143,3 +145,63 @@ export function relateExport(d: RelateDetail, card: TractCardText, ctx: Ctx): Ca
     filename: safeName([`${a.code}-${a.column}`, `${b.code}-${b.column}`, `${a.place}-${a.year}`, "relate"]),
   };
 }
+
+export type NumberCardData = {
+  code: string; neighborhood: string; year: number | null; topic: string; tableIdText: string; definition: string | null; groups: string[];
+  nearby: { label: string; values: ({ estimate: string; moe: string | null } | null)[]; marked: boolean }[];
+};
+
+// A Census cell is a number when it reads as one; "-", "**" and "(X)" stay text, as DYCU wrote them.
+const census = (s: string | null | undefined): Cell => (s == null || s.trim() === "" ? null : Number.isFinite(Number(s)) ? Number(s) : s);
+
+export function numberExport(r: NumberCardData, ctx: Ctx): CardExport {
+  const name = (g: string) => (g ? `${g} estimate` : "Estimate");
+  return {
+    title: `${r.neighborhood}, ${r.year ?? "latest"} · ${r.topic}`,
+    lines: r.definition ? [`${r.neighborhood} as DYCU defines it: ${r.definition}`] : [],
+    csv: {
+      head: ["Row", ...r.groups.flatMap((g) => [name(g), g ? `${g} margin` : "Margin"]), "Asked for"],
+      rows: r.nearby.map((row) => [row.label, ...row.values.flatMap((v) => [census(v?.estimate), census(v?.moe)]), row.marked ? "yes" : ""]),
+    },
+    text: {
+      head: ["", ...r.groups.flatMap((g) => [name(g), "± Margin"])],
+      rows: r.nearby.map((row) => [row.marked ? `${row.label} (asked for)` : row.label, ...row.values.flatMap((v) => [v ? formatPortraitNumber(v.estimate) : "", v?.moe ? formatPortraitMargin(v.moe) : ""])]),
+    },
+    notes: [`Census table ${r.tableIdText}`, sourceNote("DYCU", r.code, null, ctx), exported(ctx)],
+    filename: safeName([r.code, `${r.neighborhood}-${r.year ?? "latest"}`]),
+  };
+}
+
+export type CountCardData = {
+  code: string; name: string; count: number; groups: { label: string; count: number }[]; other: number; otherLabel: string | null; overlap: boolean;
+  period: string; filters: string[]; futureExcluded: number; caveat: string | null; dateColumn: string | null; coverage: string | null;
+  resourceName: string | null; area: string | null; noLocation: number; of?: { count: number; label: string }; tractMap?: { total: number };
+};
+
+// The City count card's lines under its table, in the card's order (CountCard in AskCards.tsx).
+export function countNotes(r: CountCardData): string[] {
+  return [
+    r.overlap && r.groups.length > 0 ? "An incident can count in more than one group." : null,
+    countCoverage(r),
+    r.area ? `In ${r.area}` : null,
+    r.noLocation > 0 ? `${r.noLocation.toLocaleString("en-US")} matching records citywide have no location and aren't included.` : null,
+    r.tractMap ? `Census tracts where more than half of the properties are ${r.filters.join(", ")}: ${r.tractMap.total}.` : null,
+    r.futureExcluded > 0 ? `${r.futureExcluded.toLocaleString("en-US")} records dated in the future were left out.` : null,
+    r.caveat ? `${r.caveat} (written by AI)` : null,
+  ].filter((n): n is string => n !== null);
+}
+
+export function countExport(r: CountCardData, ctx: Ctx): CardExport {
+  const rows: [string, number][] = [["Total", r.count], ...r.groups.map((g): [string, number] => [g.label, g.count]), ...(r.other > 0 ? [[r.otherLabel ?? "Other", r.other] as [string, number]] : [])];
+  return {
+    title: [r.name, ...r.filters, r.period].join(" · "),
+    lines: r.of ? [propertyCountSummary({ ...r, of: r.of })] : [],
+    csv: { head: ["Group", "Count"], rows },
+    text: { head: ["", "Count"], rows: rows.map(([label, n]) => [label, n.toLocaleString("en-US")]) },
+    notes: [...countNotes(r), sourceNote("City of Milwaukee", r.code, r.name, ctx), exported(ctx)],
+    filename: safeName([r.code, "count"]),
+  };
+}
+
+export const quoteText = (p: { quote: string; section: string; report: string; code: string }, ctx: Ctx) =>
+  [`“${p.quote}”`, `${p.report}, ${p.section}`, sourceNote("DYCU", p.code, null, ctx), exported(ctx)].join("\n");
