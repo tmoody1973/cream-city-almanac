@@ -211,6 +211,9 @@ test.describe("signed in", () => {
     await expect(card).toContainText(/aren't closed yet/);
     await expect(card.getByTitle("From the City of Milwaukee's open data")).toBeVisible();
     await expect(card.locator("[data-export]").getByRole("button", { name: "CSV" })).toBeVisible();
+    // A phone scrolls the table inside the card, never the page.
+    await expect(card.getByRole("region", { name: /scroll sideways/ })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   });
 
   test("a neighborhood count names the City boundary it used", async ({ page }) => {

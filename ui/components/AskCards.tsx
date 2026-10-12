@@ -264,6 +264,8 @@ function SpanCard({ r, onOpen }: { r: SpanOk; onOpen: Open }) {
       <figcaption className={styles.excerptTitle}>{spanTitle(r)} <ProvenanceTag source="CITY" /></figcaption>
       {warning && <p className={styles.failed} data-span-warning><b>{warning}</b></p>}
       <p className={styles.tractSummary} data-summary>{spanSummary(r)}</p>
+      {/* A phone scrolls the table inside the card, never the page (the tract tables' pattern). */}
+      <div className={styles.tractScroll} tabIndex={0} role="region" aria-label={`${spanTitle(r)}, scroll sideways for more`}>
       <table className={styles.excerptTable}>
         <thead>
           <tr><th scope="col">{r.groupBy === "year" ? "Year" : r.groupBy ?? ""}</th><th scope="col">Cases</th><th scope="col">Median</th><th scope="col">9 in 10 within</th></tr>
@@ -275,6 +277,7 @@ function SpanCard({ r, onOpen }: { r: SpanOk; onOpen: Open }) {
           <tr><th scope="row">All</th><td>{r.all.cases.toLocaleString("en-US")}</td><td>{cellTime(r.all, r.all.median, u)}</td><td>{cellTime(r.all, r.all.p90, u)}</td></tr>
         </tbody>
       </table>
+      </div>
       {notes.map((n) => <p key={n} className={styles.source}>{n}</p>)}
       <OpenLink code={r.code} onOpen={onOpen} label="Open the data" />
       <ExportBar make={(ctx) => spanExport(r, ctx)} />
