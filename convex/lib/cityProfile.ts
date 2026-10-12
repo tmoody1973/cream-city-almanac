@@ -123,3 +123,7 @@ export function assembleProfile(
     latColumn: located ? plan.latColumn : null, lonColumn: located ? plan.lonColumn : null,
   };
 }
+
+// A City file whose queryable copy has no rows (the crash file in October 2026: a header-only CSV). Said plainly so
+// the reader knows the gap is the City's file, not Ask.
+export const EMPTY_FILE_NOTE = "The City's current file for this dataset is empty, so there's nothing to count right now.";

@@ -23,6 +23,16 @@ async function seed(withProfile = true) {
 }
 
 describe("countRecords", () => {
+  it("says the City's file is empty when its profile has no rows, without asking the City", async () => {
+    const t = await seed();
+    await t.run(async (ctx) => {
+      const p = await ctx.db.query("cityProfiles").first();
+      await ctx.db.patch(p!._id, { rowCount: 0 });
+    });
+    const fake = installFakeFetch({ citySql: () => [{ n: "1" }] });
+    expect(await t.withIdentity(reader).action(api.city.countRecords, { code: "P01" })).toMatchObject({ status: "not-live", code: "P01", note: "The City's current file for this dataset is empty, so there's nothing to count right now." });
+    expect(fake.calls.length).toBe(0);
+  });
   it("counts live, groups oldest to newest, and reports future-dated records left out", async () => {
     const t = await seed();
     installFakeFetch({ citySql: (sql) => sql.includes("left(") ? [{ g: "2026-10", n: "26" }, { g: "2026-09", n: "230" }] : sql.includes("> '") ? [{ n: "1" }] : [{ n: "256" }] });
