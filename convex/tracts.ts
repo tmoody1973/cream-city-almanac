@@ -298,7 +298,7 @@ export type RelateDetail = {
   strength: "too-few" | "little" | "weak" | "moderate" | "strong"; direction: "higher" | "lower";
   aSide?: "high" | "low"; bSide?: "high" | "low"; cutA?: number; cutB?: number;
   fits: { a: TractRow; b: TractRow }[]; fitsCount: number; close: { a: TractRow; b: TractRow }[]; closeCount: number;
-  points: Point[]; highlighted: string[]; closeIds: string[]; key: string;
+  points: Point[]; highlighted: string[]; closeIds: string[]; key: string; area?: AreaHead;
 };
 
 // What the model sees: the card reads the rest (caveats, urls, ids, points, every finding) from tractDetail by key.
@@ -379,9 +379,15 @@ const vSide = v.union(v.literal("high"), v.literal("low"));
 const vPick = v.object({ code: v.string(), column: v.string(), cutoff: v.optional(v.number()) });
 
 export const relateTracts = action({
-  args: { a: vPick, b: vPick, place: vPlace, year: v.string(), mode: v.union(v.literal("relate"), v.literal("mismatch")), aSide: v.optional(vSide), bSide: v.optional(vSide) },
+  args: { a: vPick, b: vPick, place: vPlace, year: v.string(), mode: v.union(v.literal("relate"), v.literal("mismatch")), aSide: v.optional(vSide), bSide: v.optional(vSide), ...vArea },
   handler: async (ctx, args): Promise<RelateAnswer | Refusal> => {
     const spend = await spender(ctx); // one charge covers both datasets
+    const area = await areaFor(ctx, args);
+    if (area && "status" in area) return area;
+    const names = await loadNames(ctx);
+    if (area && areaSize(names, area) === 0) return noTracts(area, names);
+    // "Do they go together" needs 20 tracts; a neighborhood has 2 to 11 (spec §4.4).
+    if (area && args.mode === "relate") return { status: "too-few-tracts", name: area.name, map: area.map, n: areaSize(names, area), needed: RELATE_MIN };
     // Every database-only problem with either side comes back at once, before anything is spent or fetched.
     const [qa, qb] = await Promise.all([propertySide(ctx, args.a.code, args.a.column, args.a.cutoff), propertySide(ctx, args.b.code, args.b.column, args.b.cutoff)]);
     const [fa, fb]: (Fam | null)[] = await Promise.all([
@@ -410,7 +416,6 @@ export const relateTracts = action({
     if ("status" in ra) return tag(ra, "a");
     if ("status" in rb) return tag(rb, "b");
     const va = ra.rows, vb = rb.rows;
-    const names = await loadNames(ctx);
     const nameYear = ra.year ?? rb.year ?? String(latestDefYear(names.defs));
     const bBy = new Map(vb.values.map((x) => [x.geoid, x]));
     const pairs = va.values.flatMap((a) => (bBy.has(a.geoid) ? [{ geoid: a.geoid, a, b: bBy.get(a.geoid)! }] : []));
@@ -422,9 +427,15 @@ export const relateTracts = action({
     // Most clearly past the cutoffs first, so the ten the model names are the strongest cases, not the first found.
     const fits = mm ? byClearance(mm.fits, aSide, bSide, mm.cutA, mm.cutB, "range") : [];
     const close = mm ? byClearance(mm.close, aSide, bSide, mm.cutA, mm.cutB, "value") : [];
-    const fitsIds = new Set(fits.map((p) => p.geoid));
-    const closeIds = new Set(close.map((p) => p.geoid));
-    const both = (p: { a: TractValue; b: TractValue }) => ({ a: toRow(p.a, nameYear, names), b: toRow(p.b, nameYear, names) });
+    // Cutoffs above come from the whole place; a neighborhood only narrows which matches are listed (spec §4.4).
+    const inArea = (geoid: string) => (area ? shareIn(placesOf(geoid, nameYear, names), area) : 100);
+    const fitsIn = fits.filter((p) => inArea(p.geoid) !== null);
+    const closeIn = close.filter((p) => inArea(p.geoid) !== null);
+    const fitsIds = new Set(fitsIn.map((p) => p.geoid));
+    const closeIds = new Set(closeIn.map((p) => p.geoid));
+    const withShare = (r: TractRow): TractRow => (area ? { ...r, share: inArea(r.geoid) ?? undefined } : r);
+    const both = (p: { a: TractValue; b: TractValue }) => ({ a: withShare(toRow(p.a, nameYear, names)), b: toRow(p.b, nameYear, names) });
+    const shown = area ? pairs.filter((p) => inArea(p.geoid) !== null) : pairs;
     const { key, save } = await store(ctx, { tool: "relate", ...args, year: nameYear });
     const detail: RelateDetail = {
       status: "ok", tool: "relate", mode: args.mode,
@@ -432,12 +443,13 @@ export const relateTracts = action({
       b: { ...rb.head(args.place, pairs.length, vb.values.length + vb.leftOut - pairs.length), ...(ra.property && !rb.property ? { leftOutWhy: NO_PROPERTY } : {}) },
       n: ok.length, unreliableCount: pairs.length - ok.length, rho, strength: verdict.strength, direction: verdict.direction,
       ...(mm ? { aSide, bSide, cutA: mm.cutA, cutB: mm.cutB } : {}),
-      fits: fits.map(both), fitsCount: fits.length, close: close.map(both), closeCount: close.length,
-      points: pairs.map((p) => {
+      fits: fitsIn.map(both), fitsCount: fitsIn.length, close: closeIn.map(both), closeCount: closeIn.length,
+      points: shown.map((p) => {
         const row = toRow(p.a, nameYear, names);
         return { geoid: p.geoid, tract: row.tract, city: row.city, dycu: row.dycu, a: [p.a.value, p.a.lo, p.a.hi], b: [p.b.value, p.b.lo, p.b.hi], unreliable: isUnreliable(p.a) || isUnreliable(p.b), mark: fitsIds.has(p.geoid) ? "fits" : closeIds.has(p.geoid) ? "close" : null };
       }),
       highlighted: [...fitsIds], closeIds: [...closeIds], key,
+      ...(area ? { area: areaHead(area, shown.map((p) => inArea(p.geoid) ?? 0)) } : {}),
     };
     await save(detail);
     const { points: _points, highlighted: _highlighted, closeIds: _closeIds, ...rest } = detail;

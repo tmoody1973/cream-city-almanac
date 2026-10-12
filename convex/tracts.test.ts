@@ -314,6 +314,30 @@ describe("relateTracts", () => {
     expect(r).toMatchObject({ status: "choose-column", dataset: "b" });
     expect(rowFetches).toBe(0);
   });
+  it("keeps the citywide cutoffs and lists only the neighborhood's matches", async () => {
+    const t = await seedPair();
+    await t.run(async (ctx) => {
+      await ctx.db.insert("neighborhoods", { definition: "city", name: "Hillside", matchKey: "hillside" });
+      await ctx.db.insert("neighborhoods", { definition: "city", name: "Bay View", matchKey: "bay view" });
+      await ctx.db.insert("tractNeighborhoods", { geoid: "55079100000", city: [{ name: "Bay View", share: 100 }] });
+    });
+    installFakeFetch({ columnsFor: routeFields, tractRows: routeRows });
+    const all = await t.withIdentity(reader).action(api.tracts.relateTracts, { ...relateArgs, mode: "mismatch", aSide: "high", bSide: "low" });
+    const hill = await t.withIdentity(reader).action(api.tracts.relateTracts, { ...relateArgs, mode: "mismatch", aSide: "high", bSide: "low", neighborhood: "Hillside" });
+    const bay = await t.withIdentity(reader).action(api.tracts.relateTracts, { ...relateArgs, mode: "mismatch", aSide: "high", bSide: "low", neighborhood: "Bay View" });
+    if (all.status !== "ok" || hill.status !== "ok" || bay.status !== "ok") throw new Error("expected ok");
+    expect([hill.cutA, hill.cutB]).toEqual([all.cutA, all.cutB]);
+    expect(hill).toMatchObject({ area: { name: "Hillside", tracts: 1, partly: 1 }, fitsCount: 1, fits: [{ a: { tract: "1860", share: 51 } }] });
+    expect(bay).toMatchObject({ fitsCount: 0, fits: [] });
+  });
+  it("refuses 'do they go together' inside a neighborhood without asking DYCU", async () => {
+    const t = await seedPair();
+    await t.run(async (ctx) => { await ctx.db.insert("neighborhoods", { definition: "city", name: "Hillside", matchKey: "hillside" }); });
+    const fake = installFakeFetch({ columnsFor: routeFields, tractRows: routeRows });
+    expect(await t.withIdentity(reader).action(api.tracts.relateTracts, { ...relateArgs, mode: "relate", neighborhood: "Hillside" }))
+      .toEqual({ status: "too-few-tracts", name: "Hillside", map: "city", n: 1, needed: 20 });
+    expect(fake.calls.length).toBe(0);
+  });
 });
 
 describe("compareYears", () => {
