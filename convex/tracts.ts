@@ -6,7 +6,9 @@ import { fetchColumns } from "./lib/arcgis";
 import { chicagoDay } from "./lib/ask";
 import { hashInputs } from "./lib/hash";
 import { columnKind, fetchTractRows, isNumericField, rangeColumns, tractNumber, type RangeCols } from "./lib/tractData";
-import { latestDefYear, neighborhoodsFor, type DycuDef } from "./lib/tractNames";
+import { matchName } from "./lib/neighborhoodNames";
+import { areaYears, latestDefYear, neighborhoodsFor, type DycuDef } from "./lib/tractNames";
+import { areaHead, placeRanks, RELATE_MIN, shareIn, type Area, type AreaHead, type AreaMap } from "./lib/tractsIn";
 import type { CityShare } from "./lib/tractPlaces";
 import { byClearance, changeOf, isUnreliable, mismatch, rankValues, relationship, spearman, type TractValue } from "./lib/tractStats";
 import { rateLimiter } from "./limits";
@@ -16,7 +18,7 @@ import { loadProperty, NO_PROPERTY, propertyHead, propertySide, type PropertySid
 // the full one waits in mapCache under a tracts: key for the card (tractDetail), so per-tract points never ride in
 // the conversation.
 
-export type TractRow = { geoid: string; tract: string; city: CityShare[]; dycu: string[]; value: number; lo: number | null; hi: number | null; unreliable: boolean };
+export type TractRow = { geoid: string; tract: string; city: CityShare[]; dycu: string[]; value: number; lo: number | null; hi: number | null; unreliable: boolean; share?: number; cityRank?: { position: number; of: number } };
 export type Header = { code: string; name: string; column: string; meaning: string; kind: "rate" | "count" | "value"; place: string; year: string; n: number; leftOut: number; leftOutWhy?: string; confidence: string | null; url: string; caveats: string[] };
 type Slot = { place: string; year: string };
 // A refusal can say which dataset (relateTracts: "a" or "b") or which year (compareYears: the second) it is about, and
@@ -29,6 +31,9 @@ export type Refusal = Tag & (
   | { status: "choose-year"; available: Slot[] | { a: Slot[]; b: Slot[] }; shared?: Slot[]; reason?: string }
   | { status: "unavailable" }
   | { status: "busy" }
+| { status: "no-neighborhood"; asked: string; nearest: string[] }
+| { status: "no-tracts"; name: string; map: AreaMap; years?: number[] }
+| { status: "too-few-tracts"; name: string; map: AreaMap; n: number; needed: number }
 );
 export type RankDetail = { status: "ok"; tool: "rank"; header: Header; direction: "high" | "low"; top: TractRow[]; ties: TractRow[]; tieCount: number; unreliable: TractRow[]; unreliableCount: number; highlighted: string[]; key: string };
 
@@ -68,6 +73,39 @@ async function loadNames(ctx: ActionCtx): Promise<Names> {
   const { defs, city } = await ctx.runQuery(internal.tracts.tractNames, {});
   return { defs, city: new Map(city.map((r) => [r.geoid, r.city])) };
 }
+
+// A typed neighborhood name → the area a tract question is limited to (spec §4.1). The City's map unless asked for
+// DYCU's; on the City map a name only DYCU has (exact match) uses DYCU's area. Free: no DYCU request.
+export type FoundArea = { kind: "one"; area: Area } | { kind: "none"; nearest: string[] };
+const vMap = v.union(v.literal("city"), v.literal("dycu"));
+export const findArea = internalQuery({
+  args: { asked: v.string(), map: vMap },
+  handler: async (ctx, { asked, map }): Promise<FoundArea> => {
+    const rows = (definition: AreaMap) => ctx.db.query("neighborhoods").withIndex("by_definition_matchKey", (q) => q.eq("definition", definition)).collect();
+    const m = matchName(asked, await rows(map));
+    if (m.kind === "one") return { kind: "one", area: { name: m.row.name, map } };
+    if (map === "city") {
+      const d = matchName(asked, await rows("dycu"));
+      if (d.kind === "one") return { kind: "one", area: { name: d.row.name, map: "dycu" } };
+    }
+    return { kind: "none", nearest: m.kind === "choose" ? m.names.slice(0, 3) : m.nearest };
+  },
+});
+
+const vArea = { neighborhood: v.optional(v.string()), map: v.optional(vMap) };
+async function areaFor(ctx: ActionCtx, a: { neighborhood?: string; map?: AreaMap }): Promise<Area | null | Refusal> {
+  if (!a.neighborhood?.trim()) return null;
+  const f: FoundArea = await ctx.runQuery(internal.tracts.findArea, { asked: a.neighborhood, map: a.map ?? "city" });
+  return f.kind === "one" ? f.area : { status: "no-neighborhood", asked: a.neighborhood, nearest: f.nearest };
+}
+// How many tracts the stored names put in the area: the City table's entries, or DYCU's largest year.
+const areaSize = (names: Names, area: Area) =>
+  area.map === "dycu"
+    ? Math.max(0, ...names.defs.filter((d) => d.name === area.name).flatMap((d) => (d.tracts ?? []).map((e) => e.tracts.length)))
+    : [...names.city.values()].filter((c) => c.some((x) => x.name === area.name)).length;
+const noTracts = (area: Area, names: Names): Refusal => ({ status: "no-tracts", name: area.name, map: area.map, ...(area.map === "dycu" ? { years: areaYears(names.defs, area.name) } : {}) });
+// A tract's names for a year, without its figures: enough to test membership before building a row.
+const placesOf = (geoid: string, year: string, names: Names) => ({ city: names.city.get(geoid) ?? [], dycu: neighborhoodsFor(tractNumber(geoid), yearNumber(year), names.defs) });
 
 export type Spend = () => Promise<boolean>;
 export type Resolved = { family: { code: string; name: string; caveats: string[] }; url: string; year: string; column: string; meaning: string; range: RangeCols };

@@ -3,7 +3,7 @@ import rateLimiterTest from "@convex-dev/rate-limiter/test";
 import { convexTest } from "convex-test";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { installFakeFetch } from "../tests/helpers/fakeFetch";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import { rateLimiter } from "./limits";
 import schema from "./schema";
 
@@ -412,5 +412,27 @@ describe("the rows cache is best-effort", () => {
     await t.run(async (ctx) => { for (const r of await ctx.db.query("mapCache").collect()) if (r.key.startsWith("tractrows:")) await ctx.db.patch(r._id, { result: "{not json" }); });
     expect(await ask()).toMatchObject({ status: "ok" });
     expect(fetched).toBe(2);
+  });
+});
+
+describe("findArea", () => {
+  async function seedNames() {
+    const t = await seedTracts();
+    await t.run(async (ctx) => {
+      await ctx.db.insert("neighborhoods", { definition: "city", name: "Bay View", matchKey: "bay view" });
+      await ctx.db.insert("neighborhoods", { definition: "city", name: "Hillside", matchKey: "hillside" });
+    });
+    return t;
+  }
+  it("finds a City neighborhood by name, and offers the nearest on a near miss", async () => {
+    const t = await seedNames();
+    expect(await t.query(internal.tracts.findArea, { asked: "bay view", map: "city" })).toEqual({ kind: "one", area: { name: "Bay View", map: "city" } });
+    expect(await t.query(internal.tracts.findArea, { asked: "Bay Vew", map: "city" })).toEqual({ kind: "none", nearest: ["Bay View"] });
+  });
+  it("uses DYCU's area for a name only DYCU has, and DYCU's map when asked", async () => {
+    const t = await seedNames();
+    expect(await t.query(internal.tracts.findArea, { asked: "Harambee", map: "city" })).toEqual({ kind: "one", area: { name: "Harambee", map: "dycu" } });
+    expect(await t.query(internal.tracts.findArea, { asked: "Harambee", map: "dycu" })).toEqual({ kind: "one", area: { name: "Harambee", map: "dycu" } });
+    expect(await t.query(internal.tracts.findArea, { asked: "Hillside", map: "dycu" })).toMatchObject({ kind: "none" });
   });
 });
