@@ -1,4 +1,5 @@
 import { countCoverage } from "./askCount";
+import { areaLine } from "./tractArea";
 import { formatPortraitMargin, formatPortraitNumber } from "./portrait";
 import type { CityShare } from "@/convex/lib/tractPlaces";
 import type { ChangeDetail, Header, RankDetail, RelateDetail } from "@/convex/tracts";
@@ -90,10 +91,10 @@ export function rankExport(d: RankDetail, card: TractCardText, ctx: Ctx): CardEx
   ];
   return {
     title: card.title,
-    lines: [metaLine(h), ...card.lines],
+    lines: [...(d.area ? [areaLine(d.area)] : []), metaLine(h), ...card.lines],
     csv: {
-      head: ["Rank", "Tract", "GEOID", "City neighborhoods", "DYCU areas", colHead(h), "Low", "High", "Status"],
-      rows: all.map(({ t, rank, status }) => [rank, t.tract, t.geoid, cityCell(t.city), t.dycu.join(", "), t.value, t.lo, t.hi, status]),
+      head: ["Rank", "Tract", "GEOID", "City neighborhoods", "DYCU areas", colHead(h), "Low", "High", "Status", ...(d.area ? ["Citywide rank"] : [])],
+      rows: all.map(({ t, rank, status }) => [rank, t.tract, t.geoid, cityCell(t.city), t.dycu.join(", "), t.value, t.lo, t.hi, status, ...(d.area ? [t.cityRank ? `${t.cityRank.position} of ${t.cityRank.of}` : null] : [])]),
     },
     text: {
       head: ["#", "Tract", "Neighborhood", "DYCU area", h.column, "Status"],
@@ -109,7 +110,7 @@ export function changeExport(d: ChangeDetail, card: TractCardText, ctx: Ctx): Ca
   const year = (y: string) => [`${y} ${colHead(h)}`, `${y} low`, `${y} high`];
   return {
     title: card.title,
-    lines: [metaLine(h), ...card.lines],
+    lines: [...(d.area ? [areaLine(d.area)] : []), metaLine(h), ...card.lines],
     csv: {
       head: ["Tract", "GEOID", "City neighborhoods", "DYCU areas", ...year(d.from), ...year(d.to), "Change", "Direction"],
       rows: d.changes.map((c) => [c.tract, c.geoid, cityCell(c.city), c.dycu.join(", "), c.from.value, c.from.lo, c.from.hi, c.to.value, c.to.lo, c.to.hi, c.change, c.direction]),
@@ -136,7 +137,7 @@ export function relateExport(d: RelateDetail, card: TractCardText, ctx: Ctx): Ca
   const pairs = [...d.fits.map((p) => ({ p, label: MATCH.fits })), ...d.close.map((p) => ({ p, label: MATCH.close }))];
   return {
     title: card.title,
-    lines: [metaLine(a), metaLine(b, false), ...card.lines, ...(pairs.length ? [] : [`All ${d.points.length} tracts' figures are in the CSV.`])],
+    lines: [...(d.area ? [areaLine(d.area)] : []), metaLine(a), metaLine(b, false), ...card.lines, ...(pairs.length ? [] : [`All ${d.points.length} tracts' figures are in the CSV.`])],
     csv: {
       head: ["Tract", "GEOID", "City neighborhoods", "DYCU areas", ...side(a), ...side(b), "Match", "Status"],
       rows: points.map((p) => [p.tract, p.geoid, cityCell(p.city), p.dycu.join(", "), ...p.a, ...p.b, p.mark ? MATCH[p.mark] : "", p.unreliable ? "too uncertain" : ""]),

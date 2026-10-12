@@ -17,6 +17,7 @@ import { ChangeCard, NEIGHBORHOODS_HELP, RankCard, RelateCard, TractMapSlot } fr
 import { FollowUps, type FollowUp } from "./FollowUps";
 import { ExportBar } from "./ExportBar";
 import { countExport, measureExport, numberExport, quoteText, spanExport } from "@/ui/lib/cardExport";
+import { noTractsText, tooFewText, withArea } from "@/ui/lib/tractArea";
 import { MEASURE_HIDDEN, measureNotes, measureSummary, measureTitle, money, type MeasureOk } from "@/ui/lib/measureText";
 import { cellTime, spanNotes, spanRows, spanSummary, spanTitle, type SpanOk } from "@/ui/lib/spanText";
 import { changeFollowUps, countFollowUps, datasetFollowUps, numberFollowUps, previewFollowUps, rankFollowUps, relateFollowUps, spanFollowUps, measureFollowUps } from "@/ui/lib/nextQuestions";
@@ -434,12 +435,14 @@ export function AskCards({ onOpen }: { onOpen?: (search: string) => void }) {
     if (r.status === "unavailable") return <p className={styles.source}>DYCU&apos;s data didn&apos;t respond. Try again shortly.</p>;
     if (r.status === "busy") return <p className={styles.failed}>Tract analyses are busy for your account; try again shortly.</p>;
     if (r.status === "ok") return <>{card(r as Extract<T, { status: "ok" }>)}<FollowUps items={next(r as Extract<T, { status: "ok" }>)} id={id} /></>;
+    if (r.status === "no-tracts") return <p className={styles.failed} data-card="tract-no-tracts">{noTractsText(r as never)}</p>;
+    if (r.status === "too-few-tracts") return <><p className={styles.failed} data-card="tract-too-few">{tooFewText(r as never)}</p><FollowUps pick items={choices(r)} id={id} /></>;
     // A refusal the model words; its listed options (columns, place/years) can be picked here.
     return <FollowUps pick items={choices(r)} id={id} />;
   };
-  useRenderTool({ name: "rankTracts", parameters: rankParams, render: (props) => props.status !== "complete" ? <Busy /> : tractCard<RankResult>(props.result, props.toolCallId, (r) => <RankCard r={r} onOpen={onOpen} />, (r) => rankFollowUps(r.header, r.direction), (r) => rankChoices(props.parameters as never, r as never)) }, [onOpen]);
-  useRenderTool({ name: "compareYears", parameters: changeParams, render: (props) => props.status !== "complete" ? <Busy /> : tractCard<ChangeResult>(props.result, props.toolCallId, (r) => <ChangeCard r={r} onOpen={onOpen} />, (r) => changeFollowUps(r.header, r.to), (r) => changeChoices(props.parameters as never, r as never)) }, [onOpen]);
-  useRenderTool({ name: "relateTracts", parameters: relateParams, render: (props) => props.status !== "complete" ? <Busy /> : tractCard<RelateResult>(props.result, props.toolCallId, (r) => <RelateCard r={r} onOpen={onOpen} />, (r) => relateFollowUps({ mode: r.mode, a: r.a, b: r.b, place: (props.parameters as { place: string }).place, year: (props.parameters as { year: string }).year, strength: r.strength, aSide: r.aSide, bSide: r.bSide }), (r) => relateChoices(props.parameters as never, r as never)) }, [onOpen]);
+  useRenderTool({ name: "rankTracts", parameters: rankParams, render: (props) => props.status !== "complete" ? <Busy /> : tractCard<RankResult>(props.result, props.toolCallId, (r) => <RankCard r={r} onOpen={onOpen} />, (r) => withArea(rankFollowUps(r.header, r.direction), r.area), (r) => rankChoices(props.parameters as never, r as never)) }, [onOpen]);
+  useRenderTool({ name: "compareYears", parameters: changeParams, render: (props) => props.status !== "complete" ? <Busy /> : tractCard<ChangeResult>(props.result, props.toolCallId, (r) => <ChangeCard r={r} onOpen={onOpen} />, (r) => withArea(changeFollowUps(r.header, r.to), r.area), (r) => changeChoices(props.parameters as never, r as never)) }, [onOpen]);
+  useRenderTool({ name: "relateTracts", parameters: relateParams, render: (props) => props.status !== "complete" ? <Busy /> : tractCard<RelateResult>(props.result, props.toolCallId, (r) => <RelateCard r={r} onOpen={onOpen} />, (r) => withArea(relateFollowUps({ mode: r.mode, a: r.a, b: r.b, place: (props.parameters as { place: string }).place, year: (props.parameters as { year: string }).year, strength: r.strength, aSide: r.aSide, bSide: r.bSide }).filter((f) => !(r.area && f.label === "DO THEY GO TOGETHER?")), r.area), (r) => relateChoices(props.parameters as never, r as never)) }, [onOpen]);
 
   useRenderTool({ name: "readReport", parameters: z.object({ question: z.string() }), render: (props) => {
     if (props.status !== "complete") return <Busy />;

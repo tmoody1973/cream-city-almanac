@@ -294,6 +294,17 @@ test.describe("signed in", () => {
     }
   });
 
+  test("a neighborhood's tracts arrive as every tract in it, with its share and citywide rank", async ({ page }) => {
+    test.skip(!(await dycuUp(page)), "DYCU unreachable");
+    await ask(page, "What's the poverty rate in Bay View's tracts?");
+    const card = page.locator("[data-card=tract-rank]:visible");
+    await expect(card.locator("tbody tr").first()).toBeVisible({ timeout: 60_000 });
+    await expect(card.locator("[data-area]")).toContainText("Bay View (City of Milwaukee boundary)");
+    await expect(card).toContainText(/\d+% of this tract is in Bay View/);
+    await expect(card).toContainText(/\d+(st|nd|rd|th) highest of \d+/);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  });
+
   test("a growth question draws the counts line and only the clear changes", async ({ page }) => {
     test.skip(!(await dycuUp(page)), "DYCU unreachable");
     await ask(page, "where did poverty grow most");

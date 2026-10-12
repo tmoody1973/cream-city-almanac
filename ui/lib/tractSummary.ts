@@ -1,6 +1,7 @@
 // The one plain-English sentence each tract card leads with (decision 028). Code writes it from the server's verdict and
 // counts, never the AI: the figures in it are the card's own, and its words can't overstate what the test found.
 import { noMargin, plainMeaning } from "./tractFormat";
+import { areaPhrase } from "./tractArea";
 
 type Col = { name: string; column: string; meaning: string; place: string; year: string; confidence: string | null };
 
@@ -35,6 +36,7 @@ const are = (n: number, one: string, many: string) => `${n} ${n === 1 ? `is ${on
 const capital = (s: string) => s[0].toUpperCase() + s.slice(1);
 
 type Relate = {
+  area?: { name: string; map: "city" | "dycu" };
   mode: "relate" | "mismatch"; a: Col; b: Col; n: number;
   strength: "too-few" | "little" | "weak" | "moderate" | "strong"; direction: "higher" | "lower";
   aSide?: "high" | "low"; bSide?: "high" | "low"; cutA?: number; cutB?: number; fitsCount: number; closeCount: number;
@@ -44,7 +46,7 @@ export function relateSummary(r: Relate): string {
   const A = subject(r.a), B = subject(r.b);
   // A property side covers the City only, and its year is an assessment, not a survey.
   const place = r.a.place === "City" || r.b.place === "City" ? "City" : r.a.place;
-  const where = `${placeName(place)} (${yearsIn(r.a, r.b)})`;
+  const where = r.area ? `${areaPhrase(r.area)} (${yearsIn(r.a, r.b)}; cutoffs from all of ${placeName(place)})` : `${placeName(place)} (${yearsIn(r.a, r.b)})`;
   if (r.mode === "mismatch") {
     if (r.cutA === undefined || r.cutB === undefined) return "There aren't enough census tracts with reliable figures for both to look for matches.";
     const third = (s?: "high" | "low") => (s === "low" ? "bottom" : "top");
@@ -65,14 +67,16 @@ export function relateSummary(r: Relate): string {
 }
 
 // `inline` is how many of the ties the table shows itself (the rest fold under it).
-export function rankSummary(r: { header: Col; direction: "high" | "low"; top: number; tieCount: number; unreliableCount: number; inline?: number }): string {
+export function rankSummary(r: { header: Col; direction: "high" | "low"; top: number; tieCount: number; unreliableCount: number; inline?: number; area?: { name: string; map: "city" | "dycu" } }): string {
   const h = r.header;
   if (r.top === 0) {
     const why = r.unreliableCount ? `: ${r.unreliableCount} ${r.unreliableCount === 1 ? "tract's estimate is" : "tracts' estimates are"} too uncertain` : "";
     return `No census tract in ${placeName(h.place)} could be ranked on the ${subject(h)} (${yearIn(h.year)})${why}.`;
   }
   const which = r.top === 1 ? "This is the census tract" : `These are the ${tracts(r.top)}`;
-  const lead = `${which} in ${placeName(h.place)} with the ${r.direction === "high" ? "highest" : "lowest"} ${subject(h)} (${yearIn(h.year)}).`;
+  const lead = r.area
+    ? `${r.top === 1 ? "This is the census tract" : `These are the ${tracts(r.top)}`} in ${areaPhrase(r.area)}, from ${r.direction === "high" ? "highest to lowest" : "lowest to highest"} ${subject(h)} (${yearIn(h.year)}).`
+    : `${which} in ${placeName(h.place)} with the ${r.direction === "high" ? "highest" : "lowest"} ${subject(h)} (${yearIn(h.year)}).`;
   if (!h.confidence) return `${lead} There's no margin of error for this column, so tracts close in rank may really be tied.`;
   const shown = r.inline ?? 5;
   const first = r.tieCount > shown ? ` (the first ${shown} are in the table)` : "";
@@ -85,11 +89,11 @@ export function rankSummary(r: { header: Col; direction: "high" | "low"; top: nu
   return lead + ties + left;
 }
 
-export function changeSummary(r: { header: Col; from: string; to: string; increases: number; decreases: number; none: number }): string {
+export function changeSummary(r: { header: Col; from: string; to: string; increases: number; decreases: number; none: number; area?: { name: string; map: "city" | "dycu" } }): string {
   const h = r.header;
   const bare = noMargin([h]);
   if (bare) return `Can't tell which census tracts changed clearly from ${r.from} to ${r.to}, because ${bare}.`;
-  const when = `From ${r.from} to ${r.to} in ${placeName(h.place)}, the ${subject(h)}`;
+  const when = `From ${r.from} to ${r.to} in ${r.area ? areaPhrase(r.area) : placeName(h.place)}, the ${subject(h)}`;
   if (r.increases + r.decreases === 0) return `${when} didn't change by more than the survey's margin of error in any of the ${tracts(r.none)} compared.`;
   const rose = r.increases ? `clearly rose in ${tracts(r.increases)}` : "";
   const fell = r.decreases ? `clearly fell in ${rose ? r.decreases : tracts(r.decreases)}` : "";

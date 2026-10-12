@@ -139,6 +139,7 @@
 }
 .tractMeta, .tractFine, .tractCounts { font-size: inherit; margin: 4px 0 8px; } /* the card's own size: small on phones, the panel's 14–16px on laptops */
 .tractMeta { color: var(--muted); }
+.tractShare { display: block; color: var(--muted); }
 .tractFine { border-top: var(--hair); padding-top: 8px; margin-top: 10px; color: var(--muted); }
 .tractFine a { text-decoration: underline; text-underline-offset: 3px; }
 .tractVerdict { font-family: var(--font-caps); font-weight: 700; text-transform: uppercase; font-size: var(--fs-label); margin: 6px 0 2px; }

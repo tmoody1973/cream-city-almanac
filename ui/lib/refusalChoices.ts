@@ -4,6 +4,7 @@ import type { FollowUp } from "@/ui/components/FollowUps";
 import type { CountArgsIn } from "./nextQuestions";
 import { plainMeaning } from "./tractFormat";
 import { placeName } from "./tractSummary";
+import { onlyIn } from "./tractArea";
 
 const MAX = 8;
 const CUT = 60;
@@ -20,11 +21,12 @@ const byMargin = <T extends { range: boolean }>(cols: T[]) => [...cols.filter((c
 const slots = (a: TractRefusal) => ("available" in a && Array.isArray(a.available) ? a.available : []);
 const end = (d: "high" | "low") => (d === "high" ? "highest" : "lowest");
 
-type RankArgs = { code: string; column: string; place: string; year: string; direction: "high" | "low"; cutoff?: number };
+type RankArgs = { code: string; column: string; place: string; year: string; direction: "high" | "low"; cutoff?: number; neighborhood?: string; map?: "city" | "dycu" };
 const rankQ = (a: RankArgs, column: string, words: string) =>
   `Rank census tracts by ${words}, ${end(a.direction)} first, ${placeName(a.place)} ${a.year} (${a.code} ${column}).`;
 
 export function rankChoices(args: RankArgs, r: TractRefusal): FollowUp[] {
+  if (r.status === "no-neighborhood" && "nearest" in r) return (r.nearest as string[]).slice(0, MAX).map((n) => ({ label: n, question: `${rankQ(args, args.column, args.column)} ${onlyIn({ name: n, map: args.map ?? "city" })}` }));
   if (r.status === "choose-column" && "columns" in r)
     return byMargin(r.columns).slice(0, MAX).map((c) => ({ label: columnLabel(c), question: rankQ(args, c.column, clean(c.meaning) || c.column) }));
   if (r.status === "choose-year")
@@ -32,11 +34,12 @@ export function rankChoices(args: RankArgs, r: TractRefusal): FollowUp[] {
   return [];
 }
 
-type ChangeArgs = { code: string; column: string; place: string; from: string; to: string };
+type ChangeArgs = { code: string; column: string; place: string; from: string; to: string; neighborhood?: string; map?: "city" | "dycu" };
 const changeQ = (a: ChangeArgs, column: string, words: string) =>
   `Where did ${words} change most in ${placeName(a.place)} from ${a.from} to ${a.to}? (${a.code} ${column})`;
 
 export function changeChoices(args: ChangeArgs, r: TractRefusal): FollowUp[] {
+  if (r.status === "no-neighborhood" && "nearest" in r) return (r.nearest as string[]).slice(0, MAX).map((n) => ({ label: n, question: `${changeQ(args, args.column, args.column)} ${onlyIn({ name: n, map: args.map ?? "city" })}` }));
   if (r.status === "choose-column" && "columns" in r)
     return byMargin(r.columns).slice(0, MAX).map((c) => ({ label: columnLabel(c), question: changeQ(args, c.column, clean(c.meaning) || c.column) }));
   if (r.status === "choose-year") {
@@ -48,7 +51,7 @@ export function changeChoices(args: ChangeArgs, r: TractRefusal): FollowUp[] {
   return [];
 }
 
-export type RelateArgs = { a: { code: string; column: string; cutoff?: number }; b: { code: string; column: string; cutoff?: number }; place: string; year: string; mode: "relate" | "mismatch"; aSide?: "high" | "low"; bSide?: "high" | "low" };
+export type RelateArgs = { a: { code: string; column: string; cutoff?: number }; b: { code: string; column: string; cutoff?: number }; place: string; year: string; mode: "relate" | "mismatch"; aSide?: "high" | "low"; bSide?: "high" | "low"; neighborhood?: string; map?: "city" | "dycu" };
 const sideText = (s: { code: string; column: string }, words?: string) => (words ? `${words} (${s.code} ${s.column})` : `${s.code} ${s.column}`);
 function relateQ(a: RelateArgs, aWords?: string, bWords?: string) {
   const A = sideText(a.a, aWords), B = sideText(a.b, bWords);
@@ -58,6 +61,8 @@ function relateQ(a: RelateArgs, aWords?: string, bWords?: string) {
 }
 
 export function relateChoices(args: RelateArgs, r: TractRefusal): FollowUp[] {
+  if (r.status === "no-neighborhood" && "nearest" in r) return (r.nearest as string[]).slice(0, MAX).map((n) => ({ label: n, question: `${relateQ(args)} ${onlyIn({ name: n, map: args.map ?? "city" })}` }));
+  if (r.status === "too-few-tracts") return [{ label: "ASK CITYWIDE", question: relateQ(args) }];
   if (r.status === "choose-column" && "columns" in r) {
     const which = r.dataset ?? "a";
     return byMargin(r.columns).slice(0, MAX).map((c) => {
