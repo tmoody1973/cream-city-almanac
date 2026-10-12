@@ -62,3 +62,22 @@ describe("rows with no margin", () => {
     expect(readRow(tbl, "Total", [0])).toEqual({ estimate: 100, moe: null });
   });
 });
+
+describe("DYCU's 2021 wording", () => {
+  const y2021: PortraitTable[] = [
+    t("poverty-status-by-age", [""], [["Total Population *", "18078±900"], ["Income in the past 12 months below poverty level", "5782±500"]]),
+    t("occupancy-and-tenure", [""], [["Total Housing Units", "9595±300"], ["Occupied Housing Units", "7860±200"], ["Vacant Housing Units", "1735±200"], ["Renter-occupied housing units", "5866±300"]]),
+    t("rent-paid", [""], [["Occupied units paying rent", "5716±300"], ["Occupied units paying rent*", "5569±300"], ["30.0 to 34.9 percent", "668±100"], ["35.0 percent or more", "2651±250"]]),
+    t("vehicles-per-household", [""], [["Total Households", "7860±200"], ["No vehicle available", "2398±250"]]),
+    t("sex-and-age", [""], [["Total", "18220±900"]]),
+  ];
+  it("reads the same figures under the 2021 files' labels, and a single-column age table", () => {
+    const got = (id: string) => neighborhoodFigure(FACTS.find((f) => f.id === id)!, y2021);
+    expect(got("poverty")!.rate!.estimate).toBeCloseTo(5782 / 18078, 10);
+    expect(got("renters")!.rate!.estimate).toBeCloseTo(5866 / 7860, 10);
+    expect(got("vacant")!.rate!.estimate).toBeCloseTo(1735 / 9595, 10);
+    expect(got("rent-burden")!.rate!.estimate).toBeCloseTo((668 + 2651) / 5569, 10);
+    expect(got("no-car")!.rate!.estimate).toBeCloseTo(2398 / 7860, 10);
+    expect(got("population")!.count.estimate).toBe(18220);
+  });
+});
