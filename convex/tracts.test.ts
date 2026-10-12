@@ -38,6 +38,7 @@ export async function seedTracts() {
     await ctx.db.insert("members", { familyKey: "e02", hubId: "h2", title: "Poverty 2022 (no service)", yearLabel: "2023", featureServerUrl: null, ...member });
     await ctx.db.insert("cards", { familyKey: "e02", inputHash: "h", explainer: "x", explainerProvenance: "AI", hubSummary: "", glossary: [{ field: "pov_rate", meaning: "Share of households below the poverty line.", provenance: "DYCU" }, { field: "households", meaning: "Number of households.", provenance: "DYCU" }], caveats: ["Survey estimates pool five years."], storyAngles: [], basic: false, embedding: new Array(1536).fill(0) });
     await ctx.db.insert("neighborhoods", { definition: "dycu", name: "Harambee", matchKey: "harambee", tracts: [{ years: [2021, 2022, 2023, 2024], tracts: ["1860"] }] });
+    await ctx.db.insert("tractNeighborhoods", { geoid: "55079186000", city: [{ name: "Hillside", share: 51 }, { name: "Halyard Park", share: 27 }] });
   });
   return t;
 }
@@ -49,7 +50,9 @@ describe("rankTracts", () => {
     const r = await t.withIdentity(reader).action(api.tracts.rankTracts, { code: "e02", column: "POV_RATE", place: "City", year: "2022", direction: "high" });
     expect(r).toMatchObject({ status: "ok", tool: "rank", header: { code: "E02", column: "pov_rate", kind: "rate", place: "City", year: "2022", n: 25, leftOut: 0, confidence: "90% confidence (Census)" } });
     if (r.status !== "ok") return;
-    expect(r.top[0]).toMatchObject({ tract: "1860", neighborhood: "Harambee", value: 58, lo: 54, hi: 62, unreliable: false });
+    expect(r.top[0]).toMatchObject({ tract: "1860", city: [{ name: "Hillside", share: 51 }, { name: "Halyard Park", share: 27 }], dycu: ["Harambee"], value: 58, lo: 54, hi: 62, unreliable: false });
+    // A tract with no stored match (outside the City, or not on the 2020 map) names nothing.
+    expect(r.top[1]).toMatchObject({ city: [], dycu: [] });
     expect(r.top).toHaveLength(10);
     expect(await t.query(api.tracts.tractDetail, { key: r.key, now: Date.now() })).toMatchObject({ status: "ok", tool: "rank" });
   });
@@ -201,7 +204,7 @@ describe("relateTracts", () => {
     const t = await seedPair();
     installFakeFetch({ columnsFor: routeFields, tractRows: routeRows });
     const r = await t.withIdentity(reader).action(api.tracts.relateTracts, { ...relateArgs, mode: "mismatch", aSide: "high", bSide: "low" });
-    expect(r).toMatchObject({ status: "ok", mode: "mismatch", fits: [{ a: { tract: "1860", neighborhood: "Harambee" } }] });
+    expect(r).toMatchObject({ status: "ok", mode: "mismatch", fits: [{ a: { tract: "1860", city: [{ name: "Hillside", share: 51 }, { name: "Halyard Park", share: 27 }], dycu: ["Harambee"] } }] });
   });
   it("names the place/years two datasets share when asked for one they don't", async () => {
     const t = await seedPair();

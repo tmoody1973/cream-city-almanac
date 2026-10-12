@@ -6,7 +6,8 @@ import { fetchColumns } from "./lib/arcgis";
 import { chicagoDay } from "./lib/ask";
 import { hashInputs } from "./lib/hash";
 import { columnKind, fetchTractRows, isNumericField, rangeColumns, tractNumber, type RangeCols } from "./lib/tractData";
-import { latestDefYear, neighborhoodFor, type DycuDef } from "./lib/tractNames";
+import { latestDefYear, neighborhoodsFor, type DycuDef } from "./lib/tractNames";
+import type { CityShare } from "./lib/tractPlaces";
 import { byClearance, changeOf, isUnreliable, mismatch, rankValues, relationship, spearman, type TractValue } from "./lib/tractStats";
 import { rateLimiter } from "./limits";
 import { loadProperty, NO_PROPERTY, propertyHead, propertySide, type PropertySide } from "./property";
@@ -15,7 +16,7 @@ import { loadProperty, NO_PROPERTY, propertyHead, propertySide, type PropertySid
 // the full one waits in mapCache under a tracts: key for the card (tractDetail), so per-tract points never ride in
 // the conversation.
 
-export type TractRow = { geoid: string; tract: string; neighborhood: string | null; value: number; lo: number | null; hi: number | null; unreliable: boolean };
+export type TractRow = { geoid: string; tract: string; city: CityShare[]; dycu: string[]; value: number; lo: number | null; hi: number | null; unreliable: boolean };
 export type Header = { code: string; name: string; column: string; meaning: string; kind: "rate" | "count" | "value"; place: string; year: string; n: number; leftOut: number; leftOutWhy?: string; confidence: string | null; url: string; caveats: string[] };
 type Slot = { place: string; year: string };
 // A refusal can say which dataset (relateTracts: "a" or "b") or which year (compareYears: the second) it is about, and
@@ -53,11 +54,20 @@ export const familyForTracts = internalQuery({
   },
 });
 
-export const dycuDefs = internalQuery({
+// Both kinds of names for the tract rows: DYCU's area definitions and each tract's City neighborhoods (weekly match).
+export const tractNames = internalQuery({
   args: {},
-  handler: async (ctx): Promise<DycuDef[]> =>
-    (await ctx.db.query("neighborhoods").collect()).filter((n) => n.definition === "dycu").map((n) => ({ name: n.name, tracts: n.tracts })),
+  handler: async (ctx): Promise<{ defs: DycuDef[]; city: { geoid: string; city: CityShare[] }[] }> => ({
+    defs: (await ctx.db.query("neighborhoods").collect()).filter((n) => n.definition === "dycu").map((n) => ({ name: n.name, tracts: n.tracts })),
+    city: (await ctx.db.query("tractNeighborhoods").collect()).map((r) => ({ geoid: r.geoid, city: r.city })),
+  }),
 });
+
+type Names = { defs: DycuDef[]; city: Map<string, CityShare[]> };
+async function loadNames(ctx: ActionCtx): Promise<Names> {
+  const { defs, city } = await ctx.runQuery(internal.tracts.tractNames, {});
+  return { defs, city: new Map(city.map((r) => [r.geoid, r.city])) };
+}
 
 export type Spend = () => Promise<boolean>;
 export type Resolved = { family: { code: string; name: string; caveats: string[] }; url: string; year: string; column: string; meaning: string; range: RangeCols };
@@ -143,9 +153,10 @@ export async function loadValues(ctx: ActionCtx, r: Resolved): Promise<Loaded | 
 
 export const yearNumber = (year: string) => Number(year.match(/\d{4}/)?.[0] ?? 0);
 
-export const toRow = (v: TractValue, year: string, defs: DycuDef[]): TractRow => {
+// A tract with no stored match (outside the City, or a tract id not on the 2020 map) gets no City name: "—", never a guess.
+export const toRow = (v: TractValue, year: string, names: Names): TractRow => {
   const tract = tractNumber(v.geoid);
-  return { geoid: v.geoid, tract, neighborhood: neighborhoodFor(tract, yearNumber(year), defs), value: v.value, lo: v.lo, hi: v.hi, unreliable: isUnreliable(v) };
+  return { geoid: v.geoid, tract, city: names.city.get(v.geoid) ?? [], dycu: neighborhoodsFor(tract, yearNumber(year), names.defs), value: v.value, lo: v.lo, hi: v.hi, unreliable: isUnreliable(v) };
 };
 
 export const header = (r: Resolved, place: string, year: string, n: number, leftOut: number): Header => ({
@@ -198,16 +209,16 @@ export const rankTracts = action({
     if ("status" in resolved) return resolved;
     const side = await loadSide(ctx, resolved, spend);
     if ("status" in side) return side;
-    const defs = await ctx.runQuery(internal.tracts.dycuDefs, {});
-    const nameYear = side.year ?? String(latestDefYear(defs));
+    const names = await loadNames(ctx);
+    const nameYear = side.year ?? String(latestDefYear(names.defs));
     const ranked = rankValues(side.rows.values, args.direction);
     const head = side.head(args.place, side.rows.values.length, side.rows.leftOut);
     const { key, save } = await store(ctx, { tool: "rank", ...args, year: head.year, code: head.code, column: head.column });
     const detail: RankDetail = {
       status: "ok", tool: "rank", header: head, direction: args.direction,
-      top: ranked.top.map((v) => toRow(v, nameYear, defs)),
-      ties: ranked.ties.map((v) => toRow(v, nameYear, defs)), tieCount: ranked.ties.length,
-      unreliable: ranked.unreliable.map((v) => toRow(v, nameYear, defs)), unreliableCount: ranked.unreliable.length,
+      top: ranked.top.map((v) => toRow(v, nameYear, names)),
+      ties: ranked.ties.map((v) => toRow(v, nameYear, names)), tieCount: ranked.ties.length,
+      unreliable: ranked.unreliable.map((v) => toRow(v, nameYear, names)), unreliableCount: ranked.unreliable.length,
       highlighted: ranked.top.map((v) => v.geoid), key,
     };
     await save(detail); // the card gets every tie and every unreliable tract; the model gets the first three of each, with the totals
@@ -225,9 +236,9 @@ export const tractDetail = query({
   },
 });
 
-export type ChangeRow = { geoid: string; tract: string; neighborhood: string | null; from: TractRow; to: TractRow; change: number; direction: "increase" | "decrease" };
+export type ChangeRow = { geoid: string; tract: string; city: CityShare[]; dycu: string[]; from: TractRow; to: TractRow; change: number; direction: "increase" | "decrease" };
 export type ChangeDetail = { status: "ok"; tool: "change"; header: Header; note: string | null; from: string; to: string; increases: number; decreases: number; none: number; unreliableCount: number; changeCount: number; changes: ChangeRow[]; highlighted: string[]; key: string };
-export type Point = { geoid: string; tract: string; neighborhood: string | null; a: [number, number | null, number | null]; b: [number, number | null, number | null]; unreliable: boolean; mark: "fits" | "close" | null };
+export type Point = { geoid: string; tract: string; city: CityShare[]; dycu: string[]; a: [number, number | null, number | null]; b: [number, number | null, number | null]; unreliable: boolean; mark: "fits" | "close" | null };
 export type RelateDetail = {
   status: "ok"; tool: "relate"; mode: "relate" | "mismatch"; a: Header; b: Header; n: number; unreliableCount: number; rho: number;
   strength: "too-few" | "little" | "weak" | "moderate" | "strong"; direction: "higher" | "lower";
@@ -270,7 +281,7 @@ export const compareYears = action({
     if ("status" in r2) return r2.status === "busy" ? r2 : { ...r2, year: args.to };
     const [y1, y2] = await Promise.all([loadValues(ctx, r1), loadValues(ctx, r2)]);
     if (!y1 || !y2) return { status: "unavailable" };
-    const defs = await ctx.runQuery(internal.tracts.dycuDefs, {});
+    const names = await loadNames(ctx);
     const later = new Map(y2.values.map((x) => [x.geoid, x]));
     let increases = 0, decreases = 0, none = 0, unreliableCount = 0;
     const changes: ChangeRow[] = [];
@@ -281,8 +292,8 @@ export const compareYears = action({
       const d = changeOf(a, b);
       if (d === "none") { none++; continue; }
       if (d === "increase") increases++; else decreases++;
-      const to = toRow(b, r2.year, defs);
-      changes.push({ geoid: a.geoid, tract: to.tract, neighborhood: to.neighborhood, from: toRow(a, r1.year, defs), to, change: b.value - a.value, direction: d });
+      const to = toRow(b, r2.year, names);
+      changes.push({ geoid: a.geoid, tract: to.tract, city: to.city, dycu: to.dycu, from: toRow(a, r1.year, names), to, change: b.value - a.value, direction: d });
     }
     changes.sort((p, q) => Math.abs(q.change) - Math.abs(p.change));
     const { key, save } = await store(ctx, { tool: "change", ...args, from: r1.year, to: r2.year, code: r1.family.code, column: r1.column });
@@ -336,8 +347,8 @@ export const relateTracts = action({
     if ("status" in ra) return tag(ra, "a");
     if ("status" in rb) return tag(rb, "b");
     const va = ra.rows, vb = rb.rows;
-    const defs = await ctx.runQuery(internal.tracts.dycuDefs, {});
-    const nameYear = ra.year ?? rb.year ?? String(latestDefYear(defs));
+    const names = await loadNames(ctx);
+    const nameYear = ra.year ?? rb.year ?? String(latestDefYear(names.defs));
     const bBy = new Map(vb.values.map((x) => [x.geoid, x]));
     const pairs = va.values.flatMap((a) => (bBy.has(a.geoid) ? [{ geoid: a.geoid, a, b: bBy.get(a.geoid)! }] : []));
     const ok = pairs.filter((p) => !isUnreliable(p.a) && !isUnreliable(p.b));
@@ -350,7 +361,7 @@ export const relateTracts = action({
     const close = mm ? byClearance(mm.close, aSide, bSide, mm.cutA, mm.cutB, "value") : [];
     const fitsIds = new Set(fits.map((p) => p.geoid));
     const closeIds = new Set(close.map((p) => p.geoid));
-    const both = (p: { a: TractValue; b: TractValue }) => ({ a: toRow(p.a, nameYear, defs), b: toRow(p.b, nameYear, defs) });
+    const both = (p: { a: TractValue; b: TractValue }) => ({ a: toRow(p.a, nameYear, names), b: toRow(p.b, nameYear, names) });
     const { key, save } = await store(ctx, { tool: "relate", ...args, year: nameYear });
     const detail: RelateDetail = {
       status: "ok", tool: "relate", mode: args.mode,
@@ -360,8 +371,8 @@ export const relateTracts = action({
       ...(mm ? { aSide, bSide, cutA: mm.cutA, cutB: mm.cutB } : {}),
       fits: fits.map(both), fitsCount: fits.length, close: close.map(both), closeCount: close.length,
       points: pairs.map((p) => {
-        const row = toRow(p.a, nameYear, defs);
-        return { geoid: p.geoid, tract: row.tract, neighborhood: row.neighborhood, a: [p.a.value, p.a.lo, p.a.hi], b: [p.b.value, p.b.lo, p.b.hi], unreliable: isUnreliable(p.a) || isUnreliable(p.b), mark: fitsIds.has(p.geoid) ? "fits" : closeIds.has(p.geoid) ? "close" : null };
+        const row = toRow(p.a, nameYear, names);
+        return { geoid: p.geoid, tract: row.tract, city: row.city, dycu: row.dycu, a: [p.a.value, p.a.lo, p.a.hi], b: [p.b.value, p.b.lo, p.b.hi], unreliable: isUnreliable(p.a) || isUnreliable(p.b), mark: fitsIds.has(p.geoid) ? "fits" : closeIds.has(p.geoid) ? "close" : null };
       }),
       highlighted: [...fitsIds], closeIds: [...closeIds], key,
     };

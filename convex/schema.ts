@@ -113,6 +113,13 @@ export default defineSchema({
     tracts: v.optional(v.array(v.object({ years: v.array(v.number()), tracts: v.array(v.string()) }))),
   }).index("by_definition_matchKey", ["definition", "matchKey"]),
 
+  // Each census tract's City neighborhoods (≥10% of its area, biggest first), matched weekly from the City's shapes
+  // and DYCU's tract outlines (convex/lib/tractPlaces.ts). Tracts outside the City aren't stored.
+  tractNeighborhoods: defineTable({
+    geoid: v.string(),
+    city: v.array(v.object({ name: v.string(), share: v.number() })),
+  }).index("by_geoid", ["geoid"]),
+
   // Public sheet maps: an answer by its normalized arguments, kept 10 minutes.
   mapCache: defineTable({ key: v.string(), result: v.string(), expiresAt: v.number() })
     .index("by_key", ["key"])

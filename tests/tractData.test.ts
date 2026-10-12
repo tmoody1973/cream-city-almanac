@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { columnKind, fetchTractRows, isNumericField, normalizeGeoid, parseRows, rangeColumns, rowsUrl, tractNumber } from "../convex/lib/tractData";
-import { neighborhoodFor } from "../convex/lib/tractNames";
+import { neighborhoodsFor } from "../convex/lib/tractNames";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -64,9 +64,9 @@ describe("tract ids", () => {
   });
   it("names a tract from DYCU's definition for that year, else null", () => {
     const defs = [{ name: "Harambee", tracts: [{ years: [2021, 2022, 2023, 2024], tracts: ["1860", "90"] }] }];
-    expect(neighborhoodFor("90", 2022, defs)).toBe("Harambee");
-    expect(neighborhoodFor("90", 2019, defs)).toBeNull();
-    expect(neighborhoodFor("1805", 2022, defs)).toBeNull();
+    expect(neighborhoodsFor("90", 2022, defs)).toEqual(["Harambee"]);
+    expect(neighborhoodsFor("90", 2019, defs)).toEqual([]);
+    expect(neighborhoodsFor("1805", 2022, defs)).toEqual([]);
   });
 });
 

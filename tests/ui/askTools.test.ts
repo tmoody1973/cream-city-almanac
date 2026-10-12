@@ -22,6 +22,10 @@ describe("tract tools", () => {
     const shape = (askTools(backend({})).find((t) => t.name === "relateTracts")!.parameters as { shape: Record<string, { description?: string }> }).shape;
     expect(shape.aSide.description).toMatch(/dataset a/);
     expect(shape.bSide.description).toMatch(/dataset b/);
+    // Rows name the City's neighborhoods and DYCU's areas; the model must not call DYCU's areas neighborhoods.
+    const rank = askTools(backend({})).find((t) => t.name === "rankTracts")!;
+    expect(rank.description).toContain("City neighborhoods and DYCU areas");
+    expect(rank.description).not.toContain("DYCU neighborhood names");
   });
   it("keeps a 300-tract relate answer under 8 KB in the conversation", async () => {
     const head = { code: "E02", name: "Households Living in Poverty", column: "pov_rate", meaning: "Share of households below the poverty line.", kind: "rate", place: "City", year: "2022", n: 300, leftOut: 4, confidence: "90% confidence (Census)", url: "https://services.arcgis.com/x/FeatureServer/0", caveats: ["Survey estimates pool five years."] };

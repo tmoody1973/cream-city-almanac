@@ -232,9 +232,20 @@ test.describe("signed in", () => {
     await expect(card.locator("[data-map]")).toBeVisible();
     await expect(card.locator("[data-map][data-drawn][data-tracts]")).toHaveCount(1, { timeout: 30_000 });
     await expect(card.locator("details[data-ties]")).toHaveCount(1);
-    // Tract names are DYCU's report areas, said so on the card ("United Community" is DYCU's, not a City neighborhood).
-    await expect(card.locator("thead").first()).toContainText("DYCU area"); // the top-10 table (ties and too-uncertain tables follow)
-    await expect(card).toContainText("not the City's official neighborhoods");
+    // Two names per tract: the City's neighborhoods (biggest first, "+N" for the rest) and every DYCU area.
+    const head = card.locator("thead").first(); // the top-10 table (ties and too-uncertain tables follow)
+    await expect(head).toContainText("Neighborhood");
+    await expect(head).toContainText("DYCU area");
+    await expect(card).toContainText("the City's official neighborhoods covering at least 10% of the tract");
+    // The highest-poverty tracts are in the City; most overlap several neighborhoods, so "+N" opens the shares.
+    const more = card.locator("details[data-places]").first();
+    await expect(more).toBeVisible();
+    await more.locator("summary").focus();
+    await page.keyboard.press("Enter");
+    await expect(more).toHaveAttribute("open", "");
+    await expect(more).toContainText(/\d+%/);
+    // The extra column scrolls inside the card; the page itself never scrolls sideways.
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await expect(card.getByRole("link", { name: "How neighborhoods work" })).toHaveAttribute("href", "/how-it-works#neighborhoods");
     // The plain sentence leads, written by code from the same counts.
     await expect(card.locator("[data-summary]")).toContainText(/^These are the 10 census tracts in Milwaukee County with the highest /);

@@ -146,6 +146,9 @@
 .tractTable { width: 100%; border-collapse: collapse; font-size: inherit; font-variant-numeric: tabular-nums lining-nums; }
 .tractTable th, .tractTable td { text-align: left; padding: 6px 8px 6px 0; border-bottom: var(--hair); vertical-align: top; }
 .tractTable th { font-family: var(--font-caps); font-weight: 700; text-transform: uppercase; white-space: nowrap; }
+/* "+N" on a tract's City neighborhood: the rest, with shares, open under the name. */
+.places summary { cursor: pointer; }
+.placesMore { font-family: var(--font-caps); font-weight: 700; }
 .tractTable .num { text-align: right; }
 .tractTable th:last-child { text-align: left; }
 .tractTable td:first-child, .tractTable td:last-child:not(.num) { white-space: nowrap; }

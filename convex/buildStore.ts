@@ -371,6 +371,15 @@ export const replaceNeighborhoods = internalMutation({
   },
 });
 
+// The whole match is replaced together, only after a run that read both the City's shapes and DYCU's tract outlines.
+export const replaceTractNeighborhoods = internalMutation({
+  args: { rows: v.array(v.object({ geoid: v.string(), city: v.array(v.object({ name: v.string(), share: v.number() })) })) },
+  handler: async (ctx, { rows }) => {
+    for (const r of await ctx.db.query("tractNeighborhoods").collect()) await ctx.db.delete(r._id);
+    for (const r of rows) await ctx.db.insert("tractNeighborhoods", r);
+  },
+});
+
 // The neighborhood reports (PDF families' members with a place) and the 28 spreadsheet places to check names against.
 export const neighborhoodSources = internalQuery({
   args: {},

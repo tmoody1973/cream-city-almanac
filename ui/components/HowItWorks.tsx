@@ -119,8 +119,11 @@ export function HowItWorks({ status, example, areas }: { status: CatalogStatus |
               card names which one it used.
             </p>
             <p>
-              <strong>On the tract cards,</strong> each tract shows its number and, when it&apos;s in one of DYCU&apos;s report areas, that
-              area&apos;s name. Other tracts show &ldquo;&mdash;&rdquo;; the site never guesses a name.
+              <strong>On the tract cards,</strong> each tract shows two names. <em>Neighborhood</em> is the City&apos;s: every official
+              neighborhood covering at least 10% of the tract, biggest first (tap &ldquo;+2&rdquo; to see the rest with their shares). Each
+              week the site lays a fine grid of points over every tract and counts which City neighborhood each point falls in.{" "}
+              <em>DYCU area</em> lists every DYCU report area that includes the tract; some tracts are in two or three. A tract outside
+              the City, or in no DYCU area, shows &ldquo;&mdash;&rdquo;; the site never guesses a name.
             </p>
             {areas && areas.length > 0 && (
               <details className={styles.areas}>

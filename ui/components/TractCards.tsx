@@ -2,7 +2,9 @@
 import { useQuery } from "convex/react";
 import { type ReactNode, useState } from "react";
 import { api } from "@/convex/_generated/api";
+import type { CityShare } from "@/convex/lib/tractPlaces";
 import type { ChangeAnswer, Header, RankDetail, RelateAnswer, RelateDetail, TractRow } from "@/convex/tracts";
+import { cityList, dycuText, placesLabel } from "@/ui/lib/placeNames";
 import { changeText, mismatchVerdict, noMargin, plainMeaning, rangeText, tooFew, unitOf, type Unit } from "@/ui/lib/tractFormat";
 import { AREA_NOTE, changeSummary, EXACT, propertyNotes, rankSummary, relateSummary } from "@/ui/lib/tractSummary";
 import { capTractIds, MAX_TRACT_SHAPES } from "@/ui/lib/tractShapes";
@@ -111,6 +113,19 @@ function MapSlot({ url, fits, close = [], height = 220 }: { url?: string; fits?:
 }
 export { MapSlot as TractMapSlot };
 
+// The City neighborhood covering most of the tract; the rest, with shares, behind "+N" (a native disclosure: click,
+// Enter or Space opens it). A card cached before tracts carried a City list shows "—".
+function Places({ city }: { city?: CityShare[] }) {
+  if (!city?.length) return <>{"\u2014"}</>;
+  if (city.length === 1) return <>{city[0].name}</>;
+  return (
+    <details className={styles.places} data-places>
+      <summary aria-label={placesLabel(city)}>{city[0].name} <span className={styles.placesMore}>+{city.length - 1}</span></summary>
+      {cityList(city)}
+    </details>
+  );
+}
+
 const TIES_INLINE = 5;
 
 export function RankCard({ r, onOpen }: { r: RankShown; onOpen: Open }) {
@@ -124,16 +139,16 @@ export function RankCard({ r, onOpen }: { r: RankShown; onOpen: Open }) {
   const foldedCount = r.tieCount - TIES_INLINE; // from the total, never the list
   const exact = h.confidence === EXACT; // exact City figures tie only when equal; there is no margin
   const tieRow = (t: TractRow) => (
-    <tr key={t.geoid} className={styles.tractTie}><td>=</td><td>{t.tract}</td><td>{t.neighborhood ?? "\u2014"} ({exact ? `same figure as #${r.top.length}` : `tied with #${r.top.length} within the margin of error`})</td><td className={styles.num}>{range(t, pct)}</td></tr>
+    <tr key={t.geoid} className={styles.tractTie}><td>=</td><td>{t.tract}</td><td><Places city={t.city} /></td><td>{dycuText(t.dycu)} ({exact ? `same figure as #${r.top.length}` : `tied with #${r.top.length} within the margin of error`})</td><td className={styles.num}>{range(t, pct)}</td></tr>
   );
-  const head = ["#", "Tract", "DYCU area", h.column];
+  const head = ["#", "Tract", "Neighborhood", "DYCU area", h.column];
   const title = `${r.direction === "high" ? "Highest" : "Lowest"} ${h.column} \u00b7 ${h.place} ${h.year}`;
   const bare = !h.confidence; // no ranges: no ties or unreliable tracts can be found (spec §5 rule 7)
   const summary = rankSummary({ header: h, direction: r.direction, top: r.top.length, tieCount: bare ? 0 : r.tieCount, unreliableCount: bare ? 0 : r.unreliableCount, inline: TIES_INLINE });
   const table = (
     <Table head={head} title={title}>
       {r.top.map((t, i) => (
-        <tr key={t.geoid}><td>{i + 1}</td><td>{t.tract}</td><td>{t.neighborhood ?? "\u2014"}</td><td className={styles.num}>{range(t, pct)}</td></tr>
+        <tr key={t.geoid}><td>{i + 1}</td><td>{t.tract}</td><td><Places city={t.city} /></td><td>{dycuText(t.dycu)}</td><td className={styles.num}>{range(t, pct)}</td></tr>
       ))}
       {ties.slice(0, TIES_INLINE).map(tieRow)}
     </Table>
@@ -168,7 +183,7 @@ export function RankCard({ r, onOpen }: { r: RankShown; onOpen: Open }) {
           <summary>{r.unreliableCount} too uncertain to rank</summary>
           <Table head={head} title={`${title}: too uncertain to rank`}>
             {unreliable.map((t) => (
-              <tr key={t.geoid} className={styles.tractUnreliable}><td>{"\u2013"}</td><td>{t.tract}</td><td>{t.neighborhood ?? "\u2014"} (too uncertain: margin of error too wide)</td><td className={styles.num}>{range(t, pct)}</td></tr>
+              <tr key={t.geoid} className={styles.tractUnreliable}><td>{"\u2013"}</td><td>{t.tract}</td><td><Places city={t.city} /></td><td>{dycuText(t.dycu)} (too uncertain: margin of error too wide)</td><td className={styles.num}>{range(t, pct)}</td></tr>
             ))}
           </Table>
           {r.unreliableCount > unreliable.length && <p className={styles.tractCounts}>{r.unreliableCount - unreliable.length} more not listed.</p>}
@@ -193,10 +208,10 @@ export function ChangeCard({ r, onOpen }: { r: ChangeShown; onOpen: Open }) {
   const bare = noMargin([h]);
   const summary = changeSummary({ header: h, from: r.from, to: r.to, increases: r.increases, decreases: r.decreases, none: r.none });
   const table = changes.length > 0 && (
-    <Table head={["Tract", "DYCU area", r.from, r.to, "Change"]} title={title}>
+    <Table head={["Tract", "Neighborhood", "DYCU area", r.from, r.to, "Change"]} title={title}>
       {changes.map((c) => (
         <tr key={c.geoid}>
-          <td>{c.tract}</td><td>{c.neighborhood ?? "\u2014"}</td>
+          <td>{c.tract}</td><td><Places city={c.city} /></td><td>{dycuText(c.dycu)}</td>
           <td className={styles.num}>{range(c.from, pct)}</td><td className={styles.num}>{range(c.to, pct)}</td>
           <td className={styles.num}>{changeText(c.change, c.direction, pct)}</td>
         </tr>
@@ -261,7 +276,7 @@ export function RelateCard({ r, onOpen }: { r: RelateShown; onOpen: Open }) {
     </>
   );
   const table = fits.length + close.length > 0 && (
-    <Table head={["Tract", "DYCU area", a.column, b.column, ""]} title={title}>
+    <Table head={["Tract", "Neighborhood", "DYCU area", a.column, b.column, ""]} title={title}>
       {fits.map((p) => <PairRow key={p.a.geoid} p={p} pa={pa} pb={pb} label="clear match" />)}
       {close.map((p) => <PairRow key={p.a.geoid} p={p} pa={pa} pb={pb} label="possible match" tie />)}
     </Table>
@@ -319,7 +334,7 @@ export function RelateCard({ r, onOpen }: { r: RelateShown; onOpen: Open }) {
 function PairRow({ p, pa, pb, label, tie }: { p: { a: TractRow; b: TractRow }; pa: Unit; pb: Unit; label: string; tie?: boolean }) {
   return (
     <tr className={tie ? styles.tractTie : undefined}>
-      <td>{p.a.tract}</td><td>{p.a.neighborhood ?? "—"}</td>
+      <td>{p.a.tract}</td><td><Places city={p.a.city} /></td><td>{dycuText(p.a.dycu)}</td>
       <td className={styles.num}>{range(p.a, pa)}</td><td className={styles.num}>{range(p.b, pb)}</td><td>{label}</td>
     </tr>
   );
