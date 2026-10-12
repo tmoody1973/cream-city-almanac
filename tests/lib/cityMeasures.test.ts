@@ -12,6 +12,9 @@ describe("approved City measures", () => {
       for (const s of [m.file, m.column, m.name, m.things, m.caveat]) expect(s.length).toBeGreaterThan(2);
     }
   });
+  it("leaves out $0 assessed values, which the City writes for exempt property", () => {
+    expect(CITY_MEASURES.find((m) => m.id === "assessed-value")!.skipZero).toBe(true);
+  });
   it("never sums a rate", () => {
     expect(CITY_MEASURES.find((m) => m.id === "hourly-rate")!.summable).toBe(false);
     expect(CITY_MEASURES.filter((m) => m.unit === "dollars").every((m) => m.summable)).toBe(true);
