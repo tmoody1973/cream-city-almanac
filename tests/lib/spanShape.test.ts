@@ -14,10 +14,10 @@ describe("shaping a span answer", () => {
     expect(shapeSpan([row(null, "5", "3")], row(null, "5", "3"), false, false).groups.map((g) => g.label)).toEqual(["(blank)"]);
     expect(shapeSpan([row(null, "0", null), row("2025", "311", "52")], row(null, "311", "52"), false, true).groups.map((g) => g.label)).toEqual(["2025"]);
   });
-  it("drops a group that measured nothing; the All row still counts its open and unreadable dates", () => {
-    const s = shapeSpan([row("ERROR", "0", null, { open: "2" }), row("Milwaukee Fire Department", "64", "22")], row(null, "64", "22", { open: "2" }), false, false);
-    expect(s.groups.map((g) => g.label)).toEqual(["Milwaukee Fire Department"]);
-    expect(s.all.open).toBe(2);
+  it("keeps a group whose cases are all still open, and drops one with nothing at all and the no-year group", () => {
+    const s = shapeSpan([row("ERROR", "0", null, { open: "2" }), row("Empty", "0", null), row("Milwaukee Fire Department", "64", "22")], row(null, "64", "22", { open: "2" }), false, false);
+    expect(s.groups.map((g) => g.label)).toEqual(["ERROR", "Milwaukee Fire Department"]);
+    expect(shapeSpan([row(null, "0", null, { open: "4" }), row("2025", "311", "52")], row(null, "311", "52"), false, true).groups.map((g) => g.label)).toEqual(["2025"]);
   });
   it("sums the rest as Other only when the list was cut off and groups don't overlap", () => {
     const full = Array.from({ length: 24 }, (_, i) => row(`G${i}`, "10", "1"));

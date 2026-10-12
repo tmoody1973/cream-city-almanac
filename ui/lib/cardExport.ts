@@ -5,7 +5,7 @@ import type { ChangeDetail, Header, RankDetail, RelateDetail } from "@/convex/tr
 import { cityList, dycuText } from "./placeNames";
 import { changeText, plainMeaning, rangeText, unitOf, type Unit } from "./tractFormat";
 import { EXACT, KIND, propertyCountSummary } from "./tractSummary";
-import { cellTime, spanNotes, spanSummary, spanTitle, type SpanOk } from "./spanText";
+import { cellTime, spanNotes, spanRows, spanSummary, spanTitle, type SpanOk } from "./spanText";
 
 // One export per card (spec 2026-10-12-card-export-design.md): CSV, text and PNG are all written from it, so they
 // never disagree. It copies the card: its figures, its title and lines, its fine print, caveats and source.
@@ -213,7 +213,7 @@ export const quoteText = (p: { quote: string; section: string; report: string; c
 
 export function spanExport(r: SpanOk, ctx: Ctx): CardExport {
   const u = r.pair.unit;
-  const rows = [...r.groups, ...(r.other > 0 ? [{ label: "Other", cases: r.other, median: null, p90: null, open: 0 }] : []), r.all];
+  const rows = [...spanRows(r), { ...r.all, rest: false }];
   const { warning, notes } = spanNotes(r);
   return {
     title: spanTitle(r),
@@ -224,7 +224,7 @@ export function spanExport(r: SpanOk, ctx: Ctx): CardExport {
     },
     text: {
       head: [r.groupBy === "year" ? "Year" : r.groupBy ?? "", "Cases", "Median", "9 in 10 within", "Still open"],
-      rows: rows.map((g) => [g.label, g.cases.toLocaleString("en-US"), g.label === "Other" ? "" : cellTime(g, g.median, u), g.label === "Other" ? "" : cellTime(g, g.p90, u), g.open.toLocaleString("en-US")]),
+      rows: rows.map((g) => [g.label, g.cases.toLocaleString("en-US"), g.rest ? "" : cellTime(g, g.median, u), g.rest ? "" : cellTime(g, g.p90, u), g.open === null ? "" : g.open.toLocaleString("en-US")]),
     },
     notes: [...notes, sourceNote("City of Milwaukee", r.code, r.name, ctx), exported(ctx)],
     filename: safeName([r.code, r.pair.id, ...(r.groupBy ? [r.groupBy] : [])]),

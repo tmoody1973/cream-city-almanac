@@ -22,6 +22,7 @@ export const spanTitle = (r: SpanOk) => [r.name, r.pair.name, ...(r.groupBy ? [`
 
 export function spanSummary(r: SpanOk): string {
   const t = (v: number | null) => durationText(v, r.pair.unit);
+  if (r.all.cases < MIN_CASES) return `Too few ${r.pair.things} were measured to say how long they took ${r.pair.toWhat} (${r.all.cases.toLocaleString("en-US")} measured).`;
   const head = `half of the ${r.pair.things} measured took ${t(r.all.median)} or less ${r.pair.toWhat}`;
   const ranked = r.groups.filter(enough).sort((a, b) => b.median! - a.median!);
   if (!r.groupBy || ranked.length < 2) return `${head[0].toUpperCase()}${head.slice(1)}; 9 in 10 took ${t(r.all.p90)} or less.`;
@@ -35,7 +36,11 @@ export function spanNotes(r: SpanOk): { warning: string | null; notes: string[] 
   const rows = a.cases + a.open + a.unreadable + a.backwards;
   const newest = r.groupBy === "year" ? r.groups[0] : undefined;
   return {
-    warning: rows > 0 && a.unreadable * 5 > rows ? "More than 1 in 5 dates here couldn't be read, so treat these times with caution." : null,
+    // When more lack an end date than were measured (311: 17,175 vs 10,599), the times describe only the minority.
+    warning: [
+      ...(a.open > a.cases ? [`${n(a.open)} ${r.pair.things} have no end date, more than the ${n(a.cases)} measured, so these times describe only the ${r.pair.things} that have one.`] : []),
+      ...(rows > 0 && a.unreadable * 5 > rows ? ["More than 1 in 5 dates here couldn't be read, so treat these times with caution."] : []),
+    ].join(" ") || null,
     notes: [
       ...(a.open > 0 ? [r.pair.missing.replace("{n}", n(a.open))] : []),
       ...(a.unreadable > 0 ? [`${n(a.unreadable)} dates couldn't be read and were left out.`] : []),
@@ -50,3 +55,10 @@ export function spanNotes(r: SpanOk): { warning: string | null; notes: string[] 
     ],
   };
 }
+
+// The table's rows: each group, then the cut-off rest, flagged so a real group named "Other" keeps its times.
+export type SpanRow = { label: string; cases: number; median: number | null; p90: number | null; open: number | null; rest: boolean };
+export const spanRows = (r: SpanOk): SpanRow[] => [
+  ...r.groups.map((g) => ({ ...g, rest: false })),
+  ...(r.other > 0 ? [{ label: "All other groups", cases: r.other, median: null, p90: null, open: null, rest: true }] : []),
+];

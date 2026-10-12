@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { spanExport } from "../../ui/lib/cardExport";
 import { spanChoices } from "../../ui/lib/refusalChoices";
 import { spanFollowUps } from "../../ui/lib/nextQuestions";
-import { durationText, spanNotes, spanSummary, spanTitle } from "../../ui/lib/spanText";
+import { durationText, spanNotes, spanRows, spanSummary, spanTitle } from "../../ui/lib/spanText";
 
 const pair = { id: "complaint-close", name: "time to close", things: "complaints", toWhat: "to close", unit: "days" as const, missing: "{n} complaints aren't closed yet and aren't counted, so slow cases are under-counted.", caveat: "Dates are typed by hand in more than one format; a few can't be read.", from: "DateReported", to: "Date Closed" };
 const r = {
@@ -74,5 +74,26 @@ describe("span follow-ups and choices", () => {
   it("turns a choose-pair refusal into one button per pair", () => {
     const c = spanChoices({ code: "P04" }, { status: "choose-pair", code: "P04", name: "Fire Incident Detail", pairs: [{ id: "fire-arrive", name: "time to arrive", from: "Date_Received", to: "Date_Arrived" }] });
     expect(c).toEqual([{ label: "time to arrive", question: "How long is the time to arrive in Fire Incident Detail (P04)? (pair fire-arrive)" }]);
+  });
+});
+
+describe("review fixes", () => {
+  it("says too few were measured instead of writing a broken sentence", () => {
+    const tiny = { ...r, groupBy: null, groups: [], all: { ...r.all, cases: 4, median: 3, p90: 5 } };
+    expect(spanSummary(tiny)).toBe("Too few complaints were measured to say how long they took to close (4 measured).");
+    expect(spanSummary({ ...tiny, all: { ...tiny.all, cases: 0, median: null, p90: null } })).toBe("Too few complaints were measured to say how long they took to close (0 measured).");
+  });
+  it("warns in bold when more lack an end date than were measured", () => {
+    const most = { ...r, pair: { ...pair, things: "requests" }, all: { ...r.all, cases: 10599, open: 17175, unreadable: 0, backwards: 0 } };
+    expect(spanNotes(most).warning).toBe("17,175 requests have no end date, more than the 10,599 measured, so these times describe only the requests that have one.");
+    expect(spanNotes(r).warning).toBeNull();
+  });
+  it("keeps a real group named Other apart from the cut-off rest", () => {
+    const withOther = { ...r, groups: [{ label: "Other", cases: 40, median: 12, p90: 30, open: 1 }], other: 25 };
+    const rows = spanRows(withOther);
+    expect(rows.map((x) => [x.label, x.rest])).toEqual([["Other", false], ["All other groups", true]]);
+    const e = spanExport(withOther, ctx);
+    expect(e.text.rows[0]).toEqual(["Other", "40", "12 days", "30 days", "1"]);
+    expect(e.csv.rows[1]).toEqual(["All other groups", 25, null, null, null]);
   });
 });

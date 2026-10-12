@@ -17,7 +17,7 @@ import { ChangeCard, NEIGHBORHOODS_HELP, RankCard, RelateCard, TractMapSlot } fr
 import { FollowUps, type FollowUp } from "./FollowUps";
 import { ExportBar } from "./ExportBar";
 import { countExport, numberExport, quoteText, spanExport } from "@/ui/lib/cardExport";
-import { cellTime, spanNotes, spanSummary, spanTitle, type SpanOk } from "@/ui/lib/spanText";
+import { cellTime, spanNotes, spanRows, spanSummary, spanTitle, type SpanOk } from "@/ui/lib/spanText";
 import { changeFollowUps, countFollowUps, datasetFollowUps, numberFollowUps, previewFollowUps, rankFollowUps, relateFollowUps, spanFollowUps } from "@/ui/lib/nextQuestions";
 import { changeChoices, countChoices, numberChoices, rankChoices, relateChoices, spanChoices } from "@/ui/lib/refusalChoices";
 import styles from "./ask.module.css";
@@ -258,7 +258,7 @@ function CountCard({ r, id, onOpen, noMap, args }: { r: CountOk; id?: string; on
 function SpanCard({ r, onOpen }: { r: SpanOk; onOpen: Open }) {
   const { warning, notes } = spanNotes(r);
   const u = r.pair.unit;
-  const rows = [...r.groups, ...(r.other > 0 ? [{ label: "Other", cases: r.other, median: null, p90: null, open: 0 }] : [])];
+  const rows = spanRows(r);
   return (
     <figure className={styles.excerpt} data-card="span">
       <figcaption className={styles.excerptTitle}>{spanTitle(r)} <ProvenanceTag source="CITY" /></figcaption>
@@ -268,13 +268,13 @@ function SpanCard({ r, onOpen }: { r: SpanOk; onOpen: Open }) {
       <div className={styles.tractScroll} tabIndex={0} role="region" aria-label={`${spanTitle(r)}, scroll sideways for more`}>
       <table className={styles.excerptTable}>
         <thead>
-          <tr><th scope="col">{r.groupBy === "year" ? "Year" : r.groupBy ?? ""}</th><th scope="col">Cases</th><th scope="col">Median</th><th scope="col">9 in 10 within</th></tr>
+          <tr><th scope="col">{r.groupBy === "year" ? "Year" : r.groupBy ?? ""}</th><th scope="col">Cases</th><th scope="col">Median</th><th scope="col">9 in 10 within</th><th scope="col">Still open</th></tr>
         </thead>
         <tbody>
-          {rows.map((g) => (
-            <tr key={g.label}><th scope="row">{g.label}</th><td>{g.cases.toLocaleString("en-US")}</td><td>{g.label === "Other" ? "" : cellTime(g, g.median, u)}</td><td>{g.label === "Other" ? "" : cellTime(g, g.p90, u)}</td></tr>
+          {rows.map((g, i) => (
+            <tr key={i}><th scope="row">{g.label}</th><td>{g.cases.toLocaleString("en-US")}</td><td>{g.rest ? "" : cellTime(g, g.median, u)}</td><td>{g.rest ? "" : cellTime(g, g.p90, u)}</td><td>{g.open === null ? "" : g.open.toLocaleString("en-US")}</td></tr>
           ))}
-          <tr><th scope="row">All</th><td>{r.all.cases.toLocaleString("en-US")}</td><td>{cellTime(r.all, r.all.median, u)}</td><td>{cellTime(r.all, r.all.p90, u)}</td></tr>
+          <tr><th scope="row">All</th><td>{r.all.cases.toLocaleString("en-US")}</td><td>{cellTime(r.all, r.all.median, u)}</td><td>{cellTime(r.all, r.all.p90, u)}</td><td>{r.all.open.toLocaleString("en-US")}</td></tr>
         </tbody>
       </table>
       </div>
