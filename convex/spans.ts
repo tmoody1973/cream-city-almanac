@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { action, internalAction, internalQuery } from "./_generated/server";
 import { chicagoDay } from "./lib/ask";
+import { EMPTY_FILE_NOTE } from "./lib/cityProfile";
 import { datastoreSql } from "./lib/ckan";
 import { buildSpan } from "./lib/spanSql";
 import { pairsFor, SPAN_PAIRS } from "./lib/spanPairs";
@@ -12,7 +13,8 @@ type PairOut = { id: string; name: string; things: string; toWhat: string; unit:
 export type SpanResult =
   | { status: "ok"; code: string; name: string; pair: PairOut; groupBy: string | null; overlap: boolean; period: string; filters: string[]; coverage: string | null; columns: string[]; groups: SpanGroup[]; other: number; all: SpanAll }
   | { status: "not-found"; code: string }
-  | { status: "not-city" | "not-live" | "too-broad" | "unavailable"; code: string; name: string }
+  | { status: "not-city" | "too-broad" | "unavailable"; code: string; name: string }
+  | { status: "not-live"; code: string; name: string; note?: string }
   | { status: "no-pair"; code: string; name: string; files: string[] }
   | { status: "choose-pair"; code: string; name: string; pairs: { id: string; name: string; from: string; to: string }[] }
   | { status: "bad-column"; code: string; name: string; column: string; columns: string[] }
@@ -37,7 +39,8 @@ export const timeSpan = action({
     if (!data) return { status: "not-found", code: wanted };
     const { name } = data;
     if (!data.city) return { status: "not-city", code: data.code, name };
-    if (!data.profile || data.profile.rowCount === 0) return { status: "not-live", code: data.code, name };
+    if (!data.profile) return { status: "not-live", code: data.code, name };
+    if (data.profile.rowCount === 0) return { status: "not-live", code: data.code, name, note: EMPTY_FILE_NOTE };
     const pairs = pairsFor(data.key);
     if (!pairs.length) return { status: "no-pair", code: data.code, name, files: FILES };
     const pair = asked ? pairs.find((p) => p.id === asked.trim()) : pairs.length === 1 ? pairs[0] : undefined;

@@ -56,6 +56,16 @@ describe("countRecords with a measure", () => {
     installFakeFetch({ citySql: () => all });
     expect(await t.withIdentity(reader).action(api.city.countRecords, { code: "B05", measure: { id: "gross-pay" } })).toMatchObject({ status: "not-live", note: expect.stringContaining("Election results") });
   });
+  it("says the City's file is empty when its profile has no rows, without asking the City", async () => {
+    const t = await seed();
+    await t.run(async (ctx) => {
+      const p = await ctx.db.query("cityProfiles").filter((q) => q.eq(q.field("familyKey"), "city:city-employee-salary-data")).first();
+      await ctx.db.patch(p!._id, { rowCount: 0 });
+    });
+    const fake = installFakeFetch({ citySql: () => all });
+    expect(await t.withIdentity(reader).action(api.city.countRecords, { code: "X36", measure: { id: "gross-pay" } })).toMatchObject({ status: "not-live", note: "The City's current file for this dataset is empty, so there's nothing to count right now." });
+    expect(fake.calls.length).toBe(0);
+  });
   it("says unavailable when the City fails, and too-broad when it times out", async () => {
     const t = await seed();
     installFakeFetch({ cityStatus: 403 });

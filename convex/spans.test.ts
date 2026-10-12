@@ -26,6 +26,15 @@ async function seed() {
 const all = [{ cases: "2731", median: "64", p90: "400", open: "105", unreadable: "12", backwards: "17" }];
 
 describe("timeSpan", () => {
+  it("says the City's file is empty when its profile has no rows", async () => {
+    const t = await seed();
+    await t.run(async (ctx) => {
+      const p = await ctx.db.query("cityProfiles").withIndex("by_family", (q) => q.eq("familyKey", KEY)).first();
+      await ctx.db.patch(p!._id, { rowCount: 0 });
+    });
+    installFakeFetch({ citySql: () => all });
+    expect(await t.withIdentity(reader).action(api.spans.timeSpan, { code: "P24" })).toMatchObject({ status: "not-live", code: "P24", note: "The City's current file for this dataset is empty, so there's nothing to count right now." });
+  });
   it("needs sign-in", async () => {
     const t = await seed();
     await expect(t.action(api.spans.timeSpan, { code: "P24" })).rejects.toThrow(/Sign in/);
