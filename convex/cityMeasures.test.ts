@@ -3,7 +3,7 @@ import rateLimiterTest from "@convex-dev/rate-limiter/test";
 import { convexTest } from "convex-test";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { installFakeFetch } from "../tests/helpers/fakeFetch";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import schema from "./schema";
 
 const modules = import.meta.glob("./**/*.*s");
@@ -62,5 +62,16 @@ describe("countRecords with a measure", () => {
     expect(await t.withIdentity(reader).action(api.city.countRecords, { code: "X36", measure: { id: "gross-pay" } })).toMatchObject({ status: "unavailable" });
     vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("Timed out after 10s: https://data.milwaukee.gov/…"); }));
     expect(await t.withIdentity(reader).action(api.city.countRecords, { code: "X36", measure: { id: "gross-pay" } })).toMatchObject({ status: "too-broad" });
+  });
+});
+
+describe("checkMeasures", () => {
+  it("measures every approved entry that has a profile, and says which have none", async () => {
+    const t = await seed();
+    installFakeFetch({ citySql: () => all });
+    const out = await t.action(internal.city.checkMeasures, {});
+    expect(out).toHaveLength(6);
+    expect(out.find((x) => x.id === "gross-pay")).toMatchObject({ ok: true, all: { n: 8000 } });
+    expect(out.find((x) => x.id === "tax-owed")).toMatchObject({ ok: false, error: "no profile" });
   });
 });

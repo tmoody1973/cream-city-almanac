@@ -1,13 +1,13 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
-import { action, internalQuery, type ActionCtx } from "./_generated/server";
+import { action, internalAction, internalQuery, type ActionCtx } from "./_generated/server";
 import { chicagoDay } from "./lib/ask";
 import { datastoreSql, datastoreSqlPage } from "./lib/ckan";
 import { POINTS_CAP, rankGroups, tallyPoints } from "./lib/cityPoints";
 import { toMapData, type MapData } from "./lib/cityMap";
 import { withOverrides } from "./lib/cityProfile";
-import { MEASURE_FILES, measuresFor } from "./lib/cityMeasures";
+import { CITY_MEASURES, MEASURE_FILES, measuresFor } from "./lib/cityMeasures";
 import { buildCount, groupLabelFor, MAX_GROUPS } from "./lib/citySql";
 import { buildMeasure } from "./lib/measureSql";
 import { shapeMeasure, type MeasureAll, type MeasureGroup, type MeasureOther } from "./lib/measureShape";
@@ -281,3 +281,25 @@ export async function askCity(ctx: ActionCtx, { data, profile, found, built }: P
     return { status: "unavailable" as const, code: data.code, name };
   }
 }
+
+// The live check before a release: every approved measure, whole file, against the City's server. Read-only.
+// Run with `npx convex run city:checkMeasures` (add --prod for the live site).
+export const checkMeasures = internalAction({
+  args: {},
+  handler: async (ctx): Promise<{ id: string; ok: boolean; error?: string; all?: MeasureAll }[]> => {
+    const out: { id: string; ok: boolean; error?: string; all?: MeasureAll }[] = [];
+    for (const m of CITY_MEASURES) {
+      const raw = await ctx.runQuery(internal.spans.profileFor, { familyKey: m.familyKey });
+      if (!raw) { out.push({ id: m.id, ok: false, error: "no profile" }); continue; }
+      const built = buildMeasure(withOverrides(raw), m, {}, chicagoDay(Date.now()));
+      if (!built.ok) { out.push({ id: m.id, ok: false, error: built.status }); continue; }
+      try {
+        const rows = await datastoreSql<Record<string, unknown>>(built.allSql);
+        out.push({ id: m.id, ok: true, all: shapeMeasure(null, rows[0], { namesPeople: m.namesPeople, byYear: false }).all });
+      } catch (e) {
+        out.push({ id: m.id, ok: false, error: e instanceof Error ? e.message : String(e) });
+      }
+    }
+    return out;
+  },
+});
