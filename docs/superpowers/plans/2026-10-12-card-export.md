@@ -166,7 +166,7 @@ describe("CSV", () => {
   it("starts with the byte-order mark, then the table, a blank row, then title, lines and notes", () => {
     const csv = toCsv(e);
     expect(csv.startsWith("﻿Tract,pov_rate (percent),Change\r\n1860,41.25,-3.75\r\n93,,0\r\n\r\n")).toBe(true);
-    expect(csv).toContain("\r\nHighest pov_rate · County 2023\r\nOne line.\r\n\"A note, with a comma.\"\r\nSource: DYCU, E02: https://almanac.test/d/E02\r\n");
+    expect(csv).toContain("\r\nHighest pov_rate · County 2023\r\nOne line.\r\n\"A note, with a comma.\"\r\n\"Source: DYCU, E02: https://almanac.test/d/E02\"\r\n");
   });
 });
 
