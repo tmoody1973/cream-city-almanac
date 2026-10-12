@@ -110,7 +110,7 @@ test("it explains asking about a neighborhood's tracts", async ({ page }) => {
 test("it explains fact sheets and where the city figure comes from", async ({ page }) => {
   await page.goto("/how-it-works");
   await expect(page.getByText(/fact sheet/i).first()).toBeVisible();
-  await expect(page.getByText(/U\.S\. Census Bureau/)).toBeVisible();
+  await expect(page.getByText(/U\.S\. Census Bureau/).first()).toBeVisible(); // address lookup also names it
 });
 
 test("it says where an address goes when you look one up", async ({ page }) => {
