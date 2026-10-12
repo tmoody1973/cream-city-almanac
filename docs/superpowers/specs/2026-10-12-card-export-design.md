@@ -47,9 +47,9 @@ All three formats are produced from one export, built per card type in `ui/lib/c
 |---|---|---|
 | Neighborhood figure (`getNumber`) | the card's title: "{neighborhood}, {year} · {topic}" | every row the card holds (`nearby`), with an estimate and ± margin column per group, and a "marked" column naming the asked-for row |
 | City count (`countRecords`) | "{name} · {filters} · {period}" | Total, then one row per group, then "Other" if any |
-| Rank | "{code} {column} · {place} {year} · {n} census tracts" | every ranked, tied and too-uncertain tract from the full answer |
-| Change | the same pattern for the two years | every tract in the full answer's `changes` |
-| Relate | the same pattern, naming both columns | every tract in the full answer's `points` |
+| Rank | the card's title ("Highest pov_rate · County 2023"), then its line "{code} {column} ({meaning}, {kind}) · {place} {year} · {n} census tracts" | every ranked, tied and too-uncertain tract from the full answer |
+| Change | the card's title ("pov_rate · County 2022 → 2023"), then the same line | every tract in the full answer's `changes` |
+| Relate | the card's title ("{dataset A} vs. {dataset B}"), then one such line per dataset | every tract in the full answer's `points` |
 | Report quote | "{report}, {section}" | none (text only: the quote) |
 
 **Tract rows (rank).** Each row has: rank, tract, GEOID, City neighborhoods, DYCU areas, value, low, high and status.
