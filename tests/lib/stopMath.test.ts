@@ -67,3 +67,27 @@ describe("summarize (K3)", () => {
     expect(r.notes).toContain("The City's file for 2023 Q2 couldn't be read.");
   });
 });
+
+describe("summarize: review fixes (K3)", () => {
+  const rows: StoredRow[] = [t("2023-Q4", "Black", 10), fi("2024-Q1", "Black", "no", "no", "None", 5), fi("2024-Q2", "White", "no", "no", "None", 5)];
+  const periods = [
+    { period: "2023-Q4", status: "counted" }, { period: "2024-Q1", status: "counted", missing: ["traffic"] },
+    { period: "2024-Q2", status: "counted", missing: ["traffic"] }, { period: "2022-Q4", status: "failed" },
+  ];
+  const gap = "The City's files for 2024 Q1, 2024 Q2 have no traffic-stop table comparable to earlier quarters, so traffic stops there aren't counted.";
+  it("labels a kind's range by the periods that hold it, and refuses a range with none, naming the gap (review 1)", () => {
+    const r = ok(summarize(rows, periods, { kind: "traffic" }));
+    expect(r.period).toBe("2023 Q4");
+    expect(r.notes).toContain(gap);
+    expect(summarize(rows, periods, { kind: "traffic", from: "2024" })).toEqual({ status: "refused", reason: gap });
+  });
+  it("names a failed period asked alone, and one at the end of the series (review 2)", () => {
+    expect(summarize(rows, periods, { from: "2022-Q4", to: "2022-Q4" })).toEqual({ status: "refused", reason: "The City's file for 2022 Q4 couldn't be read." });
+    expect(ok(summarize(rows, [...periods, { period: "2024-Q3", status: "failed" }], { kind: "field-interview" })).notes).toContain("The City's file for 2024 Q3 couldn't be read.");
+  });
+  it("says where MPD's 2024 Q1 and Q2 files split, only when the range holds them (review 5)", () => {
+    const split = "MPD's 2024 Q1 file covers Jan 1 – Feb 19, 2024, and its 2024 Q2 file Feb 20 – Jun 30, 2024.";
+    expect(ok(summarize(rows, periods, { kind: "field-interview", groupBy: "quarter" })).notes).toContain(split);
+    expect(ok(summarize(rows, periods, { kind: "traffic" })).notes).not.toContain(split);
+  });
+});

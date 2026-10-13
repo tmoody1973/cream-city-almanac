@@ -1,5 +1,5 @@
 import { quoteId } from "./cityProfile";
-import { lit, RID } from "./citySql";
+import { RID } from "./citySql";
 
 // MPD stop-and-search packages (spec 2026-10-13-stop-search-design §2, §4): titles → periods, which tables hold
 // people, which columns, and how MPD's values become the Almanac's groups. Pure: no I/O. Only coded fields are read;
@@ -97,12 +97,13 @@ export function tally(kind: StopKind, raw: Raw[]): StopRow[] {
   return [...by.values()];
 }
 
-// One grouped count per queryable table: only the found columns, under fixed names, on a checked id. `skip` leaves out
-// a placeholder table's header row.
-export function groupSql(kind: StopKind, resourceId: string, cols: Partial<Record<Field, string>>, skip?: { column: string; value: string }): string {
+// One grouped count per queryable table: only the found columns, under fixed names, on a checked id. `headerId` leaves
+// out a placeholder table's header row by its own row id, so a person whose race cell is blank (NULL) still counts.
+export function groupSql(kind: StopKind, resourceId: string, cols: Partial<Record<Field, string>>, headerId?: number): string {
   if (!RID.test(resourceId)) throw new Error("Not a CKAN resource id");
+  if (headerId !== undefined && !Number.isInteger(headerId)) throw new Error("Not a row id");
   const picked = Object.entries(cols) as [Field, string][];
-  const where = skip ? ` WHERE ${quoteId(skip.column)} <> ${lit(skip.value)}` : "";
+  const where = headerId !== undefined ? ` WHERE "_id" <> ${headerId}` : "";
   return `SELECT ${picked.map(([f, c]) => `${quoteId(c)} AS ${f}`).join(", ")}, COUNT(*) AS n FROM ${quoteId(resourceId)}${where} GROUP BY ${picked.map((_, i) => i + 1).join(", ")}`;
 }
 

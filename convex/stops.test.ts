@@ -131,7 +131,7 @@ describe("refreshStops, live-run variants (K3)", () => {
       cityDownloads: { [ZIP23]: zip23() },
     });
     expect(await t.action(internal.stops.refreshStops, {})).toEqual([]);
-    expect(seen.some((q) => q.includes(`"Column4" AS race`) && q.includes(`WHERE "Column4" <> 'race_Description'`))).toBe(true);
+    expect(seen.some((q) => q.includes(`"Column4" AS race`) && q.includes(`WHERE "_id" <> 1`))).toBe(true);
   });
 });
 
@@ -148,5 +148,23 @@ describe("refreshStops, the 2024 combined format (K3)", () => {
     installFakeFetch({ cityFieldsFor: (rid) => FIELDS[rid], citySql: SQL, cityDownloads: { [ZIP23]: combined } });
     expect(await t.action(internal.stops.refreshStops, {})).toEqual(["Stops 2023-Q4: no traffic table in the City's file; counted the others"]);
     expect((await countsOf(t, "2023-Q4")).map(({ kind, race, found, n }) => [kind, race, found, n])).toEqual([["field-interview", "Black", "Drugs", 1], ["no-action", "Hispanic", null, 1]]);
+  });
+});
+
+describe("refreshStops: review fixes (K3)", () => {
+  it("keeps a period's missing kinds when a later run fails (review 3)", async () => {
+    const t = convexTest(schema, modules);
+    await seed(t);
+    const noTraffic = zipSync({
+      "x/Inform_FieldInterviewPerson_REMCOL_REDACTED.csv": strToU8("Id,sex_Code,race_Description,ethnicity_Description,Pat_Down_Description,Search_Performed_Description,Search_Results_Description\nx,M,WHITE,NOT HISPANIC/LATINO,No,No,NONE\n"),
+      "x/Inform_NoActionEncounterPerson_REDACTED.csv": strToU8("Id,NAE_Id,sex_Code,race_Description,ethnicity_Description\ny,z,F,WHITE,UNKNOWN\n"),
+    });
+    installFakeFetch({ cityFieldsFor: (rid) => FIELDS[rid], citySql: SQL, cityDownloads: { [ZIP23]: noTraffic } });
+    await t.action(internal.stops.refreshStops, {});
+    await t.run(async (ctx) => { for (const m of await ctx.db.query("members").collect()) await ctx.db.patch(m._id, { modified: "2026-01-01T00:00:00" }); });
+    installFakeFetch({ cityFieldsFor: (rid) => FIELDS[rid], citySql: SQL, cityDownloads: { [ZIP23]: 504 } });
+    await t.action(internal.stops.refreshStops, {});
+    const p = await t.run((ctx) => ctx.db.query("stopPeriods").withIndex("by_period", (q) => q.eq("period", "2023-Q4")).first());
+    expect(p).toMatchObject({ status: "failed", missing: ["traffic"] });
   });
 });

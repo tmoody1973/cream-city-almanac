@@ -25,6 +25,9 @@ describe("stops card text (K3)", () => {
     expect(stopsFollowUps(r).map((f) => f.label)).toEqual(["BY YEAR"]);
     expect(stopsFollowUps({ ...r, kind: "traffic", groupBy: "year", rates: false }).map((f) => f.label)).toEqual(["BY RACE", "FIELD INTERVIEWS: FRISKS AND SEARCHES BY RACE"]);
     expect(stopsFollowUps({ ...r, groupBy: null }).find((f) => f.label === "BY RACE")?.question).toBe("Who did MPD stop in field interviews, 2019 Q1–Q2 – 2024 Q4, by race?");
-    expect(stopsChoices({ column: "race", choices: ["Black", "White"] })).toEqual([{ label: "Black", question: "MPD stops where race is Black." }, { label: "White", question: "MPD stops where race is White." }]);
+    // A pick keeps the asked kind, period and group, swapping in the chosen value (review 6).
+    expect(stopsChoices({ kind: "field-interview", from: "2022", to: "2022", filters: { sex: ["Woman"] }, groupBy: "race" }, { column: "sex", choices: ["Female", "Male"] })[0])
+      .toEqual({ label: "Female", question: "How many people did MPD stop in field interviews (Female), from 2022 to 2022, by race?" });
+    expect(stopsChoices({}, { column: "race", choices: ["Black"] })).toEqual([{ label: "Black", question: "How many people did MPD stop (Black)?" }]);
   });
 });

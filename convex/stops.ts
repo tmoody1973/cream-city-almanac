@@ -49,7 +49,11 @@ export const replacePeriod = internalMutation({
 // A failed package keeps whatever counts it had; its status says failed, so the next run retries it.
 export const markFailed = internalMutation({
   args: { period: v.string(), familyKey: v.string(), modified: v.string(), note: v.string() },
-  handler: async (ctx, p) => setPeriod(ctx, { ...p, status: "failed" }),
+  handler: async (ctx, p) => {
+    // Keep what an earlier count recorded as missing (2024's traffic table), so its card note doesn't drop a quarter.
+    const old = await ctx.db.query("stopPeriods").withIndex("by_period", (q) => q.eq("period", p.period)).first();
+    await setPeriod(ctx, { ...p, status: "failed", ...(old?.missing?.length ? { missing: old.missing } : {}) });
+  },
 });
 
 // The person tables' counts: grouped SQL when the City's database has them, else the package's data ZIP. A kind whose
@@ -61,14 +65,13 @@ async function countPackage(files: { name: string; format: string; url: string }
     for (const t of tables) {
       const ids = (await datastoreFields(t.resourceId)).map((f) => f.id);
       // Placeholder columns (2021 Q1): the real names are in the first row, which is left out of the count.
-      const map = ids.filter((f) => f !== "_id").every((f) => /^Column\d+$/.test(f))
-        ? headerRow(ids, (await datastoreSql<Record<string, unknown>>(firstRowSql(t.resourceId)))[0] ?? {})
-        : null;
+      const placeholder = ids.filter((f) => f !== "_id").every((f) => /^Column\d+$/.test(f));
+      const first = placeholder ? (await datastoreSql<Record<string, unknown>>(firstRowSql(t.resourceId)))[0] ?? {} : null;
+      const map = first ? headerRow(ids, first) : null;
       const c = columnsFor(t.kind, map ? Object.keys(map) : ids);
       if (!c.ok) throw new Error(`${t.kind} table has no ${c.missing} column`);
       const cols = map ? Object.fromEntries(Object.entries(c.cols).map(([f, real]) => [f, map[real!]])) : c.cols;
-      const skip = map && c.cols.race ? { column: map[c.cols.race], value: c.cols.race } : undefined;
-      out.push(...tally(t.kind, await datastoreSql<Raw>(groupSql(t.kind, t.resourceId, cols, skip))));
+      out.push(...tally(t.kind, await datastoreSql<Raw>(groupSql(t.kind, t.resourceId, cols, first ? Number(first._id) : undefined))));
     }
     return { rows: out, missing: KINDS.filter((k) => !tables.some((t) => t.kind === k)) };
   }

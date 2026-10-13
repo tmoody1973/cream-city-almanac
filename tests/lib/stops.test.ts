@@ -97,7 +97,9 @@ describe("placeholder columns in the City's database (live run, 2021 Q1)", () =>
     const first = { _id: 1, Column1: "Id", Column4: "sex_Code", Column5: "race_Description", Column6: "ethnicity_Description", Column12: "Pat_Down_Description" };
     expect(headerRow(fields, first)).toEqual({ Id: "Column1", sex_Code: "Column4", race_Description: "Column5", ethnicity_Description: "Column6", Pat_Down_Description: "Column12" });
     expect(headerRow(["Id", "race_Description"], first)).toBeNull();
-    expect(groupSql("no-action", "dcbc4a9d-5e48-4f24-bf71-e9a450065461", { race: "Column5", sex: "Column4" }, { column: "Column5", value: "race_Description" }))
-      .toBe(`SELECT "Column5" AS race, "Column4" AS sex, COUNT(*) AS n FROM "dcbc4a9d-5e48-4f24-bf71-e9a450065461" WHERE "Column5" <> 'race_Description' GROUP BY 1, 2`);
+    // The header row is skipped by its own _id, so a person with a blank (NULL) race still counts (review 4).
+    expect(groupSql("no-action", "dcbc4a9d-5e48-4f24-bf71-e9a450065461", { race: "Column5", sex: "Column4" }, 1))
+      .toBe(`SELECT "Column5" AS race, "Column4" AS sex, COUNT(*) AS n FROM "dcbc4a9d-5e48-4f24-bf71-e9a450065461" WHERE "_id" <> 1 GROUP BY 1, 2`);
+    expect(() => groupSql("no-action", "dcbc4a9d-5e48-4f24-bf71-e9a450065461", { race: "Column5" }, 1.5)).toThrow("Not a row id");
   });
 });

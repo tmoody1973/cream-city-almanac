@@ -33,5 +33,22 @@ export function stopsFollowUps(r: StopsOk): FollowUp[] {
   return out.slice(0, 3);
 }
 
-export const stopsChoices = (r: { column: string; choices: string[] }): FollowUp[] =>
-  r.choices.slice(0, 8).map((c) => ({ label: c, question: `MPD stops where ${r.column} is ${c}.` }));
+type StopsArgsIn = {
+  kind?: "traffic" | "field-interview" | "no-action" | "all"; from?: string; to?: string; groupBy?: string;
+  filters?: { race?: string[]; sex?: string[]; frisked?: "yes" | "no"; searched?: "yes" | "no"; found?: string[] };
+};
+// The asked question in words, so a pick button asks the same thing with the chosen value.
+export function stopsQuestion(a: StopsArgsIn): string {
+  const f = a.filters ?? {};
+  const kind = a.kind && a.kind !== "all" ? ` in ${KIND_WORDS[a.kind].toLowerCase()}` : "";
+  const filters = [
+    ...(f.race ?? []), ...(f.sex ?? []),
+    ...(f.frisked ? [f.frisked === "yes" ? "frisked" : "not frisked"] : []), ...(f.searched ? [f.searched === "yes" ? "searched" : "not searched"] : []),
+    ...(f.found ?? []).map((x) => `found: ${x}`),
+  ];
+  const when = a.from || a.to ? `, from ${a.from ?? "the start"} to ${a.to ?? "the latest"}` : "";
+  return `How many people did MPD stop${kind}${filters.length ? ` (${filters.join(", ")})` : ""}${when}${a.groupBy ? `, by ${a.groupBy}` : ""}?`;
+}
+
+export const stopsChoices = (a: StopsArgsIn, r: { column: "race" | "sex" | "found"; choices: string[] }): FollowUp[] =>
+  r.choices.slice(0, 8).map((c) => ({ label: c, question: stopsQuestion({ ...a, filters: { ...(a.filters ?? {}), [r.column]: [c] } }) }));

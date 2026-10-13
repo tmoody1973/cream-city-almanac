@@ -420,7 +420,7 @@ export function AskCards({ onOpen }: { onOpen?: (search: string) => void }) {
     if (props.status !== "complete") return <Busy />;
     const r = parse<StopsAnswer>(props.result);
     if (!r) return <Failed />;
-    if (r.status === "choose") return <FollowUps pick items={stopsChoices(r)} id={props.toolCallId} />;
+    if (r.status === "choose") return <FollowUps pick items={stopsChoices(props.parameters as never, r)} id={props.toolCallId} />;
     if (r.status === "refused") return <p className={styles.failed} data-card="stops-refusal">{r.reason}</p>;
     return <><StopsCard r={r} /><FollowUps items={stopsFollowUps(r)} id={props.toolCallId} /></>;
   } }, []);
