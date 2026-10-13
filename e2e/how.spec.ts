@@ -138,3 +138,8 @@ test("it says Ask counts MPD stops across every quarter", async ({ page }) => {
   await page.goto("/how-it-works");
   await expect(page.getByText(/Stop-and-search questions count the people MPD stopped/)).toBeVisible();
 });
+
+test("it says Ask compares turnout across elections", async ({ page }) => {
+  await page.goto("/how-it-works");
+  await expect(page.getByText(/Turnout questions compare 12 Milwaukee elections/)).toBeVisible();
+});

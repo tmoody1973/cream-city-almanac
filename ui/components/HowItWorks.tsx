@@ -130,6 +130,10 @@ export function HowItWorks({ status, example, areas }: { status: CatalogStatus |
               interviews.
             </p>
             <p>
+              Turnout questions compare 12 Milwaukee elections from 2016 to 2022, citywide or ward by ward, from the
+              City&apos;s election files. The City&apos;s open data has no election results after 2022.
+            </p>
+            <p>
               Ask can also add up a few City money columns, like back property tax owed, City employee pay and property sale prices. It
               shows the total and the median (the middle value), and the average only when you ask for it. In files that name people,
               groups of fewer than 5 records are hidden so no one&apos;s figure can be singled out.
