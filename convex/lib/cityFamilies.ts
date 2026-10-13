@@ -42,6 +42,7 @@ export function cityNote(familyKey: string): string | null {
   if (Object.hasOwn(CITY_NOTES, familyKey)) return CITY_NOTES[familyKey];
   const a = ARCHIVES[familyKey];
   if (a && !a.join) return a.note;
+  if (/-mpd-stop-and-search-data$/.test(familyKey)) return "Ask can count people stopped across all quarters, 2019–2024.";
   return YEARLY[familyKey]?.page ?? null;
 }
 

@@ -92,3 +92,9 @@ describe("YEARLY (K2)", () => {
     expect(cityNote("city:master-property-file-mprop")).toBe("Yearly assessments from 2005 are read for change over time.");
   });
 });
+
+describe("stop-and-search pages (K3)", () => {
+  it("say Ask counts across quarters", () => {
+    expect(cityNote("city:2023-4th-quarter-mpd-stop-and-search-data")).toBe("Ask can count people stopped across all quarters, 2019–2024.");
+  });
+});

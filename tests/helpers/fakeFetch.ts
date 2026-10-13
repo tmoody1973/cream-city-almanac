@@ -19,6 +19,7 @@ export interface FakeOptions {
   cityFieldsFor?: (rid: string) => { id: string; type: string }[] | undefined; // one file's columns, when files differ
   citySql?: (sql: string) => unknown[];
   citySqlTruncated?: (sql: string) => boolean; // the City's own row-limit flag
+  cityDownloads?: Record<string, Uint8Array | number>; // a City download link → its bytes, or an HTTP status for a failure
   cityNeighborhoods?: unknown;
   cityNeighborhoodsStatus?: number;
   cityLayers?: Record<string, unknown>; // the City's boundary layers (f=geojson), by layer path, e.g. "election/election_wards/MapServer/1"
@@ -74,6 +75,11 @@ export function installFakeFetch(opts: FakeOptions = {}) {
       return json(opts.cityLayerStatus?.[path] ?? 200, opts.cityLayers?.[path] ?? { type: "FeatureCollection", features: [] });
     }
 
+    if (url.startsWith("https://data.milwaukee.gov/dataset/") && url.includes("/download/") && opts.cityDownloads) {
+      const d = opts.cityDownloads[url];
+      if (d === undefined) return new Response("not found", { status: 404 });
+      return typeof d === "number" ? new Response("down", { status: d }) : new Response(new Uint8Array(d), { status: 200 });
+    }
     if (url.includes("data.milwaukee.gov/api/3/action/package_search")) {
       // Like CKAN, honour `start`: a page past the end of the results is empty.
       const catalog = (opts.cityCatalog ?? { success: true, result: { count: 0, results: [] } }) as { result?: { results?: unknown[] } };

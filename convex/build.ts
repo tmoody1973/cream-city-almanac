@@ -385,7 +385,13 @@ export const finish = internalAction({
     } catch (e) {
       cityNotes = [`City figures refresh failed: ${message(e)}`];
     }
-    await ctx.runMutation(internal.buildStore.completeBuild, { buildId, orphanChunksDeleted: deleted, notes: [...neighborhoodNotes, ...boundaryNotes, ...cityNotes] });
+    let stopNotes: string[];
+    try {
+      stopNotes = await ctx.runAction(internal.stops.refreshStops, {});
+    } catch (e) {
+      stopNotes = [`Stop counts refresh failed: ${message(e)}`];
+    }
+    await ctx.runMutation(internal.buildStore.completeBuild, { buildId, orphanChunksDeleted: deleted, notes: [...neighborhoodNotes, ...boundaryNotes, ...cityNotes, ...stopNotes] });
   },
 });
 
