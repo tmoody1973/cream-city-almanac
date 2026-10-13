@@ -47,7 +47,7 @@ const P: CityProfile = {
     { year: 2026, resourceId: MPROP_RID, layout: "classic" },
   ],
 };
-const S22 = `(SELECT '2022' AS "yr", "AssessValu" AS "C_A_TOTAL", "DistrictNa" AS "GEO_ALDER", CASE WHEN "IsOwnerOcc" = '1' THEN 'O' ELSE '' END AS "OWN_OCPD", "PrevNonExe" AS "C_A_CLASS" FROM "${R22}") AS t`;
+const S22 = `(SELECT '2022' AS "yr", "AssessValu" AS "C_A_TOTAL" FROM "${R22}") AS t`;
 const V = num("C_A_TOTAL");
 const NOTE = "Years are the City's file years; in a few files the City's own assessment-year field reads a year later.";
 const DISTRICT = "District lines are redrawn after each census, so a district number can cover a different area in different years.";
@@ -60,8 +60,13 @@ describe("yearSource (K2)", () => {
   it("reads several years as one table, each tagged, today's file kept to its assessment", () => {
     const s = yearSource(P, P.years!.slice(2));
     expect(s.split(" UNION ALL ")).toHaveLength(3);
-    expect(s).toContain(`SELECT '2025' AS "yr", "TotalAssessedValue" AS "C_A_TOTAL", "DistrictName" AS "GEO_ALDER", CASE WHEN "IsOwnerOccupied" = '1' THEN 'O' ELSE '' END AS "OWN_OCPD", "PrevNonExemptClass" AS "C_A_CLASS" FROM "${R25}"`);
-    expect(s).toContain(`SELECT '2026' AS "yr", "C_A_TOTAL" AS "C_A_TOTAL", "GEO_ALDER" AS "GEO_ALDER", CASE WHEN "OWN_OCPD" = 'O' THEN 'O' ELSE '' END AS "OWN_OCPD", "C_A_CLASS" AS "C_A_CLASS" FROM "${MPROP_RID}" WHERE "YR_ASSMT" = '2026'`);
+    expect(s).toContain(`SELECT '2025' AS "yr", "TotalAssessedValue" AS "C_A_TOTAL" FROM "${R25}"`);
+    expect(s).toContain(`SELECT '2026' AS "yr", "C_A_TOTAL" AS "C_A_TOTAL" FROM "${MPROP_RID}" WHERE "YR_ASSMT" = '2026'`);
+  });
+  it("filters inside each file in that file's own column names, and adds the district only when grouping by it (live check: 52 s → 4 s)", () => {
+    const s = yearSource(P, [P.years![2], P.years![4]], { district: ["6"], owner: true, cls: ["1", "5"], byDistrict: true });
+    expect(s).toContain(`SELECT '2022' AS "yr", "AssessValu" AS "C_A_TOTAL", "DistrictNa" AS "GEO_ALDER" FROM "${R22}" WHERE "DistrictNa" IN ('6') AND "IsOwnerOcc" = '1' AND "PrevNonExe" IN ('1', '5')`);
+    expect(s).toContain(`FROM "${MPROP_RID}" WHERE "YR_ASSMT" = '2026' AND "GEO_ALDER" IN ('6') AND "OWN_OCPD" = 'O' AND "C_A_CLASS" IN ('1', '5')`);
   });
   it("refuses a file id that isn't one", () => {
     expect(() => yearSource(P, [{ year: 2022, resourceId: "x'; DROP", layout: "short" }])).toThrow("Not a CKAN resource id");
@@ -79,19 +84,23 @@ describe("buildYearCount (K2)", () => {
   it("groups a span by year, with the headline on the newest year", () => {
     const b = ok(buildYearCount(P, { years: { from: 2021, to: 2026 }, filters: [{ column: "OWN_OCPD", values: ["O"] }] }));
     expect(b.groupLabel).toBe("year");
-    expect(b.groupSql).toMatch(/^SELECT "yr" AS g, COUNT\(\*\) AS n FROM \(.+\) AS t WHERE "OWN_OCPD" IN \('O'\) GROUP BY g ORDER BY g DESC LIMIT 24$/);
-    expect(b.totalSql).toMatch(/WHERE "OWN_OCPD" IN \('O'\) AND "yr" = '2026'$/);
+    expect(b.groupSql).toMatch(/^SELECT "yr" AS g, COUNT\(\*\) AS n FROM \(.+\) AS t GROUP BY g ORDER BY g DESC LIMIT 24$/);
+    expect(b.groupSql).toContain(`FROM "${R21}" WHERE "OWN_OCPD" = 'O'`);
+    expect(b.groupSql).toContain(`FROM "${R22}" WHERE "IsOwnerOcc" = '1'`);
+    expect(b.totalSql).toMatch(/\) AS t WHERE "yr" = '2026'$/);
     expect(b).toMatchObject({ period: "2021 – 2026 assessments", filterLabels: ["owner-occupied"], latestYear: "2026", source: "From the City's yearly property files (2021–2025) and its current file (2026)." });
   });
   it("filters homes by class, and a district across years with the district note", () => {
     const b = ok(buildYearCount(P, { years: { from: 2005, to: 2026 }, filters: [{ column: "C_A_CLASS", values: ["1", "5"] }, { column: "GEO_ALDER", values: ["6"] }] }));
-    expect(b.groupSql).toContain(`WHERE "C_A_CLASS" IN ('1', '5') AND "GEO_ALDER" IN ('6')`);
+    expect(b.groupSql).toContain(`FROM "${R25}" WHERE "DistrictName" IN ('6') AND "PrevNonExemptClass" IN ('1', '5')`);
     expect(b.filterLabels).toEqual(["residential", "condominiums", "Aldermanic district 6"]);
     expect(b.note!.startsWith(NOTE)).toBe(true); // the fixture lacks 2006–2020, so the missing-years sentence sits between
     expect(b.note!.endsWith(DISTRICT)).toBe(true);
   });
   it("groups one year by district, and refuses district groups across years", () => {
-    expect(ok(buildYearCount(P, { years: { from: 2025, to: 2025 }, groupBy: "GEO_ALDER" })).groupSql).toMatch(/^SELECT "GEO_ALDER" AS g, COUNT\(\*\) AS n FROM .+ GROUP BY g ORDER BY n DESC LIMIT 24$/);
+    const d = ok(buildYearCount(P, { years: { from: 2025, to: 2025 }, groupBy: "GEO_ALDER" })).groupSql!;
+    expect(d).toMatch(/^SELECT "GEO_ALDER" AS g, COUNT\(\*\) AS n FROM .+ GROUP BY g ORDER BY n DESC LIMIT 24$/);
+    expect(d).toContain(`"DistrictName" AS "GEO_ALDER" FROM "${R25}"`);
     expect(buildYearCount(P, { years: { from: 2005, to: 2025 }, groupBy: "GEO_ALDER" })).toEqual({ ok: false, status: "bad-column", column: "GEO_ALDER", columns: ["year"] });
   });
   it("names a year missing inside the span (review focus 2)", () => {
@@ -122,7 +131,9 @@ describe("buildYearMeasure (K2)", () => {
   it("gives the typical home value by year, with the summary row on the newest year", () => {
     const b = ok(buildYearMeasure(P, m, { years: { from: 2005, to: 2026 }, filters: [{ column: "C_A_CLASS", values: ["1", "5"] }] }));
     expect(b.groupLabel).toBe("year");
-    expect(b.groupSql).toMatch(/^SELECT y AS g, .+percentile_cont\(0\.5\).+ FROM \(SELECT CASE WHEN .+ AS v, "yr" AS y, "GEO_ALDER" AS d FROM \(.+\) AS t WHERE "C_A_CLASS" IN \('1', '5'\)\) s GROUP BY g ORDER BY g DESC LIMIT 24$/);
+    expect(b.groupSql).toMatch(/^SELECT y AS g, .+percentile_cont\(0\.5\).+ FROM \(SELECT .+ AS v, "yr" AS y FROM \(.+\) AS t\) s GROUP BY g ORDER BY g DESC LIMIT 24$/);
+    expect(b.groupSql).toContain(`FROM "${R25}" WHERE "PrevNonExemptClass" IN ('1', '5')`);
+    expect(b.groupSql).not.toContain("regexp_replace"); // the plain number check: the money cleanup made it 52 s live
     expect(b.allSql).toMatch(/\) s WHERE y = '2026'$/);
     expect(b).toMatchObject({ period: "2005 – 2026 assessments", filterLabels: ["residential", "condominiums"], latestYear: "2026", timeoutMs: 25_000 });
   });

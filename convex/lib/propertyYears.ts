@@ -2,7 +2,7 @@ import type { CityMeasure } from "./cityMeasures";
 import { YEARLY } from "./cityFamilies";
 import { quoteId, type CityProfile } from "./cityProfile";
 import { groupLabelFor, lit, MAX_GROUPS, num, numberLabel, RID, type Built } from "./citySql"; // Built: buildYearCount's return type
-import { measureColumns, moneyValue, type MeasureBuilt } from "./measureSql";
+import { measureColumns, type MeasureBuilt } from "./measureSql";
 
 // The City's yearly property files (spec 2026-10-13-property-history-design §4–5): which columns each layout uses for
 // the four facts that carry across years. A layout is recognized only when all four of its columns are there.
@@ -53,9 +53,19 @@ const VALUES: Record<string, { values: string[]; label: (v: string) => string }>
   C_A_CLASS: { values: ["1", "5"], label: (v) => (v === "1" ? "residential" : "condominiums") },
 };
 
-// One table of the chosen years' files, the four facts under the classic names (spec §5). Today's file keeps only its
-// current assessment, as counts without years do. Only fixed text, checked ids and integer years enter the SQL.
-export function yearSource(p: CityProfile, picked: YearFile[]): string {
+const where = (parts: string[]) => (parts.length ? ` WHERE ${parts.join(" AND ")}` : "");
+
+// What a question asks of each year's file: filters on the carried facts (applied inside each file, in that file's own
+// column names), and whether the district comes along for a district group.
+export type YearFilters = { district?: string[]; owner?: boolean; cls?: string[]; byDistrict?: boolean };
+
+// One table of the chosen years' files (spec §5): each file gives only its year tag and value (and district, when
+// grouped by it) under the classic names, with the filters applied inside it. Live check 2026-10-13: selecting every
+// fact and filtering outside the union took 52 s and a 7,400-character address (the City refuses past ~8,000);
+// this shape gives the same figures in 4 s at 4,700. Today's file keeps only its current assessment, as counts without
+// years do. Only fixed text, checked ids, integer years and listed values enter the SQL.
+// ponytail: the address still grows ~200 characters a year; send the SQL in a POST body if it nears 8,000.
+export function yearSource(p: CityProfile, picked: YearFile[], f: YearFilters = {}): string {
   if (!picked.length) throw new Error("No property files for those years");
   return `(${picked.map((y) => {
     if (!RID.test(y.resourceId)) throw new Error("Not a CKAN resource id");
@@ -63,9 +73,14 @@ export function yearSource(p: CityProfile, picked: YearFile[]): string {
     const c = LAYOUTS[y.layout];
     if (!c) throw new Error("Unknown layout");
     const year = lit(String(y.year));
-    const own = `CASE WHEN ${quoteId(c.owner)} = ${lit(c.ownerYes)} THEN 'O' ELSE '' END`;
-    const current = y.resourceId === p.resourceId ? ` WHERE "YR_ASSMT" = ${year}` : "";
-    return `SELECT ${year} AS "yr", ${quoteId(c.value)} AS "C_A_TOTAL", ${quoteId(c.district)} AS "GEO_ALDER", ${own} AS "OWN_OCPD", ${quoteId(c.cls)} AS "C_A_CLASS" FROM ${quoteId(y.resourceId)}${current}`;
+    const inList = (col: string, vs: string[]) => `${quoteId(col)} IN (${vs.map(lit).join(", ")})`;
+    const conds = [
+      ...(y.resourceId === p.resourceId ? [`"YR_ASSMT" = ${year}`] : []),
+      ...(f.district?.length ? [inList(c.district, f.district)] : []),
+      ...(f.owner ? [`${quoteId(c.owner)} = ${lit(c.ownerYes)}`] : []),
+      ...(f.cls?.length ? [inList(c.cls, f.cls)] : []),
+    ];
+    return `SELECT ${year} AS "yr", ${quoteId(c.value)} AS "C_A_TOTAL"${f.byDistrict ? `, ${quoteId(c.district)} AS "GEO_ALDER"` : ""} FROM ${quoteId(y.resourceId)}${where(conds)}`;
   }).join(" UNION ALL ")}) AS t`;
 }
 
@@ -103,7 +118,7 @@ function scope(p: CityProfile, a: YearArgs): Scope | BadDates | Outside {
 }
 
 // A values filter on a carried fact: only the values that fact offers get in.
-function yearFilter(f: { column: string; values?: string[] }): { ok: true; where: string; labels: string[] } | BadColumn | Choose {
+function yearFilter(f: { column: string; values?: string[] }): { ok: true; column: string; values: string[]; labels: string[] } | BadColumn | Choose {
   const col = YEAR_COLUMNS.find((c) => c.toLowerCase() === f.column.toLowerCase());
   const fact = col ? VALUES[col] : undefined;
   if (!col || !fact) return { ok: false, status: "bad-column", column: f.column, columns: YEAR_COLUMNS };
@@ -111,12 +126,12 @@ function yearFilter(f: { column: string; values?: string[] }): { ok: true; where
   const wrong = asked.find((v) => !fact.values.includes(v));
   if (!asked.length || wrong !== undefined) return { ok: false, status: "choose", column: col, asked: wrong ?? "", choices: fact.values.slice(0, 8) };
   const uniq = [...new Set(asked)];
-  return { ok: true, where: `${quoteId(col)} IN (${uniq.map(lit).join(", ")})`, labels: uniq.map(fact.label) };
+  return { ok: true, column: col, values: uniq, labels: uniq.map(fact.label) };
 }
 
-function filtersFor(a: YearArgs): { where: string[]; numbers: string[]; labels: string[]; district: boolean } | BadColumn | Choose {
-  const where: string[] = [], numbers: string[] = [], labels: string[] = [];
-  let district = false;
+function filtersFor(a: YearArgs): { filters: YearFilters; numbers: string[]; labels: string[] } | BadColumn | Choose {
+  const filters: YearFilters = {};
+  const numbers: string[] = [], labels: string[] = [];
   for (const f of a.filters ?? []) {
     if (f.over !== undefined || f.under !== undefined) {
       if (f.column.toLowerCase() !== "c_a_total") return { ok: false, status: "bad-column", column: f.column, columns: YEAR_COLUMNS };
@@ -130,11 +145,12 @@ function filtersFor(a: YearArgs): { where: string[]; numbers: string[]; labels: 
     }
     const r = yearFilter(f);
     if (!r.ok) return r;
-    where.push(r.where);
+    if (r.column === "GEO_ALDER") filters.district = r.values;
+    else if (r.column === "OWN_OCPD") filters.owner = true;
+    else filters.cls = r.values;
     labels.push(...r.labels);
-    if (r.where.startsWith('"GEO_ALDER"')) district = true;
   }
-  return { where, numbers, labels, district };
+  return { filters, numbers, labels };
 }
 
 // The group: a span is always by year (adding years would count each parcel once per year); district for one year only.
@@ -146,8 +162,6 @@ function groupFor(a: YearArgs, multi: boolean): { key: '"yr"' | '"GEO_ALDER"' | 
   return { ok: false, status: "bad-column", column: a.groupBy!, columns: ["year", "GEO_ALDER"] };
 }
 
-const where = (parts: string[]) => (parts.length ? ` WHERE ${parts.join(" AND ")}` : "");
-
 export function buildYearCount(p: CityProfile, a: YearArgs): Built {
   const s = scope(p, a);
   if ("ok" in s) return s;
@@ -156,17 +170,17 @@ export function buildYearCount(p: CityProfile, a: YearArgs): Built {
   const multi = s.picked.length > 1;
   const g = groupFor(a, multi);
   if ("ok" in g) return g;
-  const table = yearSource(p, s.picked);
+  const table = yearSource(p, s.picked, { ...fl.filters, byDistrict: g.label === "GEO_ALDER" });
   const value = fl.numbers.length ? [`${num("C_A_TOTAL")} > 0`, ...fl.numbers] : [];
   const newest = s.latest ? [`"yr" = ${lit(s.latest)}`] : [];
-  const notes = [...s.notes, ...(fl.district && multi ? [DISTRICT_NOTE] : [])];
+  const notes = [...s.notes, ...(fl.filters.district && multi ? [DISTRICT_NOTE] : [])];
   return {
     ok: true,
-    totalSql: `SELECT COUNT(*) AS n FROM ${table}${where([...fl.where, ...value, ...newest])}`,
-    groupSql: g.key ? `SELECT ${g.key} AS g, COUNT(*) AS n FROM ${table}${where([...fl.where, ...value])} GROUP BY g ORDER BY ${g.label === "year" ? "g DESC" : "n DESC"} LIMIT ${MAX_GROUPS}` : null,
+    totalSql: `SELECT COUNT(*) AS n FROM ${table}${where([...value, ...newest])}`,
+    groupSql: g.key ? `SELECT ${g.key} AS g, COUNT(*) AS n FROM ${table}${where(value)} GROUP BY g ORDER BY ${g.label === "year" ? "g DESC" : "n DESC"} LIMIT ${MAX_GROUPS}` : null,
     futureSql: null, period: s.period, filterLabels: fl.labels, groupLabel: g.label, overlap: false, dateColumn: null, coverage: null,
     points: null, gridSql: null, tractSql: null, files: "only",
-    ofSql: fl.numbers.length ? `SELECT COUNT(*) AS n FROM ${table}${where([...fl.where, `${num("C_A_TOTAL")} > 0`, ...newest])}` : null,
+    ofSql: fl.numbers.length ? `SELECT COUNT(*) AS n FROM ${table}${where([`${num("C_A_TOTAL")} > 0`, ...newest])}` : null,
     note: notes.join(" ") || null, timeoutMs: YEAR_TIMEOUT_MS,
     ...(s.source ? { source: s.source } : {}), ...(s.latest ? { latestYear: s.latest } : {}),
   };
@@ -183,10 +197,13 @@ export function buildYearMeasure(p: CityProfile, m: CityMeasure, a: YearArgs): M
   const multi = s.picked.length > 1;
   const g = groupFor(a, multi);
   if ("ok" in g) return g;
-  const inner = `SELECT ${moneyValue("C_A_TOTAL")} AS v, "yr" AS y, "GEO_ALDER" AS d FROM ${yearSource(p, s.picked)}${where(fl.where)}`;
+  // The plain number check, not the money cleanup: assessed values are plain digits, and stripping $ and commas from
+  // 3.4 million values made the query 52 s live. A value it can't read is counted as unreadable on the card.
+  const byDistrict = g.label === "GEO_ALDER";
+  const inner = `SELECT ${num("C_A_TOTAL")} AS v, "yr" AS y${byDistrict ? `, "GEO_ALDER" AS d` : ""} FROM ${yearSource(p, s.picked, { ...fl.filters, byDistrict })}`;
   const measures = measureColumns(m.skipZero);
   const key = g.label === "year" ? "y" : g.label ? "d" : null;
-  const notes = [...s.notes, ...(fl.district && multi ? [DISTRICT_NOTE] : [])];
+  const notes = [...s.notes, ...(fl.filters.district && multi ? [DISTRICT_NOTE] : [])];
   return {
     ok: true, period: s.period, filterLabels: fl.labels, groupLabel: g.label,
     allSql: `SELECT ${measures} FROM (${inner}) s${s.latest ? ` WHERE y = ${lit(s.latest)}` : ""}`,
