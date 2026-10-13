@@ -328,8 +328,10 @@ describe("count card coverage (C2, I2)", () => {
 describe("crime history wording (K1)", () => {
   it("names the files a count read", () => {
     expect(countCoverage({ dateColumn: "Incident_Date", coverage: "Jan 1, 2005 – Oct 8, 2026", resourceName: "wibr.csv", files: "both" })).toBe("Counted by Incident_Date. The City's data here covers Jan 1, 2005 – Oct 8, 2026, from the City's Historical and Current files.");
-    expect(countCoverage({ dateColumn: "Incident_Date", coverage: "Jan 1, 2005 – Oct 8, 2026", resourceName: "wibr.csv", files: "archive" })).toBe("Counted by Incident_Date. The City's data here covers Jan 1, 2005 – Oct 8, 2026, from the City's Historical file.");
-    expect(countCoverage({ dateColumn: "Incident_Date", coverage: "Jan 1, 2005 – Oct 8, 2026", resourceName: "wibr.csv", files: "current" })).toBe("Counted by Incident_Date. The City's data here covers Jan 1, 2005 – Oct 8, 2026, from the City's 'wibr.csv' file.");
+    expect(countCoverage({ dateColumn: "Incident_Date", coverage: "Jan 1, 2005 – Oct 8, 2026", resourceName: "wibr.csv", files: "archive" })).toBe("Counted by Incident_Date. The City's data here covers Jan 1, 2005 – Oct 8, 2026. This count read only the City's Historical file.");
+    expect(countCoverage({ dateColumn: "Incident_Date", coverage: "Jan 1, 2005 – Oct 8, 2026", resourceName: "wibr.csv", files: "current" })).toBe("Counted by Incident_Date. The City's data here covers Jan 1, 2005 – Oct 8, 2026. This count read only the City's Current file ('wibr.csv').");
+    // A dataset with one file keeps the one-sentence wording (CodeRabbit, PR #37).
+    expect(countCoverage({ dateColumn: "CREATIONDATE", coverage: "Jan 1, 2026 – Oct 8, 2026", resourceName: "callcenter.csv", files: "only" })).toBe("Counted by CREATIONDATE. The City's data here covers Jan 1, 2026 – Oct 8, 2026, from the City's 'callcenter.csv' file.");
   });
   it("says why a period before 2005 has nothing to count", () => {
     expect(outsideCoverage({ name: "NIBRS Crime Data", coverage: "Jan 1, 2005 – Oct 8, 2026", note: "The City's crime records are complete from 2005; earlier years hold only a few stray records." }))

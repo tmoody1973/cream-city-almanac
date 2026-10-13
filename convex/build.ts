@@ -144,6 +144,7 @@ async function profileCity(ctx: ActionCtx, familyKey: string, rid: string, resou
     await ctx.runMutation(internal.buildStore.replaceCityProfile, { profile });
   } catch (e) {
     console.error(`City profile failed for ${familyKey}: ${message(e)}`);
+    notes.push(`${familyKey}: profile not updated; last week's stays (${message(e)})`);
   }
   return fields.map((f) => ({ name: f.id, alias: f.id, type: f.type }));
 }

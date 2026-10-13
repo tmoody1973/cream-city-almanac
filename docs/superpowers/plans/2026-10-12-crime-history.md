@@ -21,7 +21,7 @@
 
 **Joining:**
 - An archive is joined only when its sorted column names equal the Current profile's `signature`. Otherwise the build note reads "<familyKey>: Historical file's columns differ; counting the Current file only".
-- `archive.before` is Current's own first date (its `minDate` before the move). Historical rows count only when `"<date column>" < '<before>'`. Dates are ISO text, compared as text, the same as `buildCount`'s period filter.
+- `archive.before` is `ARCHIVES[familyKey].seam` ("2024-01-01"), hand-kept. *(Amended after the final review: this plan first took it from Current's `minDate`, and its code samples below still show that and `SELECT *`. The shipped code uses the hand-kept seam, names its columns on both sides of the UNION, and joins only when column names and types match. The spec is current.)* Historical rows count only when `"<date column>" < '<before>'`. Dates are ISO text, compared as text, the same as `buildCount`'s period filter.
 
 **Scope:**
 - `buildMeasure` and `buildSpan` never read an archive.

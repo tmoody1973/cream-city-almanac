@@ -288,12 +288,12 @@ describe("crime history (K1)", () => {
     const C: CityProfile = { ...P, familyKey: "city:call-center-data", dateColumn: "CREATIONDATE", minDate: "2026-01-01", maxDate: "2026-10-08", categories: [] };
     const b = buildCount(C, {}, TODAY);
     if (!b.ok) throw new Error("expected ok");
-    expect(b.files).toBe("current");
+    expect(b.files).toBe("only");
     expect(b.totalSql).toContain(`"CREATIONDATE" >= '2026-01-01'`);
     expect(b.note).toBe("The City's earlier 311 file (2020–2025) is missing most requests after November 2020, so counts here start in 2026.");
     expect(b.period).not.toContain("311 file");
   });
   it("sourceFor leaves a profile without an archive on its own file", () => {
-    expect(sourceFor(P, "2019-01-01", "2025-01-01")).toEqual({ table: `"${RID}"`, files: "current" });
+    expect(sourceFor(P, "2019-01-01", "2025-01-01")).toEqual({ table: `"${RID}"`, files: "only" });
   });
 });

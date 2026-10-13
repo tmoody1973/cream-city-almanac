@@ -106,13 +106,15 @@ export function valueFilter(p: CityProfile, f: { column: string; values?: string
   return { ok: true, where, labels: uniq.map((v) => filterLabel(cat.column, v, p.districtColumns)) };
 }
 
-export type Files = "current" | "archive" | "both";
+// "only": the dataset has one file; the rest name which of a split dataset's two files a count read.
+export type Files = "only" | "current" | "archive" | "both";
 // The table a count reads (spec 2026-10-12-crime-history-design §5): the profiled file, its archive, or both as one.
 // Each file is cut at the seam (archive before it, profiled file from it) so nothing is counted twice, and the columns
 // are named on both sides: a UNION lines columns up by position, so a reordered file must not shift them.
 export function sourceFor(p: CityProfile, from: string, to: string): { table: string; files: Files } {
   const a = p.archive;
-  if (!a || !p.dateColumn || from >= a.before) return { table: quoteId(p.resourceId), files: "current" };
+  if (!a || !p.dateColumn) return { table: quoteId(p.resourceId), files: "only" };
+  if (from >= a.before) return { table: quoteId(p.resourceId), files: "current" };
   if (!RID.test(a.resourceId)) throw new Error("Not a CKAN resource id");
   if (to < a.before) return { table: quoteId(a.resourceId), files: "archive" };
   if (!p.columns.length) throw new Error("A profile without columns can't be joined to its archive");
@@ -130,7 +132,7 @@ function startNote(p: CityProfile): string | null {
 
 export function buildCount(p: CityProfile, a: CountArgs, today: string, area?: Bbox): Built {
   if (!RID.test(p.resourceId)) throw new Error("Not a CKAN resource id");
-  let { table, files } = { table: quoteId(p.resourceId), files: "current" as Files };
+  let { table, files } = { table: quoteId(p.resourceId), files: "only" as Files };
   let startLine: string | null = null; // why the count stops at its data's start: its own card line, not the date line
   // A date that was given but isn't a real day is refused, never quietly replaced by the default window.
   if ((!absent(a.from) && !isDay(a.from!)) || (!absent(a.to) && !isDay(a.to!))) return { ok: false, status: "bad-dates", from: a.from ?? "", to: a.to ?? "" };

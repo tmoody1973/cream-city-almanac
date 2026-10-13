@@ -72,7 +72,7 @@ export type CountResult =
   | {
       status: "ok"; code: string; name: string; count: number; groups: { label: string; count: number }[]; other: number; otherLabel: "Earlier" | "Other" | null;
       overlap: boolean; period: string; filters: string[]; futureExcluded: number; caveat: string | null;
-      dateColumn: string | null; coverage: string | null; resourceName: string | null; files?: "current" | "archive" | "both"; note?: string | null; namesPeople: boolean;
+      dateColumn: string | null; coverage: string | null; resourceName: string | null; files?: "only" | "current" | "archive" | "both"; note?: string | null; namesPeople: boolean;
       area: string | null; noLocation: number; map: MapData | null; mapError?: true;
       of?: { count: number; label: string }; tractMap?: { url: string; ids: string[]; total: number };
     }

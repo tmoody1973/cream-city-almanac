@@ -349,6 +349,14 @@ describe("crime history (K1)", () => {
     expect(await profileOf(t)).toMatchObject({ minDate: "2005-01-01", archive: { resourceId: HIST, before: "2024-01-01" } });
     expect(notes).toEqual([`${CRIME}: Current file has records dated before 2024-01-01; combined counts leave them out`]);
   });
+  it("says so when the profile couldn't be rebuilt, instead of returning no notes (CodeRabbit, PR #37)", async () => {
+    const t = convexTest(schema, modules);
+    await seedCity(t);
+    installFakeFetch({ cityFields: FIELDS, citySql: (sql) => { if (sql.includes("COUNT(*)")) throw new Error("refused"); return crimeSql(sql); } });
+    const notes = await t.action(internal.build.reprofileCity, { familyKey: CRIME });
+    expect(notes).toHaveLength(1);
+    expect(notes[0]).toMatch(new RegExp(`^${CRIME}: profile not updated`));
+  });
   it("doesn't join when a column's type differs, even with the same names (review fix)", async () => {
     const t = convexTest(schema, modules);
     await seedCity(t);

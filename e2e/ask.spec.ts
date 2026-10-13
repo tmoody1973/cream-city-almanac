@@ -263,7 +263,7 @@ test.describe("signed in", () => {
     await expect(card).toBeVisible({ timeout: 40_000 });
     await expect(card.locator("[data-coverage]")).toContainText("from the City's Historical and Current files");
     await expect(card.locator("[data-coverage]")).toContainText("Jan 1, 2005");
-    await expect(card).toContainText("2019");
+    await expect(card.getByRole("rowheader", { name: "2019", exact: true })).toBeVisible(); // a 2019 group, not just the caption
   });
 
   test("a neighborhood count names the City boundary it used", async ({ page }) => {

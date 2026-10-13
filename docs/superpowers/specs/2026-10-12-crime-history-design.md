@@ -64,14 +64,14 @@ Questions about change over time ("did robberies fall since 2019?") are among th
 
 **When the build profiles a family's representative file** (`profileCity`, unchanged for every other family), and the family has an `ARCHIVES` entry with `join: true`:
 1. **Find the archive.** It is the family's member whose title ends "(Historical)" and has a `datastoreId`. Without one, nothing is joined, and a build note says why.
-2. **Check the columns.** Read the archive's columns (`datastoreFields`). Unless its sorted column names equal the representative's (the profile `signature`), nothing is joined, and the note reads "<name>: Historical file's columns differ; counting the Current file only".
+2. **Check the columns.** Read the archive's columns (`datastoreFields`). Unless its sorted column names *and types* equal the representative's, nothing is joined, and the note reads "<name>: Historical file's columns differ; counting the Current file only".
 3. **Store the archive** on the profile:
 
    ```
    archive: { resourceId: string; before: string }
    ```
 
-   `before` is the representative's own first date (its `minDate`, e.g. "2024-01-01"): Historical rows count only before it.
+   `before` is the entry's hand-kept `seam` ("2024-01-01"), never read from the data: one mistyped date in Current would otherwise move it. Historical rows count only before it, Current rows only from it. If Current holds records dated before the seam, the build note says combined counts leave them out.
 4. **Move the profile's start.** `minDate` becomes the entry's `from` ("2005-01-01"). Everything that shows or clamps to the data's range (counts, the dataset page, its map) then uses 2005 automatically. `rowCount`, `categories` and the rest stay the representative's.
 
 A family with `join: false` gets no archive; its `note` is used as in §6.
@@ -88,7 +88,7 @@ A family with `join: false` gets no archive; its `note` is used as in §6.
 |---|---|
 | no `p.archive`, or `from >= archive.before` | `"<representative id>"` (exactly today's SQL) |
 | `to < archive.before` | `"<archive id>"` |
-| otherwise | `(SELECT * FROM "<archive id>" WHERE "<date column>" < '<before>' UNION ALL SELECT * FROM "<representative id>") AS t` |
+| otherwise | `(SELECT <columns> FROM "<archive id>" WHERE "<date column>" < '<before>' UNION ALL SELECT <columns> FROM "<representative id>" WHERE "<date column>" >= '<before>') AS t` |
 
 The seam filter compares dates the same way `buildCount` already compares the period, never as raw text. When only the archive is read, it needs no seam filter: the period already ends before `before`. The combined form keeps the seam filter, so a record in both files is counted once.
 
