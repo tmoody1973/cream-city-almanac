@@ -98,3 +98,8 @@ describe("stop-and-search pages (K3)", () => {
     expect(cityNote("city:2023-4th-quarter-mpd-stop-and-search-data")).toBe("Ask can count people stopped across all quarters, 2019–2024.");
   });
 });
+describe("election pages (K4)", () => {
+  it("say Ask compares turnout", () => {
+    expect(cityNote("city:2020-general-election")).toBe("Ask can compare turnout across elections, 2016–2022.");
+  });
+});

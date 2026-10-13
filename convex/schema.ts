@@ -116,6 +116,12 @@ export default defineSchema({
   // Each census tract's City neighborhoods (≥10% of its area, biggest first), matched weekly from the City's shapes
   // and DYCU's tract outlines (convex/lib/tractPlaces.ts). Tracts outside the City aren't stored.
   // The City of Milwaukee's ACS figures for the fact sheet, by portrait period (vintage), raw by variable code.
+  turnout: defineTable({ election: v.string(), ward: v.number(), registered: v.number(), ballots: v.number() }).index("by_election", ["election"]),
+  elections: defineTable({
+    election: v.string(), label: v.string(), type: v.union(v.literal("spring"), v.literal("primary"), v.literal("general")),
+    map: v.union(v.literal("2012"), v.literal("2022")), wards: v.number(), of: v.number(), partial: v.boolean(),
+    modified: v.string(), status: v.union(v.literal("read"), v.literal("failed")), note: v.optional(v.string()),
+  }).index("by_election", ["election"]),
   stopCounts: defineTable({ period: v.string(), year: v.number(), ...vStopRow.fields }).index("by_period", ["period"]),
   stopPeriods: defineTable({ period: v.string(), familyKey: v.string(), modified: v.string(), status: v.union(v.literal("counted"), v.literal("failed")), note: v.optional(v.string()), missing: v.optional(v.array(vStopKind)) }).index("by_period", ["period"]),
   cityFigures: defineTable({
