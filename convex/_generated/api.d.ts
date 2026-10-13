@@ -51,6 +51,7 @@ import type * as lib_neighborhoodSources from "../lib/neighborhoodSources.js";
 import type * as lib_nibrs from "../lib/nibrs.js";
 import type * as lib_portrait from "../lib/portrait.js";
 import type * as lib_propertyMeasures from "../lib/propertyMeasures.js";
+import type * as lib_propertyYears from "../lib/propertyYears.js";
 import type * as lib_rank from "../lib/rank.js";
 import type * as lib_report from "../lib/report.js";
 import type * as lib_retry from "../lib/retry.js";
@@ -127,6 +128,7 @@ declare const fullApi: ApiFromModules<{
   "lib/nibrs": typeof lib_nibrs;
   "lib/portrait": typeof lib_portrait;
   "lib/propertyMeasures": typeof lib_propertyMeasures;
+  "lib/propertyYears": typeof lib_propertyYears;
   "lib/rank": typeof lib_rank;
   "lib/report": typeof lib_report;
   "lib/retry": typeof lib_retry;
