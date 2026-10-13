@@ -324,3 +324,15 @@ describe("count card coverage (C2, I2)", () => {
     expect(t).toBe("NIBRS Crime Data: the City's data here covers Jan 1, 2024 – Oct 9, 2026, so there is nothing to count for that period.");
   });
 });
+
+describe("crime history wording (K1)", () => {
+  it("names the files a count read", () => {
+    expect(countCoverage({ dateColumn: "Incident_Date", coverage: "Jan 1, 2005 – Oct 8, 2026", resourceName: "wibr.csv", files: "both" })).toBe("Counted by Incident_Date. The City's data here covers Jan 1, 2005 – Oct 8, 2026, from the City's Historical and Current files.");
+    expect(countCoverage({ dateColumn: "Incident_Date", coverage: "Jan 1, 2005 – Oct 8, 2026", resourceName: "wibr.csv", files: "archive" })).toBe("Counted by Incident_Date. The City's data here covers Jan 1, 2005 – Oct 8, 2026, from the City's Historical file.");
+    expect(countCoverage({ dateColumn: "Incident_Date", coverage: "Jan 1, 2005 – Oct 8, 2026", resourceName: "wibr.csv", files: "current" })).toBe("Counted by Incident_Date. The City's data here covers Jan 1, 2005 – Oct 8, 2026, from the City's 'wibr.csv' file.");
+  });
+  it("says why a period before 2005 has nothing to count", () => {
+    expect(outsideCoverage({ name: "NIBRS Crime Data", coverage: "Jan 1, 2005 – Oct 8, 2026", note: "The City's crime records are complete from 2005; earlier years hold only a few stray records." }))
+      .toBe("NIBRS Crime Data: the City's data here covers Jan 1, 2005 – Oct 8, 2026, so there is nothing to count for that period. The City's crime records are complete from 2005; earlier years hold only a few stray records.");
+  });
+});

@@ -24,6 +24,7 @@ export const ASK_QUESTIONS: AskQuestion[] = [
   { q: "Which neighborhood is 2400 W Center St in?", tool: "findPlace", expect: { status: "ok" }, final: true },
   { q: "Which TINs overlap Harambee?", tool: "boundariesFor", expect: { status: "ok" }, final: true },
   { q: "Which wards are in District 6, and where do they vote?", tool: "boundariesFor", expect: { status: "ok" }, final: true },
+  { q: "How many robberies were there in Milwaukee each year from 2019 to 2024?", tool: "countRecords", expect: { status: "ok", label: "2019" }, final: true },
   { q: "What did the Harambee neighborhood report say about housing?", tool: "readReport", expect: {} },
   { q: "What are the key takeaways for Lincoln Park?", tool: "readReport", expect: {} },
   { q: "How should I interpret the neighborhood tables?", tool: "readReport", expect: {} },
