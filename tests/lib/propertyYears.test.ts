@@ -10,7 +10,7 @@ const link = (rid: string, file: string) => `https://data.milwaukee.gov/dataset/
 describe("layoutOf (K2)", () => {
   it("recognizes each layout by its columns", () => {
     expect(layoutOf(ids("TAXKEY", "C_A_TOTAL", "GEO_ALDER", "OWN_OCPD", "C_A_CLASS"))).toBe("classic");
-    expect(layoutOf(ids("Taxkey", "AssessValu", "DistrictNa", "IsOwnerOcc", "PrevNonExemptClass"))).toBe("short");
+    expect(layoutOf(ids("Taxkey", "AssessValu", "DistrictNa", "IsOwnerOcc", "PrevNonExe"))).toBe("short");
     expect(layoutOf(ids("Taxkey", "TotalAssessedValue", "DistrictName", "IsOwnerOccupied", "PrevNonExemptClass"))).toBe("long");
   });
   it("gives no layout when a carried column is missing or nothing matches", () => {
@@ -47,7 +47,7 @@ const P: CityProfile = {
     { year: 2026, resourceId: MPROP_RID, layout: "classic" },
   ],
 };
-const S22 = `(SELECT '2022' AS "yr", "AssessValu" AS "C_A_TOTAL", "DistrictNa" AS "GEO_ALDER", CASE WHEN "IsOwnerOcc" = '1' THEN 'O' ELSE '' END AS "OWN_OCPD", "PrevNonExemptClass" AS "C_A_CLASS" FROM "${R22}") AS t`;
+const S22 = `(SELECT '2022' AS "yr", "AssessValu" AS "C_A_TOTAL", "DistrictNa" AS "GEO_ALDER", CASE WHEN "IsOwnerOcc" = '1' THEN 'O' ELSE '' END AS "OWN_OCPD", "PrevNonExe" AS "C_A_CLASS" FROM "${R22}") AS t`;
 const V = num("C_A_TOTAL");
 const NOTE = "Years are the City's file years; in a few files the City's own assessment-year field reads a year later.";
 const DISTRICT = "District lines are redrawn after each census, so a district number can cover a different area in different years.";

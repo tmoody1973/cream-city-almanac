@@ -11,7 +11,7 @@ export type YearFile = { year: number; resourceId: string; layout: Layout };
 
 export const LAYOUTS: Record<Layout, { value: string; district: string; owner: string; ownerYes: string; cls: string }> = {
   classic: { value: "C_A_TOTAL", district: "GEO_ALDER", owner: "OWN_OCPD", ownerYes: "O", cls: "C_A_CLASS" },
-  short: { value: "AssessValu", district: "DistrictNa", owner: "IsOwnerOcc", ownerYes: "1", cls: "PrevNonExemptClass" }, // 2022–23: names cut to 10 letters
+  short: { value: "AssessValu", district: "DistrictNa", owner: "IsOwnerOcc", ownerYes: "1", cls: "PrevNonExe" }, // 2022–23: every name cut to 10 letters
   long: { value: "TotalAssessedValue", district: "DistrictName", owner: "IsOwnerOccupied", ownerYes: "1", cls: "PrevNonExemptClass" },
 };
 

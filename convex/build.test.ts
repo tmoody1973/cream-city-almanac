@@ -371,7 +371,7 @@ describe("crime history (K1)", () => {
 describe("property history (K2)", () => {
   const MPROP = "city:master-property-file-mprop";
   const CLASSIC = ["TAXKEY", "YR_ASSMT", "C_A_TOTAL", "GEO_ALDER", "GEO_TRACT", "OWN_OCPD", "C_A_CLASS", "CONVEY_DATE"].map((id) => ({ id, type: "text" }));
-  const SHORT = ["Taxkey", "AssessValu", "DistrictNa", "IsOwnerOcc", "PrevNonExemptClass"].map((id) => ({ id, type: "text" }));
+  const SHORT = ["Taxkey", "AssessValu", "DistrictNa", "IsOwnerOcc", "PrevNonExe"].map((id) => ({ id, type: "text" }));
   const LONG = ["Taxkey", "TotalAssessedValue", "DistrictName", "IsOwnerOccupied", "PrevNonExemptClass"].map((id) => ({ id, type: "text" }));
   const fieldsFor = (overrides: Partial<Record<string, { id: string; type: string }[] | "throw">> = {}) => (rid: string) => {
     const o = overrides[rid];

@@ -17,7 +17,7 @@ Ask's property counts and sums read one file: the City's current Master Property
 | Years | Assessed value | Aldermanic district | Tract | Owner-occupied | Class |
 |---|---|---|---|---|---|
 | 2005–2021, and the current file | `C_A_TOTAL` | `GEO_ALDER` | `GEO_TRACT` | `OWN_OCPD = 'O'` | `C_A_CLASS` |
-| 2022–2023 | `AssessValu` | `DistrictNa` | none | `IsOwnerOcc = '1'` | `PrevNonExemptClass` |
+| 2022–2023 | `AssessValu` | `DistrictNa` | none | `IsOwnerOcc = '1'` | `PrevNonExe` (names cut to 10 letters) |
 | 2024–2025 | `TotalAssessedValue` | `DistrictName` | none | `IsOwnerOccupied = '1'` | `PrevNonExemptClass` |
 | 1975–2004 | two older layouts (`CATOTAL`/`GEOALDER` or `CURTOTAS`/`ALDEROLD`), alternating year to year | | | | |
 
@@ -75,7 +75,7 @@ The values differ in every file (median parcel value: 2005 file $110,300; 2006 f
 | Layout | Telltale | Value | District | Owner-occupied (as `'O'`) | Class |
 |---|---|---|---|---|---|
 | `classic` | `C_A_TOTAL` | `C_A_TOTAL` | `GEO_ALDER` | `OWN_OCPD` | `C_A_CLASS` |
-| `short` | `AssessValu` | `AssessValu` | `DistrictNa` | `IsOwnerOcc = '1'` | `PrevNonExemptClass` |
+| `short` | `AssessValu` | `AssessValu` | `DistrictNa` | `IsOwnerOcc = '1'` | `PrevNonExe` |
 | `long` | `TotalAssessedValue` | `TotalAssessedValue` | `DistrictName` | `IsOwnerOccupied = '1'` | `PrevNonExemptClass` |
 
 **When the build profiles the property file** (`profileCity` for `city:master-property-file-mprop`, also through `reprofileCity`), and `YEARLY` has an entry for it:
