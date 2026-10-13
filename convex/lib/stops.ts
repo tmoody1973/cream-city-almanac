@@ -25,7 +25,14 @@ export function periodOf(title: string): { period: string; year: number } | null
 // without the City's redaction and file-type words. "Tracs Contact Summary Individual" and the officer tables don't match.
 const squash = (s: string) => s.toLowerCase().replace(/\.csv$/, "").replace(/[^a-z]/g, "").replace(/redacted|remcol|topost/g, "");
 const PREFIXES: [string, StopKind][] = [["tracsindividual", "traffic"], ["informfieldinterviewperson", "field-interview"], ["informnoactionencounterperson", "no-action"]];
-export const kindOfTable = (name: string): StopKind | null => { const k = squash(name); return PREFIXES.find(([p]) => k.startsWith(p))?.[1] ?? null; };
+// From 2024 Q2, MPD publishes one combined file per kind (one row per person, the same columns). Matched exactly, so the
+// older stop-level "…_Joined" files never are. The combined traffic file isn't used: it counts people differently from
+// the older person table, so 2024 traffic stops are left uncounted rather than break the series.
+const COMBINED: Record<string, StopKind> = { informfieldinterview: "field-interview", informnoactionencounter: "no-action" };
+export const kindOfTable = (name: string): StopKind | null => {
+  const k = squash(name);
+  return COMBINED[k] ?? PREFIXES.find(([p]) => k.startsWith(p))?.[1] ?? null;
+};
 
 // A table loaded with placeholder columns ("Column1", "Column2", …, as 2021 Q1's field interviews are in the City's
 // database): the real names are in its first row. Returns real name → placeholder, or null for a normal table.

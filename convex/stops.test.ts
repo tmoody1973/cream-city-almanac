@@ -119,7 +119,7 @@ describe("refreshStops, live-run variants (K3)", () => {
     const p = await t.run((ctx) => ctx.db.query("stopPeriods").withIndex("by_period", (q) => q.eq("period", "2023-Q4")).first());
     expect(p).toMatchObject({ status: "counted", missing: ["traffic"] });
     const r = await t.query(api.stops.countStops, { kind: "traffic" });
-    if (r.status === "ok") expect(r.notes).toContain("The City's files for 2023 Q4 have no traffic-stop table, so traffic stops there aren't counted.");
+    if (r.status === "ok") expect(r.notes).toContain("The City's files for 2023 Q4 have no traffic-stop table comparable to earlier quarters, so traffic stops there aren't counted.");
   });
   it("counts a queryable table whose columns are placeholders, from the names in its first row (2021 Q1)", async () => {
     const t = convexTest(schema, modules);
@@ -132,5 +132,21 @@ describe("refreshStops, live-run variants (K3)", () => {
     });
     expect(await t.action(internal.stops.refreshStops, {})).toEqual([]);
     expect(seen.some((q) => q.includes(`"Column4" AS race`) && q.includes(`WHERE "Column4" <> 'race_Description'`))).toBe(true);
+  });
+});
+
+describe("refreshStops, the 2024 combined format (K3)", () => {
+  it("counts field interviews and no-action encounters from the combined CSVs, ignores the Excel copies, and leaves traffic uncounted", async () => {
+    const t = convexTest(schema, modules);
+    await seed(t);
+    const combined = zipSync({
+      "x/Datasets - CSV/Inform_FieldInterview_REMCOL_REDACTED.csv": strToU8("FieldInterview_Id,startDate,sex_Code,race_Description,ethnicity_Description,Pat_Down_Description,Search_Performed_Description,Search_Results_Description\nf1,2/20/2024 0:00,M,BLACK/AFRICAN AMERICAN,NOT HISPANIC/LATINO,No,Yes,DRUGS\n"),
+      "x/Datasets - CSV/Inform_NoActionEncounter_REDACTED.csv": strToU8("NAE_Id,NAE_Person,sex_Code,race_Description,ethnicity_Description\nn1,p1,F,WHITE,HISPANIC/LATINO\n"),
+      "x/Datasets - CSV/Tracs_ContactSummary_REMCOL_REDACTED - Q2.csv": strToU8("PrdKey,Race,sex\nk,B,M\n"),
+      "x/Datasets - XLS/Inform_FieldInterviewPerson_REMCOL_REDACTED.xlsx": new Uint8Array([80, 75, 3, 4, 0, 1, 2]),
+    });
+    installFakeFetch({ cityFieldsFor: (rid) => FIELDS[rid], citySql: SQL, cityDownloads: { [ZIP23]: combined } });
+    expect(await t.action(internal.stops.refreshStops, {})).toEqual(["Stops 2023-Q4: no traffic table in the City's file; counted the others"]);
+    expect((await countsOf(t, "2023-Q4")).map(({ kind, race, found, n }) => [kind, race, found, n])).toEqual([["field-interview", "Black", "Drugs", 1], ["no-action", "Hispanic", null, 1]]);
   });
 });

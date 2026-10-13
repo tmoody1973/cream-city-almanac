@@ -17,6 +17,10 @@ describe("kindOfTable (K3)", () => {
     // Live run 2026-10-13: more spellings MPD used.
     for (const n of ["Inform Field Interview PersonV1- Redacted", "Inform Field Interview Person Formatted- Redacted", "Inform_FieldInterviewPerson_FIXED_REDACTED_REMCOL.csv"]) expect(kindOfTable(n)).toBe("field-interview");
     for (const n of ["Inform FieldInterviewOfficer", "Inform Field Interview Officer", "Inform_NoActionEncounterOfficer_REMCOL.csv"]) expect(kindOfTable(n)).toBeNull();
+    // From 2024 Q2: one combined file per kind, one row per person, the same columns.
+    expect(kindOfTable("Inform_FieldInterview_REMCOL_REDACTED.csv")).toBe("field-interview");
+    expect(kindOfTable("Inform_NoActionEncounter_REDACTED.csv")).toBe("no-action");
+    for (const n of ["Inform_FieldInterview_Joined.csv", "Inform Field Interview Joined", "Inform_NoActionEncounter_Joined.csv", "Tracs_ContactSummary_REMCOL_REDACTED - Q2.csv"]) expect(kindOfTable(n)).toBeNull();
     expect(kindOfTable("Tracs Contact Summary Individual")).toBeNull();
     expect(kindOfTable("Inform_FieldInterview_Joined.csv")).toBeNull();
   });

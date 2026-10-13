@@ -95,7 +95,7 @@ export function summarize(rows: StoredRow[], periods: { period: string; status: 
   // Quarters whose City file lacks a kind's table (2024 has no traffic-stop table): named, never silently short.
   const gaps = (kind === "all" ? KINDS : [kind]).flatMap((k) => {
     const ps = periods.filter((p) => p.missing?.includes(k) && overlaps(p.period)).map((p) => p.period).sort((x, y) => at(x, false) - at(y, false));
-    return ps.length ? [`The City's files for ${ps.map(periodLabel).join(", ")} have no ${TABLE_WORD[k]} table, so ${KIND_LABEL[k].toLowerCase()} there aren't counted.`] : [];
+    return ps.length ? [`The City's files for ${ps.map(periodLabel).join(", ")} have no ${TABLE_WORD[k]} table comparable to earlier quarters, so ${KIND_LABEL[k].toLowerCase()} there aren't counted.`] : [];
   });
   return {
     status: "ok", kind, total, groupBy: g, groups, rates,

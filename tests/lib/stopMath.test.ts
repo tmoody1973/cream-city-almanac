@@ -57,7 +57,7 @@ describe("summarize (K3)", () => {
   });
   it("names quarters whose City file has no table for the asked kind (live run: 2024 has no traffic table)", () => {
     const periods = [...DONE.filter((p) => p.period !== "2024-Q4"), { period: "2024-Q4", status: "counted", missing: ["traffic"] }];
-    const note = "The City's files for 2024 Q4 have no traffic-stop table, so traffic stops there aren't counted.";
+    const note = "The City's files for 2024 Q4 have no traffic-stop table comparable to earlier quarters, so traffic stops there aren't counted.";
     expect(ok(summarize(ROWS, periods, { kind: "traffic" })).notes).toContain(note);
     expect(ok(summarize(ROWS, periods, {})).notes).toContain(note);
     expect(ok(summarize(ROWS, periods, { kind: "field-interview" })).notes).not.toContain(note);

@@ -76,8 +76,9 @@ async function countPackage(files: { name: string; format: string; url: string }
   if (!url) throw new Error("no person tables or data ZIP in the package");
   const res = await fetchWithTimeout(url, {}, ZIP_TIMEOUT_MS);
   if (!res.ok) throw new Error(`ZIP download failed: ${res.status}`);
+  // CSV files only: the 2024 ZIPs also carry an Excel copy of every table.
   const base = (n: string) => n.split("/").pop() ?? "";
-  const entries = unzipSync(new Uint8Array(await res.arrayBuffer()), { filter: (f) => kindOfTable(base(f.name)) !== null });
+  const entries = unzipSync(new Uint8Array(await res.arrayBuffer()), { filter: (f) => /\.csv$/i.test(f.name) && kindOfTable(base(f.name)) !== null });
   const missing: StopKind[] = [];
   for (const kind of KINDS) {
     const name = Object.keys(entries).find((n) => kindOfTable(base(n)) === kind);
