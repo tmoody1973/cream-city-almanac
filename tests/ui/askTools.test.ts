@@ -8,6 +8,7 @@ const backend = (relateResult: unknown): AskBackend => ({
   factSheet: async () => ({ status: "no-neighborhood", asked: "", nearest: [] }) as never,
   place: async () => ({ status: "no-match" }) as never,
   boundaries: async () => ({ status: "not-loaded" }) as never,
+  stops: async () => ({ status: "refused", reason: "" }) as never,
 });
 
 const row = (i: number) => ({ geoid: `5507910${String(i).padStart(4, "0")}`, tract: String(i), neighborhood: "Harambee", value: 41.2, lo: 35.1, hi: 47.3, unreliable: false });
@@ -119,5 +120,13 @@ describe("address tool and polling places (review fix)", () => {
     const d = askTools(backend({})).find((t) => t.name === "findPlace")!.description;
     expect(d).toContain("polling place");
     expect(d).toContain("myvote.wi.gov");
+  });
+});
+
+describe("countStops (K3)", () => {
+  it("offers countStops for who MPD stops, with field-interview rates, and no location argument", () => {
+    const tool = askTools(backend({})).find((t) => t.name === "countStops")!;
+    expect(tool.description).toMatch(/field interview/i);
+    expect(Object.keys(tool.parameters.shape).sort()).toEqual(["filters", "from", "groupBy", "kind", "to"]);
   });
 });

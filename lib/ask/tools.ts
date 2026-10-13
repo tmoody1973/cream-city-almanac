@@ -17,7 +17,8 @@ export type RankResult = FunctionReturnType<typeof api.tracts.rankTracts>;
 export type ChangeResult = FunctionReturnType<typeof api.tracts.compareYears>;
 export type RelateResult = FunctionReturnType<typeof api.tracts.relateTracts>;
 export type SpanResult = FunctionReturnType<typeof api.spans.timeSpan>;
-export type AskToolName = "searchCatalog" | "showDataset" | "previewData" | "getNumber" | "readReport" | "countRecords" | "rankTracts" | "compareYears" | "relateTracts" | "timeSpan" | "factSheet" | "findPlace" | "boundariesFor";
+export type StopsAnswer = FunctionReturnType<typeof api.stops.countStops>;
+export type AskToolName = "searchCatalog" | "showDataset" | "previewData" | "getNumber" | "readReport" | "countRecords" | "rankTracts" | "compareYears" | "relateTracts" | "timeSpan" | "factSheet" | "findPlace" | "boundariesFor" | "countStops";
 
 export interface AskBackend {
   search(a: { query: string; topic?: string; place?: string; year?: number }): Promise<SearchResponse>;
@@ -32,6 +33,7 @@ export interface AskBackend {
   change(a: z.infer<typeof changeParams>): Promise<ChangeResult>;
   relate(a: z.infer<typeof relateParams>): Promise<RelateResult>;
   span(a: z.infer<typeof spanParams>): Promise<SpanResult>;
+  stops(a: z.infer<typeof stopsParams>): Promise<StopsAnswer>;
 }
 
 export interface AskTool<P extends z.ZodObject = z.ZodObject> {
@@ -72,6 +74,18 @@ export const spanParams = z.object({
   from: z.string().optional().describe("YYYY-MM-DD, on the earlier date"),
   to: z.string().optional().describe("YYYY-MM-DD, on the earlier date"),
   filters: z.array(z.object({ column: z.string(), values: z.array(z.string()).max(10) })).max(4).optional(),
+});
+
+// countStops' arguments; the stops card reads the same ones for its follow-up questions.
+export const stopsParams = z.object({
+  kind: z.enum(["traffic", "field-interview", "no-action", "all"]).optional().describe("Which stops; default all"),
+  from: z.string().max(7).optional().describe('"YYYY" or "YYYY-Qn", e.g. "2021" or "2021-Q3"'),
+  to: z.string().max(7).optional().describe('"YYYY" or "YYYY-Qn"'),
+  filters: z.object({
+    race: z.array(z.string()).max(6).optional(), sex: z.array(z.string()).max(3).optional(),
+    frisked: z.enum(["yes", "no"]).optional(), searched: z.enum(["yes", "no"]).optional(), found: z.array(z.string()).max(6).optional(),
+  }).optional().describe("frisked, searched and found exist for field interviews only"),
+  groupBy: z.enum(["year", "quarter", "race", "sex", "kind", "found"]).optional(),
 });
 
 // Generated from the approved measures, so Ask's list can't drift from what the tool totals.
@@ -203,6 +217,12 @@ export function askTools(b: AskBackend): AskTool[] {
       description: spanDescription(),
       parameters: spanParams,
       execute: (a: z.infer<typeof spanParams>) => b.span(a),
+    },
+    {
+      name: "countStops",
+      description: "Count the people MPD stopped, 2019–2024, from MPD's quarterly stop-and-search data: traffic stops, field interviews (stops of people on foot or in vehicles that MPD documents, with frisks and searches) and no-action encounters. Group by year, quarter, race (race and ethnicity as one group), sex, kind or found. For field interviews grouped by race or sex it also gives the share frisked, the share searched, and how often a search found something. Counts people per stop, not residents; the files record no locations, so it can't count by neighborhood or district. If it returns choose, pick from the choices and call again; if refused, tell the person why. The card carries every figure; don't restate them.",
+      parameters: stopsParams,
+      execute: (a: z.infer<typeof stopsParams>) => b.stops(a),
     },
     {
       name: "rankTracts",

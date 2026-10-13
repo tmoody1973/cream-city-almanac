@@ -30,6 +30,7 @@ const backend: AskBackend = {
   relate: async (a) => run("tracts:relateTracts", a, true),
   span: async (a) => run("spans:timeSpan", a, true),
   factSheet: async (a) => run("factSheet:findSheet", a),
+  stops: async (a) => run("stops:countStops", a),
   place: async (a) => run("places:findPlace", a, true),
   boundaries: async (a) => run("places:boundariesFor", a, true),
 };

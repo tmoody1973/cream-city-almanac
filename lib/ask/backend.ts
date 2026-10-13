@@ -9,6 +9,7 @@ export function convexBackend(token: string): AskBackend {
     sheet: (code) => fetchQuery(api.catalog.familySheet, { code }),
     number: (a) => fetchQuery(api.ask.getNumber, a),
     factSheet: (a) => fetchQuery(api.factSheet.findSheet, a),
+    stops: (a) => fetchQuery(api.stops.countStops, a),
     place: (a) => fetchAction(api.places.findPlace, a, { token }),
     boundaries: (a) => fetchAction(api.places.boundariesFor, a, { token }),
     report: (a) => fetchAction(api.ask.readReport, a, { token }),
