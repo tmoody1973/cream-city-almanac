@@ -133,3 +133,8 @@ test("it says property questions compare yearly assessments from 2005", async ({
   await page.goto("/how-it-works");
   await expect(page.getByText(/Property questions can compare the City's yearly assessments from 2005/)).toBeVisible();
 });
+
+test("it says Ask counts MPD stops across every quarter", async ({ page }) => {
+  await page.goto("/how-it-works");
+  await expect(page.getByText(/Stop-and-search questions count the people MPD stopped/)).toBeVisible();
+});

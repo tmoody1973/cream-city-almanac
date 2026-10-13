@@ -132,6 +132,7 @@ const backend: AskBackend = {
   factSheet: async () => ({ status: "no-neighborhood", asked: "", nearest: [] }) as never,
   place: async () => ({ status: "no-match" }) as never,
   boundaries: async () => ({ status: "not-loaded" }) as never,
+  stops: async () => ({ status: "refused", reason: "" }) as never,
 };
 const tool = (name: string) => askTools(backend).find((t) => t.name === name)!;
 

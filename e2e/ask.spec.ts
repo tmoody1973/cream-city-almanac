@@ -275,6 +275,14 @@ test.describe("signed in", () => {
     await expect(card).toContainText("From the City's yearly property files (2005–2025) and its current file (2026).");
   });
 
+  test("a stop-and-search question draws the stops card with field-interview rates", async ({ page }) => {
+    await ask(page, "Who gets stopped by MPD, by race?");
+    const card = page.locator("[data-card=stops]:visible");
+    await expect(card).toBeVisible({ timeout: 40_000 });
+    await expect(card).toContainText("Found something (of searched)");
+    await expect(card.locator("[data-source]")).toContainText("From MPD's quarterly stop-and-search data");
+  });
+
   test("a neighborhood count names the City boundary it used", async ({ page }) => {
     test.skip(!(await page.request.get("https://data.milwaukee.gov/api/3/action/status_show").then((r) => r.ok()).catch(() => false)), "City API unreachable");
     await ask(page, "How many robberies in Harambee this year?");

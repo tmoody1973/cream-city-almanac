@@ -52,7 +52,7 @@ Journalists want figures they can publish and defend: the number, its margin of 
 | How fast does the Fire Department arrive, and how does it vary by call type or ZIP? | MFD Calls for Service; Fire Incident Detail (2021) | **Now** (how long: time to arrive, time to dispatch, time on scene) |
 | How many EMS calls were there by call type and aldermanic district? | EMS Calls for Service | **Now** (City count) |
 | How many traffic stops led to a search or pat-down, and does it differ by age or sex? | MPD Stop and Search (quarterly files, 2019–2024) | **Partly.** One quarter at a time; across quarters is **Not yet**. |
-| Who gets stopped by MPD, over five years? | Stop and Search (28 quarterly files) | **Not yet** (needs combining files) |
+| Who gets stopped by MPD, over five years? | Stop and Search (23 quarterly packages) | **Now** (people stopped by race, sex and quarter, 2019–2024; frisk and search rates for field interviews; traffic stops through 2023, since 2024's traffic file isn't comparable) |
 | Where are crashes concentrated, and have they changed? | Traffic Crash Data | **Not yet** (the file isn't profiled yet, so Ask can't count it; worth fixing) |
 | Where are the police stations, squad areas and reporting districts? | Police Stations, Districts, Squad Areas | **Partly** (sheets and downloads; maps) |
 
@@ -246,7 +246,7 @@ Residents want to understand their own block and neighborhood, see whether the C
 3. **Neighborhood fact sheet and side-by-side comparison.** The grant writer's and editor's one-pager. (Project D.)
 4. **Share link to an answer.** (Project C2.)
 5. **Traffic crashes.** The file isn't profiled, so Ask can't count crashes, which is one of the most common local questions. Likely a data-pipeline fix rather than a new feature; worth checking first.
-6. **Files split by period.** Crime's Current and Historical files are now read together, so crime counts reach back to 2005 (K1, decision 039). The property file is now read by year too, 2005 onward, citywide and by district (K2, decision 040). Still split: stop-and-search (quarterly packages) and elections (one dataset per election) (K3–K4). 311's older file isn't joined, because it is missing most requests from December 2020 to 2025.
+6. **Files split by period.** Crime's Current and Historical files are now read together, so crime counts reach back to 2005 (K1, decision 039). The property file is now read by year too, 2005 onward, citywide and by district (K2, decision 040). Stop-and-search is counted across all 23 quarterly packages, 2019–2024 (K3, decision 041). Still split: elections (one dataset per election) (K4). 311's older file isn't joined, because it is missing most requests from December 2020 to 2025.
 7. **311 by location.** The 311 file has no coordinates, so "requests near me" fails. Check whether the City publishes a located version.
 8. **More "how long" pairs.** Vacant-building duration (if a close date exists), liquor license terms, DPW work orders. Each is one list entry once the dates are checked.
 9. **Boundary overlap.** "Is this tract in a TID, Opportunity Zone or redlined area?", answered by combining boundary files with tract data.
