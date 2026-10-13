@@ -245,7 +245,7 @@ Residents want to understand their own block and neighborhood, see whether the C
 3. **Neighborhood fact sheet and side-by-side comparison.** The grant writer's and editor's one-pager. (Project D.)
 4. **Share link to an answer.** (Project C2.)
 5. **Traffic crashes.** The file isn't profiled, so Ask can't count crashes, which is one of the most common local questions. Likely a data-pipeline fix rather than a new feature; worth checking first.
-6. **Files split by period.** Stop-and-search comes as 28 quarterly files and elections as one file per election. Questions across time need them combined.
+6. **Files split by period.** Crime's Current and Historical files are now read together, so crime counts reach back to 2005 (K1, decision 039). Still split: stop-and-search (quarterly packages), elections (one dataset per election) and the property file by year (K2–K4). 311's older file isn't joined, because it is missing most requests from December 2020 to 2025.
 7. **311 by location.** The 311 file has no coordinates, so "requests near me" fails. Check whether the City publishes a located version.
 8. **More "how long" pairs.** Vacant-building duration (if a close date exists), liquor license terms, DPW work orders. Each is one list entry once the dates are checked.
 9. **Boundary overlap.** "Is this tract in a TID, Opportunity Zone or redlined area?", answered by combining boundary files with tract data.
