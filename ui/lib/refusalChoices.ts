@@ -1,7 +1,7 @@
 // "Pick one:" options when Ask's tool couldn't tell what was meant (spec §5): only the options the server listed,
 // each turning the original request into a full question with that one choice swapped in. At most eight.
 import type { FollowUp } from "@/ui/components/FollowUps";
-import type { CountArgsIn } from "./nextQuestions";
+import { yearsText, type CountArgsIn } from "./nextQuestions";
 import { plainMeaning } from "./tractFormat";
 import { placeName } from "./tractSummary";
 import { onlyIn, rankColumn } from "./tractArea";
@@ -93,6 +93,7 @@ function countQ(a: CountArgsIn, name: string) {
     filters.length ? ` where ${filters.join(" and ")}` : "",
     a.neighborhood ? ` in ${a.neighborhood}` : "",
     a.from || a.to ? `, ${a.from ? `from ${a.from}` : ""}${a.from && a.to ? " " : ""}${a.to ? `to ${a.to}` : ""}` : "",
+    a.years ? `, ${yearsText(a.years)}` : "",
     a.groupBy ? `, by ${a.groupBy}` : "",
   ];
   return `Count ${a.code} ${name}${parts.join("")}.`;

@@ -106,6 +106,11 @@ describe("buildYearCount (K2)", () => {
   it("names a year missing inside the span (review focus 2)", () => {
     expect(ok(buildYearCount(P, { years: { from: 2005, to: 2021 } })).note).toBe(`${NOTE} The City has no usable file for 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020.`);
   });
+  it("names the missing years instead of failing when no stored file falls in the span (review fix)", () => {
+    const note = "The City has no usable file for 2010, 2011, 2012, 2013, 2014, 2015.";
+    expect(buildYearCount(P, { years: { from: 2010, to: 2015 } })).toEqual({ ok: false, status: "outside-coverage", coverage: "2005 – 2026 assessments", note });
+    expect(buildYearMeasure(P, CITY_MEASURES.find((x) => x.id === "assessed-value")!, { years: { from: 2015, to: 2015 } })).toMatchObject({ ok: false, status: "bad-dates", reason: "The City's property files here cover 2005 – 2026 assessments. The City has no usable file for 2015." });
+  });
   it("refuses other columns, values and amounts with the supported list", () => {
     const columns = ["C_A_TOTAL", "GEO_ALDER", "OWN_OCPD", "C_A_CLASS"];
     expect(buildYearCount(P, { years: { from: 2025, to: 2025 }, filters: [{ column: "BLDG_AREA", over: 1000 }] })).toEqual({ ok: false, status: "bad-column", column: "BLDG_AREA", columns });
@@ -134,7 +139,7 @@ describe("buildYearMeasure (K2)", () => {
     expect(b.groupSql).toMatch(/^SELECT "yr" AS g, .+percentile_cont\(0\.5\).+ FROM \(.+\) AS t GROUP BY g ORDER BY g DESC LIMIT 24$/);
     expect(b.groupSql).toContain(`FROM "${R25}" WHERE "PrevNonExemptClass" IN ('1', '5')`);
     expect(b.groupSql).not.toContain("regexp_replace"); // the plain number check: the money cleanup made it 52 s live
-    expect(b.allSql).toMatch(/\) AS t WHERE "yr" = '2026'$/);
+    expect(b.allSql).not.toContain('"yr" ='); // unreadable and $0 counts cover every year; the headline comes from the newest year's row
     expect(b).toMatchObject({ period: "2005 – 2026 assessments", filterLabels: ["residential", "condominiums"], latestYear: "2026", timeoutMs: 25_000 });
   });
   it("refuses a measure other than assessed value", () => {

@@ -103,6 +103,9 @@ function scope(p: CityProfile, a: YearArgs): Scope | BadDates | Outside {
   if (to < lo || from > hi) return { ok: false, status: "outside-coverage", coverage: `${lo} – ${hi} assessments`, ...(to < lo ? { note: EARLIER } : {}) };
   const [f, t] = [Math.max(from, lo), Math.min(to, hi)];
   const picked = files.filter((y) => y.year >= f && y.year <= t);
+  const missingIn = (have: Set<number>) => Array.from({ length: t - f + 1 }, (_, i) => f + i).filter((y) => !have.has(y));
+  // Every asked year is a gap (a file the build skipped): say which, rather than querying nothing.
+  if (!picked.length) return { ok: false, status: "outside-coverage", coverage: `${lo} – ${hi} assessments`, note: `The City has no usable file for ${missingIn(new Set()).join(", ")}.` };
   const clamped = f !== from || t !== to ? " (clamped to the files' range)" : "";
   const period = f === t ? `${f} assessment${clamped}` : `${f} – ${t} assessments${clamped}`;
   const past = picked.filter((y) => y.resourceId !== p.resourceId).map((y) => y.year);
@@ -111,8 +114,7 @@ function scope(p: CityProfile, a: YearArgs): Scope | BadDates | Outside {
   const source = !past.length ? undefined
     : past.length === 1 && now === undefined ? `From the City's ${past[0]} property file.`
     : `From the City's yearly property files (${span})${now !== undefined ? ` and its current file (${now})` : ""}.`;
-  const have = new Set(picked.map((y) => y.year));
-  const missing = Array.from({ length: t - f + 1 }, (_, i) => f + i).filter((y) => !have.has(y));
+  const missing = missingIn(new Set(picked.map((y) => y.year)));
   const notes = [YEARLY[p.familyKey]?.note ?? "", ...(missing.length ? [`The City has no usable file for ${missing.join(", ")}.`] : [])].filter(Boolean);
   return { picked, period, source, latest: picked.length > 1 ? String(picked[picked.length - 1].year) : undefined, notes };
 }
@@ -205,7 +207,9 @@ export function buildYearMeasure(p: CityProfile, m: CityMeasure, a: YearArgs): M
   const notes = [...s.notes, ...(fl.filters.district && multi ? [DISTRICT_NOTE] : [])];
   return {
     ok: true, period: s.period, filterLabels: fl.labels, groupLabel: g.label,
-    allSql: `SELECT ${measures} FROM ${table}${s.latest ? ` WHERE "yr" = ${lit(s.latest)}` : ""}`,
+    // Across years the server takes the headline from the newest year's row; this whole-span row gives the unreadable
+    // and $0 counts for every year, so a bad value in an old file is still reported.
+    allSql: `SELECT ${measures} FROM ${table}`,
     groupSql: key ? `SELECT ${key} AS g, ${measures} FROM ${table} GROUP BY g ORDER BY ${g.label === "year" ? "g DESC" : "n DESC"} LIMIT ${MAX_GROUPS}` : null,
     note: notes.join(" "), timeoutMs: YEAR_TIMEOUT_MS,
     ...(s.source ? { source: s.source } : {}), ...(s.latest ? { latestYear: s.latest } : {}),

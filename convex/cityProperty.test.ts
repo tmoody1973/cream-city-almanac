@@ -90,6 +90,7 @@ describe("countRecords over assessment years (K2)", () => {
     installFakeFetch({ citySql: (sql) => (sql.includes("AS g") ? [row("2026", 205000), row("2025", 191900), row("2005", 110300)] : [{ n: "137000", total: "1", median: "205000", average: "1", unreadable: "0", zeros: "0" }]) });
     const r = await t.withIdentity(reader).action(api.city.countRecords, { code: "H28", years: { from: 2005, to: 2026 }, measure: { id: "assessed-value" }, filters: [{ column: "C_A_CLASS", values: ["1", "5"] }] });
     expect(r).toMatchObject({ status: "measured", groupBy: "year", period: "2005 – 2026 assessments", filters: ["residential", "condominiums"], latestYear: "2026" });
+    if (r.status === "measured") expect(r.all).toMatchObject({ n: 137000, median: 205000 });
     if (r.status === "measured") expect(r.splits).toContain("year");
   });
   it("refuses years with a neighborhood", async () => {
@@ -105,5 +106,15 @@ describe("countRecords over assessment years (K2)", () => {
     expect(r).toMatchObject({ status: "ok", count: 83243, period: "2026 assessment" });
     expect(seen.some((s) => s.includes("UNION ALL"))).toBe(false);
     if (r.status === "ok") expect(r.source).toBeUndefined();
+  });
+});
+
+describe("countRecords over assessment years: review fixes (K2)", () => {
+  it("takes the measure's headline from the newest year and its unreadable count from every year", async () => {
+    const t = await seedYears();
+    const row = (g: string, median: number, unreadable = "0") => ({ g, n: "100", total: String(median * 100), median: String(median), average: String(median), unreadable, zeros: "0" });
+    installFakeFetch({ citySql: (sql) => (sql.includes("AS g") ? [row("2026", 206900), row("2025", 192600), row("2005", 111200)] : [{ n: "300", total: "1", median: "150000", average: "1", unreadable: "7", zeros: "2" }]) });
+    const r = await t.withIdentity(reader).action(api.city.countRecords, { code: "H28", years: { from: 2005, to: 2026 }, measure: { id: "assessed-value" } });
+    expect(r).toMatchObject({ status: "measured", all: { n: 100, median: 206900, unreadable: 7, zeros: 2 } });
   });
 });

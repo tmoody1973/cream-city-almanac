@@ -166,7 +166,11 @@ export async function runMeasure(ctx: ActionCtx, { code, neighborhood, measure, 
       built.groupSql ? datastoreSql<Record<string, unknown>>(built.groupSql, built.timeoutMs) : Promise.resolve(null),
       datastoreSql<Record<string, unknown>>(built.allSql, built.timeoutMs),
     ]);
-    const shaped = forModel(shapeMeasure(groupRows, allRows[0], { namesPeople: m.namesPeople, byYear: built.groupLabel === "year" }), { summable: m.summable, average: Boolean(measure.average) });
+    // Across assessment years the headline is the newest year (its group row); unreadable and $0 counts cover every year.
+    const span = allRows[0] ?? {};
+    const newest = built.latestYear ? groupRows?.find((r) => String(r.g) === built.latestYear) ?? { n: 0, total: null, median: null, average: null } : null;
+    const all = newest ? { ...newest, unreadable: span.unreadable, zeros: span.zeros } : span;
+    const shaped = forModel(shapeMeasure(groupRows, all, { namesPeople: m.namesPeople, byYear: built.groupLabel === "year" }), { summable: m.summable, average: Boolean(measure.average) });
     return {
       status: "measured" as const, code: data.code, name,
       measure: { id: m.id, name: m.name, unit: m.unit, caveat: m.caveat, column: m.column, things: m.things, summable: m.summable, skipZero: m.skipZero, namesPeople: m.namesPeople, date: m.date },

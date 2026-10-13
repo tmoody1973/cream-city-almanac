@@ -220,6 +220,8 @@ describe("City count export", () => {
     expect(y.csv.rows[0]).toEqual(["Total (2026)", 1234]);
     expect(y.lines[0]).toContain("(2026 assessment)");
     expect(y.notes).toContain("From the City's yearly property files (2005–2025) and its current file (2026).");
+    const n = countExport({ ...r, dateColumn: null, latestYear: "2026", note: "The City has no usable file for 2022." }, ctx);
+    expect(n.notes).toContain("The City has no usable file for 2022."); // review fix: the card's note travels with the export
   });
   it("leads a property count with its summary sentence", () => {
     const p = countExport({ ...r, groups: [], other: 0, caveat: null, of: { count: 160000, label: "properties" } }, ctx);

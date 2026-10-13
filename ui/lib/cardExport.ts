@@ -183,7 +183,7 @@ export type CountCardData = {
   code: string; name: string; count: number; groups: { label: string; count: number }[]; other: number; otherLabel: string | null; overlap: boolean;
   period: string; filters: string[]; futureExcluded: number; caveat: string | null; dateColumn: string | null; coverage: string | null;
   resourceName: string | null; area: string | null; noLocation: number; of?: { count: number; label: string }; tractMap?: { total: number };
-  files?: "only" | "current" | "archive" | "both"; source?: string; latestYear?: string;
+  files?: "only" | "current" | "archive" | "both"; source?: string; latestYear?: string; note?: string | null;
 };
 
 // The City count card's lines under its table, in the card's order (CountCard in AskCards.tsx).
@@ -191,6 +191,7 @@ export function countNotes(r: CountCardData): string[] {
   return [
     r.overlap && r.groups.length > 0 ? "An incident can count in more than one group." : null,
     countCoverage(r),
+    r.note ?? null, // the card's own note line (a file's start, missing years, redrawn districts)
     r.area ? `In ${r.area}` : null,
     r.noLocation > 0 ? `${r.noLocation.toLocaleString("en-US")} matching records citywide have no location and aren't included.` : null,
     r.tractMap ? `Census tracts where more than half of the properties are ${r.filters.join(", ")}: ${r.tractMap.total}.` : null,
