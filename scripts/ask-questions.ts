@@ -22,6 +22,8 @@ export const ASK_QUESTIONS: AskQuestion[] = [
   { q: "What's the poverty rate in Bay View's tracts?", tool: "rankTracts", expect: { neighborhood: "Bay View" }, final: true },
   { q: "Give me a fact sheet for Clarke Square", tool: "factSheet", expect: { slug: "clarke-square" }, final: true },
   { q: "Which neighborhood is 2400 W Center St in?", tool: "findPlace", expect: { status: "ok" }, final: true },
+  { q: "Which TINs overlap Harambee?", tool: "boundariesFor", expect: { status: "ok" }, final: true },
+  { q: "Which wards are in District 6, and where do they vote?", tool: "boundariesFor", expect: { status: "ok" }, final: true },
   { q: "What did the Harambee neighborhood report say about housing?", tool: "readReport", expect: {} },
   { q: "What are the key takeaways for Lincoln Park?", tool: "readReport", expect: {} },
   { q: "How should I interpret the neighborhood tables?", tool: "readReport", expect: {} },

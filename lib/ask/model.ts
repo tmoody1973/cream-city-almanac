@@ -62,7 +62,7 @@ const call = (toolName: string, input: object) => ({ type: "tool-call" as const,
 
 // A scripted model: the first step calls the tool the question's keyword names; the next step replies.
 // "wrong column" → rankTracts E02 with a column that doesn't exist (choose-column); "rank tracts" → rankTracts, "despite" → relateTracts (mismatch), "grow most" → compareYears, "bay view" → rankTracts E02 County 2023 limited to Bay View (all four before "poverty", which they may contain); "poverty" → getNumber (Harambee); "over 200000" → searchCatalog "Master Property File", then countRecords on the row named "Master Property File (MPROP)" over $200,000 by district; "home values" → the same search, then relateTracts median_value × H04 per_broadband (County 2023); "air" → previewData V02; "twice" → showDataset and previewData V02 in one step;
-// "angles" → a reply with two paragraphs and three story angles; "report" → readReport; "unverified" → a reply with a figure; "thefts" and "robberies" → searchCatalog, then countRecords (robberies: a broad count, then robbery in Harambee); "how long" → searchCatalog "citizen complaints", then timeSpan on the complaints row by Department; "how much" → searchCatalog "delinquent real estate tax", then countRecords with measure tax-owed by "Ald Dist"; else searchCatalog.
+// "angles" → a reply with two paragraphs and three story angles; "report" → readReport; "unverified" → a reply with a figure; "thefts" and "robberies" → searchCatalog, then countRecords (robberies: a broad count, then robbery in Harambee); "how long" → searchCatalog "citizen complaints", then timeSpan on the complaints row by Department; "how much" → searchCatalog "delinquent real estate tax", then countRecords with measure tax-owed by "Ald Dist"; "tins overlap" → boundariesFor Harambee (TINs); else searchCatalog.
 export function fakeAskModel(): LanguageModel {
   return new MockLanguageModelV3({
     doStream: async ({ prompt }) => {
@@ -141,6 +141,8 @@ export function fakeAskModel(): LanguageModel {
                 ? call("relateTracts", { a: { code: "E02", column: "pov_rate" }, b: { code: "F02", column: "per_insecure" }, place: "County", year: "2023", mode: "mismatch", aSide: "high", bSide: "low" })
                 : question.includes("grow most")
                 ? call("compareYears", { code: "E02", column: "pov_rate", place: "County", from: "2022", to: "2023" })
+                : question.includes("tins overlap")
+                ? call("boundariesFor", { neighborhood: "Harambee", kinds: ["tin"] })
                 : question.includes("center st")
                 ? call("findPlace", { address: "2400 W Center St, Milwaukee, WI" })
                 : question.includes("fact sheet")

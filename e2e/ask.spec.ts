@@ -248,6 +248,14 @@ test.describe("signed in", () => {
     await expect(card.locator("[data-boundaries]")).toBeVisible();
   });
 
+  test("a boundary question draws the boundaries card with estimated shares", async ({ page }) => {
+    await ask(page, "Which TINs overlap Harambee?");
+    const card = page.locator("[data-card=boundaries]:visible, [data-card=boundaries-refusal]:visible");
+    await expect(card).toBeVisible({ timeout: 40_000 });
+    await expect(page.locator("[data-card=boundaries]:visible")).toContainText("Targeted Investment Neighborhoods (TINs)");
+    await expect(page.locator("[data-card=boundaries]:visible")).toContainText("Shares are estimated from a grid of points");
+  });
+
   test("a neighborhood count names the City boundary it used", async ({ page }) => {
     test.skip(!(await page.request.get("https://data.milwaukee.gov/api/3/action/status_show").then((r) => r.ok()).catch(() => false)), "City API unreachable");
     await ask(page, "How many robberies in Harambee this year?");

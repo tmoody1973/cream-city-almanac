@@ -4,18 +4,20 @@ import type { api } from "../../convex/_generated/api";
 import type { SearchResponse } from "../../convex/lib/types";
 import { SPAN_PAIRS } from "../../convex/lib/spanPairs";
 import { CITY_MEASURES } from "../../convex/lib/cityMeasures";
+import { BOUNDARY_KINDS } from "../../convex/lib/boundaries";
 
 export type FamilySheet = NonNullable<FunctionReturnType<typeof api.catalog.familySheet>>;
 export type NumberResult = FunctionReturnType<typeof api.ask.getNumber>;
 export type CountResult = FunctionReturnType<typeof api.city.countRecords>;
 export type ReportResult = FunctionReturnType<typeof api.ask.readReport>;
 export type PlaceAnswer = FunctionReturnType<typeof api.places.findPlace>;
+export type BoundariesAnswer = FunctionReturnType<typeof api.places.boundariesFor>;
 export type SheetResult = FunctionReturnType<typeof api.factSheet.findSheet>;
 export type RankResult = FunctionReturnType<typeof api.tracts.rankTracts>;
 export type ChangeResult = FunctionReturnType<typeof api.tracts.compareYears>;
 export type RelateResult = FunctionReturnType<typeof api.tracts.relateTracts>;
 export type SpanResult = FunctionReturnType<typeof api.spans.timeSpan>;
-export type AskToolName = "searchCatalog" | "showDataset" | "previewData" | "getNumber" | "readReport" | "countRecords" | "rankTracts" | "compareYears" | "relateTracts" | "timeSpan" | "factSheet" | "findPlace";
+export type AskToolName = "searchCatalog" | "showDataset" | "previewData" | "getNumber" | "readReport" | "countRecords" | "rankTracts" | "compareYears" | "relateTracts" | "timeSpan" | "factSheet" | "findPlace" | "boundariesFor";
 
 export interface AskBackend {
   search(a: { query: string; topic?: string; place?: string; year?: number }): Promise<SearchResponse>;
@@ -26,6 +28,7 @@ export interface AskBackend {
   rank(a: z.infer<typeof rankParams>): Promise<RankResult>;
   factSheet(a: { neighborhood: string }): Promise<SheetResult>;
   place(a: { address: string }): Promise<PlaceAnswer>;
+  boundaries(a: z.infer<typeof boundaryParams>): Promise<BoundariesAnswer>;
   change(a: z.infer<typeof changeParams>): Promise<ChangeResult>;
   relate(a: z.infer<typeof relateParams>): Promise<RelateResult>;
   span(a: z.infer<typeof spanParams>): Promise<SpanResult>;
@@ -95,6 +98,12 @@ const area = {
   map: z.enum(["city", "dycu"]).optional().describe('"dycu" only when the person says DYCU\'s area (e.g. "DYCU\'s Harambee"); otherwise leave it out for the City\'s official neighborhood'),
 };
 export const rankParams = z.object({ code, column, place, year, direction: z.enum(["high", "low"]), cutoff, ...area });
+export const boundaryParams = z.object({
+  ...area,
+  tract: z.string().max(20).optional().describe('A census tract as the person wrote it, e.g. "88" or "88.01"'),
+  district: z.number().int().min(1).max(15).optional().describe("An aldermanic district number, 1–15"),
+  kinds: z.array(z.enum(BOUNDARY_KINDS)).optional().describe("Only these boundary kinds; leave out for all of them"),
+});
 export const changeParams = z.object({ code, column, place, from: year, to: year, ...area });
 export const relateParams = z.object({
   a: z.object({ code, column, cutoff }), b: z.object({ code, column, cutoff }), place, year,
@@ -167,6 +176,12 @@ export function askTools(b: AskBackend): AskTool[] {
       description: "Find which census tract, City of Milwaukee neighborhood and DYCU area an address or intersection in Milwaukee is in. The address is sent to the U.S. Census Bureau's geocoder; nothing about the property is returned, ever. If it returns no-match, ask for the house number, street and ZIP; outside-county, say Ask covers Milwaukee County; unavailable, try later. Then answer the person's question with the tract, neighborhood or fact sheet it found.",
       parameters: z.object({ address: z.string().min(3).max(200) }),
       execute: (a: { address: string }) => b.place(a),
+    },
+    {
+      name: "boundariesFor",
+      description: "Which City of Milwaukee boundaries cover one place, and about how much of it: aldermanic district (with the alder), voting ward (with its polling place), Targeted Investment Neighborhood (tin), Neighborhood Revitalization Strategy Area (nrsa), Neighborhood Strategic Planning area (nsp), Tax Incremental District (tid), Business Improvement District (bid), Opportunity Zone (oz). Give exactly one place: neighborhood (map dycu only for DYCU's area), tract, or district. kinds limits the list. For an address, use findPlace instead. Shares are estimates: never restate one as exact. If it returns unknown-place, offer its suggestions; outside-city, say the City's boundaries don't reach that tract; not-loaded, say the boundary files aren't loaded yet. Polling places can change before an election: always point to myvote.wi.gov to confirm.",
+      parameters: boundaryParams,
+      execute: (a: z.infer<typeof boundaryParams>) => b.boundaries(a),
     },
     {
       name: "readReport",

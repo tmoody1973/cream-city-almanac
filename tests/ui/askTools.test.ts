@@ -7,6 +7,7 @@ const backend = (relateResult: unknown): AskBackend => ({
   rank: async () => ({ status: "busy" }) as never, change: async () => ({ status: "busy" }) as never, relate: async () => relateResult as never, span: async () => ({ status: "busy" }) as never,
   factSheet: async () => ({ status: "no-neighborhood", asked: "", nearest: [] }) as never,
   place: async () => ({ status: "no-match" }) as never,
+  boundaries: async () => ({ status: "not-loaded" }) as never,
 });
 
 const row = (i: number) => ({ geoid: `5507910${String(i).padStart(4, "0")}`, tract: String(i), neighborhood: "Harambee", value: 41.2, lo: 35.1, hi: 47.3, unreliable: false });
@@ -100,5 +101,15 @@ describe("address lookup", () => {
     expect((tool.parameters as { shape: Record<string, unknown> }).shape).toHaveProperty("address");
     expect(tool.description).toContain("U.S. Census Bureau");
     expect(ASK_PROMPT).toContain("findPlace");
+  });
+});
+
+describe("boundaries", () => {
+  it("offers boundariesFor for one place, and the prompt sends boundary questions to it", () => {
+    const tool = askTools(backend({})).find((t) => t.name === "boundariesFor")!;
+    const shape = (tool.parameters as { shape: Record<string, unknown> }).shape;
+    expect(Object.keys(shape)).toEqual(expect.arrayContaining(["neighborhood", "map", "tract", "district", "kinds"]));
+    expect(tool.description).toContain("polling place");
+    expect(ASK_PROMPT).toContain("boundariesFor");
   });
 });

@@ -8,7 +8,7 @@ import { passageBlocks } from "@/ui/lib/askPassage";
 import { propertyCountSummary } from "@/ui/lib/tractSummary";
 import { formatPortraitMargin, formatPortraitNumber } from "@/ui/lib/portrait";
 import { api } from "@/convex/_generated/api";
-import { changeParams, countParams, rankParams, relateParams, spanParams, type SheetResult, type PlaceAnswer, type ChangeResult, type CountForModel, type CountResult, type RankResult, type RelateResult, type SpanResult } from "@/lib/ask/tools";
+import { boundaryParams, changeParams, countParams, rankParams, relateParams, spanParams, type SheetResult, type PlaceAnswer, type BoundariesAnswer, type ChangeResult, type CountForModel, type CountResult, type RankResult, type RelateResult, type SpanResult } from "@/lib/ask/tools";
 import { CityMap } from "./CityMapLoader";
 import { LivePreview } from "./LivePreview";
 import { OpenLink, type Open } from "./OpenLink";
@@ -24,6 +24,8 @@ import { changeFollowUps, countFollowUps, datasetFollowUps, numberFollowUps, pre
 import { changeChoices, countChoices, numberChoices, rankChoices, relateChoices, spanChoices, measureChoices, refusalChoicesFor } from "@/ui/lib/refusalChoices";
 import { FactSheetCard } from "./FactSheetCard";
 import { PlaceCard } from "./PlaceCard";
+import { BoundariesCard } from "./BoundariesCard";
+import { boundariesRefusal } from "@/ui/lib/boundaryText";
 import { placeFollowUps, placeRefusal } from "@/ui/lib/placeText";
 import styles from "./ask.module.css";
 
@@ -391,6 +393,14 @@ export function AskCards({ onOpen }: { onOpen?: (search: string) => void }) {
     if (!r) return <Failed />;
     if (r.status !== "ok") return <p className={styles.failed} data-card="place-refusal">{placeRefusal(r.status)}</p>;
     return <><PlaceCard r={r} /><FollowUps items={placeFollowUps(r)} id={props.toolCallId} /></>;
+  } }, []);
+
+  useRenderTool({ name: "boundariesFor", parameters: boundaryParams, render: (props) => {
+    if (props.status !== "complete") return <Busy />;
+    const r = parse<BoundariesAnswer>(props.result);
+    if (!r) return <Failed />;
+    if (r.status !== "ok") return <p className={styles.failed} data-card="boundaries-refusal">{boundariesRefusal(r)}</p>;
+    return <BoundariesCard r={r} />;
   } }, []);
 
   useRenderTool({ name: "factSheet", parameters: z.object({ neighborhood: z.string() }), render: (props) => {
