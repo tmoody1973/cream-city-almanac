@@ -121,6 +121,10 @@ export function HowItWorks({ status, example, areas }: { status: CatalogStatus |
               holds only a few stray records before 2005.
             </p>
             <p>
+              Property questions can compare the City&apos;s yearly assessments from 2005, citywide and by aldermanic district, by
+              reading one property file per year.
+            </p>
+            <p>
               Ask can also add up a few City money columns, like back property tax owed, City employee pay and property sale prices. It
               shows the total and the median (the middle value), and the average only when you ask for it. In files that name people,
               groups of fewer than 5 records are hidden so no one&apos;s figure can be singled out.

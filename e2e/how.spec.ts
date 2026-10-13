@@ -128,3 +128,8 @@ test("it says crime counts reach back to 2005", async ({ page }) => {
   await page.goto("/how-it-works");
   await expect(page.getByText(/Crime counts reach back to 2005/)).toBeVisible();
 });
+
+test("it says property questions compare yearly assessments from 2005", async ({ page }) => {
+  await page.goto("/how-it-works");
+  await expect(page.getByText(/Property questions can compare the City's yearly assessments from 2005/)).toBeVisible();
+});

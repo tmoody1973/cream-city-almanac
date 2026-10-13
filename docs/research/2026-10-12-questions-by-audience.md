@@ -64,6 +64,7 @@ Journalists want figures they can publish and defend: the number, its margin of 
 | Is Black homeownership lower where poverty is higher? | H01 × E02 | **Now** (go-together) |
 | Where are home values high but food insecurity is also high? | Master Property File × F02 | **Now** (mismatch) |
 | How many properties are assessed over $200,000, by aldermanic district? | Master Property File | **Now** (City count over/under) |
+| How has the typical home value changed since 2005? | Master Property File (yearly files) | **Now** (by year, citywide or one district) |
 | How long does the City take to issue permits, by permit type? | Residential and Commercial Permit Work Data | **Now** (how long: time to issue) |
 | How many permits were opened for new dwelling units this year? | Permit Work Data | **Now** (City count, filtered) |
 | How many vacant buildings are there, by aldermanic district or ZIP? | Vacant Buildings | **Now** (City count) |
@@ -245,7 +246,7 @@ Residents want to understand their own block and neighborhood, see whether the C
 3. **Neighborhood fact sheet and side-by-side comparison.** The grant writer's and editor's one-pager. (Project D.)
 4. **Share link to an answer.** (Project C2.)
 5. **Traffic crashes.** The file isn't profiled, so Ask can't count crashes, which is one of the most common local questions. Likely a data-pipeline fix rather than a new feature; worth checking first.
-6. **Files split by period.** Crime's Current and Historical files are now read together, so crime counts reach back to 2005 (K1, decision 039). Still split: stop-and-search (quarterly packages), elections (one dataset per election) and the property file by year (K2–K4). 311's older file isn't joined, because it is missing most requests from December 2020 to 2025.
+6. **Files split by period.** Crime's Current and Historical files are now read together, so crime counts reach back to 2005 (K1, decision 039). The property file is now read by year too, 2005 onward, citywide and by district (K2, decision 040). Still split: stop-and-search (quarterly packages) and elections (one dataset per election) (K3–K4). 311's older file isn't joined, because it is missing most requests from December 2020 to 2025.
 7. **311 by location.** The 311 file has no coordinates, so "requests near me" fails. Check whether the City publishes a located version.
 8. **More "how long" pairs.** Vacant-building duration (if a close date exists), liquor license terms, DPW work orders. Each is one list entry once the dates are checked.
 9. **Boundary overlap.** "Is this tract in a TID, Opportunity Zone or redlined area?", answered by combining boundary files with tract data.
