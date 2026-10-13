@@ -129,3 +129,14 @@ describe("measure follow-ups keep the card's filters and period", () => {
     expect(f[0].question).toBe("How much sale price in Property Sales Data (X12), from 2025-01-01 to 2025-06-30, by PropType?");
   });
 });
+
+describe("across years (K2)", () => {
+  const years = { ...base, groupBy: "year", period: "2005 – 2026 assessments", latestYear: "2026", source: "From the City's yearly property files (2005–2025) and its current file (2026).", note: "Years are the City's file years; in a few files the City's own assessment-year field reads a year later." };
+  it("starts the summary with the newest year and adds the source and note lines", () => {
+    expect(measureSummary(years).startsWith("In 2026, ")).toBe(true);
+    expect(measureNotes(years)).toEqual(expect.arrayContaining([years.source, years.note]));
+  });
+  it("drops the All row from the export, since it would repeat the newest year", () => {
+    expect(measureExport(years, ctx).csv.rows.some((row) => row[0] === "All")).toBe(false);
+  });
+});

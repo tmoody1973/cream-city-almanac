@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parseCkan } from "../../convex/lib/ckan";
-import { cityRepresentative, cityTopic, groupCityItems, retiredLast, cityNote } from "../../convex/lib/cityFamilies";
+import { cityRepresentative, cityTopic, groupCityItems, retiredLast, cityNote, YEARLY } from "../../convex/lib/cityFamilies";
 import { codeLetter } from "../../convex/lib/codes";
 import { cityPackages } from "../helpers/cityFixtures";
 
@@ -81,5 +81,14 @@ describe("City dataset notes", () => {
     expect(cityNote("city:nibrs-crime-data")).toMatch(/WIBR/);
     expect(cityNote("city:call-center-data")).toBe("The City's earlier 311 file (2020–2025) is missing most requests after November 2020, so counts here start in 2026.");
     expect(cityNote("city:vacant-buildings")).toBeNull();
+  });
+});
+
+describe("YEARLY (K2)", () => {
+  it("names the property file's history and its start", () => {
+    expect(YEARLY["city:master-property-file-mprop"]).toMatchObject({ history: "city:master-property-list-mprop-historical", from: 2005 });
+  });
+  it("gives the property dataset page its line", () => {
+    expect(cityNote("city:master-property-file-mprop")).toBe("Yearly assessments from 2005 are read for change over time.");
   });
 });

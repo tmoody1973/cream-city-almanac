@@ -227,8 +227,8 @@ function CountCard({ r, id, onOpen, noMap, args }: { r: CountOk; id?: string; on
       <figcaption className={styles.excerptTitle}>
         {[r.name, ...r.filters, r.period].join(" · ")} <ProvenanceTag source="CITY" />
       </figcaption>
-      {r.of && <p className={styles.tractSummary} data-summary>{propertyCountSummary({ ...r, of: r.of })}</p>}
-      <p className={styles.countFigure} data-count>{r.count.toLocaleString("en-US")}</p>
+      {r.of && <p className={styles.tractSummary} data-summary>{propertyCountSummary({ ...r, of: r.of, period: r.latestYear ? `${r.latestYear} assessment` : r.period })}</p>}
+      <p className={styles.countFigure} data-count>{r.count.toLocaleString("en-US")}{r.latestYear ? ` in ${r.latestYear}` : ""}</p>
       {r.groups.length > 0 && (
         <table className={styles.excerptTable}>
           <tbody>
@@ -323,11 +323,13 @@ function MeasureCard({ r, onOpen }: { r: MeasureOk; onOpen: Open }) {
                 {avg && <td>{g.rest ? "" : cell(g.average, g.hidden)}</td>}
               </tr>
             ))}
-            <tr>
-              <th scope="row">All</th><td>{r.all.n.toLocaleString("en-US")}</td>
-              {m.summable && <td>{money(r.all.total, m.unit, "table")}</td>}
-              <td>{money(r.all.median, m.unit, "table")}</td>{avg && <td>{money(r.all.average, m.unit, "table")}</td>}
-            </tr>
+            {!r.latestYear && ( // across years, "All" would repeat the newest year
+              <tr>
+                <th scope="row">All</th><td>{r.all.n.toLocaleString("en-US")}</td>
+                {m.summable && <td>{money(r.all.total, m.unit, "table")}</td>}
+                <td>{money(r.all.median, m.unit, "table")}</td>{avg && <td>{money(r.all.average, m.unit, "table")}</td>}
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

@@ -215,6 +215,14 @@ describe("City count export", () => {
     ]);
     expect(e.filename).toBe("almanac_P32_count");
   });
+  it("labels a year span's total and summary with the newest year, and names the files (K2)", () => {
+    const y = countExport({ ...r, groups: [], other: 0, caveat: null, dateColumn: null, latestYear: "2026", period: "2005 – 2026 assessments", of: { count: 160000, label: "with an assessed value" }, source: "From the City's yearly property files (2005–2025) and its current file (2026)." }, ctx);
+    expect(y.csv.rows[0]).toEqual(["Total (2026)", 1234]);
+    expect(y.lines[0]).toContain("(2026 assessment)");
+    expect(y.notes).toContain("From the City's yearly property files (2005–2025) and its current file (2026).");
+    const n = countExport({ ...r, dateColumn: null, latestYear: "2026", note: "The City has no usable file for 2022." }, ctx);
+    expect(n.notes).toContain("The City has no usable file for 2022."); // review fix: the card's note travels with the export
+  });
   it("leads a property count with its summary sentence", () => {
     const p = countExport({ ...r, groups: [], other: 0, caveat: null, of: { count: 160000, label: "properties" } }, ctx);
     expect(p.lines[0]).toMatch(/^1,234 properties in the City of Milwaukee are Theft/);

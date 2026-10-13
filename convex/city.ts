@@ -10,6 +10,7 @@ import { EMPTY_FILE_NOTE, withOverrides } from "./lib/cityProfile";
 import { CITY_MEASURES, MEASURE_FILES, measuresFor } from "./lib/cityMeasures";
 import { buildCount, groupLabelFor, MAX_GROUPS } from "./lib/citySql";
 import { buildMeasure } from "./lib/measureSql";
+import { buildYearCount, buildYearMeasure } from "./lib/propertyYears";
 import { forModel, shapeMeasure, type MeasureAll, type MeasureGroup, type MeasureOther } from "./lib/measureShape";
 import type { Bbox, Geometry } from "./lib/geo";
 import { matchName } from "./lib/neighborhoodNames";
@@ -72,7 +73,7 @@ export type CountResult =
   | {
       status: "ok"; code: string; name: string; count: number; groups: { label: string; count: number }[]; other: number; otherLabel: "Earlier" | "Other" | null;
       overlap: boolean; period: string; filters: string[]; futureExcluded: number; caveat: string | null;
-      dateColumn: string | null; coverage: string | null; resourceName: string | null; files?: "only" | "current" | "archive" | "both"; note?: string | null; namesPeople: boolean;
+      dateColumn: string | null; coverage: string | null; resourceName: string | null; files?: "only" | "current" | "archive" | "both"; note?: string | null; source?: string; latestYear?: string; namesPeople: boolean;
       area: string | null; noLocation: number; map: MapData | null; mapError?: true;
       of?: { count: number; label: string }; tractMap?: { url: string; ids: string[]; total: number };
     }
@@ -92,7 +93,7 @@ export type CountResult =
   | {
       status: "measured"; code: string; name: string;
       measure: { id: string; name: string; unit: "dollars" | "dollars per hour"; caveat: string; column: string; things: string; summable: boolean; skipZero: boolean; namesPeople: boolean; date: string | null };
-      groupBy: string | null; period: string; filters: string[]; groups: MeasureGroup[]; other: MeasureOther | null; all: MeasureAll; averageAsked: boolean; splits: string[];
+      groupBy: string | null; period: string; filters: string[]; groups: MeasureGroup[]; other: MeasureOther | null; all: MeasureAll; averageAsked: boolean; splits: string[]; source?: string; note?: string; latestYear?: string;
     }
   | { status: "no-measure"; code: string; name: string; files: string[] }
   | { status: "no-number-filter"; code: string; name: string; column: string }
@@ -108,10 +109,10 @@ const groupName = (label: string | null, g: unknown) => {
 
 // Counts City records live. Arguments are checked against the dataset's profile (convex/lib/citySql.ts); returns
 // counts only, never rows.
-export type CountInput = { code: string; neighborhood?: string; from?: string; to?: string; filters?: { column: string; values?: string[]; over?: number; under?: number }[]; groupBy?: string };
+export type CountInput = { code: string; neighborhood?: string; from?: string; to?: string; filters?: { column: string; values?: string[]; over?: number; under?: number }[]; groupBy?: string; years?: { from: number; to: number } };
 
 export const countRecords = action({
-  args: { code: v.string(), neighborhood: v.optional(v.string()), from: v.optional(v.string()), to: v.optional(v.string()), filters: v.optional(v.array(vFilter)), groupBy: v.optional(v.string()), measure: v.optional(v.object({ id: v.string(), average: v.optional(v.boolean()) })) },
+  args: { code: v.string(), neighborhood: v.optional(v.string()), from: v.optional(v.string()), to: v.optional(v.string()), filters: v.optional(v.array(vFilter)), groupBy: v.optional(v.string()), years: v.optional(v.object({ from: v.number(), to: v.number() })), measure: v.optional(v.object({ id: v.string(), average: v.optional(v.boolean()) })) },
   handler: async (ctx, args): Promise<CountResult> => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Sign in to ask");
@@ -154,22 +155,28 @@ export async function runMeasure(ctx: ActionCtx, { code, neighborhood, measure, 
   if (neighborhood?.trim()) return { status: "no-locations" as const, code: data.code, name };
   const amount = args.filters?.find((f) => f.over !== undefined || f.under !== undefined);
   if (amount) return { status: "no-number-filter" as const, code: data.code, name, column: amount.column };
-  const built = buildMeasure(profile, m, { ...args, filters: args.filters?.map(({ column, values }) => ({ column, values })) }, chicagoDay(Date.now()));
+  const filters = args.filters?.map(({ column, values }) => ({ column, values }));
+  const built = args.years ? buildYearMeasure(profile, m, { ...args, years: args.years, filters }) : buildMeasure(profile, m, { ...args, filters }, chicagoDay(Date.now()));
   if (!built.ok) {
     const { ok: _ok, ...refusal } = built;
     return { ...refusal, code: data.code, name };
   }
   try {
     const [groupRows, allRows] = await Promise.all([
-      built.groupSql ? datastoreSql<Record<string, unknown>>(built.groupSql) : Promise.resolve(null),
-      datastoreSql<Record<string, unknown>>(built.allSql),
+      built.groupSql ? datastoreSql<Record<string, unknown>>(built.groupSql, built.timeoutMs) : Promise.resolve(null),
+      datastoreSql<Record<string, unknown>>(built.allSql, built.timeoutMs),
     ]);
-    const shaped = forModel(shapeMeasure(groupRows, allRows[0], { namesPeople: m.namesPeople, byYear: built.groupLabel === "year" }), { summable: m.summable, average: Boolean(measure.average) });
+    // Across assessment years the headline is the newest year (its group row); unreadable and $0 counts cover every year.
+    const span = allRows[0] ?? {};
+    const newest = built.latestYear ? groupRows?.find((r) => String(r.g) === built.latestYear) ?? { n: 0, total: null, median: null, average: null } : null;
+    const all = newest ? { ...newest, unreadable: span.unreadable, zeros: span.zeros } : span;
+    const shaped = forModel(shapeMeasure(groupRows, all, { namesPeople: m.namesPeople, byYear: built.groupLabel === "year" }), { summable: m.summable, average: Boolean(measure.average) });
     return {
       status: "measured" as const, code: data.code, name,
       measure: { id: m.id, name: m.name, unit: m.unit, caveat: m.caveat, column: m.column, things: m.things, summable: m.summable, skipZero: m.skipZero, namesPeople: m.namesPeople, date: m.date },
       groupBy: built.groupLabel, period: built.period, filters: built.filterLabels, ...shaped,
-      averageAsked: Boolean(measure.average), splits: [...m.splits, ...(m.date ? ["year"] : [])],
+      averageAsked: Boolean(measure.average), splits: [...m.splits, ...(m.date || args.years ? ["year"] : [])],
+      ...(built.source ? { source: built.source } : {}), ...(built.note ? { note: built.note } : {}), ...(built.latestYear ? { latestYear: built.latestYear } : {}),
     };
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
@@ -191,6 +198,16 @@ export async function planCount(ctx: ActionCtx, { code, neighborhood, ...args }:
   if (data.topic === "Elections") return { status: "not-live" as const, code: data.code, name, note: ELECTIONS_NOTE };
   if (!profile) return { status: "not-live" as const, code: data.code, name };
   if (profile.rowCount === 0) return { status: "not-live" as const, code: data.code, name, note: EMPTY_FILE_NOTE };
+  // Assessment years (spec 2026-10-13-property-history-design §5): their own builder; no neighborhoods or maps.
+  if (args.years) {
+    if (neighborhood?.trim()) return { status: "no-locations" as const, code: data.code, name };
+    const built = buildYearCount(profile, { ...args, years: args.years });
+    if (!built.ok) {
+      const { ok: _ok, ...refusal } = built;
+      return { ...refusal, code: data.code, name };
+    }
+    return { data, profile, found: null, built };
+  }
   let found: Extract<Found, { kind: "one" }> | null = null;
   if (neighborhood?.trim()) {
     const f: Found = await ctx.runQuery(internal.city.findNeighborhood, { asked: neighborhood });
@@ -230,15 +247,15 @@ export async function askCity(ctx: ActionCtx, { data, profile, found, built }: P
         area, noLocation: cityCount(missing), map: toMapData(tally.cells, found.name),
       };
     }
-    const [total] = await datastoreSql<{ n: string }>(built.totalSql);
+    const [total] = await datastoreSql<{ n: string }>(built.totalSql, built.timeoutMs);
     const count = cityCount(total);
-    const rows = built.groupSql ? await datastoreSql<{ g: unknown; n: string }>(built.groupSql) : [];
+    const rows = built.groupSql ? await datastoreSql<{ g: unknown; n: string }>(built.groupSql, built.timeoutMs) : [];
     const byDate = built.groupLabel === "month" || built.groupLabel === "year";
     // Date groups come newest first (so a cap keeps the recent months); show them oldest to newest.
     const groups = (byDate ? [...rows].reverse() : rows).map((r) => ({ label: groupName(built.groupLabel, r.g), count: cityCount(r) }));
     const [future] = built.futureSql ? await datastoreSql<{ n: string }>(built.futureSql) : [{ n: "0" }];
     const futureExcluded = cityCount(future);
-    const of = built.ofSql ? { count: cityCount((await datastoreSql<{ n: string }>(built.ofSql))[0]), label: "with an assessed value" } : undefined;
+    const of = built.ofSql ? { count: cityCount((await datastoreSql<{ n: string }>(built.ofSql, built.timeoutMs))[0]), label: "with an assessed value" } : undefined;
     let tractMap: { url: string; ids: string[]; total: number } | undefined;
     if (built.tractSql) {
       // Its own try: a failed tract query loses the map, never the count.
@@ -276,6 +293,7 @@ export async function askCity(ctx: ActionCtx, { data, profile, found, built }: P
       otherLabel: capped ? (byDate ? "Earlier" : "Other") : null, overlap: built.overlap,
       period: built.period, filters: built.filterLabels, futureExcluded,
       caveat: data.caveat, dateColumn: built.dateColumn, coverage: built.coverage, resourceName: profile.resourceName ?? null, files: built.files, note: built.note, namesPeople: profile.namesPeople,
+      ...(built.source ? { source: built.source } : {}), ...(built.latestYear ? { latestYear: built.latestYear } : {}),
       area: null, noLocation: 0, map,
       ...(of ? { of } : {}), ...(tractMap ? { tractMap } : {}),
       // The dataset records locations but this count has no map (the grid failed or was cut off): not "no locations".

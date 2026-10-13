@@ -21,7 +21,9 @@ import {
   uniqueDescriptions,
   type AiCard,
 } from "./lib/card";
-import { ARCHIVES, cityRepresentative, groupCityItems } from "./lib/cityFamilies";
+import { ARCHIVES, cityRepresentative, groupCityItems, YEARLY } from "./lib/cityFamilies";
+import { assessmentYear } from "./lib/propertyMeasures";
+import { layoutOf, yearFiles, type YearFile } from "./lib/propertyYears";
 import { chunkMarkdown } from "./lib/chunk";
 import { fetchCityCatalog, datastoreFields, datastoreSql } from "./lib/ckan";
 import { assembleProfile, isMultiValued, planProfile, profileSql, type CityProfile } from "./lib/cityProfile";
@@ -111,6 +113,31 @@ async function withArchive<P extends CityProfile>(familyKey: string, profile: P,
   return { ...profile, minDate: entry.from, archive: { resourceId: archiveRid, before: entry.seam } };
 }
 
+// The property file's yearly history (spec 2026-10-13-property-history-design §4): each year's file and layout, read
+// one request at a time. A year whose columns can't be read or match no layout is skipped, and the build says which.
+// ponytail: no pause between the ~21 requests; a year the City refuses (403) is skipped until next week's build.
+async function withYears<P extends CityProfile>(ctx: ActionCtx, familyKey: string, profile: P, notes: string[]): Promise<P> {
+  const entry = YEARLY[familyKey];
+  if (!entry) return profile;
+  const files = yearFiles(await ctx.runQuery(internal.buildStore.familyFiles, { familyKey: entry.history }), entry.from);
+  const current = Number(assessmentYear(profile.categories));
+  const years: YearFile[] = [];
+  for (const f of files.filter((x) => x.year !== current)) {
+    try {
+      const layout = layoutOf(await datastoreFields(f.resourceId));
+      if (layout) years.push({ ...f, layout });
+      else notes.push(`${familyKey}: ${f.year} file's columns match no known layout; skipped`);
+    } catch (e) {
+      notes.push(`${familyKey}: ${f.year} file unavailable; skipped (${message(e)})`);
+    }
+  }
+  if (!years.length) { notes.push(`${familyKey}: no yearly property files found`); return profile; }
+  const own = layoutOf(profile.columns.map((c) => ({ id: c.name })));
+  if (current && own === "classic") years.push({ year: current, resourceId: profile.resourceId, layout: "classic" });
+  else notes.push(`${familyKey}: today's file can't join the years (no assessment year or unknown columns)`);
+  return { ...profile, years: years.sort((a, b) => a.year - b.year) };
+}
+
 // Live City dataset: read its columns and build the counting menu. If the City won't describe its columns, the profile
 // goes (it can't be counted); a failed counting query after that keeps last week's profile.
 async function profileCity(ctx: ActionCtx, familyKey: string, rid: string, resourceName: string | null, archiveRid: string | null, notes: string[]): Promise<Column[]> {
@@ -140,7 +167,7 @@ async function profileCity(ctx: ActionCtx, familyKey: string, rid: string, resou
         console.error(`City point sample failed for ${familyKey}: ${message(e)}`);
       }
     }
-    const profile = await withArchive(familyKey, { ...assembleProfile(familyKey, rid, fields, plan, count, range, tops, Date.now(), points), resourceName }, archiveRid, notes);
+    const profile = await withYears(ctx, familyKey, await withArchive(familyKey, { ...assembleProfile(familyKey, rid, fields, plan, count, range, tops, Date.now(), points), resourceName }, archiveRid, notes), notes);
     await ctx.runMutation(internal.buildStore.replaceCityProfile, { profile });
   } catch (e) {
     console.error(`City profile failed for ${familyKey}: ${message(e)}`);

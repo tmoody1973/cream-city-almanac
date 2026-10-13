@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { changeFollowUps, countFollowUps, datasetFollowUps, numberFollowUps, previewFollowUps, rankFollowUps, relateFollowUps } from "../../ui/lib/nextQuestions";
+import { changeFollowUps, countFollowUps, datasetFollowUps, measureFollowUps, numberFollowUps, previewFollowUps, rankFollowUps, relateFollowUps } from "../../ui/lib/nextQuestions";
+import { countChoices } from "../../ui/lib/refusalChoices";
 
 const pov = { code: "E02", name: "Households Living in Poverty", column: "pov_rate", meaning: "Estimate - Percentage of households with income below the poverty line Calculation: x", place: "County", year: "2024", confidence: "90% confidence (Census)" };
 const home = { code: "H28", name: "Master Property File (MPROP)", column: "median_value", meaning: "Median assessed value of homes (houses and condos)", place: "City", year: "2026 assessment", confidence: "exact (City records)" };
@@ -92,5 +93,27 @@ describe("tables, datasets, previews", () => {
   });
   it("never more than three", () => {
     for (const f of [rankFollowUps(pov, "high"), datasetFollowUps({ code: "X", name: "Y", storyAngles: ["a"] })]) expect(f.length).toBeLessThanOrEqual(3);
+  });
+});
+
+describe("assessment years keep their span (K2 review fix)", () => {
+  const years = { from: 2005, to: 2026 };
+  const measured = { status: "measured", code: "H28", name: "Master Property File (MPROP)", groupBy: "year", period: "2005 – 2026 assessments", filters: ["residential", "condominiums"], averageAsked: false, splits: ["GEO_ALDER", "year"], latestYear: "2026",
+    measure: { id: "assessed-value", name: "total assessed value", unit: "dollars", caveat: "", column: "C_A_TOTAL", things: "properties", summable: true, skipZero: true, namesPeople: false, date: null },
+    groups: [], other: null, all: { n: 1, total: 1, median: 1, average: 1, unreadable: 0, zeros: 0 } } as never;
+  it("a measure across years offers no district split and keeps the years in its questions", () => {
+    const f = measureFollowUps({ code: "H28", groupBy: undefined, years, filters: [{ column: "C_A_CLASS", values: ["1", "5"] }] }, measured);
+    expect(f.map((x) => x.label)).not.toContain("BY GEO ALDER");
+    expect(f.every((x) => x.question.includes("assessment years 2005–2026"))).toBe(true);
+  });
+  it("a property count across years offers no district split; one year keeps its year", () => {
+    const r = { code: "H28", name: "Master Property File (MPROP)", filters: ["assessed over $200,000"], period: "2005 – 2026 assessments", dateColumn: null, map: null, of: { count: 1, label: "with an assessed value" }, latestYear: "2026" };
+    expect(countFollowUps({ code: "H28", years, filters: [{ column: "C_A_TOTAL", over: 200000 }] }, r).map((x) => x.label)).not.toContain("BY DISTRICT");
+    const one = countFollowUps({ code: "H28", years: { from: 2015, to: 2015 }, filters: [{ column: "C_A_TOTAL", over: 200000 }] }, { ...r, period: "2015 assessment", latestYear: undefined });
+    expect(one.find((x) => x.label === "BY DISTRICT")?.question).toContain("assessment year 2015");
+  });
+  it("a refusal's buttons keep the years", () => {
+    const c = countChoices({ code: "H28", years, groupBy: "GEO_ALDER" }, { status: "bad-column", name: "Master Property File (MPROP)", column: "GEO_ALDER", columns: ["year"] });
+    expect(c[0].question).toBe("Count H28 Master Property File (MPROP), assessment years 2005–2026, by year.");
   });
 });

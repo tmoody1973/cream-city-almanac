@@ -26,7 +26,8 @@ export function measureSummary(r: MeasureOk): string {
   const n = r.all.n.toLocaleString("en-US");
   if (r.all.n === 0) return `No ${m.things} match.`;
   if (r.all.median === null && r.all.n < 5) return `Fewer than 5 ${m.things} match, so their figures are hidden to protect individuals.`;
-  const head = m.summable ? `${n} ${m.things} total ${s(r.all.total)}; the median is ${s(r.all.median)}.` : `Across ${n} ${m.things}, the median is ${s(r.all.median)}.`;
+  const lead = r.latestYear ? `In ${r.latestYear}, ` : ""; // across years, the summary row is the newest year
+  const head = m.summable ? `${lead}${n} ${m.things} total ${s(r.all.total)}; the median is ${s(r.all.median)}.` : `${lead}${lead ? "across" : "Across"} ${n} ${m.things}, the median is ${s(r.all.median)}.`;
   const shown = r.groups.filter((g) => !g.hidden && g.n >= NAME_MIN && g.label !== "(blank)");
   if (!r.groupBy || shown.length < 2) return head;
   const top = (k: "total" | "median") => [...shown].sort((a, b) => (b[k] ?? -Infinity) - (a[k] ?? -Infinity))[0];
@@ -47,6 +48,8 @@ export function measureNotes(r: MeasureOk): string[] {
     ...(r.groups.some((g) => g.hidden) || r.other?.hidden ? ["Some groups have fewer than 5 records, so their figures are hidden to protect individuals."] : []),
     ...(far ? ["A few large values pull the average away from the typical one; the median is the better guide."] : []),
     `Period: ${r.period}.`,
+    ...(r.source ? [r.source] : []),
+    ...(r.note ? [r.note] : []),
     ...(r.filters.length ? [`Only: ${r.filters.join(", ")}.`] : []),
   ];
 }

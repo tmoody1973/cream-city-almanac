@@ -25,12 +25,12 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 
 export interface CountArgs { from?: string; to?: string; filters?: { column: string; values?: string[]; over?: number; under?: number }[]; groupBy?: string }
 export type Built =
-  | { ok: true; totalSql: string; groupSql: string | null; futureSql: string | null; period: string; filterLabels: string[]; groupLabel: string | null; overlap: boolean; dateColumn: string | null; coverage: string | null; points: { sql: string; missingSql: string } | null; gridSql: string | null; ofSql: string | null; tractSql: string | null; files: Files; note: string | null }
+  | { ok: true; totalSql: string; groupSql: string | null; futureSql: string | null; period: string; filterLabels: string[]; groupLabel: string | null; overlap: boolean; dateColumn: string | null; coverage: string | null; points: { sql: string; missingSql: string } | null; gridSql: string | null; ofSql: string | null; tractSql: string | null; files: Files; note: string | null; source?: string; latestYear?: string; timeoutMs?: number }
   | { ok: false; status: "no-locations" }
   | { ok: false; status: "outside-coverage"; coverage: string; note?: string }
   | { ok: false; status: "choose"; column: string; asked: string; choices: string[] }
   | { ok: false; status: "bad-column"; column: string; columns: string[] }
-  | { ok: false; status: "bad-dates"; from: string; to: string };
+  | { ok: false; status: "bad-dates"; from: string; to: string; reason?: string };
 
 const isoDay = (d: Date) => d.toISOString().slice(0, 10);
 export const addDays = (day: string, n: number) => isoDay(new Date(Date.parse(`${day}T00:00:00Z`) + n * 86_400_000));
@@ -59,7 +59,7 @@ const NUMBER_WORDS: Record<string, { name: string; unit: "$" | "sq ft" | "" }> =
   C_A_TOTAL: { name: "assessed", unit: "$" }, C_A_LAND: { name: "land assessed", unit: "$" }, C_A_IMPRV: { name: "buildings assessed", unit: "$" },
   BLDG_AREA: { name: "building area", unit: "sq ft" }, NR_UNITS: { name: "units", unit: "" }, YR_BUILT: { name: "built", unit: "" },
 };
-const numberLabel = (column: string, op: "over" | "under", x: number) => {
+export const numberLabel = (column: string, op: "over" | "under", x: number) => {
   const w = NUMBER_WORDS[column] ?? { name: column, unit: "" as const };
   if (column === "YR_BUILT") return `${w.name} ${op === "over" ? "after" : "before"} ${x}`;
   const n = x.toLocaleString("en-US");

@@ -29,10 +29,20 @@ export const ARCHIVES: Record<string, { join: true; from: string; seam: string; 
 };
 
 // The line a dataset's page shows under its name: the hand-written note, else why an older file isn't counted.
+// Families whose history is one file per year in another package (spec 2026-10-13-property-history-design §4).
+export const YEARLY: Record<string, { history: string; from: number; note: string; page: string }> = {
+  "city:master-property-file-mprop": {
+    history: "city:master-property-list-mprop-historical", from: 2005,
+    note: "Years are the City's file years; in a few files the City's own assessment-year field reads a year later.",
+    page: "Yearly assessments from 2005 are read for change over time.",
+  },
+};
+
 export function cityNote(familyKey: string): string | null {
   if (Object.hasOwn(CITY_NOTES, familyKey)) return CITY_NOTES[familyKey];
   const a = ARCHIVES[familyKey];
-  return a && !a.join ? a.note : null;
+  if (a && !a.join) return a.note;
+  return YEARLY[familyKey]?.page ?? null;
 }
 
 // Search lists a replaced dataset after everything else, so its successor is found first (Ask once counted WIBR

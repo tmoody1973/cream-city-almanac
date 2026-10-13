@@ -318,6 +318,8 @@ describe("count card coverage (C2, I2)", () => {
     expect(countCoverage({ dateColumn: "Incident_Date", coverage: "Jan 1, 2024 – Oct 9, 2026", resourceName: null })).toBe("Counted by Incident_Date. The City's data here covers Jan 1, 2024 – Oct 9, 2026.");
     expect(countCoverage({ dateColumn: null, coverage: null, resourceName: "2025" })).toBe("From the City's '2025' file.");
     expect(countCoverage({ dateColumn: null, coverage: null, resourceName: null })).toBeNull();
+    // K2: a year question names the yearly files it read instead.
+    expect(countCoverage({ dateColumn: null, coverage: null, resourceName: null, source: "From the City's 2015 property file." })).toBe("From the City's 2015 property file.");
   });
   it("says a period outside the coverage has nothing to count, with no number", () => {
     const t = outsideCoverage({ name: "NIBRS Crime Data", coverage: "Jan 1, 2024 – Oct 9, 2026" });

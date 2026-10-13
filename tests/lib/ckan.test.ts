@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fetchCityCatalog, parseCkan } from "../../convex/lib/ckan";
+import { datastoreSql, fetchCityCatalog, parseCkan } from "../../convex/lib/ckan";
 import { CRIME_CURRENT_RID, cityCatalog, cityPackages } from "../helpers/cityFixtures";
 import { installFakeFetch } from "../helpers/fakeFetch";
 
@@ -50,5 +50,20 @@ describe("fetchCityCatalog", () => {
   it("throws when the catalog comes back empty", async () => {
     installFakeFetch({ cityCatalog: { success: true, result: { count: 0, results: [] } } });
     await expect(fetchCityCatalog()).rejects.toThrow("City catalog came back empty");
+  });
+});
+
+describe("datastoreSql (K2)", () => {
+  afterEach(() => vi.unstubAllGlobals());
+  it("sends a short query in the address and a long one in a POST body (the City refuses addresses past ~8,000 characters)", async () => {
+    const seen: string[] = [];
+    const f = installFakeFetch({ citySql: (sql) => { seen.push(sql); return [{ n: "1" }]; } });
+    await datastoreSql("SELECT 1 AS n");
+    const long = `SELECT COUNT(*) AS n FROM "x" WHERE ${Array(800).fill("'a' = 'a'").join(" AND ")}`;
+    expect(await datastoreSql(long)).toEqual([{ n: "1" }]);
+    expect(seen).toEqual(["SELECT 1 AS n", long]);
+    expect(f.calls[0].url).toContain("sql=SELECT");
+    expect(f.calls[1].url).toBe("https://data.milwaukee.gov/api/3/action/datastore_search_sql");
+    expect(f.calls[1].body).toEqual({ sql: long });
   });
 });

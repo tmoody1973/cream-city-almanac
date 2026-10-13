@@ -44,9 +44,14 @@ export function parseCkan(packages: CkanPackage[]): HubItem[] {
   }));
 }
 
+// The City refuses addresses past about 8,000 characters (414; measured 2026-10-13), so a longer request (a property
+// question across many years) goes in a POST body, which the City's API accepts the same way.
+const MAX_URL = 6_000;
 async function action<T>(name: string, params: Record<string, string | number>, timeoutMs: number): Promise<T> {
   const url = `${CKAN_API}${name}?${new URLSearchParams(Object.entries(params).map(([k, v]) => [k, String(v)]))}`;
-  const res = await fetchWithTimeout(url, {}, timeoutMs);
+  const res = url.length <= MAX_URL
+    ? await fetchWithTimeout(url, {}, timeoutMs)
+    : await fetchWithTimeout(`${CKAN_API}${name}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(params) }, timeoutMs);
   if (!res.ok) throw new Error(`City API ${res.status} for ${name}`);
   const body = (await res.json()) as { success: boolean; result: T; error?: { message?: string } };
   if (!body.success) throw new Error(`City API error: ${body.error?.message ?? "unknown"}`);
@@ -73,11 +78,11 @@ export async function datastoreFields(resourceId: string): Promise<{ id: string;
   return r.fields.filter((f) => f.id !== "_id");
 }
 
-export async function datastoreSqlPage<T>(sql: string): Promise<{ records: T[]; truncated: boolean }> {
-  const r = await action<{ records: T[]; records_truncated?: boolean }>("datastore_search_sql", { sql }, QUERY_TIMEOUT_MS);
+export async function datastoreSqlPage<T>(sql: string, timeoutMs = QUERY_TIMEOUT_MS): Promise<{ records: T[]; truncated: boolean }> {
+  const r = await action<{ records: T[]; records_truncated?: boolean }>("datastore_search_sql", { sql }, timeoutMs);
   return { records: r.records, truncated: r.records_truncated === true };
 }
 
-export async function datastoreSql<T>(sql: string): Promise<T[]> {
-  return (await datastoreSqlPage<T>(sql)).records;
+export async function datastoreSql<T>(sql: string, timeoutMs?: number): Promise<T[]> {
+  return (await datastoreSqlPage<T>(sql, timeoutMs)).records;
 }

@@ -44,8 +44,10 @@ export function relateFollowUps(r: RelateIn): FollowUp[] {
   ];
 }
 
-export type CountArgsIn = { code: string; from?: string; to?: string; filters?: { column: string; values?: string[]; over?: number; under?: number }[]; groupBy?: string; neighborhood?: string };
-export type CountIn = { code: string; name: string; filters: string[]; period: string; dateColumn: string | null; map: unknown | null; of?: unknown };
+export type CountArgsIn = { code: string; from?: string; to?: string; filters?: { column: string; values?: string[]; over?: number; under?: number }[]; groupBy?: string; neighborhood?: string; years?: { from: number; to: number } };
+export type CountIn = { code: string; name: string; filters: string[]; period: string; dateColumn: string | null; map: unknown | null; of?: unknown; latestYear?: string };
+// Assessment years in the words follow-ups use, so a button asks about the same years (K2).
+export const yearsText = (y?: { from: number; to: number }) => (!y ? "" : y.from === y.to ? `assessment year ${y.from}` : `assessment years ${y.from}–${y.to}`);
 const countBase = (r: CountIn) => `Count ${r.code} ${r.name}${r.filters.length ? ` (${r.filters.join(", ")})` : ""}`;
 // A year earlier; Feb 29 becomes Feb 28 (the year before has none).
 const yearEarlier = (iso: string) => `${Number(iso.slice(0, 4)) - 1}${iso.slice(4, 10) === "-02-29" ? "-02-28" : iso.slice(4)}`;
@@ -54,7 +56,8 @@ export function countFollowUps(args: CountArgsIn, r: CountIn): FollowUp[] {
   const where = args.neighborhood ? ` in ${args.neighborhood}` : "";
   if (r.of) {
     const out: FollowUp[] = [{ label: "TYPICAL HOME VALUE BY TRACT", question: `Which census tracts have the highest typical home value in the City's Master Property File (${r.code})?` }];
-    if (!args.groupBy) out.push({ label: "BY DISTRICT", question: `${countBase(r)}, ${r.period}, by aldermanic district.` });
+    // Districts across several assessment years aren't grouped (each parcel would count once per year).
+    if (!args.groupBy && !r.latestYear) out.push({ label: "BY DISTRICT", question: `${countBase(r)}, ${yearsText(args.years) || r.period}, by aldermanic district.` });
     return out;
   }
   const out: FollowUp[] = [];
@@ -78,9 +81,9 @@ export function previewFollowUps(r: { code: string; name: string; fields: string
 }
 
 // The card's own filters and period, in the words count buttons use, so a follow-up asks about the same records.
-type Scope = { from?: string; to?: string; filters?: { column: string; values?: string[] }[] };
+type Scope = { from?: string; to?: string; filters?: { column: string; values?: string[] }[]; years?: { from: number; to: number } };
 const scope = (a: Scope) =>
-  `${a.filters?.length ? ` where ${a.filters.map((f) => `${f.column} is ${(f.values ?? []).join(" or ")}`).join(" and ")}` : ""}${a.from || a.to ? `, ${[a.from && `from ${a.from}`, a.to && `to ${a.to}`].filter(Boolean).join(" ")}` : ""}`;
+  `${a.filters?.length ? ` where ${a.filters.map((f) => `${f.column} is ${(f.values ?? []).join(" or ")}`).join(" and ")}` : ""}${a.from || a.to ? `, ${[a.from && `from ${a.from}`, a.to && `to ${a.to}`].filter(Boolean).join(" ")}` : ""}${a.years ? `, ${yearsText(a.years)}` : ""}`;
 const filtered = (a: Scope) => new Set((a.filters ?? []).map((f) => f.column));
 
 type SpanArgsIn = Scope & { code: string; groupBy?: string };
@@ -96,7 +99,7 @@ export function spanFollowUps(args: SpanArgsIn, r: SpanOk): FollowUp[] {
 const measureBase = (r: MeasureOk) => `How much ${r.measure.name} in ${r.name} (${r.code})`;
 export function measureFollowUps(args: Scope & { code: string; groupBy?: string }, r: MeasureOk): FollowUp[] {
   const where = scope(args);
-  const out: FollowUp[] = r.splits.filter((s) => s !== r.groupBy && !filtered(args).has(s)).slice(0, 2).map((s) => ({ label: `BY ${s.replace(/_/g, " ").toUpperCase()}`, question: `${measureBase(r)}${where}, by ${s}?` }));
+  const out: FollowUp[] = r.splits.filter((s) => s !== r.groupBy && !filtered(args).has(s) && !(r.latestYear && s === "GEO_ALDER")).slice(0, 2).map((s) => ({ label: `BY ${s.replace(/_/g, " ").toUpperCase()}`, question: `${measureBase(r)}${where}, by ${s}?` }));
   if (!r.averageAsked) out.push({ label: "SHOW THE AVERAGE", question: `What is the average ${r.measure.name} in ${r.name} (${r.code})${where}${r.groupBy ? `, by ${r.groupBy}` : ""}?` });
   return out.slice(0, MAX);
 }

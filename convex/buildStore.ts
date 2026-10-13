@@ -236,6 +236,16 @@ export const familyContext = internalQuery({
   },
 });
 
+// A family's files as the catalog lists them (name and download link), for the property file's yearly history.
+// Kept out of familyContext so card inputs, and the hash that decides whether the AI rewrites a card, don't change.
+export const familyFiles = internalQuery({
+  args: { familyKey: v.string() },
+  handler: async (ctx, { familyKey }) => {
+    const members = await ctx.db.query("members").withIndex("by_family", (q) => q.eq("familyKey", familyKey)).collect();
+    return members.flatMap((m) => (m.files ?? []).map((f) => ({ name: f.name, url: f.url })));
+  },
+});
+
 export const reportContext = internalQuery({
   args: { hubId: v.string() },
   handler: async (ctx, { hubId }) => {

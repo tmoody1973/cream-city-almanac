@@ -55,6 +55,8 @@ export const countParams = z.object({
     under: z.number().optional().describe("Number columns only: count records below this"),
   })).max(4).optional(),
   groupBy: z.string().optional().describe('"month", "year", or a column name'),
+  years: z.object({ from: z.number().int(), to: z.number().int() }).optional()
+    .describe("City Master Property File (MPROP) only: assessment years, e.g. {from: 2005, to: 2026}. Not dates; from/to on that file are sale dates. Several years are grouped by year."),
   neighborhood: z.string().max(80).optional().describe("A City of Milwaukee neighborhood name, e.g. Harambee"),
   measure: z.object({
     id: z.string().max(40).describe("An approved measure id from the list in this tool's description"),

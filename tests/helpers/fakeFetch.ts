@@ -82,7 +82,7 @@ export function installFakeFetch(opts: FakeOptions = {}) {
       return json(opts.cityStatus ?? 200, paged);
     }
     if (url.includes("data.milwaukee.gov/api/3/action/datastore_search_sql")) {
-      const sql = new URL(url).searchParams.get("sql") ?? "";
+      const sql = new URL(url).searchParams.get("sql") ?? body?.sql ?? ""; // long SQL arrives in a POST body
       let records: unknown[];
       try {
         records = opts.citySql ? opts.citySql(sql) : [];

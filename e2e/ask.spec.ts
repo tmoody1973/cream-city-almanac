@@ -266,6 +266,15 @@ test.describe("signed in", () => {
     await expect(card.getByRole("rowheader", { name: "2019", exact: true })).toBeVisible(); // a 2019 group, not just the caption
   });
 
+  test("a property question across years reads the yearly files", async ({ page }) => {
+    test.skip(!(await page.request.get("https://data.milwaukee.gov/api/3/action/status_show").then((r) => r.ok()).catch(() => false)), "City API unreachable");
+    await ask(page, "How has the typical home value changed each year since 2005?");
+    const card = page.locator("[data-card=measure]:visible");
+    await expect(card).toBeVisible({ timeout: 60_000 });
+    await expect(card.getByRole("rowheader", { name: "2005", exact: true })).toBeVisible();
+    await expect(card).toContainText("From the City's yearly property files (2005–2025) and its current file (2026).");
+  });
+
   test("a neighborhood count names the City boundary it used", async ({ page }) => {
     test.skip(!(await page.request.get("https://data.milwaukee.gov/api/3/action/status_show").then((r) => r.ok()).catch(() => false)), "City API unreachable");
     await ask(page, "How many robberies in Harambee this year?");
