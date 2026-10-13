@@ -73,11 +73,11 @@ export async function datastoreFields(resourceId: string): Promise<{ id: string;
   return r.fields.filter((f) => f.id !== "_id");
 }
 
-export async function datastoreSqlPage<T>(sql: string): Promise<{ records: T[]; truncated: boolean }> {
-  const r = await action<{ records: T[]; records_truncated?: boolean }>("datastore_search_sql", { sql }, QUERY_TIMEOUT_MS);
+export async function datastoreSqlPage<T>(sql: string, timeoutMs = QUERY_TIMEOUT_MS): Promise<{ records: T[]; truncated: boolean }> {
+  const r = await action<{ records: T[]; records_truncated?: boolean }>("datastore_search_sql", { sql }, timeoutMs);
   return { records: r.records, truncated: r.records_truncated === true };
 }
 
-export async function datastoreSql<T>(sql: string): Promise<T[]> {
-  return (await datastoreSqlPage<T>(sql)).records;
+export async function datastoreSql<T>(sql: string, timeoutMs?: number): Promise<T[]> {
+  return (await datastoreSqlPage<T>(sql, timeoutMs)).records;
 }
