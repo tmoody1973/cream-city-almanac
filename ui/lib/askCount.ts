@@ -1,5 +1,7 @@
 // What a City count covers, in words for its card: the date it's counted by, the data's range, and the file(s).
-export function countCoverage(r: { dateColumn: string | null; coverage: string | null; resourceName: string | null; files?: "only" | "current" | "archive" | "both" }): string | null {
+export function countCoverage(r: { dateColumn: string | null; coverage: string | null; resourceName: string | null; files?: "only" | "current" | "archive" | "both"; source?: string }): string | null {
+  // A year question names the yearly property files it read (spec 2026-10-13-property-history-design §6).
+  if (r.source) return [r.dateColumn ? `Counted by ${r.dateColumn}.` : null, r.source].filter(Boolean).join(" ");
   // A split dataset's range spans both files, so a count that read one of them says which, in its own sentence.
   const one = r.files === "archive" ? "the City's Historical file"
     : r.files === "current" ? `the City's Current file${r.resourceName ? ` ('${r.resourceName}')` : ""}` : null;
