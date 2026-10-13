@@ -93,7 +93,7 @@ The ZIPs hold the same tables as CSV files, plus lookup CSVs and PDF dictionarie
 
 **A second small table, `stopPeriods`:** `{ period, familyKey, modified, status: "counted" | "failed", note? }`. It records which packages were counted and from which version.
 
-**A new action, `build:refreshStops`**, also called at the end of the weekly build. For each stop-and-search family:
+**A new action, `stops:refreshStops`**, also called at the end of the weekly build. For each stop-and-search family:
 1. **Skip it** if `stopPeriods` already has the period, counted from the same package `modified` date.
 2. **Queryable package:** run one grouped `datastore_search_sql` per matched table. Each table's id comes from its download link in the catalog's `files` (the K2 method), and its columns from `datastoreFields`; the SQL names only columns that list contains.
 3. **ZIP package:** download the member's ZIP link (30-second timeout). Unpack only the three matched CSV entries with `fflate` (`unzipSync` with a filter), parse them with a quote-aware CSV reader (quoted commas, quotes and line breaks), skip a "Column1…" placeholder header, and count in code.
@@ -181,7 +181,7 @@ The ZIPs hold the same tables as CSV files, plus lookup CSVs and PDF dictionarie
 - A ZIP without the field-interview table is marked failed with a note, and its earlier counts are kept.
 
 **Live check on dev**
-- `build:refreshStops` on dev: 23 periods counted, or the failures named.
+- `stops:refreshStops` on dev: 23 periods counted, or the failures named.
 - 2023 Q4 traffic people = 15,472, and 2021 Q4 field-interview people = 765.
 - People per kind per year are recorded.
 - The total run time is recorded.
@@ -209,7 +209,7 @@ The ZIPs hold the same tables as CSV files, plus lookup CSVs and PDF dictionarie
 Merging deploys the code. The counts appear after:
 
 ```
-npx convex run build:refreshStops --prod
+npx convex run stops:refreshStops --prod
 ```
 
 It downloads about 85 MB from the City once (12 ZIPs) and makes about 33 small queries. Sunday's weekly build would also do it. Tarik runs it, or OKs it.

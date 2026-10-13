@@ -125,6 +125,11 @@ export function HowItWorks({ status, example, areas }: { status: CatalogStatus |
               reading one property file per year.
             </p>
             <p>
+              Stop-and-search questions count the people MPD stopped from 2019 to 2024, by race, sex and quarter. The Almanac
+              reads the City&apos;s quarterly files once, stores only the counts, and shows frisk and search rates for field
+              interviews.
+            </p>
+            <p>
               Ask can also add up a few City money columns, like back property tax owed, City employee pay and property sale prices. It
               shows the total and the median (the middle value), and the average only when you ask for it. In files that name people,
               groups of fewer than 5 records are hidden so no one&apos;s figure can be singled out.
