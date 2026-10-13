@@ -103,3 +103,34 @@ describe("countStops (K3)", () => {
     expect(r).toMatchObject({ status: "ok", total: 15, period: "2021 Q4 – 2023 Q4", groups: [{ label: "2021", n: 13 }, { label: "2023", n: 2 }] });
   });
 });
+
+describe("refreshStops, live-run variants (K3)", () => {
+  it("counts a ZIP without a traffic table, recording traffic as missing (2024)", async () => {
+    const t = convexTest(schema, modules);
+    await seed(t);
+    const noTraffic = zipSync({
+      "x/Inform_FieldInterviewPerson_REMCOL_REDACTED.csv": strToU8("Id,sex_Code,race_Description,ethnicity_Description,Pat_Down_Description,Search_Performed_Description,Search_Results_Description\nx,M,WHITE,NOT HISPANIC/LATINO,No,No,NONE\n"),
+      "x/Inform_NoActionEncounterPerson_REDACTED.csv": strToU8("Id,NAE_Id,sex_Code,race_Description,ethnicity_Description\ny,z,F,WHITE,UNKNOWN\n"),
+      "x/Tracs_ContactSummary_Individual.csv": strToU8("PrdKey|IndividualColKey\na|b\n"),
+    });
+    installFakeFetch({ cityFieldsFor: (rid) => FIELDS[rid], citySql: SQL, cityDownloads: { [ZIP23]: noTraffic } });
+    expect(await t.action(internal.stops.refreshStops, {})).toEqual(["Stops 2023-Q4: no traffic table in the City's file; counted the others"]);
+    expect((await countsOf(t, "2023-Q4")).map((r) => r.kind).sort()).toEqual(["field-interview", "no-action"]);
+    const p = await t.run((ctx) => ctx.db.query("stopPeriods").withIndex("by_period", (q) => q.eq("period", "2023-Q4")).first());
+    expect(p).toMatchObject({ status: "counted", missing: ["traffic"] });
+    const r = await t.query(api.stops.countStops, { kind: "traffic" });
+    if (r.status === "ok") expect(r.notes).toContain("The City's files for 2023 Q4 have no traffic-stop table, so traffic stops there aren't counted.");
+  });
+  it("counts a queryable table whose columns are placeholders, from the names in its first row (2021 Q1)", async () => {
+    const t = convexTest(schema, modules);
+    await seed(t);
+    const seen: string[] = [];
+    installFakeFetch({
+      cityFieldsFor: (rid) => (rid === N21 ? ["Column1", "Column2", "Column3", "Column4", "Column5"].map((id) => ({ id, type: "text" })) : FIELDS[rid]),
+      citySql: (sql) => { seen.push(sql); return sql.includes("LIMIT 1") ? [{ _id: 1, Column1: "Id", Column2: "NAE_Id", Column3: "sex_Code", Column4: "race_Description", Column5: "ethnicity_Description" }] : SQL(sql); },
+      cityDownloads: { [ZIP23]: zip23() },
+    });
+    expect(await t.action(internal.stops.refreshStops, {})).toEqual([]);
+    expect(seen.some((q) => q.includes(`"Column4" AS race`) && q.includes(`WHERE "Column4" <> 'race_Description'`))).toBe(true);
+  });
+});

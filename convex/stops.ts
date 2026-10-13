@@ -5,8 +5,8 @@ import { internalAction, internalMutation, internalQuery, query, type MutationCt
 import { datastoreFields, datastoreSql } from "./lib/ckan";
 import { fetchWithTimeout } from "./lib/http";
 import { summarize, type StopsResult } from "./lib/stopMath";
-import { columnsFor, countCsv, dataZip, groupSql, KINDS, kindOfTable, periodOf, stopTables, tally, type Raw, type StopRow } from "./lib/stops";
-import { vStopRow } from "./validators";
+import { columnsFor, countCsv, dataZip, firstRowSql, groupSql, headerRow, KINDS, kindOfTable, periodOf, stopTables, tally, type Raw, type StopKind, type StopRow } from "./lib/stops";
+import { vStopKind, vStopRow } from "./validators";
 
 // MPD's quarterly stop-and-search data as stored counts (spec 2026-10-13-stop-search-design §4–5).
 const ZIP_TIMEOUT_MS = 30_000;
@@ -30,7 +30,7 @@ export const stopStatus = internalQuery({
   handler: async (ctx) => (await ctx.db.query("stopPeriods").collect()).map(({ period, modified, status }) => ({ period, modified, status })),
 });
 
-async function setPeriod(ctx: MutationCtx, p: { period: string; familyKey: string; modified: string; status: "counted" | "failed"; note?: string }) {
+async function setPeriod(ctx: MutationCtx, p: { period: string; familyKey: string; modified: string; status: "counted" | "failed"; note?: string; missing?: StopKind[] }) {
   const old = await ctx.db.query("stopPeriods").withIndex("by_period", (q) => q.eq("period", p.period)).first();
   if (old) await ctx.db.replace(old._id, p);
   else await ctx.db.insert("stopPeriods", p);
@@ -38,11 +38,11 @@ async function setPeriod(ctx: MutationCtx, p: { period: string; familyKey: strin
 
 // A period's counts replaced in one transaction, so a reader never sees half a quarter.
 export const replacePeriod = internalMutation({
-  args: { period: v.string(), year: v.number(), familyKey: v.string(), modified: v.string(), rows: v.array(vStopRow) },
-  handler: async (ctx, { period, year, familyKey, modified, rows }) => {
+  args: { period: v.string(), year: v.number(), familyKey: v.string(), modified: v.string(), rows: v.array(vStopRow), missing: v.array(vStopKind) },
+  handler: async (ctx, { period, year, familyKey, modified, rows, missing }) => {
     for (const old of await ctx.db.query("stopCounts").withIndex("by_period", (q) => q.eq("period", period)).collect()) await ctx.db.delete(old._id);
     for (const r of rows) await ctx.db.insert("stopCounts", { ...r, period, year });
-    await setPeriod(ctx, { period, familyKey, modified, status: "counted" });
+    await setPeriod(ctx, { period, familyKey, modified, status: "counted", ...(missing.length ? { missing } : {}) });
   },
 });
 
@@ -52,17 +52,25 @@ export const markFailed = internalMutation({
   handler: async (ctx, p) => setPeriod(ctx, { ...p, status: "failed" }),
 });
 
-// The three person tables' counts: grouped SQL when the City's database has them, else the package's data ZIP.
-async function countPackage(files: { name: string; format: string; url: string }[]): Promise<StopRow[]> {
+// The person tables' counts: grouped SQL when the City's database has them, else the package's data ZIP. A kind whose
+// table the package lacks (2024's ZIPs have no traffic-stop table) is returned as missing; the others still count.
+async function countPackage(files: { name: string; format: string; url: string }[]): Promise<{ rows: StopRow[]; missing: StopKind[] }> {
   const tables = stopTables(files);
   const out: StopRow[] = [];
-  if (KINDS.every((k) => tables.some((t) => t.kind === k))) {
+  if (tables.length) {
     for (const t of tables) {
-      const c = columnsFor(t.kind, (await datastoreFields(t.resourceId)).map((f) => f.id));
+      const ids = (await datastoreFields(t.resourceId)).map((f) => f.id);
+      // Placeholder columns (2021 Q1): the real names are in the first row, which is left out of the count.
+      const map = ids.filter((f) => f !== "_id").every((f) => /^Column\d+$/.test(f))
+        ? headerRow(ids, (await datastoreSql<Record<string, unknown>>(firstRowSql(t.resourceId)))[0] ?? {})
+        : null;
+      const c = columnsFor(t.kind, map ? Object.keys(map) : ids);
       if (!c.ok) throw new Error(`${t.kind} table has no ${c.missing} column`);
-      out.push(...tally(t.kind, await datastoreSql<Raw>(groupSql(t.kind, t.resourceId, c.cols))));
+      const cols = map ? Object.fromEntries(Object.entries(c.cols).map(([f, real]) => [f, map[real!]])) : c.cols;
+      const skip = map && c.cols.race ? { column: map[c.cols.race], value: c.cols.race } : undefined;
+      out.push(...tally(t.kind, await datastoreSql<Raw>(groupSql(t.kind, t.resourceId, cols, skip))));
     }
-    return out;
+    return { rows: out, missing: KINDS.filter((k) => !tables.some((t) => t.kind === k)) };
   }
   const url = dataZip(files);
   if (!url) throw new Error("no person tables or data ZIP in the package");
@@ -70,14 +78,16 @@ async function countPackage(files: { name: string; format: string; url: string }
   if (!res.ok) throw new Error(`ZIP download failed: ${res.status}`);
   const base = (n: string) => n.split("/").pop() ?? "";
   const entries = unzipSync(new Uint8Array(await res.arrayBuffer()), { filter: (f) => kindOfTable(base(f.name)) !== null });
+  const missing: StopKind[] = [];
   for (const kind of KINDS) {
     const name = Object.keys(entries).find((n) => kindOfTable(base(n)) === kind);
-    if (!name) throw new Error(`${kind} table missing from the ZIP`);
+    if (!name) { missing.push(kind); continue; }
     const c = countCsv(kind, strFromU8(entries[name]));
     if (!c.ok) throw new Error(`${kind} table has no ${c.missing} column`);
     out.push(...c.rows);
   }
-  return out;
+  if (missing.length === KINDS.length) throw new Error("no person tables in the City's ZIP");
+  return { rows: out, missing };
 }
 
 // Weekly (build.finish) or alone: `npx convex run stops:refreshStops`. Notes, never throws. Published quarters don't
@@ -93,8 +103,9 @@ export const refreshStops = internalAction({
       const prev = done.get(p.period);
       if (prev?.status === "counted" && prev.modified === pkg.modified) continue;
       try {
-        const rows = await countPackage(pkg.files);
-        await ctx.runMutation(internal.stops.replacePeriod, { period: p.period, year: p.year, familyKey: pkg.familyKey, modified: pkg.modified, rows });
+        const { rows, missing } = await countPackage(pkg.files);
+        await ctx.runMutation(internal.stops.replacePeriod, { period: p.period, year: p.year, familyKey: pkg.familyKey, modified: pkg.modified, rows, missing });
+        if (missing.length) notes.push(`Stops ${p.period}: no ${missing.join(", ")} table in the City's file; counted the others`);
       } catch (e) {
         notes.push(`Stops ${p.period}: ${message(e)}; kept any earlier counts`);
         await ctx.runMutation(internal.stops.markFailed, { period: p.period, familyKey: pkg.familyKey, modified: pkg.modified, note: message(e) });
@@ -115,7 +126,7 @@ export const countStops = query({
   },
   handler: async (ctx, args): Promise<StopsResult> => {
     const rows = (await ctx.db.query("stopCounts").collect()).map(({ _id, _creationTime, ...r }) => r);
-    const periods = (await ctx.db.query("stopPeriods").collect()).map(({ period, status }) => ({ period, status }));
+    const periods = (await ctx.db.query("stopPeriods").collect()).map(({ period, status, missing }) => ({ period, status, missing }));
     return summarize(rows, periods, args);
   },
 });

@@ -137,7 +137,8 @@ export const vCityProfile = v.object({
 
 const vYesNo = v.union(v.literal("yes"), v.literal("no"), v.literal("unknown"));
 // One stored stop count (spec 2026-10-13-stop-search-design §4): people per combination, never a person.
+export const vStopKind = v.union(v.literal("traffic"), v.literal("field-interview"), v.literal("no-action"));
 export const vStopRow = v.object({
-  kind: v.union(v.literal("traffic"), v.literal("field-interview"), v.literal("no-action")),
+  kind: vStopKind,
   race: v.string(), sex: v.string(), frisked: v.union(vYesNo, v.null()), searched: v.union(vYesNo, v.null()), found: v.union(v.string(), v.null()), n: v.number(),
 });

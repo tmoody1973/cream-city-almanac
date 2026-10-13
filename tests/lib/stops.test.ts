@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { countCsv, dataZip, groupSql, kindOfTable, parseCsv, periodOf, stopTables, tally } from "../../convex/lib/stops";
+import { countCsv, dataZip, groupSql, headerRow, kindOfTable, parseCsv, periodOf, stopTables, tally } from "../../convex/lib/stops";
 
 describe("periodOf (K3)", () => {
   it("reads a quarter, the 2019 half-year, and nothing else", () => {
@@ -14,6 +14,9 @@ describe("kindOfTable (K3)", () => {
     for (const n of ["Tracs Individual", "Tracs Individuals", "Tracs_Individual.csv", "Tracs_Individual_REMCOL.csv"]) expect(kindOfTable(n)).toBe("traffic");
     for (const n of ["Inform Field Interview Person Redacted", "Inform Field Interview Person - Redacted", "Inform_FieldInterviewPerson REDACTED TO POST 1.csv", "Inform_FieldInterviewPerson_REDACTED_REMCOL.csv", "Inform_FieldInterviewPerson_REMCOL_REDACTED.csv"]) expect(kindOfTable(n)).toBe("field-interview");
     for (const n of ["Inform No Action Encounter Person Redacted", "Inform_NoActionEncounterPerson.csv", "Inform_NoActionEncounterPerson_REDACTED.csv"]) expect(kindOfTable(n)).toBe("no-action");
+    // Live run 2026-10-13: more spellings MPD used.
+    for (const n of ["Inform Field Interview PersonV1- Redacted", "Inform Field Interview Person Formatted- Redacted", "Inform_FieldInterviewPerson_FIXED_REDACTED_REMCOL.csv"]) expect(kindOfTable(n)).toBe("field-interview");
+    for (const n of ["Inform FieldInterviewOfficer", "Inform Field Interview Officer", "Inform_NoActionEncounterOfficer_REMCOL.csv"]) expect(kindOfTable(n)).toBeNull();
     expect(kindOfTable("Tracs Contact Summary Individual")).toBeNull();
     expect(kindOfTable("Inform_FieldInterview_Joined.csv")).toBeNull();
   });
@@ -81,5 +84,16 @@ describe("package files (K3)", () => {
     expect(dataZip(files)).toBeNull(); // only a lookup ZIP
     expect(dataZip([{ name: "MPD SC Datasets 2023 Q4.zip", format: "ZIP", url: link("55555555-5555-5555-5555-555555555555", "d.zip") }])).toBe(link("55555555-5555-5555-5555-555555555555", "d.zip"));
     expect(dataZip([{ name: "MPD SC Datasets 2023 Q4.zip", format: "ZIP", url: "https://example.com/d.zip" }])).toBeNull();
+  });
+});
+
+describe("placeholder columns in the City's database (live run, 2021 Q1)", () => {
+  it("maps Column1… to the real names in the first row, and leaves that row out of the count", () => {
+    const fields = ["Column1", "Column4", "Column5", "Column6", "Column12"];
+    const first = { _id: 1, Column1: "Id", Column4: "sex_Code", Column5: "race_Description", Column6: "ethnicity_Description", Column12: "Pat_Down_Description" };
+    expect(headerRow(fields, first)).toEqual({ Id: "Column1", sex_Code: "Column4", race_Description: "Column5", ethnicity_Description: "Column6", Pat_Down_Description: "Column12" });
+    expect(headerRow(["Id", "race_Description"], first)).toBeNull();
+    expect(groupSql("no-action", "dcbc4a9d-5e48-4f24-bf71-e9a450065461", { race: "Column5", sex: "Column4" }, { column: "Column5", value: "race_Description" }))
+      .toBe(`SELECT "Column5" AS race, "Column4" AS sex, COUNT(*) AS n FROM "dcbc4a9d-5e48-4f24-bf71-e9a450065461" WHERE "Column5" <> 'race_Description' GROUP BY 1, 2`);
   });
 });

@@ -1,4 +1,4 @@
-import type { StopKind, StopRow } from "./stops";
+import { KINDS, type StopKind, type StopRow } from "./stops";
 
 // The stop counts Ask shows (spec 2026-10-13-stop-search-design §5): periods, filters, groups, shares and field-
 // interview rates, all from the stored counts. Pure. The AI never computes any of these.
@@ -34,7 +34,9 @@ const round1 = (x: number) => Math.round(x * 10) / 10;
 const rate = (num: number, den: number) => (den >= RATE_FLOOR ? round1((100 * num) / den) : null);
 const sum = (rs: StoredRow[], p: (r: StoredRow) => boolean = () => true) => rs.filter(p).reduce((s, r) => s + r.n, 0);
 
-export function summarize(rows: StoredRow[], periods: { period: string; status: string }[], a: StopsArgs): StopsResult {
+const TABLE_WORD: Record<StopKind, string> = { traffic: "traffic-stop", "field-interview": "field-interview", "no-action": "no-action-encounter" };
+
+export function summarize(rows: StoredRow[], periods: { period: string; status: string; missing?: string[] }[], a: StopsArgs): StopsResult {
   if (!rows.length) return { status: "refused", reason: "Stop counts haven't been built yet." };
   const kind = a.kind ?? "all";
   const f = a.filters ?? {};
@@ -90,6 +92,11 @@ export function summarize(rows: StoredRow[], periods: { period: string; status: 
 
   const first = periodLabel(inRange[0]), last = periodLabel(inRange[inRange.length - 1]);
   const failed = periods.filter((p) => p.status === "failed" && !stored.includes(p.period) && overlaps(p.period));
+  // Quarters whose City file lacks a kind's table (2024 has no traffic-stop table): named, never silently short.
+  const gaps = (kind === "all" ? KINDS : [kind]).flatMap((k) => {
+    const ps = periods.filter((p) => p.missing?.includes(k) && overlaps(p.period)).map((p) => p.period).sort((x, y) => at(x, false) - at(y, false));
+    return ps.length ? [`The City's files for ${ps.map(periodLabel).join(", ")} have no ${TABLE_WORD[k]} table, so ${KIND_LABEL[k].toLowerCase()} there aren't counted.`] : [];
+  });
   return {
     status: "ok", kind, total, groupBy: g, groups, rates,
     period: first === last ? first : `${first} – ${last}`,
@@ -100,6 +107,6 @@ export function summarize(rows: StoredRow[], periods: { period: string; status: 
       ...[...(want.found ?? [])].map((x) => `found: ${x}`),
     ],
     source: `From MPD's quarterly stop-and-search data (${first} to ${last}), counted by the Almanac from the City's files.`,
-    notes: [PEOPLE_NOTE, RACE_NOTE, ...failed.map((p) => `The City's file for ${periodLabel(p.period)} couldn't be read.`), NOT_RATES],
+    notes: [PEOPLE_NOTE, RACE_NOTE, ...failed.map((p) => `The City's file for ${periodLabel(p.period)} couldn't be read.`), ...gaps, NOT_RATES],
   };
 }

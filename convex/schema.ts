@@ -1,6 +1,6 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
-import { vBbox, vBoundaryKind, vCityProfile, vCover, vPlaceType, vDictionaryField, vGlossaryEntry, vKind, vMember, vMismatch, vProvenance, vPortraitTable, vStopRow } from "./validators";
+import { vBbox, vBoundaryKind, vCityProfile, vCover, vPlaceType, vDictionaryField, vGlossaryEntry, vKind, vMember, vMismatch, vProvenance, vPortraitTable, vStopKind, vStopRow } from "./validators";
 
 export default defineSchema({
   families: defineTable({
@@ -117,7 +117,7 @@ export default defineSchema({
   // and DYCU's tract outlines (convex/lib/tractPlaces.ts). Tracts outside the City aren't stored.
   // The City of Milwaukee's ACS figures for the fact sheet, by portrait period (vintage), raw by variable code.
   stopCounts: defineTable({ period: v.string(), year: v.number(), ...vStopRow.fields }).index("by_period", ["period"]),
-  stopPeriods: defineTable({ period: v.string(), familyKey: v.string(), modified: v.string(), status: v.union(v.literal("counted"), v.literal("failed")), note: v.optional(v.string()) }).index("by_period", ["period"]),
+  stopPeriods: defineTable({ period: v.string(), familyKey: v.string(), modified: v.string(), status: v.union(v.literal("counted"), v.literal("failed")), note: v.optional(v.string()), missing: v.optional(v.array(vStopKind)) }).index("by_period", ["period"]),
   cityFigures: defineTable({
     period: v.number(),
     values: v.record(v.string(), v.object({ estimate: v.number(), moe: v.union(v.number(), v.null()) })),

@@ -55,6 +55,13 @@ describe("summarize (K3)", () => {
     for (const a of [{ from: "21" }, { from: "2024", to: "2019" }, { from: "2030" }]) expect(summarize(ROWS, DONE, a)).toEqual({ status: "refused", reason: range });
     expect(summarize([], [], {})).toEqual({ status: "refused", reason: "Stop counts haven't been built yet." });
   });
+  it("names quarters whose City file has no table for the asked kind (live run: 2024 has no traffic table)", () => {
+    const periods = [...DONE.filter((p) => p.period !== "2024-Q4"), { period: "2024-Q4", status: "counted", missing: ["traffic"] }];
+    const note = "The City's files for 2024 Q4 have no traffic-stop table, so traffic stops there aren't counted.";
+    expect(ok(summarize(ROWS, periods, { kind: "traffic" })).notes).toContain(note);
+    expect(ok(summarize(ROWS, periods, {})).notes).toContain(note);
+    expect(ok(summarize(ROWS, periods, { kind: "field-interview" })).notes).not.toContain(note);
+  });
   it("names a period in range that couldn't be read (review focus 4)", () => {
     const r = ok(summarize(ROWS, [...DONE, { period: "2023-Q2", status: "failed" }], { kind: "traffic" }));
     expect(r.notes).toContain("The City's file for 2023 Q2 couldn't be read.");

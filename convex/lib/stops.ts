@@ -1,5 +1,5 @@
 import { quoteId } from "./cityProfile";
-import { RID } from "./citySql";
+import { lit, RID } from "./citySql";
 
 // MPD stop-and-search packages (spec 2026-10-13-stop-search-design §2, §4): titles → periods, which tables hold
 // people, which columns, and how MPD's values become the Almanac's groups. Pure: no I/O. Only coded fields are read;
@@ -20,11 +20,24 @@ export function periodOf(title: string): { period: string; year: number } | null
   return { period: `${m[1]}-${qs.join("")}`, year: Number(m[1]) };
 }
 
-// Table names change every few quarters ("Tracs Individual", "Tracs_Individual_REMCOL.csv", "…REDACTED TO POST 1.csv"):
-// compare letters only, without the City's redaction and file-type words.
+// Table names change every few quarters ("Tracs Individual", "Tracs_Individual_REMCOL.csv", "…REDACTED TO POST 1.csv",
+// "…PersonV1- Redacted", "…Person Formatted- Redacted", "…Person_FIXED_…"): compare the start of the name, letters only,
+// without the City's redaction and file-type words. "Tracs Contact Summary Individual" and the officer tables don't match.
 const squash = (s: string) => s.toLowerCase().replace(/\.csv$/, "").replace(/[^a-z]/g, "").replace(/redacted|remcol|topost/g, "");
-const TABLES: Record<string, StopKind> = { tracsindividual: "traffic", tracsindividuals: "traffic", informfieldinterviewperson: "field-interview", informnoactionencounterperson: "no-action" };
-export const kindOfTable = (name: string): StopKind | null => TABLES[squash(name)] ?? null;
+const PREFIXES: [string, StopKind][] = [["tracsindividual", "traffic"], ["informfieldinterviewperson", "field-interview"], ["informnoactionencounterperson", "no-action"]];
+export const kindOfTable = (name: string): StopKind | null => { const k = squash(name); return PREFIXES.find(([p]) => k.startsWith(p))?.[1] ?? null; };
+
+// A table loaded with placeholder columns ("Column1", "Column2", …, as 2021 Q1's field interviews are in the City's
+// database): the real names are in its first row. Returns real name → placeholder, or null for a normal table.
+export function headerRow(fields: string[], first: Record<string, unknown>): Record<string, string> | null {
+  const ids = fields.filter((f) => f !== "_id");
+  if (!ids.length || !ids.every((f) => /^Column\d+$/.test(f))) return null;
+  return Object.fromEntries(ids.map((f) => [String(first[f] ?? "").trim(), f]).filter(([real]) => real));
+}
+export const firstRowSql = (resourceId: string) => {
+  if (!RID.test(resourceId)) throw new Error("Not a CKAN resource id");
+  return `SELECT * FROM ${quoteId(resourceId)} ORDER BY "_id" LIMIT 1`;
+};
 
 const WANT: Record<StopKind, Partial<Record<Field, string>>> = {
   traffic: { race: "race", sex: "sex" },
@@ -77,11 +90,13 @@ export function tally(kind: StopKind, raw: Raw[]): StopRow[] {
   return [...by.values()];
 }
 
-// One grouped count per queryable table: only the found columns, under fixed names, on a checked id.
-export function groupSql(kind: StopKind, resourceId: string, cols: Partial<Record<Field, string>>): string {
+// One grouped count per queryable table: only the found columns, under fixed names, on a checked id. `skip` leaves out
+// a placeholder table's header row.
+export function groupSql(kind: StopKind, resourceId: string, cols: Partial<Record<Field, string>>, skip?: { column: string; value: string }): string {
   if (!RID.test(resourceId)) throw new Error("Not a CKAN resource id");
   const picked = Object.entries(cols) as [Field, string][];
-  return `SELECT ${picked.map(([f, c]) => `${quoteId(c)} AS ${f}`).join(", ")}, COUNT(*) AS n FROM ${quoteId(resourceId)} GROUP BY ${picked.map((_, i) => i + 1).join(", ")}`;
+  const where = skip ? ` WHERE ${quoteId(skip.column)} <> ${lit(skip.value)}` : "";
+  return `SELECT ${picked.map(([f, c]) => `${quoteId(c)} AS ${f}`).join(", ")}, COUNT(*) AS n FROM ${quoteId(resourceId)}${where} GROUP BY ${picked.map((_, i) => i + 1).join(", ")}`;
 }
 
 // A CSV reader for MPD's files: quoted fields hold commas, doubled quotes and line breaks (narratives).
