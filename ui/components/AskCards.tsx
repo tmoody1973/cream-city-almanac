@@ -241,6 +241,7 @@ function CountCard({ r, id, onOpen, noMap, args }: { r: CountOk; id?: string; on
       )}
       {r.overlap && r.groups.length > 0 && <p className={styles.source}>An incident can count in more than one group.</p>}
       {covers && <p className={styles.source} data-coverage>{covers}</p>}
+      {"note" in r && r.note && <p className={styles.source} data-count-note>{r.note}</p>}
       {r.area && <p className={styles.source} data-area>In {r.area}</p>}
       {r.area && <p className={styles.source}><a href={NEIGHBORHOODS_HELP} target="_blank" rel="noopener">How neighborhoods work</a></p>}
       {r.noLocation > 0 && <p className={styles.source} data-no-location>{r.noLocation.toLocaleString("en-US")} matching records citywide have no location and aren&apos;t included.</p>}

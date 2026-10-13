@@ -72,7 +72,7 @@ export type CountResult =
   | {
       status: "ok"; code: string; name: string; count: number; groups: { label: string; count: number }[]; other: number; otherLabel: "Earlier" | "Other" | null;
       overlap: boolean; period: string; filters: string[]; futureExcluded: number; caveat: string | null;
-      dateColumn: string | null; coverage: string | null; resourceName: string | null; files?: "current" | "archive" | "both"; namesPeople: boolean;
+      dateColumn: string | null; coverage: string | null; resourceName: string | null; files?: "current" | "archive" | "both"; note?: string | null; namesPeople: boolean;
       area: string | null; noLocation: number; map: MapData | null; mapError?: true;
       of?: { count: number; label: string }; tractMap?: { url: string; ids: string[]; total: number };
     }
@@ -226,7 +226,7 @@ export async function askCity(ctx: ActionCtx, { data, profile, found, built }: P
         groups: built.groupLabel ? ranked.top.map(([g, n]) => ({ label: groupName(built.groupLabel, g), count: n })) : [],
         other: ranked.other, otherLabel: ranked.capped ? (byDate ? "Earlier" : "Other") : null, overlap: built.overlap,
         period: built.period, filters: built.filterLabels, futureExcluded: 0,
-        caveat: data.caveat, dateColumn: built.dateColumn, coverage: built.coverage, resourceName: profile.resourceName ?? null, files: built.files, namesPeople: profile.namesPeople,
+        caveat: data.caveat, dateColumn: built.dateColumn, coverage: built.coverage, resourceName: profile.resourceName ?? null, files: built.files, note: built.note, namesPeople: profile.namesPeople,
         area, noLocation: cityCount(missing), map: toMapData(tally.cells, found.name),
       };
     }
@@ -275,7 +275,7 @@ export async function askCity(ctx: ActionCtx, { data, profile, found, built }: P
       other: capped ? Math.max(0, count - shown) : 0,
       otherLabel: capped ? (byDate ? "Earlier" : "Other") : null, overlap: built.overlap,
       period: built.period, filters: built.filterLabels, futureExcluded,
-      caveat: data.caveat, dateColumn: built.dateColumn, coverage: built.coverage, resourceName: profile.resourceName ?? null, files: built.files, namesPeople: profile.namesPeople,
+      caveat: data.caveat, dateColumn: built.dateColumn, coverage: built.coverage, resourceName: profile.resourceName ?? null, files: built.files, note: built.note, namesPeople: profile.namesPeople,
       area: null, noLocation: 0, map,
       ...(of ? { of } : {}), ...(tractMap ? { tractMap } : {}),
       // The dataset records locations but this count has no map (the grid failed or was cut off): not "no locations".

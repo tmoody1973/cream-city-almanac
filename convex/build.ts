@@ -101,11 +101,14 @@ async function withArchive<P extends CityProfile>(familyKey: string, profile: P,
     notes.push(`${familyKey}: Historical file unavailable; counting the Current file only (${message(e)})`);
     return profile;
   }
-  if (fields.map((f) => f.id).sort().join(",") !== profile.signature) {
+  // Names and types: a UNION fails on a type mismatch, so a retyped column means no join, with a note.
+  const shape = (cs: { id: string; type: string }[]) => cs.map((c) => `${c.id}:${c.type}`).sort().join(",");
+  if (shape(fields) !== shape(profile.columns.map((c) => ({ id: c.name, type: c.type })))) {
     notes.push(`${familyKey}: Historical file's columns differ; counting the Current file only`);
     return profile;
   }
-  return { ...profile, minDate: entry.from, archive: { resourceId: archiveRid, before: profile.minDate } };
+  if (profile.minDate < entry.seam) notes.push(`${familyKey}: Current file has records dated before ${entry.seam}; combined counts leave them out`);
+  return { ...profile, minDate: entry.from, archive: { resourceId: archiveRid, before: entry.seam } };
 }
 
 // Live City dataset: read its columns and build the counting menu. If the City won't describe its columns, the profile

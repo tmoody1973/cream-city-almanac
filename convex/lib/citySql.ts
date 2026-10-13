@@ -25,7 +25,7 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 
 export interface CountArgs { from?: string; to?: string; filters?: { column: string; values?: string[]; over?: number; under?: number }[]; groupBy?: string }
 export type Built =
-  | { ok: true; totalSql: string; groupSql: string | null; futureSql: string | null; period: string; filterLabels: string[]; groupLabel: string | null; overlap: boolean; dateColumn: string | null; coverage: string | null; points: { sql: string; missingSql: string } | null; gridSql: string | null; ofSql: string | null; tractSql: string | null; files: Files }
+  | { ok: true; totalSql: string; groupSql: string | null; futureSql: string | null; period: string; filterLabels: string[]; groupLabel: string | null; overlap: boolean; dateColumn: string | null; coverage: string | null; points: { sql: string; missingSql: string } | null; gridSql: string | null; ofSql: string | null; tractSql: string | null; files: Files; note: string | null }
   | { ok: false; status: "no-locations" }
   | { ok: false; status: "outside-coverage"; coverage: string; note?: string }
   | { ok: false; status: "choose"; column: string; asked: string; choices: string[] }
@@ -107,14 +107,18 @@ export function valueFilter(p: CityProfile, f: { column: string; values?: string
 }
 
 export type Files = "current" | "archive" | "both";
-// The table a count reads (spec 2026-10-12-crime-history-design §5): the profiled file, its archive, or both as one,
-// with the archive's rows only before the profiled file's first date so nothing is counted twice.
+// The table a count reads (spec 2026-10-12-crime-history-design §5): the profiled file, its archive, or both as one.
+// Each file is cut at the seam (archive before it, profiled file from it) so nothing is counted twice, and the columns
+// are named on both sides: a UNION lines columns up by position, so a reordered file must not shift them.
 export function sourceFor(p: CityProfile, from: string, to: string): { table: string; files: Files } {
   const a = p.archive;
   if (!a || !p.dateColumn || from >= a.before) return { table: quoteId(p.resourceId), files: "current" };
   if (!RID.test(a.resourceId)) throw new Error("Not a CKAN resource id");
   if (to < a.before) return { table: quoteId(a.resourceId), files: "archive" };
-  return { table: `(SELECT * FROM ${quoteId(a.resourceId)} WHERE ${quoteId(p.dateColumn)} < ${lit(a.before)} UNION ALL SELECT * FROM ${quoteId(p.resourceId)}) AS t`, files: "both" };
+  if (!p.columns.length) throw new Error("A profile without columns can't be joined to its archive");
+  const cols = p.columns.map((c) => quoteId(c.name)).join(", ");
+  const d = quoteId(p.dateColumn);
+  return { table: `(SELECT ${cols} FROM ${quoteId(a.resourceId)} WHERE ${d} < ${lit(a.before)} UNION ALL SELECT ${cols} FROM ${quoteId(p.resourceId)} WHERE ${d} >= ${lit(a.before)}) AS t`, files: "both" };
 }
 
 // Why a count stops at its data's start: crime's note only once the archive is read, 311's always.
@@ -127,6 +131,7 @@ function startNote(p: CityProfile): string | null {
 export function buildCount(p: CityProfile, a: CountArgs, today: string, area?: Bbox): Built {
   if (!RID.test(p.resourceId)) throw new Error("Not a CKAN resource id");
   let { table, files } = { table: quoteId(p.resourceId), files: "current" as Files };
+  let startLine: string | null = null; // why the count stops at its data's start: its own card line, not the date line
   // A date that was given but isn't a real day is refused, never quietly replaced by the default window.
   if ((!absent(a.from) && !isDay(a.from!)) || (!absent(a.to) && !isDay(a.to!))) return { ok: false, status: "bad-dates", from: a.from ?? "", to: a.to ?? "" };
   if (area && !(p.latColumn && p.lonColumn)) return { ok: false, status: "no-locations" };
@@ -176,7 +181,7 @@ export function buildCount(p: CityProfile, a: CountArgs, today: string, area?: B
         from = early ? span.min : from;
         to = to > span.max ? span.max : to;
         notes.push("clamped to the data's range");
-        if (early && note) notes.push(note);
+        if (early && note) startLine = note;
       }
     }
     ({ table, files } = sourceFor(p, from, to));
@@ -234,5 +239,5 @@ export function buildCount(p: CityProfile, a: CountArgs, today: string, area?: B
     const filtered = where.length ? `${where.join(" AND ")} AND ` : "";
     gridSql = `SELECT floor(${lat} / ${CELL.dLat}) AS i, floor(${lon} / ${CELL.dLon}) AS j, COUNT(*) AS n FROM ${table} WHERE ${filtered}${lat} IS NOT NULL AND ${lon} IS NOT NULL GROUP BY i, j`;
   }
-  return { ok: true, totalSql, groupSql, futureSql, period, filterLabels, groupLabel, overlap, dateColumn: p.dateColumn, coverage, points, gridSql, ofSql, tractSql, files };
+  return { ok: true, totalSql, groupSql, futureSql, period, filterLabels, groupLabel, overlap, dateColumn: p.dateColumn, coverage, points, gridSql, ofSql, tractSql, files, note: startLine };
 }

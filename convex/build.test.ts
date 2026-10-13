@@ -340,4 +340,21 @@ describe("crime history (K1)", () => {
     await t.action(internal.build.processFamily, { buildId, familyKey: CRIME });
     expect((await buildOf(t, buildId))!.notes.join(" ")).toContain("Historical file's columns differ");
   });
+
+  it("keeps the seam at Jan 1, 2024 when Current holds a stray older date, and the build says so (review fix)", async () => {
+    const t = convexTest(schema, modules);
+    await seedCity(t);
+    installFakeFetch({ cityFields: FIELDS, citySql: (sql) => (sql.includes("MIN(") ? [{ lo: "1924-05-01T00:00:00", hi: "2026-10-08T00:00:00" }] : crimeSql(sql)) });
+    const notes = await t.action(internal.build.reprofileCity, { familyKey: CRIME });
+    expect(await profileOf(t)).toMatchObject({ minDate: "2005-01-01", archive: { resourceId: HIST, before: "2024-01-01" } });
+    expect(notes).toEqual([`${CRIME}: Current file has records dated before 2024-01-01; combined counts leave them out`]);
+  });
+  it("doesn't join when a column's type differs, even with the same names (review fix)", async () => {
+    const t = convexTest(schema, modules);
+    await seedCity(t);
+    const retyped = FIELDS.map((f) => (f.id === "Police_District" ? { ...f, type: "numeric" } : f));
+    installFakeFetch({ cityFields: FIELDS, cityFieldsFor: (rid) => (rid === HIST ? retyped : undefined), citySql: crimeSql });
+    expect(await t.action(internal.build.reprofileCity, { familyKey: CRIME })).toEqual([`${CRIME}: Historical file's columns differ; counting the Current file only`]);
+    expect((await profileOf(t))?.archive ?? null).toBeNull();
+  });
 });

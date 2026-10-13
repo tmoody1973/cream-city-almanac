@@ -22,8 +22,9 @@ export const CITY_NOTES: Record<string, string> = {
 // reads both as one table from `from`; otherwise the note says why the older file isn't counted.
 // ponytail: hand-kept; add a pair only after checking by hand that its columns and codes match and from when the
 // archive is complete.
-export const ARCHIVES: Record<string, { join: true; from: string; note: string } | { join: false; note: string }> = {
-  "city:nibrs-crime-data": { join: true, from: "2005-01-01", note: "The City's crime records are complete from 2005; earlier years hold only a few stray records." },
+export const ARCHIVES: Record<string, { join: true; from: string; seam: string; note: string } | { join: false; note: string }> = {
+  // seam: where Current takes over. Hand-kept, never Current's earliest record: one mistyped date would move it.
+  "city:nibrs-crime-data": { join: true, from: "2005-01-01", seam: "2024-01-01", note: "The City's crime records are complete from 2005; earlier years hold only a few stray records." },
   "city:call-center-data": { join: false, note: "The City's earlier 311 file (2020–2025) is missing most requests after November 2020, so counts here start in 2026." },
 };
 
