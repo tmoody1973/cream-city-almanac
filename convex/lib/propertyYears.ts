@@ -59,12 +59,12 @@ const where = (parts: string[]) => (parts.length ? ` WHERE ${parts.join(" AND ")
 // column names), and whether the district comes along for a district group.
 export type YearFilters = { district?: string[]; owner?: boolean; cls?: string[]; byDistrict?: boolean };
 
-// One table of the chosen years' files (spec §5): each file gives only its year tag and value (and district, when
-// grouped by it) under the classic names, with the filters applied inside it. Live check 2026-10-13: selecting every
+// One table of the chosen years' files (spec §5): each file gives only its year tag, its value already read as a number
+// (`v`), and its district when grouped by it, with the filters applied inside it. Live check 2026-10-13: selecting every
 // fact and filtering outside the union took 52 s and a 7,400-character address (the City refuses past ~8,000);
-// this shape gives the same figures in 4 s at 4,700. Today's file keeps only its current assessment, as counts without
+// this shape gives the same figures in 4 s at 4,700 (reading the number after stacking the files was 24 s). Today's file keeps only its current assessment, as counts without
 // years do. Only fixed text, checked ids, integer years and listed values enter the SQL.
-// ponytail: the address still grows ~200 characters a year; send the SQL in a POST body if it nears 8,000.
+// The address grows ~300 characters a year; past 6,000 the City client sends the SQL in a POST body (ckan.ts).
 export function yearSource(p: CityProfile, picked: YearFile[], f: YearFilters = {}): string {
   if (!picked.length) throw new Error("No property files for those years");
   return `(${picked.map((y) => {
@@ -80,7 +80,7 @@ export function yearSource(p: CityProfile, picked: YearFile[], f: YearFilters = 
       ...(f.owner ? [`${quoteId(c.owner)} = ${lit(c.ownerYes)}`] : []),
       ...(f.cls?.length ? [inList(c.cls, f.cls)] : []),
     ];
-    return `SELECT ${year} AS "yr", ${quoteId(c.value)} AS "C_A_TOTAL"${f.byDistrict ? `, ${quoteId(c.district)} AS "GEO_ALDER"` : ""} FROM ${quoteId(y.resourceId)}${where(conds)}`;
+    return `SELECT ${year} AS "yr", ${num(c.value)} AS v${f.byDistrict ? `, ${quoteId(c.district)} AS "GEO_ALDER"` : ""} FROM ${quoteId(y.resourceId)}${where(conds)}`;
   }).join(" UNION ALL ")}) AS t`;
 }
 
@@ -138,7 +138,7 @@ function filtersFor(a: YearArgs): { filters: YearFilters; numbers: string[]; lab
       for (const [op, x] of [[">", f.over], ["<", f.under]] as const) {
         if (x === undefined) continue;
         if (!Number.isFinite(x)) return { ok: false, status: "bad-column", column: f.column, columns: YEAR_COLUMNS };
-        numbers.push(`${num("C_A_TOTAL")} ${op} ${x}`);
+        numbers.push(`v ${op} ${x}`);
         labels.push(numberLabel("C_A_TOTAL", op === ">" ? "over" : "under", x));
       }
       continue;
@@ -171,7 +171,7 @@ export function buildYearCount(p: CityProfile, a: YearArgs): Built {
   const g = groupFor(a, multi);
   if ("ok" in g) return g;
   const table = yearSource(p, s.picked, { ...fl.filters, byDistrict: g.label === "GEO_ALDER" });
-  const value = fl.numbers.length ? [`${num("C_A_TOTAL")} > 0`, ...fl.numbers] : [];
+  const value = fl.numbers.length ? ["v > 0", ...fl.numbers] : [];
   const newest = s.latest ? [`"yr" = ${lit(s.latest)}`] : [];
   const notes = [...s.notes, ...(fl.filters.district && multi ? [DISTRICT_NOTE] : [])];
   return {
@@ -180,7 +180,7 @@ export function buildYearCount(p: CityProfile, a: YearArgs): Built {
     groupSql: g.key ? `SELECT ${g.key} AS g, COUNT(*) AS n FROM ${table}${where(value)} GROUP BY g ORDER BY ${g.label === "year" ? "g DESC" : "n DESC"} LIMIT ${MAX_GROUPS}` : null,
     futureSql: null, period: s.period, filterLabels: fl.labels, groupLabel: g.label, overlap: false, dateColumn: null, coverage: null,
     points: null, gridSql: null, tractSql: null, files: "only",
-    ofSql: fl.numbers.length ? `SELECT COUNT(*) AS n FROM ${table}${where([`${num("C_A_TOTAL")} > 0`, ...newest])}` : null,
+    ofSql: fl.numbers.length ? `SELECT COUNT(*) AS n FROM ${table}${where(["v > 0", ...newest])}` : null,
     note: notes.join(" ") || null, timeoutMs: YEAR_TIMEOUT_MS,
     ...(s.source ? { source: s.source } : {}), ...(s.latest ? { latestYear: s.latest } : {}),
   };
@@ -197,17 +197,16 @@ export function buildYearMeasure(p: CityProfile, m: CityMeasure, a: YearArgs): M
   const multi = s.picked.length > 1;
   const g = groupFor(a, multi);
   if ("ok" in g) return g;
-  // The plain number check, not the money cleanup: assessed values are plain digits, and stripping $ and commas from
-  // 3.4 million values made the query 52 s live. A value it can't read is counted as unreadable on the card.
-  const byDistrict = g.label === "GEO_ALDER";
-  const inner = `SELECT ${num("C_A_TOTAL")} AS v, "yr" AS y${byDistrict ? `, "GEO_ALDER" AS d` : ""} FROM ${yearSource(p, s.picked, { ...fl.filters, byDistrict })}`;
+  // The plain number check (in yearSource), not the money cleanup: assessed values are plain digits, and stripping $ and
+  // commas from 3.4 million values made the query 52 s live. A value it can't read is counted as unreadable on the card.
+  const table = yearSource(p, s.picked, { ...fl.filters, byDistrict: g.label === "GEO_ALDER" });
   const measures = measureColumns(m.skipZero);
-  const key = g.label === "year" ? "y" : g.label ? "d" : null;
+  const key = g.label === "year" ? '"yr"' : g.label ? '"GEO_ALDER"' : null;
   const notes = [...s.notes, ...(fl.filters.district && multi ? [DISTRICT_NOTE] : [])];
   return {
     ok: true, period: s.period, filterLabels: fl.labels, groupLabel: g.label,
-    allSql: `SELECT ${measures} FROM (${inner}) s${s.latest ? ` WHERE y = ${lit(s.latest)}` : ""}`,
-    groupSql: key ? `SELECT ${key} AS g, ${measures} FROM (${inner}) s GROUP BY g ORDER BY ${key === "y" ? "g DESC" : "n DESC"} LIMIT ${MAX_GROUPS}` : null,
+    allSql: `SELECT ${measures} FROM ${table}${s.latest ? ` WHERE "yr" = ${lit(s.latest)}` : ""}`,
+    groupSql: key ? `SELECT ${key} AS g, ${measures} FROM ${table} GROUP BY g ORDER BY ${g.label === "year" ? "g DESC" : "n DESC"} LIMIT ${MAX_GROUPS}` : null,
     note: notes.join(" "), timeoutMs: YEAR_TIMEOUT_MS,
     ...(s.source ? { source: s.source } : {}), ...(s.latest ? { latestYear: s.latest } : {}),
   };
