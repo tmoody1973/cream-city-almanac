@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CityProfile } from "../../convex/lib/cityProfile";
-import { buildCount, valueFilter } from "../../convex/lib/citySql";
+import { buildCount, sourceFor, valueFilter } from "../../convex/lib/citySql";
 
 const RID = "87843297-a6fa-46d4-ba5d-cb342fb2d3bb";
 const P: CityProfile = {
@@ -227,5 +227,73 @@ describe("valueFilter", () => {
     expect(valueFilter(P, { column: "Nope", values: ["x"] })).toMatchObject({ ok: false, status: "bad-column", column: "Nope" });
     expect(valueFilter(P, { column: "Police_District", values: ["99"] })).toMatchObject({ ok: false, status: "choose", column: "Police_District", asked: "99" });
     expect(valueFilter(P, { column: "Police_District" })).toMatchObject({ ok: false, status: "choose", asked: "" });
+  });
+});
+
+describe("crime history (K1)", () => {
+  const HIST = "11111111-2222-3333-4444-555555555555";
+  const COLUMNS = [{ name: "Case_Number", type: "text" }, { name: "Incident_Date", type: "text" }, { name: "Offense_All", type: "text" }];
+  const A: CityProfile = { ...P, columns: COLUMNS, minDate: "2005-01-01", archive: { resourceId: HIST, before: "2024-01-01" } };
+  // Columns named on both sides (a UNION lines columns up by position), each file cut at the seam.
+  const COLS = `"Case_Number", "Incident_Date", "Offense_All"`;
+  const BOTH = `(SELECT ${COLS} FROM "${HIST}" WHERE "Incident_Date" < '2024-01-01' UNION ALL SELECT ${COLS} FROM "${RID}" WHERE "Incident_Date" >= '2024-01-01') AS t`;
+  const NOTE = "The City's crime records are complete from 2005; earlier years hold only a few stray records.";
+  it("reads only the Current file after the seam, exactly as before", () => {
+    const b = buildCount(A, { from: "2025-01-01", to: "2025-12-31" }, TODAY);
+    if (!b.ok) throw new Error("expected ok");
+    expect(b.totalSql).toBe(`SELECT COUNT(*) AS n FROM "${RID}" WHERE "Incident_Date" >= '2025-01-01' AND "Incident_Date" < '2026-01-01'`);
+    expect(b.files).toBe("current");
+  });
+  it("reads only the Historical file before the seam", () => {
+    const b = buildCount(A, { from: "2019-01-01", to: "2019-12-31" }, TODAY);
+    if (!b.ok) throw new Error("expected ok");
+    expect(b.totalSql).toBe(`SELECT COUNT(*) AS n FROM "${HIST}" WHERE "Incident_Date" >= '2019-01-01' AND "Incident_Date" < '2020-01-01'`);
+    expect(b.files).toBe("archive");
+  });
+  it("reads both as one table across the seam, Historical rows only before Current's first date", () => {
+    const b = buildCount(A, { from: "2019-01-01", to: "2024-12-31", groupBy: "year" }, TODAY);
+    if (!b.ok) throw new Error("expected ok");
+    expect(b.totalSql).toBe(`SELECT COUNT(*) AS n FROM ${BOTH} WHERE "Incident_Date" >= '2019-01-01' AND "Incident_Date" < '2025-01-01'`);
+    expect(b.groupSql).toContain(`FROM ${BOTH} WHERE`);
+    expect(b.files).toBe("both");
+    expect(b.coverage).toBe("Jan 1, 2005 – Oct 9, 2026"); // a live file's range runs to today, as in the existing tests
+  });
+  it("puts a neighborhood's points, its unplaced count and the citywide grid on the same source", () => {
+    const L: CityProfile = { ...A, latColumn: "Address_Latitude", lonColumn: "Address_Longitude" };
+    const b = buildCount(L, { from: "2019-01-01", to: "2025-06-30" }, TODAY, { minLat: 43.06, maxLat: 43.08, minLon: -87.95, maxLon: -87.93 });
+    if (!b.ok) throw new Error("expected ok");
+    expect(b.points?.sql).toContain(`FROM ${BOTH} WHERE`);
+    expect(b.points?.missingSql).toContain(`FROM ${BOTH} WHERE`);
+    expect(b.gridSql).toContain(`FROM ${BOTH} WHERE`);
+  });
+  it("clamps a request before 2005 with the note, and refuses one entirely before 2005 with it", () => {
+    const b = buildCount(A, { from: "1995-01-01", to: "2006-12-31" }, TODAY);
+    if (!b.ok) throw new Error("expected ok");
+    expect(b.totalSql).toContain(`"Incident_Date" >= '2005-01-01'`);
+    expect(b.period).toBe("Jan 1, 2005 – Dec 31, 2006 (clamped to the data's range)"); // the note is its own card line
+    expect(b.note).toBe(NOTE);
+    expect(buildCount(A, { from: "1995-01-01", to: "1999-12-31" }, TODAY)).toEqual({ ok: false, status: "outside-coverage", coverage: "Jan 1, 2005 – Oct 9, 2026", note: NOTE });
+  });
+  it("keeps a crime count with no dates on the last 12 months of the Current file, with no note", () => {
+    const b = buildCount(A, {}, TODAY);
+    if (!b.ok) throw new Error("expected ok");
+    expect(b.files).toBe("current");
+    expect(b.period).toBe("Oct 9, 2025 – Oct 9, 2026 (last 12 months)");
+    expect(b.note).toBeNull();
+  });
+  it("gives no crime note before the profile has its archive", () => {
+    expect(buildCount(P, { from: "2019-01-01", to: "2020-01-01" }, TODAY)).toEqual({ ok: false, status: "outside-coverage", coverage: "Jan 1, 2024 – Oct 9, 2026" });
+  });
+  it("adds the 311 note when a count reaches before its file's start, without changing the window", () => {
+    const C: CityProfile = { ...P, familyKey: "city:call-center-data", dateColumn: "CREATIONDATE", minDate: "2026-01-01", maxDate: "2026-10-08", categories: [] };
+    const b = buildCount(C, {}, TODAY);
+    if (!b.ok) throw new Error("expected ok");
+    expect(b.files).toBe("only");
+    expect(b.totalSql).toContain(`"CREATIONDATE" >= '2026-01-01'`);
+    expect(b.note).toBe("The City's earlier 311 file (2020–2025) is missing most requests after November 2020, so counts here start in 2026.");
+    expect(b.period).not.toContain("311 file");
+  });
+  it("sourceFor leaves a profile without an archive on its own file", () => {
+    expect(sourceFor(P, "2019-01-01", "2025-01-01")).toEqual({ table: `"${RID}"`, files: "only" });
   });
 });

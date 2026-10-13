@@ -91,3 +91,10 @@ describe("the span query", () => {
     for (const banned of ["FILTER", "trim(", "extract(", "= 1", "= 0", ">= '19", "left("]) expect(all).not.toContain(banned);
   });
 });
+
+describe("archives (K1)", () => {
+  it("never reads an archive", () => {
+    const b = buildSpan({ ...FIRE, archive: { resourceId: "11111111-2222-3333-4444-555555555555", before: "2021-06-01" } }, arrive, {}, TODAY);
+    expect(JSON.stringify(b)).not.toContain("11111111-2222-3333-4444-555555555555");
+  });
+});

@@ -127,6 +127,7 @@ export const vCityProfile = v.object({
   maxDate: v.union(v.string(), v.null()),
   namesPeople: v.boolean(),
   resourceName: v.optional(v.union(v.string(), v.null())),
+  archive: v.optional(v.union(v.object({ resourceId: v.string(), before: v.string() }), v.null())),
   latColumn: v.optional(v.union(v.string(), v.null())),
   lonColumn: v.optional(v.union(v.string(), v.null())),
   signature: v.string(),

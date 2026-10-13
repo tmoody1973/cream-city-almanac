@@ -69,6 +69,7 @@ export interface CityProfile {
   districtColumns: string[]; categories: { column: string; values: { value: string; count: number }[]; multi?: boolean }[];
   rowCount: number; minDate: string | null; maxDate: string | null; namesPeople: boolean; signature: string; updatedAt: number;
   resourceName?: string | null; // the file counted, when the City offers several live files
+  archive?: { resourceId: string; before: string } | null; // an older file read with this one for rows dated before `before` (ARCHIVES)
   latColumn?: string | null; lonColumn?: string | null; // set only when the sampled points land in Milwaukee
   // Per-file settings (OVERRIDES) the profiler can't infer, applied when counting:
   snapshot?: boolean; // rows describe things as they are now (no default 12-month window; dates mean "last sold")

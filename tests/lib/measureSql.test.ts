@@ -74,3 +74,11 @@ describe("the measure query", () => {
     for (const banned of ["FILTER", "trim(", "extract(", "left(", "= 1 AND"]) expect(all).not.toContain(banned);
   });
 });
+
+describe("archives (K1)", () => {
+  it("never reads an archive", () => {
+    const m = CITY_MEASURES.find((x) => x.familyKey === base().familyKey)!;
+    const b = buildMeasure(base({ archive: { resourceId: "11111111-2222-3333-4444-555555555555", before: "2024-01-01" } }), m, {}, TODAY);
+    expect(JSON.stringify(b)).not.toContain("11111111-2222-3333-4444-555555555555");
+  });
+});

@@ -256,6 +256,16 @@ test.describe("signed in", () => {
     await expect(page.locator("[data-card=boundaries]:visible")).toContainText("Shares are estimated from a grid of points");
   });
 
+  test("a crime count across years reads the Historical and Current files", async ({ page }) => {
+    test.skip(!(await page.request.get("https://data.milwaukee.gov/api/3/action/status_show").then((r) => r.ok()).catch(() => false)), "City API unreachable");
+    await ask(page, "How many robberies were there in Milwaukee each year from 2019 to 2024?");
+    const card = page.locator("[data-card=count]:visible");
+    await expect(card).toBeVisible({ timeout: 40_000 });
+    await expect(card.locator("[data-coverage]")).toContainText("from the City's Historical and Current files");
+    await expect(card.locator("[data-coverage]")).toContainText("Jan 1, 2005");
+    await expect(card.getByRole("rowheader", { name: "2019", exact: true })).toBeVisible(); // a 2019 group, not just the caption
+  });
+
   test("a neighborhood count names the City boundary it used", async ({ page }) => {
     test.skip(!(await page.request.get("https://data.milwaukee.gov/api/3/action/status_show").then((r) => r.ok()).catch(() => false)), "City API unreachable");
     await ask(page, "How many robberies in Harambee this year?");

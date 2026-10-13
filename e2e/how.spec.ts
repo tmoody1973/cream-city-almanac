@@ -123,3 +123,8 @@ test("it says where boundaries come from and that shares are estimates", async (
   await expect(page.getByText(/aldermanic districts, voting wards and polling places/)).toBeVisible();
   await expect(page.getByText(/copied from the City of Milwaukee's map server once a week/)).toBeVisible();
 });
+
+test("it says crime counts reach back to 2005", async ({ page }) => {
+  await page.goto("/how-it-works");
+  await expect(page.getByText(/Crime counts reach back to 2005/)).toBeVisible();
+});

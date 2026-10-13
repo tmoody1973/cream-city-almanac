@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parseCkan } from "../../convex/lib/ckan";
-import { cityRepresentative, cityTopic, groupCityItems, retiredLast } from "../../convex/lib/cityFamilies";
+import { cityRepresentative, cityTopic, groupCityItems, retiredLast, cityNote } from "../../convex/lib/cityFamilies";
 import { codeLetter } from "../../convex/lib/codes";
 import { cityPackages } from "../helpers/cityFixtures";
 
@@ -73,5 +73,13 @@ describe("retiredLast", () => {
     const rows = [{ key: "city:wibr-crime-monthly" }, { key: "city:nibrs-crime-data" }, { key: "dataset:x" }];
     expect(retiredLast(rows).map((r) => r.key)).toEqual(["city:nibrs-crime-data", "dataset:x", "city:wibr-crime-monthly"]);
     expect(retiredLast([{ key: "constructor" }]).map((r) => r.key)).toEqual(["constructor"]);
+  });
+});
+
+describe("City dataset notes", () => {
+  it("keeps the hand-written note first, and falls back to the 311 archive note", () => {
+    expect(cityNote("city:nibrs-crime-data")).toMatch(/WIBR/);
+    expect(cityNote("city:call-center-data")).toBe("The City's earlier 311 file (2020–2025) is missing most requests after November 2020, so counts here start in 2026.");
+    expect(cityNote("city:vacant-buildings")).toBeNull();
   });
 });

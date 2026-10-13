@@ -116,6 +116,11 @@ export function HowItWorks({ status, example, areas }: { status: CatalogStatus |
               <a href="https://myvote.wi.gov">myvote.wi.gov</a>.
             </p>
             <p>
+              Crime counts reach back to 2005: the City publishes its crime records in two files, one from 2024 on and an older
+              one, and a count that spans both reads them as one. Earlier years are left out because the City&apos;s older file
+              holds only a few stray records before 2005.
+            </p>
+            <p>
               Ask can also add up a few City money columns, like back property tax owed, City employee pay and property sale prices. It
               shows the total and the median (the middle value), and the average only when you ask for it. In files that name people,
               groups of fewer than 5 records are hidden so no one&apos;s figure can be singled out.

@@ -304,3 +304,65 @@ describe("City profiles", () => {
     expect(await profileOf(t, CRIME)).toMatchObject({ rowCount: 110461, dateColumn: "Incident_Date", latColumn: null, lonColumn: null });
   });
 });
+
+describe("crime history (K1)", () => {
+  const HIST = "11111111-2222-3333-4444-555555555555";
+  const FIELDS = [{ id: "Incident_Date", type: "text" }, { id: "Police_District", type: "text" }, { id: "Offense_All", type: "text" }];
+  const profileOf = (t: TestConvex<typeof schema>) => t.run((ctx) => ctx.db.query("cityProfiles").withIndex("by_family", (q) => q.eq("familyKey", CRIME)).first());
+
+  it("reads crime's Historical file with Current from 2005 when their columns match", async () => {
+    const t = convexTest(schema, modules);
+    await seedCity(t);
+    crimeFake();
+    expect(await t.action(internal.build.reprofileCity, { familyKey: CRIME })).toEqual([]);
+    expect(await profileOf(t)).toMatchObject({ resourceId: CRIME_CURRENT_RID, minDate: "2005-01-01", archive: { resourceId: HIST, before: "2024-01-01" } });
+  });
+  it("counts Current alone, and says why, when the Historical file's columns differ", async () => {
+    const t = convexTest(schema, modules);
+    await seedCity(t);
+    installFakeFetch({ cityFields: FIELDS, cityFieldsFor: (rid) => (rid === HIST ? [{ id: "Incident_Date", type: "text" }] : undefined), citySql: crimeSql });
+    expect(await t.action(internal.build.reprofileCity, { familyKey: CRIME })).toEqual([`${CRIME}: Historical file's columns differ; counting the Current file only`]);
+    const p = await profileOf(t);
+    expect(p?.archive ?? null).toBeNull();
+    expect(p?.minDate).toBe("2024-01-01");
+  });
+  it("re-profiles without asking the AI for a card", async () => {
+    const t = convexTest(schema, modules);
+    await seedCity(t);
+    const f = crimeFake();
+    await t.action(internal.build.reprofileCity, { familyKey: CRIME });
+    expect(f.count("/v1/chat/completions")).toBe(0);
+  });
+  it("the weekly build stores the archive too, and a mismatch reaches the build's notes", async () => {
+    const t = convexTest(schema, modules);
+    const buildId = await seedCity(t);
+    installFakeFetch({ cityFields: FIELDS, cityFieldsFor: (rid) => (rid === HIST ? [{ id: "Incident_Date", type: "text" }] : undefined), citySql: crimeSql });
+    await t.action(internal.build.processFamily, { buildId, familyKey: CRIME });
+    expect((await buildOf(t, buildId))!.notes.join(" ")).toContain("Historical file's columns differ");
+  });
+
+  it("keeps the seam at Jan 1, 2024 when Current holds a stray older date, and the build says so (review fix)", async () => {
+    const t = convexTest(schema, modules);
+    await seedCity(t);
+    installFakeFetch({ cityFields: FIELDS, citySql: (sql) => (sql.includes("MIN(") ? [{ lo: "1924-05-01T00:00:00", hi: "2026-10-08T00:00:00" }] : crimeSql(sql)) });
+    const notes = await t.action(internal.build.reprofileCity, { familyKey: CRIME });
+    expect(await profileOf(t)).toMatchObject({ minDate: "2005-01-01", archive: { resourceId: HIST, before: "2024-01-01" } });
+    expect(notes).toEqual([`${CRIME}: Current file has records dated before 2024-01-01; combined counts leave them out`]);
+  });
+  it("says so when the profile couldn't be rebuilt, instead of returning no notes (CodeRabbit, PR #37)", async () => {
+    const t = convexTest(schema, modules);
+    await seedCity(t);
+    installFakeFetch({ cityFields: FIELDS, citySql: (sql) => { if (sql.includes("COUNT(*)")) throw new Error("refused"); return crimeSql(sql); } });
+    const notes = await t.action(internal.build.reprofileCity, { familyKey: CRIME });
+    expect(notes).toHaveLength(1);
+    expect(notes[0]).toMatch(new RegExp(`^${CRIME}: profile not updated`));
+  });
+  it("doesn't join when a column's type differs, even with the same names (review fix)", async () => {
+    const t = convexTest(schema, modules);
+    await seedCity(t);
+    const retyped = FIELDS.map((f) => (f.id === "Police_District" ? { ...f, type: "numeric" } : f));
+    installFakeFetch({ cityFields: FIELDS, cityFieldsFor: (rid) => (rid === HIST ? retyped : undefined), citySql: crimeSql });
+    expect(await t.action(internal.build.reprofileCity, { familyKey: CRIME })).toEqual([`${CRIME}: Historical file's columns differ; counting the Current file only`]);
+    expect((await profileOf(t))?.archive ?? null).toBeNull();
+  });
+});

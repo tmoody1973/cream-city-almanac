@@ -21,10 +21,10 @@ import {
   uniqueDescriptions,
   type AiCard,
 } from "./lib/card";
-import { cityRepresentative, groupCityItems } from "./lib/cityFamilies";
+import { ARCHIVES, cityRepresentative, groupCityItems } from "./lib/cityFamilies";
 import { chunkMarkdown } from "./lib/chunk";
 import { fetchCityCatalog, datastoreFields, datastoreSql } from "./lib/ckan";
-import { assembleProfile, isMultiValued, planProfile, profileSql } from "./lib/cityProfile";
+import { assembleProfile, isMultiValued, planProfile, profileSql, type CityProfile } from "./lib/cityProfile";
 import { HUB_FEED_URL, parseDcat } from "./lib/dcat";
 import { INVENTORY_XLSX_URL, isSuspectLink, mapDictionaries, readInventory, unlinkedTabs, type Inventory } from "./lib/dictionary";
 import { groupItems, hubCounts, isPdfFamily, isSpreadsheetFamily, reportDelays, toFamilyInput } from "./lib/families";
@@ -55,20 +55,65 @@ export const processFamily = internalAction({
   args: { buildId: v.id("builds"), familyKey: v.string() },
   handler: async (ctx, { buildId, familyKey }) => {
     let result: Result;
+    const notes: string[] = [];
     try {
-      result = await writeCard(ctx, buildId, familyKey);
+      result = await writeCard(ctx, buildId, familyKey, notes);
     } catch (e) {
       result = { outcome: "failed", note: `${familyKey}: ${message(e)}` };
     }
+    const note = [result.note, ...notes].filter(Boolean).join("; ") || undefined;
     await retryOnConflict(() =>
-      ctx.runMutation(internal.buildStore.markDone, { buildId, outcome: result.outcome, note: result.note }),
+      ctx.runMutation(internal.buildStore.markDone, { buildId, outcome: result.outcome, note }),
     );
   },
 });
 
+// One City family's profile, rebuilt without touching its AI-written card: for going live and for dev checks
+// (spec 2026-10-12-crime-history-design §4). Returns the build notes.
+export const reprofileCity = internalAction({
+  args: { familyKey: v.string() },
+  handler: async (ctx, { familyKey }): Promise<string[]> => {
+    const data = await ctx.runQuery(internal.buildStore.familyContext, { familyKey });
+    if (!data) return [`${familyKey}: not in the catalog`];
+    const rep = cityRepresentative(data.members);
+    if (!rep?.datastoreId) return [`${familyKey}: no live City file`];
+    const notes: string[] = [];
+    await profileCity(ctx, familyKey, rep.datastoreId, rep.datastoreName ?? null, historicalOf(data.members), notes);
+    return notes;
+  },
+});
+
+// A City family's "(Historical)" file, when it has a live one.
+const historicalOf = (members: { title: string; datastoreId?: string | null }[]) =>
+  members.find((m) => /\(historical\)/i.test(m.title) && m.datastoreId)?.datastoreId ?? null;
+
+// Crime's Historical file, read with Current from ARCHIVES' date (spec 2026-10-12-crime-history-design §4). Joined
+// only when its columns match Current's exactly; otherwise the profile counts Current alone and the build says why.
+async function withArchive<P extends CityProfile>(familyKey: string, profile: P, archiveRid: string | null, notes: string[]): Promise<P> {
+  const entry = ARCHIVES[familyKey];
+  if (!entry?.join) return profile;
+  if (!archiveRid) { notes.push(`${familyKey}: no Historical file to read with Current`); return profile; }
+  if (!profile.minDate || !profile.dateColumn) { notes.push(`${familyKey}: Current file has no dates; counting it alone`); return profile; }
+  let fields: { id: string; type: string }[];
+  try {
+    fields = await datastoreFields(archiveRid);
+  } catch (e) {
+    notes.push(`${familyKey}: Historical file unavailable; counting the Current file only (${message(e)})`);
+    return profile;
+  }
+  // Names and types: a UNION fails on a type mismatch, so a retyped column means no join, with a note.
+  const shape = (cs: { id: string; type: string }[]) => cs.map((c) => `${c.id}:${c.type}`).sort().join(",");
+  if (shape(fields) !== shape(profile.columns.map((c) => ({ id: c.name, type: c.type })))) {
+    notes.push(`${familyKey}: Historical file's columns differ; counting the Current file only`);
+    return profile;
+  }
+  if (profile.minDate < entry.seam) notes.push(`${familyKey}: Current file has records dated before ${entry.seam}; combined counts leave them out`);
+  return { ...profile, minDate: entry.from, archive: { resourceId: archiveRid, before: entry.seam } };
+}
+
 // Live City dataset: read its columns and build the counting menu. If the City won't describe its columns, the profile
 // goes (it can't be counted); a failed counting query after that keeps last week's profile.
-async function profileCity(ctx: ActionCtx, familyKey: string, rid: string, resourceName: string | null): Promise<Column[]> {
+async function profileCity(ctx: ActionCtx, familyKey: string, rid: string, resourceName: string | null, archiveRid: string | null, notes: string[]): Promise<Column[]> {
   let fields: { id: string; type: string }[];
   try {
     fields = await datastoreFields(rid);
@@ -95,15 +140,16 @@ async function profileCity(ctx: ActionCtx, familyKey: string, rid: string, resou
         console.error(`City point sample failed for ${familyKey}: ${message(e)}`);
       }
     }
-    const profile = { ...assembleProfile(familyKey, rid, fields, plan, count, range, tops, Date.now(), points), resourceName };
+    const profile = await withArchive(familyKey, { ...assembleProfile(familyKey, rid, fields, plan, count, range, tops, Date.now(), points), resourceName }, archiveRid, notes);
     await ctx.runMutation(internal.buildStore.replaceCityProfile, { profile });
   } catch (e) {
     console.error(`City profile failed for ${familyKey}: ${message(e)}`);
+    notes.push(`${familyKey}: profile not updated; last week's stays (${message(e)})`);
   }
   return fields.map((f) => ({ name: f.id, alias: f.id, type: f.type }));
 }
 
-async function writeCard(ctx: ActionCtx, buildId: Id<"builds">, familyKey: string): Promise<Result> {
+async function writeCard(ctx: ActionCtx, buildId: Id<"builds">, familyKey: string, notes: string[]): Promise<Result> {
   const data = await ctx.runQuery(internal.buildStore.familyContext, { familyKey });
   if (!data) return { outcome: "skipped", note: `${familyKey}: no longer in catalog` };
   const { family, members, dictionary, sources, existing, settings } = data;
@@ -114,7 +160,7 @@ async function writeCard(ctx: ActionCtx, buildId: Id<"builds">, familyKey: strin
   const cityRep = cityRepresentative(members);
   if (family.source === "city" && !cityRep?.datastoreId) await ctx.runMutation(internal.buildStore.deleteCityProfile, { familyKey });
   const columns: Column[] = cityRep?.datastoreId
-    ? await profileCity(ctx, familyKey, cityRep.datastoreId, cityRep.datastoreName ?? null)
+    ? await profileCity(ctx, familyKey, cityRep.datastoreId, cityRep.datastoreName ?? null, historicalOf(members), notes)
     : rep?.featureServerUrl ? await fetchColumns(rep.featureServerUrl) : [];
   const inputHash = await hashInputs({
     v: PROMPT_VERSION,
