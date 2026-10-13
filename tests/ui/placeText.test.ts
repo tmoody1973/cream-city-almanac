@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { notInCityText, PLACE_PRIVACY, PLACE_PRIVACY_ASK, placeFollowUps, placeRefusal, sheetFor } from "../../ui/lib/placeText";
+import { asOfDate, boundariesShown, BOUNDARIES_NOT_COVERED, BOUNDARIES_NOT_LOADED, notInCityText, PLACE_PRIVACY, pollingNote, PLACE_PRIVACY_ASK, placeFollowUps, placeRefusal, sheetFor } from "../../ui/lib/placeText";
 
-const ok = { status: "ok" as const, matched: "2400 W CENTER ST, MILWAUKEE, WI, 53206", tract: { geoid: "55079008800", number: "88" }, neighborhood: "Harambee", inCity: true, dycu: [{ name: "Harambee", slug: "harambee" }] };
+const ok = { status: "ok" as const, matched: "2400 W CENTER ST, MILWAUKEE, WI, 53206", tract: { geoid: "55079008800", number: "88" }, neighborhood: "Harambee", inCity: true, dycu: [{ name: "Harambee", slug: "harambee" }], boundaries: { asOf: null, district: null, ward: null, investment: [], development: [] } };
 
 describe("the place card's words", () => {
   it("says where the address went, and refuses plainly", () => {
@@ -35,5 +35,32 @@ describe("honest wording", () => {
   it("says in Ask that the address also goes to the AI, like every question", () => {
     expect(PLACE_PRIVACY_ASK).toBe("This address was sent to the U.S. Census Bureau's geocoder to find its location, and, like every question here, to the AI; Cream City Almanac doesn't keep it.");
     expect(PLACE_PRIVACY).not.toContain("AI");
+  });
+});
+
+describe("boundary wording", () => {
+  it("dates the polling place list and sends people to the state to confirm", () => {
+    const oct12 = Date.UTC(2026, 9, 12, 15);
+    expect(asOfDate(oct12)).toBe("Oct 12, 2026");
+    expect(pollingNote(oct12)).toBe("From the City's polling place list as of Oct 12, 2026. Polling places can change before an election; confirm yours at myvote.wi.gov.");
+  });
+  it("says plainly when the files aren't loaded or don't cover the address", () => {
+    expect(BOUNDARIES_NOT_LOADED).toBe("The City's boundary files haven't been loaded yet.");
+    expect(BOUNDARIES_NOT_COVERED).toBe("The City's boundaries (districts, wards, investment and development areas) don't cover this address.");
+  });
+  it("offers the district's wards as a follow-up", () => {
+    const b = { asOf: 1, district: { name: "District 6", alder: "Jane Doe" }, ward: null, investment: [], development: [] };
+    expect(placeFollowUps({ ...ok, boundaries: b }).map((f) => f.question)).toContain("Which wards are in District 6, and where do they vote?");
+  });
+});
+
+describe("an address between neighborhood shapes (review fix)", () => {
+  const ward = { name: "Ward 156", pollingPlace: "School", pollingAddress: "1 Main St", mainEntrance: "", accessibleEntrance: "", mainParking: "", accessibleParking: "" };
+  const gap = { ...ok, neighborhood: null, inCity: false, boundaries: { asOf: 1, district: { name: "District 3", alder: "A" }, ward, investment: [], development: [] } };
+  it("still shows the ward and district the point is in", () => {
+    expect(boundariesShown(gap)).toBe("lines");
+    expect(boundariesShown({ ...gap, boundaries: { ...gap.boundaries, district: null, ward: null } })).toBe("not-covered");
+    expect(boundariesShown({ ...ok, boundaries: { asOf: null, district: null, ward: null, investment: [], development: [] } })).toBe("not-loaded");
+    expect(placeFollowUps(gap).map((f) => f.question)).toContain("Which wards are in District 3, and where do they vote?");
   });
 });

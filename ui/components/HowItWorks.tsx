@@ -109,6 +109,13 @@ export function HowItWorks({ status, example, areas }: { status: CatalogStatus |
               never shows anything about the property itself.
             </p>
             <p>
+              The City&apos;s boundaries (aldermanic districts, voting wards and polling places, Targeted Investment Neighborhoods,
+              NRSAs and NSPs, Tax Incremental Districts, Business Improvement Districts and Opportunity Zones) are copied from the
+              City of Milwaukee&apos;s map server once a week. How much of a neighborhood or tract a boundary covers is estimated from a
+              grid of points, so shares are about ±2%. Polling places can change before an election; confirm yours at{" "}
+              <a href="https://myvote.wi.gov">myvote.wi.gov</a>.
+            </p>
+            <p>
               Ask can also add up a few City money columns, like back property tax owed, City employee pay and property sale prices. It
               shows the total and the median (the middle value), and the average only when you ask for it. In files that name people,
               groups of fewer than 5 records are hidden so no one&apos;s figure can be singled out.

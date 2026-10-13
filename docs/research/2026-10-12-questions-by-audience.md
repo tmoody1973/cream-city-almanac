@@ -161,7 +161,7 @@ Nonprofits want grant-ready figures for the places they serve, proof of need, an
 | How many energy-efficiency (Me2) projects were completed, and what did they include? | Me2 Residential Program Data | **Now** (City count by improvement type) |
 | How many 311 requests about our issue came from our area this year? | Call Center Data (311) | **Partly.** Counts by type and month are **Now**; by neighborhood is **Not yet** (the 311 file has no locations). |
 | How long did the City take to close 311 requests of a certain type? | Call Center Data | **Now** (how long; the card warns that most requests have no close date) |
-| Which Targeted Investment Neighborhoods or NRSAs cover our area? | TINs, NRSAs, NSPs | **Partly** (boundary files; "which ones include this address" is **Not yet**) |
+| Which Targeted Investment Neighborhoods or NRSAs cover our area? | TINs, NRSAs, NSPs | **Now** (Ask lists the TINs, NRSAs and NSPs covering a neighborhood, tract or address, with shares) |
 
 ### Using numbers responsibly
 | Question | Data | Status |
@@ -184,7 +184,7 @@ Residents want to understand their own block and neighborhood, see whether the C
 | How many crimes were reported in my neighborhood this year? | NIBRS Crime Data | **Now** (City count in the neighborhood's official boundary) |
 | Are there vacant buildings near me? | Vacant Buildings | **Partly.** By district or ZIP it's **Now**; by address it's **Not in Ask**. |
 | What's the zoning or land use of my block? | Zoning; Land Use Code | **Partly** (code meanings are **Now**; by address it's **Not in Ask**) |
-| Is my area in an Opportunity Zone, TID or BID? | Opportunity Zones, TIDs, BIDs | **Partly** (boundary files and maps) |
+| Is my area in an Opportunity Zone, TID or BID? | Opportunity Zones, TIDs, BIDs | **Now** (by address, neighborhood, tract or district) |
 
 ### City services
 | Question | Data | Status |
@@ -207,8 +207,8 @@ Residents want to understand their own block and neighborhood, see whether the C
 ### Voting and civic life
 | Question | Data | Status |
 |---|---|---|
-| Where is my polling place, and is it accessible? | Voting Wards and Polling Places | **Partly** (by ward or district; "my address → my ward" is **Not in Ask**) |
-| Who is my alder? | Voting Wards and Polling Places (Alderman column) | **Partly** (by ward) |
+| Where is my polling place, and is it accessible? | Voting Wards and Polling Places | **Now** (an address gives its ward and polling place, with the accessible entrance; confirm at myvote.wi.gov) |
+| Who is my alder? | Voting Wards and Polling Places (Alderman column) | **Now** (by address or district) |
 | How did my ward vote? | Election results | **Not yet** (vote sums) |
 
 ### Understanding the data
