@@ -41,6 +41,7 @@ export function summarize(rows: WardIn[], elections: StoredElection[], a: Turnou
 
   const notes = [REG];
   let out: TurnoutRow[];
+  let listed = read; // the elections the card shows (one ward: only those whose map has it)
   if (groupBy === "ward") {
     const e = read[0];
     const wards = byElection.get(e.election) ?? [];
@@ -51,6 +52,7 @@ export function summarize(rows: WardIn[], elections: StoredElection[], a: Turnou
   } else {
     // One ward: only the elections whose map has it (ward 340 exists from 2022 only).
     const shown = a.ward === undefined ? read : read.filter((e) => (byElection.get(e.election) ?? []).some((w) => w.ward === a.ward));
+    listed = shown;
     out = shown.map((e) => {
       const ws = (byElection.get(e.election) ?? []).filter((w) => a.ward === undefined || w.ward === a.ward);
       const registered = ws.reduce((s, w) => s + w.registered, 0), ballots = ws.reduce((s, w) => s + w.ballots, 0);
@@ -62,7 +64,8 @@ export function summarize(rows: WardIn[], elections: StoredElection[], a: Turnou
     if (a.ward !== undefined && new Set(shown.map((e) => e.map)).size > 1) notes.push(REDRAW);
   }
   notes.push(...failed.map((e) => `The City's file for ${e.label} couldn't be read.`));
-  const types = type === "all" ? "all elections" : `${type} elections`;
-  const years = read.length === 1 ? read[0].label : `${yearOf(read[0].election)}–${yearOf(read[read.length - 1].election)}`;
+  // The election count is in the title so a reply never has to count rows itself (the AI writes no number).
+  const types = `${listed.length} ${type === "all" ? "" : `${type} `}election${listed.length === 1 ? "" : "s"}`;
+  const years = listed.length === 1 ? listed[0].label : `${yearOf(listed[0].election)}–${yearOf(listed[listed.length - 1].election)}`;
   return { status: "ok", title: ["Milwaukee voter turnout", types, years, ...(a.ward !== undefined ? [`ward ${a.ward}`] : [])].join(" · "), groupBy, rows: out, notes, source: SOURCE };
 }

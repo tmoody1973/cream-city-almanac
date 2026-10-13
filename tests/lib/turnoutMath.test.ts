@@ -37,12 +37,13 @@ describe("summarize (K4)", () => {
     const r = ok(summarize(ROWS, ELS, { type: "general", from: 2018 }));
     expect(r.rows.map((x) => x.label)).toEqual(["November 2020 general election"]);
     expect(r.notes).toEqual([REG]);
+    expect(r.title).toBe("Milwaukee voter turnout · 1 general election · November 2020 general election");
   });
   it("follows one ward across elections, with the redraw note across 2022 (review focus 3)", () => {
     const r = ok(summarize(ROWS, ELS, { ward: 1 }));
     expect(r.rows.map((x) => x.label)).toEqual(["November 2016 general election", "April 2018 spring election", "November 2020 general election", "August 2022 partisan primary"]);
     expect(r.notes).toContain(REDRAW);
-    expect(r.title).toBe("Milwaukee voter turnout · all elections · 2016–2022 · ward 1");
+    expect(r.title).toBe("Milwaukee voter turnout · 4 elections · 2016–2022 · ward 1"); // the count comes from code, never the AI (graded run)
     expect(summarize(ROWS, ELS, { ward: 340, to: 2021 })).toEqual({ status: "refused", reason: "Ward 340 isn't on the ward map of the elections asked (2016–2021: wards 1–327)." });
   });
   it("ranks one election's lowest wards, leaving out tiny wards and showing no turnout for 0 registered (review focus 2, 5)", () => {
