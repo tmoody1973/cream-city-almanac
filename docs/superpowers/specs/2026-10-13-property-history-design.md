@@ -119,9 +119,16 @@ The values differ in every file (median parcel value: 2005 file $110,300; 2006 f
   - `GEO_ALDER` values;
   - `OWN_OCPD` (owner-occupied, labelled "owner-occupied");
   - `C_A_CLASS` values (labelled by class: 1 houses, 5 condos; "homes" is 1 and 5).
-- **Group by** `year` (the `yr` tag, newest first) or `GEO_ALDER`.
+- **Group by** `year` (the `yr` tag) or `GEO_ALDER`.
+
+**A span of several years is always grouped by year** (amended 2026-10-13, while planning). Adding counts across years would add the same parcels up once per year (about 3.4 million "properties" for 2005–2026). So:
+- no `groupBy` means `year`;
+- `GEO_ALDER` grouping works for one year only (refused across years, with "ask one year at a time, or filter to one district and group by year");
+- the headline figures (the count, the "out of" count, a measure's summary and totals) cover **the newest year in the span**, and say which year.
 - **Measures:** `assessed-value` gives count, total, median and average by year or district. "Typical home value" is its median with class 1 and 5.
 - **Anything else** (another column, a map, tracts) is refused, and the refusal lists the supported filters.
+
+**A missing year inside the span** (a file the build skipped) is named on the card: "The City has no usable file for 2022."
 
 **Speed:** year-span queries use a 25-second City timeout instead of 10. The full span measured 7.4 seconds.
 
@@ -129,7 +136,8 @@ The values differ in every file (median parcel value: 2005 file $110,300; 2006 f
 
 **The count or measure card:**
 - **Period:** "2005 – 2026 assessments", or "2015 assessment" for one year.
-- **Table:** one row per year, newest first; for a measure, count, total, median and average per year.
+- **Table:** one row per year, oldest to newest (as crime's year table is); for a measure, count, total, median and average per year.
+- **Headline across several years:** the count reads "83,244 in 2026"; a measure's summary starts "In 2026, …"; the measure card and its export drop the "All" row (it would repeat the newest year), and a count export labels its total "Total (2026)".
 - **Source line:**
   - a span: "From the City's yearly property files (2005–2025) and its current file (2026)", naming only the files actually read;
   - one historical year: "From the City's 2015 property file";
