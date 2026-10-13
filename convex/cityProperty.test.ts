@@ -59,3 +59,51 @@ describe("countRecords on the property file", () => {
     if (r.status === "ok") expect(r.tractMap).toBeUndefined();
   });
 });
+
+const R05 = "6370d019-f21b-4957-aa86-d38f5e82e138", R25 = "9e512b1d-2c64-448f-9e7a-5c2022d5948a";
+async function seedYears() {
+  const t = await seed();
+  await t.run(async (ctx) => {
+    const p = await ctx.db.query("cityProfiles").withIndex("by_family", (q) => q.eq("familyKey", "city:master-property-file-mprop")).first();
+    await ctx.db.patch(p!._id, { years: [{ year: 2005, resourceId: R05, layout: "classic" }, { year: 2025, resourceId: R25, layout: "long" }, { year: 2026, resourceId: MPROP_RID, layout: "classic" }] });
+  });
+  return t;
+}
+
+describe("countRecords over assessment years (K2)", () => {
+  it("counts owner-occupied homes by year, headline on the newest year, with the source line", async () => {
+    const t = await seedYears();
+    const seen: string[] = [];
+    installFakeFetch({ citySql: (sql) => { seen.push(sql); return sql.includes("AS g") ? [{ g: "2026", n: "97471" }, { g: "2025", n: "97185" }, { g: "2005", n: "111877" }] : [{ n: "97471" }]; } });
+    const r = await t.withIdentity(reader).action(api.city.countRecords, { code: "H28", years: { from: 2005, to: 2026 }, filters: [{ column: "OWN_OCPD", values: ["O"] }] });
+    expect(r).toMatchObject({
+      status: "ok", count: 97471, latestYear: "2026", period: "2005 – 2026 assessments", filters: ["owner-occupied"],
+      groups: [{ label: "2005", count: 111877 }, { label: "2025", count: 97185 }, { label: "2026", count: 97471 }],
+      source: "From the City's yearly property files (2005–2025) and its current file (2026).",
+    });
+    expect(seen.every((s) => s.includes(" UNION ALL "))).toBe(true);
+    expect(JSON.stringify(r)).not.toMatch(/OWNER|TAXKEY|STREET|15TH/);
+  });
+  it("gives the typical home value by year as a measure", async () => {
+    const t = await seedYears();
+    const row = (g: string, median: number) => ({ g, n: "137000", total: String(median * 137000), median: String(median), average: String(median), unreadable: "0", zeros: "0" });
+    installFakeFetch({ citySql: (sql) => (sql.includes("AS g") ? [row("2026", 205000), row("2025", 191900), row("2005", 110300)] : [{ n: "137000", total: "1", median: "205000", average: "1", unreadable: "0", zeros: "0" }]) });
+    const r = await t.withIdentity(reader).action(api.city.countRecords, { code: "H28", years: { from: 2005, to: 2026 }, measure: { id: "assessed-value" }, filters: [{ column: "C_A_CLASS", values: ["1", "5"] }] });
+    expect(r).toMatchObject({ status: "measured", groupBy: "year", period: "2005 – 2026 assessments", filters: ["residential", "condominiums"], latestYear: "2026" });
+    if (r.status === "measured") expect(r.splits).toContain("year");
+  });
+  it("refuses years with a neighborhood", async () => {
+    const t = await seedYears();
+    installFakeFetch({});
+    expect(await t.withIdentity(reader).action(api.city.countRecords, { code: "H28", years: { from: 2005, to: 2026 }, neighborhood: "Harambee" })).toMatchObject({ status: "no-locations" });
+  });
+  it("leaves a count without years exactly as before", async () => {
+    const t = await seedYears();
+    const seen: string[] = [];
+    installFakeFetch({ citySql: (sql) => { seen.push(sql); return [{ n: "83243" }]; } });
+    const r = await t.withIdentity(reader).action(api.city.countRecords, { code: "H28", filters: [{ column: "C_A_TOTAL", over: 200000 }] });
+    expect(r).toMatchObject({ status: "ok", count: 83243, period: "2026 assessment" });
+    expect(seen.some((s) => s.includes("UNION ALL"))).toBe(false);
+    if (r.status === "ok") expect(r.source).toBeUndefined();
+  });
+});
