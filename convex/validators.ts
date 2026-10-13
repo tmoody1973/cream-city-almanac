@@ -128,6 +128,7 @@ export const vCityProfile = v.object({
   namesPeople: v.boolean(),
   resourceName: v.optional(v.union(v.string(), v.null())),
   archive: v.optional(v.union(v.object({ resourceId: v.string(), before: v.string() }), v.null())),
+  years: v.optional(v.union(v.array(v.object({ year: v.number(), resourceId: v.string(), layout: v.union(v.literal("classic"), v.literal("short"), v.literal("long")) })), v.null())),
   latColumn: v.optional(v.union(v.string(), v.null())),
   lonColumn: v.optional(v.union(v.string(), v.null())),
   signature: v.string(),

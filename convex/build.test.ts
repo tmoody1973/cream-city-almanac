@@ -3,7 +3,8 @@ import { convexTest, type TestConvex } from "convex-test";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_SETTINGS } from "./settings";
 import { installFakeFetch } from "../tests/helpers/fakeFetch";
-import { cityPackages, CRIME_CURRENT_RID } from "../tests/helpers/cityFixtures";
+import { cityPackages, CRIME_CURRENT_RID, propertyPackages, YEAR_RIDS } from "../tests/helpers/cityFixtures";
+import { MPROP_RID } from "./lib/cityProfile";
 import { fixtureFamilies } from "../tests/helpers/fixtures";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
@@ -364,5 +365,60 @@ describe("crime history (K1)", () => {
     installFakeFetch({ cityFields: FIELDS, cityFieldsFor: (rid) => (rid === HIST ? retyped : undefined), citySql: crimeSql });
     expect(await t.action(internal.build.reprofileCity, { familyKey: CRIME })).toEqual([`${CRIME}: Historical file's columns differ; counting the Current file only`]);
     expect((await profileOf(t))?.archive ?? null).toBeNull();
+  });
+});
+
+describe("property history (K2)", () => {
+  const MPROP = "city:master-property-file-mprop";
+  const CLASSIC = ["TAXKEY", "YR_ASSMT", "C_A_TOTAL", "GEO_ALDER", "GEO_TRACT", "OWN_OCPD", "C_A_CLASS", "CONVEY_DATE"].map((id) => ({ id, type: "text" }));
+  const SHORT = ["Taxkey", "AssessValu", "DistrictNa", "IsOwnerOcc", "PrevNonExemptClass"].map((id) => ({ id, type: "text" }));
+  const LONG = ["Taxkey", "TotalAssessedValue", "DistrictName", "IsOwnerOccupied", "PrevNonExemptClass"].map((id) => ({ id, type: "text" }));
+  const fieldsFor = (overrides: Partial<Record<string, { id: string; type: string }[] | "throw">> = {}) => (rid: string) => {
+    const o = overrides[rid];
+    if (o === "throw") throw new Error("403 Forbidden");
+    if (o) return o;
+    return rid === YEAR_RIDS[2022] ? SHORT : rid === YEAR_RIDS[2025] ? LONG : CLASSIC;
+  };
+  const propertySql = (sql: string) =>
+    sql.startsWith("SELECT COUNT(*)") ? [{ n: "159950" }]
+      : sql.includes("MIN(") ? [{ lo: "1900-01-01T00:00:00", hi: "2026-09-30T00:00:00" }]
+      : sql.includes('"YR_ASSMT" AS v') ? [{ v: "2026", n: "159556" }, { v: "2025", n: "394" }]
+      : [{ v: "1", n: "500" }];
+  const profileOf = (t: TestConvex<typeof schema>) => t.run((ctx) => ctx.db.query("cityProfiles").withIndex("by_family", (q) => q.eq("familyKey", MPROP)).first());
+
+  it("stores each year from 2005 with its layout, and today's file as its assessment year", async () => {
+    const t = convexTest(schema, modules);
+    await seedCity(t, [...cityPackages(), ...propertyPackages()]);
+    installFakeFetch({ cityFields: CLASSIC, cityFieldsFor: fieldsFor(), citySql: propertySql });
+    expect(await t.action(internal.build.reprofileCity, { familyKey: MPROP })).toEqual([]);
+    expect((await profileOf(t))?.years).toEqual([
+      { year: 2005, resourceId: YEAR_RIDS[2005], layout: "classic" },
+      { year: 2022, resourceId: YEAR_RIDS[2022], layout: "short" },
+      { year: 2025, resourceId: YEAR_RIDS[2025], layout: "long" },
+      { year: 2026, resourceId: MPROP_RID, layout: "classic" },
+    ]);
+  });
+  it("skips a year whose columns match no layout, and says so", async () => {
+    const t = convexTest(schema, modules);
+    await seedCity(t, [...cityPackages(), ...propertyPackages()]);
+    installFakeFetch({ cityFields: CLASSIC, cityFieldsFor: fieldsFor({ [YEAR_RIDS[2022]]: [{ id: "Weird", type: "text" }] }), citySql: propertySql });
+    expect(await t.action(internal.build.reprofileCity, { familyKey: MPROP })).toEqual([`${MPROP}: 2022 file's columns match no known layout; skipped`]);
+    expect((await profileOf(t))?.years?.map((y) => y.year)).toEqual([2005, 2025, 2026]);
+  });
+  it("skips a year the City refuses to describe, and keeps the others (review focus 1)", async () => {
+    const t = convexTest(schema, modules);
+    await seedCity(t, [...cityPackages(), ...propertyPackages()]);
+    installFakeFetch({ cityFields: CLASSIC, cityFieldsFor: fieldsFor({ [YEAR_RIDS[2025]]: "throw" }), citySql: propertySql });
+    const notes = await t.action(internal.build.reprofileCity, { familyKey: MPROP });
+    expect(notes).toHaveLength(1);
+    expect(notes[0]).toMatch(new RegExp(`^${MPROP}: 2025 file unavailable; skipped`));
+    expect((await profileOf(t))?.years?.map((y) => y.year)).toEqual([2005, 2022, 2026]);
+  });
+  it("stores no years, and says why, when the history package isn't in the catalog", async () => {
+    const t = convexTest(schema, modules);
+    await seedCity(t, [...cityPackages(), propertyPackages()[0]]);
+    installFakeFetch({ cityFields: CLASSIC, citySql: propertySql });
+    expect(await t.action(internal.build.reprofileCity, { familyKey: MPROP })).toEqual([`${MPROP}: no yearly property files found`]);
+    expect((await profileOf(t))?.years ?? null).toBeNull();
   });
 });
