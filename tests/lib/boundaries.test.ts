@@ -113,7 +113,7 @@ describe("boundariesAt", () => {
     row("oz", "Opportunity Zone (2010 tract 88)", square(5, 5, 6, 6)),
   ];
   it("finds the district, the ward with its polling place, and every investment and development area containing the point", () => {
-    expect(boundariesAt({ lon: 0.25, lat: 0.5 }, rows)).toEqual({
+    expect(boundariesAt({ lon: 0.25, lat: 0.5 }, rows, 1000)).toEqual({
       asOf: 1000,
       district: { name: "District 6", alder: "Jane Doe" },
       ward: { name: "Ward 112", pollingPlace: "North Division High School", pollingAddress: "1011 W Center St", mainEntrance: "", accessibleEntrance: "Main entrance", mainParking: "", accessibleParking: "" },
@@ -122,6 +122,22 @@ describe("boundariesAt", () => {
     });
   });
   it("gives no boundaries, and no date, before the City's files were loaded", () => {
-    expect(boundariesAt({ lon: 0.25, lat: 0.5 }, [])).toEqual({ asOf: null, district: null, ward: null, investment: [], development: [] });
+    expect(boundariesAt({ lon: 0.25, lat: 0.5 }, [], null)).toEqual({ asOf: null, district: null, ward: null, investment: [], development: [] });
+  });
+});
+
+describe("small boundaries inside a big place (review fix)", () => {
+  const place = square(0, 0, 1, 1);
+  it("lists a TID that is a tiny part of a large place but lies wholly inside it", () => {
+    const covers = boundaryShares(place, [shape("tid", "TID 87: Welford Sanders Lofts", square(0.4, 0.4, 0.45, 0.45))]);
+    expect(covers.map((c) => c.name)).toEqual(["TID 87: Welford Sanders Lofts"]);
+    expect(covers[0].share).toBeLessThan(5);
+  });
+  it("lists a small ward wholly inside a district, but not one that only grazes its edge", () => {
+    const covers = boundaryShares(place, [
+      shape("ward", "Ward 326", square(0.1, 0.1, 0.13, 0.13), { pollingPlace: "Library" }),
+      shape("ward", "Ward 900", square(0.99, 0.4, 2, 0.41), { pollingPlace: "Elsewhere" }),
+    ]);
+    expect(covers.map((c) => c.name)).toEqual(["Ward 326"]);
   });
 });

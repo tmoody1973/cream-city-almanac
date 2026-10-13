@@ -173,7 +173,7 @@ export function askTools(b: AskBackend): AskTool[] {
     },
     {
       name: "findPlace",
-      description: "Find which census tract, City of Milwaukee neighborhood and DYCU area an address or intersection in Milwaukee is in. The address is sent to the U.S. Census Bureau's geocoder; nothing about the property is returned, ever. If it returns no-match, ask for the house number, street and ZIP; outside-county, say Ask covers Milwaukee County; unavailable, try later. Then answer the person's question with the tract, neighborhood or fact sheet it found.",
+      description: "Find which census tract, City of Milwaukee neighborhood and DYCU area an address or intersection in Milwaukee is in. The address is sent to the U.S. Census Bureau's geocoder; nothing about the property is returned, ever. If it returns no-match, ask for the house number, street and ZIP; outside-county, say Ask covers Milwaukee County; unavailable, try later. It also returns the aldermanic district and alder, and the voting ward with its polling place; if you mention the polling place, say to confirm it at myvote.wi.gov, because polling places can change before an election. Then answer the person's question with what it found.",
       parameters: z.object({ address: z.string().min(3).max(200) }),
       execute: (a: { address: string }) => b.place(a),
     },

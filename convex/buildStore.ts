@@ -385,8 +385,12 @@ export const replaceTractNeighborhoods = internalMutation({
 export const replaceBoundaries = internalMutation({
   args: { kind: vBoundaryKind, fetchedAt: v.number(), rows: v.array(v.object({ name: v.string(), details: v.record(v.string(), v.string()), geometry: v.string(), bbox: vBbox })) },
   handler: async (ctx, { kind, fetchedAt, rows }) => {
+    for (const r of await ctx.db.query("boundaryBoxes").withIndex("by_kind", (q) => q.eq("kind", kind)).collect()) await ctx.db.delete(r._id);
     for (const r of await ctx.db.query("boundaries").withIndex("by_kind", (q) => q.eq("kind", kind)).collect()) await ctx.db.delete(r._id);
-    for (const r of rows) await ctx.db.insert("boundaries", { kind, ...r, fetchedAt });
+    for (const r of rows) {
+      const boundaryId = await ctx.db.insert("boundaries", { kind, ...r, fetchedAt });
+      await ctx.db.insert("boundaryBoxes", { kind, name: r.name, details: r.details, bbox: r.bbox, fetchedAt, boundaryId });
+    }
   },
 });
 
@@ -396,7 +400,7 @@ export const overlapInputs = internalQuery({
   handler: async (ctx) => {
     const hoods = (definition: "city" | "dycu") => ctx.db.query("neighborhoods").withIndex("by_definition_matchKey", (q) => q.eq("definition", definition)).collect();
     return {
-      boundaries: (await ctx.db.query("boundaries").collect()).map(({ kind, name, details, geometry, bbox }) => ({ kind, name, details, geometry, bbox })),
+      boundaries: (await ctx.db.query("boundaries").collect()).map(({ kind, name, details, geometry, bbox, fetchedAt }) => ({ kind, name, details, geometry, bbox, fetchedAt })),
       city: (await hoods("city")).flatMap((h) => (h.geometry ? [{ name: h.name, geometry: h.geometry }] : [])),
       dycu: (await hoods("dycu")).map((d) => ({ name: d.name, tracts: newestTracts(d.tracts) })),
     };
@@ -405,7 +409,7 @@ export const overlapInputs = internalQuery({
 
 // The whole overlap table is replaced together, only after a run that read the tract outlines.
 export const replaceBoundaryOverlaps = internalMutation({
-  args: { rows: v.array(v.object({ placeType: vPlaceType, place: v.string(), covers: v.array(vCover), builtAt: v.number() })) },
+  args: { rows: v.array(v.object({ placeType: vPlaceType, place: v.string(), covers: v.array(vCover), builtAt: v.number(), asOf: v.number() })) },
   handler: async (ctx, { rows }) => {
     for (const r of await ctx.db.query("boundaryOverlaps").collect()) await ctx.db.delete(r._id);
     for (const r of rows) await ctx.db.insert("boundaryOverlaps", r);

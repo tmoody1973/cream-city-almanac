@@ -113,3 +113,11 @@ describe("boundaries", () => {
     expect(ASK_PROMPT).toContain("boundariesFor");
   });
 });
+
+describe("address tool and polling places (review fix)", () => {
+  it("says findPlace also gives the ward, polling place and alder, and to confirm polling places at myvote.wi.gov", () => {
+    const d = askTools(backend({})).find((t) => t.name === "findPlace")!.description;
+    expect(d).toContain("polling place");
+    expect(d).toContain("myvote.wi.gov");
+  });
+});

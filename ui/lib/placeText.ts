@@ -6,6 +6,12 @@ export const PLACE_PRIVACY = "This address was sent to the U.S. Census Bureau's 
 export const PLACE_PRIVACY_ASK = "This address was sent to the U.S. Census Bureau's geocoder to find its location, and, like every question here, to the AI; Cream City Almanac doesn't keep it.";
 // A point outside every neighborhood shape may still be in the City (lakefront, port, river gaps): never say it isn't.
 export const notInCityText = (tract: string) => `Not inside one of the City of Milwaukee's neighborhood boundaries (census tract ${tract}).`;
+// What the boundary block shows. Wards tile the City, so a ward or district found means the address is in the City even
+// when it falls in a gap between neighborhood shapes (lakefront, river): never call that "not covered".
+export function boundariesShown(r: Extract<PlaceResult, { status: "ok" }>): "lines" | "not-covered" | "not-loaded" {
+  if (r.boundaries.asOf === null) return "not-loaded";
+  return r.boundaries.district || r.boundaries.ward ? "lines" : "not-covered";
+}
 export const BOUNDARIES_NOT_LOADED = "The City's boundary files haven't been loaded yet.";
 export const BOUNDARIES_NOT_COVERED = "The City's boundaries (districts, wards, investment and development areas) don't cover this address.";
 export const asOfDate = (ms: number) => new Date(ms).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/Chicago" });
@@ -33,6 +39,6 @@ export function placeFollowUps(r: Extract<PlaceResult, { status: "ok" }>): Follo
     out.push({ label: "CRIME HERE", question: `How many robberies were there in ${r.neighborhood} this year?` });
     out.push({ label: "ITS TRACTS", question: `What's the poverty rate in ${r.neighborhood}'s tracts?` });
   }
-  if (r.inCity && r.boundaries.district) out.push({ label: "ITS WARDS", question: `Which wards are in ${r.boundaries.district.name}, and where do they vote?` });
+  if (r.boundaries.district) out.push({ label: "ITS WARDS", question: `Which wards are in ${r.boundaries.district.name}, and where do they vote?` });
   return out;
 }

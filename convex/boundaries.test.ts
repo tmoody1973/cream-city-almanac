@@ -58,3 +58,21 @@ describe("refreshBoundaries", () => {
     expect(await overlap(t, "tract", "55079008800")).not.toBeNull();
   });
 });
+
+describe("review fixes", () => {
+  it("dates place answers by when the City's files were copied, not when overlaps were rebuilt", async () => {
+    const t = await seed();
+    await runRefresh(t);
+    await t.run(async (ctx) => { for (const r of await ctx.db.query("boundaries").withIndex("by_kind", (q) => q.eq("kind", "ward")).collect()) await ctx.db.patch(r._id, { fetchedAt: 1000 }); });
+    await runRefresh(t, { cityLayerStatus: { "election/election_wards/MapServer/1": 503 } });
+    expect((await overlap(t, "tract", "55079008800"))?.asOf).toBe(1000);
+  });
+  it("keeps a light copy of each boundary without its outline, for address lookups", async () => {
+    const t = await seed();
+    await runRefresh(t);
+    const boxes = await t.run((ctx) => ctx.db.query("boundaryBoxes").collect());
+    expect(boxes).toHaveLength(8);
+    expect(boxes[0]).not.toHaveProperty("geometry");
+    expect(boxes.find((b) => b.kind === "ward")?.details).toMatchObject({ pollingPlace: "North Division High School" });
+  });
+});

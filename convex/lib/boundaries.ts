@@ -75,6 +75,27 @@ export function parseBoundaryLayer(kind: BoundaryKind, geojson: unknown): { rows
 }
 
 const MIN_COVER = 1; // percent of the place; G's neighborhood match keeps 10, but a TID is often a small part of a tract
+// A boundary too small to register as a share of a big place (a TID in a neighborhood, a ward in a district) is still
+// listed when this much of the boundary itself lies inside the place; less is an edge graze between neighbors.
+const MIN_INSIDE = 10;
+const SAMPLE = 200;
+const samples = new WeakMap<Geometry, Point[]>();
+// About 200 of a boundary's own grid points, computed once per shape per build.
+function sampleOf(g: Geometry): Point[] {
+  let pts = samples.get(g);
+  if (!pts) {
+    const all = insidePoints(g);
+    const step = Math.max(1, Math.floor(all.length / SAMPLE));
+    pts = all.filter((_, i) => i % step === 0);
+    samples.set(g, pts);
+  }
+  return pts;
+}
+function insideShare(s: BoundaryShape, place: Geometry, box: Bbox): number {
+  const pts = sampleOf(s.geometry);
+  if (!pts.length) return 0;
+  return (100 * pts.filter((p) => inBbox(p, box) && inShape(p, place)).length) / pts.length;
+}
 const touches = (a: Bbox, b: Bbox) => a.minLat <= b.maxLat && a.maxLat >= b.minLat && a.minLon <= b.maxLon && a.maxLon >= b.minLon;
 
 // Which boundaries cover a place, and how much of it: G's grid of points (insidePoints, about ±2%), where a point
@@ -86,9 +107,9 @@ export function boundaryShares(place: Geometry, shapes: BoundaryShape[]): Cover[
   const near = shapes.filter((s) => touches(s.bbox, box));
   const counts = new Map<BoundaryShape, number>();
   for (const p of inside) for (const s of near) if (inBbox(p, s.bbox) && inShape(p, s.geometry)) counts.set(s, (counts.get(s) ?? 0) + 1);
-  return [...counts]
-    .map(([s, c]) => ({ s, c, share: Math.round((100 * c) / inside.length) }))
-    .filter((x) => x.share >= MIN_COVER)
+  return near
+    .map((s) => ({ s, c: counts.get(s) ?? 0, share: Math.round((100 * (counts.get(s) ?? 0)) / inside.length) }))
+    .filter((x) => x.share >= MIN_COVER || insideShare(x.s, place, box) >= MIN_INSIDE)
     .sort((x, y) => BOUNDARY_KINDS.indexOf(x.s.kind) - BOUNDARY_KINDS.indexOf(y.s.kind) || y.c - x.c || x.s.name.localeCompare(y.s.name))
     .map(({ s, share }) => ({ kind: s.kind, name: s.name, share, ...((s.kind === "district" || s.kind === "ward") && s.details ? { details: s.details } : {}) }));
 }
@@ -120,15 +141,16 @@ const DEVELOPMENT: BoundaryKind[] = ["tid", "bid", "oz"];
 const WARD_KEYS: (keyof WardDetails)[] = ["pollingPlace", "pollingAddress", "mainEntrance", "accessibleEntrance", "mainParking", "accessibleParking"];
 
 // The stored boundaries containing a point. On a shared ward or district edge, inShape's half-open rule puts the point
-// in one shape; the first match is kept. asOf is the oldest file the answer rests on ("None" answers included).
-export function boundariesAt(p: Point, rows: StoredBoundary[]): AddressBoundaries {
-  if (rows.length === 0) return { asOf: null, district: null, ward: null, investment: [], development: [] };
+// in one shape; the first match is kept. `rows` need only be the boundaries whose bbox holds the point; asOf is the
+// oldest file the answer rests on ("None" answers included), null when the City's files were never loaded.
+export function boundariesAt(p: Point, rows: StoredBoundary[], asOf: number | null): AddressBoundaries {
+  if (asOf === null) return { asOf: null, district: null, ward: null, investment: [], development: [] };
   const hits = rows.filter((r) => inBbox(p, r.bbox) && inShape(p, JSON.parse(r.geometry) as Geometry));
   const d = hits.find((h) => h.kind === "district");
   const w = hits.find((h) => h.kind === "ward");
   const names = (kinds: BoundaryKind[]) => hits.filter((h) => kinds.includes(h.kind)).map((h) => h.name);
   return {
-    asOf: Math.min(...rows.map((r) => r.fetchedAt)),
+    asOf,
     district: d ? { name: d.name, alder: d.details.alder ?? "" } : null,
     ward: w ? { name: w.name, ...(Object.fromEntries(WARD_KEYS.map((k) => [k, w.details[k] ?? ""])) as WardDetails) } : null,
     investment: names(INVESTMENT),

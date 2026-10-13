@@ -398,7 +398,8 @@ async function refreshOverlaps(ctx: ActionCtx): Promise<string[]> {
     const inputs = await ctx.runQuery(internal.buildStore.overlapInputs, {});
     if (inputs.boundaries.length === 0) throw new Error("no boundaries are stored");
     const tracts = await tractOutlines(ctx);
-    const shapes: BoundaryShape[] = inputs.boundaries.map((b) => ({ ...b, geometry: JSON.parse(b.geometry) as Geometry }));
+    const shapes: BoundaryShape[] = inputs.boundaries.map(({ fetchedAt: _f, ...b }) => ({ ...b, geometry: JSON.parse(b.geometry) as Geometry }));
+    const asOf = Math.min(...inputs.boundaries.map((b) => b.fetchedAt)); // a kind kept from last week dates the answer
     const byNumber = new Map(tracts.map((t) => [tractNumber(t.geoid), t.geometry]));
     const places = [
       ...tracts.map((t) => ({ placeType: "tract" as const, place: t.geoid, geometry: t.geometry })),
@@ -411,7 +412,7 @@ async function refreshOverlaps(ctx: ActionCtx): Promise<string[]> {
     ];
     const builtAt = Date.now();
     const rows = places.map((p) => ({
-      placeType: p.placeType, place: p.place, builtAt,
+      placeType: p.placeType, place: p.place, builtAt, asOf,
       covers: boundaryShares(p.geometry, shapes).filter((c) => !(p.placeType === "district" && c.kind === "district" && c.name === `District ${p.place}`)),
     }));
     if (rows.length === 0) throw new Error("no place to measure");

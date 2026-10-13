@@ -1,7 +1,7 @@
 "use client";
 
 import type { PlaceResult } from "@/convex/places";
-import { BOUNDARIES_NOT_COVERED, BOUNDARIES_NOT_LOADED, asOfDate, POLLING_CONFIRM } from "@/ui/lib/placeText";
+import { BOUNDARIES_NOT_COVERED, BOUNDARIES_NOT_LOADED, asOfDate, boundariesShown, POLLING_CONFIRM } from "@/ui/lib/placeText";
 
 const list = (names: string[]) => (names.length ? names.join(", ") : "None");
 
@@ -9,8 +9,9 @@ const list = (names: string[]) => (names.length ? names.join(", ") : "None");
 // Shared by Ask's place card and the /n panel so the two can't drift apart.
 export function PlaceBoundaries({ r, meta }: { r: Extract<PlaceResult, { status: "ok" }>; meta?: string }) {
   const b = r.boundaries;
-  if (!r.inCity) return <p data-boundaries className={meta}>{BOUNDARIES_NOT_COVERED}</p>;
-  if (b.asOf === null) return <p data-boundaries className={meta}>{BOUNDARIES_NOT_LOADED}</p>;
+  const shown = boundariesShown(r);
+  if (shown === "not-loaded" || b.asOf === null) return <p data-boundaries className={meta}>{BOUNDARIES_NOT_LOADED}</p>;
+  if (shown === "not-covered") return <p data-boundaries className={meta}>{BOUNDARIES_NOT_COVERED}</p>;
   return (
     <div data-boundaries>
       <ul>

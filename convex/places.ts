@@ -32,8 +32,10 @@ export const placeAt = internalQuery({
     const names = neighborhoodsFor(tractNumber(geoid), latestDefYear(defs), defs);
     const sheets = await portraitAreas(ctx);
     const dycu = names.map((name) => ({ name, slug: sheets.find((a) => placeKey(a.name) === placeKey(name))?.slug ?? null }));
-    // ponytail: reads every stored boundary (≈550 rows, 1.75 MB) per lookup; a bbox table would cut it if lookups get busy.
-    const boundaries = boundariesAt(p, await ctx.db.query("boundaries").collect());
+    // The light boxes (no outlines), then only the few shapes whose bbox holds the point.
+    const boxes = await ctx.db.query("boundaryBoxes").collect();
+    const near = (await Promise.all(boxes.filter((b) => inBbox(p, b.bbox)).map((b) => ctx.db.get(b.boundaryId)))).filter((b) => b !== null);
+    const boundaries = boundariesAt(p, near, boxes.length ? Math.min(...boxes.map((b) => b.fetchedAt)) : null);
     return { neighborhood: hood?.name ?? null, dycu, boundaries };
   },
 });
@@ -94,9 +96,9 @@ export const overlapFor = internalQuery({
     const row = await ctx.db.query("boundaryOverlaps").withIndex("by_place", (q) => q.eq("placeType", placeType).eq("place", place)).unique();
     if (!row) return { kind: "missing" as const };
     const own = placeType === "district"
-      ? (await ctx.db.query("boundaries").withIndex("by_kind", (q) => q.eq("kind", "district")).collect()).find((b) => b.name === `District ${place}`)?.details
+      ? (await ctx.db.query("boundaryBoxes").withIndex("by_kind", (q) => q.eq("kind", "district")).collect()).find((b) => b.name === `District ${place}`)?.details
       : undefined;
-    return { kind: "row" as const, covers: row.covers, builtAt: row.builtAt, own };
+    return { kind: "row" as const, covers: row.covers, asOf: row.asOf ?? row.builtAt, own };
   },
 });
 
@@ -130,7 +132,7 @@ export const boundariesFor = action({
       status: "ok",
       place: { type: target.placeType, name: target.name, ...(r.own ? { details: r.own } : {}) },
       kinds,
-      asOf: r.builtAt,
+      asOf: r.asOf,
       covers: r.covers.filter((c) => kinds.includes(c.kind)),
     };
   },

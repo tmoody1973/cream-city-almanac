@@ -138,6 +138,17 @@ export default defineSchema({
     fetchedAt: v.number(),
   }).index("by_kind", ["kind"]),
 
+  // Each boundary without its outline: an address lookup reads these (≈100 KB) and opens only the shapes whose bbox
+  // holds the point, instead of the whole 1.75 MB table. Replaced with its boundary.
+  boundaryBoxes: defineTable({
+    kind: vBoundaryKind,
+    name: v.string(),
+    details: v.record(v.string(), v.string()),
+    bbox: vBbox,
+    fetchedAt: v.number(),
+    boundaryId: v.id("boundaries"),
+  }).index("by_kind", ["kind"]),
+
   // For each tract, City neighborhood, DYCU area and district: the boundaries covering it, with their share (percent,
   // ≥1). City and DYCU places are keyed by their stored name, tracts by GEOID, districts by number.
   boundaryOverlaps: defineTable({
@@ -145,6 +156,7 @@ export default defineSchema({
     place: v.string(),
     covers: v.array(vCover),
     builtAt: v.number(),
+    asOf: v.optional(v.number()), // the oldest copy of the City's files these shares rest on; rows built before it existed fall back to builtAt
   }).index("by_place", ["placeType", "place"]),
 
   // Public sheet maps: an answer by its normalized arguments, kept 10 minutes.
