@@ -117,3 +117,9 @@ test("it says where an address goes when you look one up", async ({ page }) => {
   await page.goto("/how-it-works");
   await expect(page.getByText(/geocoder/)).toBeVisible();
 });
+
+test("it says where boundaries come from and that shares are estimates", async ({ page }) => {
+  await page.goto("/how-it-works");
+  await expect(page.getByText(/aldermanic districts, voting wards and polling places/)).toBeVisible();
+  await expect(page.getByText(/copied from the City of Milwaukee's map server once a week/)).toBeVisible();
+});

@@ -426,6 +426,13 @@ From the approved comp, direction A, "the ledger" (`.impeccable/mocks/fact-sheet
   - Follow-ups ask about the places, never the property.
 - **The `/n` box:** "Find your neighborhood" in Saira caps, one field and one Find button in the site's boxed-button style, with the answer under it and the privacy line in muted small text. A match opens the fact sheet directly.
 
+### Boundaries
+
+- `PlaceBoundaries` (ui/components/PlaceBoundaries.tsx) is one block used by Ask's place card and the `/n` panel. It shows: district and alder; ward with its polling place, accessible entrance and parking; investment areas; development districts. "None" when a group is empty.
+- A polling place always carries "as of {date}" and the myvote.wi.gov link.
+- The `/n` box shows a panel in its status area instead of navigating; the fact sheet link sits at the top of the panel.
+- The boundaries card (`data-card="boundaries"`) has one group per asked kind, wards as a table, shares as "about N%", "all of it" or "a small part (under 5%)", and the grid-estimate footnote.
+
 ### Analysis cards (Ask's tract answers)
 Three cards in Ask's hairline box, under the AI's one to three sentences: ranking, change over time, and relationship. Every figure on them is DYCU's, computed by the server, and every card says which column Ask picked. They answer in census tracts, labeled in a "DYCU AREA" column with the name of DYCU's report area when DYCU defines one for that tract (DYCU's own groups of tracts, like "United Community", not the City's 190 official neighborhoods) and "—" otherwise; a name is never guessed. The footer says so: "Area names are Data You Can Use's report areas: groups of census tracts DYCU chose with its neighborhood partners, not the City's official neighborhoods." Words are plain first: a reader who isn't a data person should know what the card found from its first sentence (decision 028).
 - **Header (all three):** a label-size title (the column, place and year, or the two datasets "A vs. B") with a ruled EXPAND button at its right; then **the plain sentence** in body type, slightly larger than the card's small type, which code writes from the verdict and counts (`ui/lib/tractSummary.ts`), never the AI; then one line of small graphite type: the dataset code, the column in bold, its plain-English meaning and whether it is "a rate" or "a count", the place and year, the number of census tracts compared and, when any, "N left out (no data)", ending in the DYCU tag. A percent sign appears only where DYCU's own definition says percent.
