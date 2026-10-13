@@ -88,3 +88,17 @@ describe("countTurnout (K4)", () => {
     expect(r).toMatchObject({ status: "ok", rows: [{ label: "April 2019 spring election (wards 1–2 of 327 only)", registered: 1535, ballots: 267, turnout: 17.4 }] });
   });
 });
+
+describe("refreshTurnout: review fixes (K4)", () => {
+  it("keeps answering from earlier rows when a later re-read fails (review I-1)", async () => {
+    const t = convexTest(schema, modules);
+    await seed(t);
+    installFakeFetch(FAKE());
+    await t.action(internal.elections.refreshTurnout, {});
+    await t.run(async (ctx) => { for (const m of await ctx.db.query("members").collect()) await ctx.db.patch(m._id, { modified: "2026-01-01T00:00:00" }); });
+    installFakeFetch({ ...FAKE(), cityDownloads: { [XL21]: 500, [CSV20]: 500 } });
+    await t.action(internal.elections.refreshTurnout, {});
+    const r = await t.query(api.elections.countTurnout, { from: 2020, to: 2021 });
+    expect(r).toMatchObject({ status: "ok", rows: [{ label: expect.stringContaining("November 2020 general election"), registered: 1502 }, { label: expect.stringContaining("April 2021 spring election"), registered: 1583 }] }); // one-ward fakes read as partial
+  });
+});

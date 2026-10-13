@@ -42,7 +42,8 @@ export const replaceElection = internalMutation({
   },
 });
 
-// A failed election keeps its earlier rows and counts; its status says failed, so the next run retries it.
+// A failed election keeps its earlier rows, which still answer (countTurnout); its status says failed, so the next run
+// retries it.
 export const markElectionFailed = internalMutation({
   args: { election: v.string(), modified: v.string(), note: v.string() },
   handler: async (ctx, { election, modified, note }) => {

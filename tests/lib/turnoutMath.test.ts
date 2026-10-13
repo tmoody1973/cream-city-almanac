@@ -65,3 +65,24 @@ describe("summarize (K4)", () => {
     expect(r.notes).toContain("The City's file for April 2019 spring election couldn't be read.");
   });
 });
+
+describe("summarize: review fixes (K4)", () => {
+  it("still answers an election whose later re-read failed, from its earlier rows (review I-1)", () => {
+    const els = ELS.map((e) => (e.election === "2020-11" ? { ...e, status: "failed" as const } : e));
+    const r = ok(summarize(ROWS, els, { type: "general" }));
+    expect(r.rows.map((x) => x.label)).toContain("November 2020 general election");
+    expect(r.notes.some((n) => n.includes("couldn't be read"))).toBe(false);
+  });
+  it("labels a ward ranking from a partial file (review I-2)", () => {
+    const r = ok(summarize(ROWS, ELS, { from: 2016, to: 2016, groupBy: "ward", order: "lowest" }));
+    expect(r.notes).toContain("The City's November 2016 general election file lists only 2 of the city's 327 wards, so the other wards aren't ranked.");
+  });
+  it("says when a partial file doesn't list the asked ward (review I-3)", () => {
+    const r = ok(summarize(ROWS, ELS, { ward: 3 }));
+    expect(r.rows.map((x) => x.label)).toEqual(["April 2018 spring election", "November 2020 general election"]);
+    expect(r.notes).toContain("The City's November 2016 general election file doesn't list ward 3.");
+  });
+  it("refuses a ward list and one ward together (review M-1)", () => {
+    expect(summarize(ROWS, ELS, { from: 2020, to: 2020, groupBy: "ward", ward: 1 })).toEqual({ status: "refused", reason: "Ask for one ward across elections, or one election's ward list, not both." });
+  });
+});

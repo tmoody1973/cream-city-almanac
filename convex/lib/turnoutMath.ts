@@ -25,15 +25,18 @@ export function summarize(rows: WardIn[], elections: StoredElection[], a: Turnou
   if (!Number.isInteger(from) || !Number.isInteger(to) || from > to || to < 2016 || from > 2022) return { status: "refused", reason: YEARS };
   const type = a.type ?? "all";
   const inRange = (e: StoredElection) => yearOf(e.election) >= from && yearOf(e.election) <= to && (type === "all" || e.type === type);
-  const read = elections.filter((e) => e.status === "read" && inRange(e)).sort((x, y) => x.election.localeCompare(y.election));
-  const failed = elections.filter((e) => e.status === "failed" && inRange(e));
+  const byElection = new Map<string, WardIn[]>();
+  for (const r of rows) byElection.set(r.election, [...(byElection.get(r.election) ?? []), r]);
+  // A later re-read that failed keeps its earlier rows, and they still answer; only a failure with nothing stored is named.
+  const hasRows = (e: StoredElection) => byElection.has(e.election);
+  const read = elections.filter((e) => (e.status === "read" || hasRows(e)) && inRange(e)).sort((x, y) => x.election.localeCompare(y.election));
+  const failed = elections.filter((e) => e.status === "failed" && !hasRows(e) && inRange(e));
   const groupBy = a.groupBy ?? "election";
   if (a.order && groupBy !== "ward") return { status: "refused", reason: "Lowest or highest wards need groupBy ward and one election." };
+  if (groupBy === "ward" && a.ward !== undefined) return { status: "refused", reason: "Ask for one ward across elections, or one election's ward list, not both." };
   if (groupBy === "ward" && read.length !== 1) return { status: "refused", reason: "Ward lists are for one election at a time: pick one election, or ask for one ward across elections." };
   if (!read.length) return { status: "refused", reason: failed.length ? failed.map((e) => `The City's file for ${e.label} couldn't be read.`).join(" ") : YEARS };
 
-  const byElection = new Map<string, WardIn[]>();
-  for (const r of rows) byElection.set(r.election, [...(byElection.get(r.election) ?? []), r]);
   if (a.ward !== undefined && !read.some((e) => (byElection.get(e.election) ?? []).some((w) => w.ward === a.ward))) {
     const max = Math.max(...read.map((e) => e.of));
     return { status: "refused", reason: `Ward ${a.ward} isn't on the ward map of the elections asked (${from}–${to}: wards 1–${max}).` };
@@ -49,6 +52,7 @@ export function summarize(rows: WardIn[], elections: StoredElection[], a: Turnou
     ranked.sort((x, y) => (a.order === "highest" ? (y.turnout ?? 0) - (x.turnout ?? 0) : (x.turnout ?? 0) - (y.turnout ?? 0)));
     out = a.order ? ranked.slice(0, RANK_N) : ranked;
     if (ranked.length < wards.length) notes.push(`Wards with fewer than ${RANK_FLOOR} registered voters are left out of the ranking.`);
+    if (e.partial) notes.push(`The City's ${e.label} file lists only ${e.wards} of the city's ${e.of} wards, so the other wards aren't ${a.order ? "ranked" : "listed"}.`);
   } else {
     // One ward: only the elections whose map has it (ward 340 exists from 2022 only).
     const shown = a.ward === undefined ? read : read.filter((e) => (byElection.get(e.election) ?? []).some((w) => w.ward === a.ward));
@@ -62,6 +66,8 @@ export function summarize(rows: WardIn[], elections: StoredElection[], a: Turnou
     if (new Set(shown.map((e) => e.type)).size > 1) notes.push(MIX);
     if (a.ward === undefined) for (const e of shown.filter((x) => x.partial)) notes.push(`The City's ${e.label} file lists only ${e.wards} of the city's ${e.of} wards, so its citywide figure undercounts.`);
     if (a.ward !== undefined && new Set(shown.map((e) => e.map)).size > 1) notes.push(REDRAW);
+    // A partial file that doesn't list the asked ward is named, never silently skipped (November 2016: wards 1–250).
+    if (a.ward !== undefined) for (const e of read.filter((x) => x.partial && !shown.includes(x))) notes.push(`The City's ${e.label} file doesn't list ward ${a.ward}.`);
   }
   notes.push(...failed.map((e) => `The City's file for ${e.label} couldn't be read.`));
   // The election count is in the title so a reply never has to count rows itself (the AI writes no number).

@@ -26,5 +26,7 @@ describe("turnout card text (K4)", () => {
     const f = turnoutFollowUps({}, r);
     expect(f.map((x) => x.label)).toEqual(["ONLY NOVEMBER ELECTIONS", "LOWEST-TURNOUT WARDS"]);
     expect(f[1].question).toBe("Which wards had the lowest turnout in the April 2021 spring election?");
+    // The asked years carry into "only November" (review M-3).
+    expect(turnoutFollowUps({ from: 2018, to: 2020 }, r)[0].question).toBe("How did turnout change across November general elections from 2018 to 2020?");
   });
 });

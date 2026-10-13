@@ -22,7 +22,8 @@ type Args = { type?: string; from?: number; to?: number; ward?: number; groupBy?
 export function turnoutFollowUps(a: Args, r: TurnoutOk): FollowUp[] {
   const out: FollowUp[] = [];
   const types = new Set(r.rows.map((x) => x.type).filter(Boolean));
-  if (r.groupBy === "election" && types.size > 1) out.push({ label: "ONLY NOVEMBER ELECTIONS", question: `How did turnout change across November general elections${a.ward !== undefined ? ` in ward ${a.ward}` : ""}?` });
+  const years = a.from !== undefined || a.to !== undefined ? ` from ${a.from ?? 2016} to ${a.to ?? 2022}` : "";
+  if (r.groupBy === "election" && types.size > 1) out.push({ label: "ONLY NOVEMBER ELECTIONS", question: `How did turnout change across November general elections${a.ward !== undefined ? ` in ward ${a.ward}` : ""}${years}?` });
   const newest = r.groupBy === "election" ? r.rows.at(-1)?.label.replace(/ \(wards.*\)$/, "") : undefined;
   if (newest && a.ward === undefined) out.push({ label: "LOWEST-TURNOUT WARDS", question: `Which wards had the lowest turnout in the ${newest}?` });
   if (r.groupBy === "ward" && r.rows[0]) out.push({ label: "THIS WARD OVER TIME", question: `How has turnout changed in ${r.rows[0].label} across elections?` });
