@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { countCsv, dataZip, groupSql, headerRow, kindOfTable, parseCsv, periodOf, stopTables, tally } from "../../convex/lib/stops";
+import { countCsv, dataZip, groupSql, headerRow, kindOfTable, parseCsv, periodOf, pickTable, stopTables, tally } from "../../convex/lib/stops";
 
 describe("periodOf (K3)", () => {
   it("reads a quarter, the 2019 half-year, and nothing else", () => {
@@ -101,5 +101,25 @@ describe("placeholder columns in the City's database (live run, 2021 Q1)", () =>
     expect(groupSql("no-action", "dcbc4a9d-5e48-4f24-bf71-e9a450065461", { race: "Column5", sex: "Column4" }, 1))
       .toBe(`SELECT "Column5" AS race, "Column4" AS sex, COUNT(*) AS n FROM "dcbc4a9d-5e48-4f24-bf71-e9a450065461" WHERE "_id" <> 1 GROUP BY 1, 2`);
     expect(() => groupSql("no-action", "dcbc4a9d-5e48-4f24-bf71-e9a450065461", { race: "Column5" }, 1.5)).toThrow("Not a row id");
+  });
+});
+
+describe("person tables win over same-named stop tables (prod run, 2019 Q1–Q2)", () => {
+  it("picks 'Inform Field Interview Person Redacted' over the stop-level 'Inform Field Interview'", () => {
+    const link = (rid: string) => `https://data.milwaukee.gov/dataset/p/resource/${rid}/download/x.csv`;
+    const files = [
+      { name: "Inform Field Interview", url: link("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa") },
+      { name: "Inform Field Interview Person Redacted", url: link("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb") },
+      { name: "Inform No Action Encounter", url: link("cccccccc-cccc-cccc-cccc-cccccccccccc") },
+      { name: "Inform No Action Encounter Person Redacted", url: link("dddddddd-dddd-dddd-dddd-dddddddddddd") },
+      { name: "Tracs Individual", url: link("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee") },
+    ];
+    expect(stopTables(files)).toEqual([
+      { kind: "traffic", resourceId: "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee" },
+      { kind: "field-interview", resourceId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb" },
+      { kind: "no-action", resourceId: "dddddddd-dddd-dddd-dddd-dddddddddddd" },
+    ]);
+    expect(pickTable(["x/Inform_FieldInterview_REMCOL_REDACTED.csv", "x/Inform_FieldInterviewPerson_REMCOL_REDACTED.csv"], (n) => n.split("/").pop()!, "field-interview")).toBe("x/Inform_FieldInterviewPerson_REMCOL_REDACTED.csv");
+    expect(pickTable(["x/Inform_FieldInterview_REMCOL_REDACTED.csv"], (n) => n.split("/").pop()!, "field-interview")).toBe("x/Inform_FieldInterview_REMCOL_REDACTED.csv");
   });
 });

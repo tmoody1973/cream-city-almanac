@@ -5,7 +5,7 @@ import { internalAction, internalMutation, internalQuery, query, type MutationCt
 import { datastoreFields, datastoreSql } from "./lib/ckan";
 import { fetchWithTimeout } from "./lib/http";
 import { summarize, type StopsResult } from "./lib/stopMath";
-import { columnsFor, countCsv, dataZip, firstRowSql, groupSql, headerRow, KINDS, kindOfTable, periodOf, stopTables, tally, type Raw, type StopKind, type StopRow } from "./lib/stops";
+import { columnsFor, countCsv, dataZip, firstRowSql, groupSql, headerRow, KINDS, kindOfTable, periodOf, pickTable, stopTables, tally, type Raw, type StopKind, type StopRow } from "./lib/stops";
 import { vStopKind, vStopRow } from "./validators";
 
 // MPD's quarterly stop-and-search data as stored counts (spec 2026-10-13-stop-search-design §4–5).
@@ -84,7 +84,7 @@ async function countPackage(files: { name: string; format: string; url: string }
   const entries = unzipSync(new Uint8Array(await res.arrayBuffer()), { filter: (f) => /\.csv$/i.test(f.name) && kindOfTable(base(f.name)) !== null });
   const missing: StopKind[] = [];
   for (const kind of KINDS) {
-    const name = Object.keys(entries).find((n) => kindOfTable(base(n)) === kind);
+    const name = pickTable(Object.keys(entries), base, kind);
     if (!name) { missing.push(kind); continue; }
     const c = countCsv(kind, strFromU8(entries[name]));
     if (!c.ok) throw new Error(`${kind} table has no ${c.missing} column`);

@@ -33,6 +33,13 @@ export const kindOfTable = (name: string): StopKind | null => {
   const k = squash(name);
   return COMBINED[k] ?? PREFIXES.find(([p]) => k.startsWith(p))?.[1] ?? null;
 };
+// A kind's table among several files: the person table wins, because older packages also hold a stop-level table with
+// the combined file's name ("Inform Field Interview", 2019 Q1–Q2), which has no race column.
+const isPerson = (name: string) => PREFIXES.some(([p]) => squash(name).startsWith(p));
+export function pickTable<T>(items: T[], name: (x: T) => string, kind: StopKind): T | undefined {
+  const hits = items.filter((x) => kindOfTable(name(x)) === kind);
+  return hits.find((x) => isPerson(name(x))) ?? hits[0];
+}
 
 // A table loaded with placeholder columns ("Column1", "Column2", …, as 2021 Q1's field interviews are in the City's
 // database): the real names are in its first row. Returns real name → placeholder, or null for a normal table.
@@ -146,13 +153,11 @@ export function countCsv(kind: StopKind, text: string): { ok: true; rows: StopRo
 const RESOURCE = /\/resource\/([0-9a-f-]{36})\//;
 // The queryable person tables in a package (one per kind), from the catalog's file names and links.
 export function stopTables(files: { name: string; url: string }[]): { kind: StopKind; resourceId: string }[] {
-  const out: { kind: StopKind; resourceId: string }[] = [];
-  for (const f of files) {
-    const kind = kindOfTable(f.name);
-    const id = RESOURCE.exec(f.url)?.[1];
-    if (kind && id && !out.some((t) => t.kind === kind)) out.push({ kind, resourceId: id });
-  }
-  return out;
+  const linked = files.filter((f) => RESOURCE.test(f.url));
+  return KINDS.flatMap((kind) => {
+    const f = pickTable(linked, (x) => x.name, kind);
+    return f ? [{ kind, resourceId: RESOURCE.exec(f.url)![1] }] : [];
+  });
 }
 
 // The package's data ZIP: its one ZIP that isn't a lookup or dictionary bundle, on the City's own site.
