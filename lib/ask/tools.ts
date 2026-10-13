@@ -238,7 +238,7 @@ export function askTools(b: AskBackend): AskTool[] {
     },
     {
       name: "countTurnout",
-      description: "Voter turnout in Milwaukee for 12 elections, 2016–2022 (spring, primary and November general elections): registered voters, ballots cast and turnout, citywide per election, for one ward across elections, or one election's lowest or highest-turnout wards. From the City's election files; nothing after 2022, no candidate results, and no aldermanic-district figures (the files don't link wards to districts). If it returns refused, tell the person why. The card carries every figure; don't restate them.",
+      description: "Voter turnout in Milwaukee for 12 elections, 2016–2022 (spring, primary and November general elections): registered voters, ballots cast and turnout, citywide per election, for one ward across elections, or one election's lowest or highest-turnout wards. From the City's election files; nothing after 2022, no candidate results, and no aldermanic-district figures (the files don't link wards to districts). If it returns refused, tell the person why. The card carries every figure, including how many elections it covers; don't restate or count them.",
       parameters: turnoutParams,
       execute: (a: z.infer<typeof turnoutParams>) => b.turnout(a),
     },
