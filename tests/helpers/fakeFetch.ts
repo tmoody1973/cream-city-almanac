@@ -16,6 +16,7 @@ export interface FakeOptions {
   cityCatalog?: unknown;
   cityStatus?: number;
   cityFields?: { id: string; type: string }[];
+  cityFieldsFor?: (rid: string) => { id: string; type: string }[] | undefined; // one file's columns, when files differ
   citySql?: (sql: string) => unknown[];
   citySqlTruncated?: (sql: string) => boolean; // the City's own row-limit flag
   cityNeighborhoods?: unknown;
@@ -90,8 +91,10 @@ export function installFakeFetch(opts: FakeOptions = {}) {
       }
       return json(opts.cityStatus ?? 200, { success: true, result: { records, ...(opts.citySqlTruncated?.(sql) ? { records_truncated: true } : {}) } });
     }
-    if (url.includes("data.milwaukee.gov/api/3/action/datastore_search"))
-      return json(opts.cityStatus ?? 200, { success: true, result: { fields: [{ id: "_id", type: "int" }, ...(opts.cityFields ?? [])], records: [] } });
+    if (url.includes("data.milwaukee.gov/api/3/action/datastore_search")) {
+      const rid = new URL(url).searchParams.get("resource_id") ?? "";
+      return json(opts.cityStatus ?? 200, { success: true, result: { fields: [{ id: "_id", type: "int" }, ...(opts.cityFieldsFor?.(rid) ?? opts.cityFields ?? [])], records: [] } });
+    }
     if (url.includes("/api/feed/dcat-us/")) return json(opts.hubStatus ?? 200, opts.hubFeed ?? hubCatalog);
     if (url.includes("docs.google.com/spreadsheets"))
       return new Response(Uint8Array.from(atob(inventoryBase64), (c) => c.charCodeAt(0)), { status: 200 });
