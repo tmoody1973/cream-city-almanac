@@ -245,6 +245,7 @@ test.describe("signed in", () => {
     await expect(card).toBeVisible({ timeout: 40_000 });
     await expect(card).toContainText("Census tract");
     await expect(card).toContainText("U.S. Census Bureau");
+    await expect(card.locator("[data-boundaries]")).toBeVisible();
   });
 
   test("a neighborhood count names the City boundary it used", async ({ page }) => {

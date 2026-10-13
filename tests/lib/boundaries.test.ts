@@ -1,6 +1,6 @@
 // tests/lib/boundaries.test.ts
 import { describe, expect, it } from "vitest";
-import { boundaryShares, layerUrl, newestTracts, parseBoundaryLayer, tractGeoid, unionOf, type BoundaryShape } from "../../convex/lib/boundaries";
+import { boundariesAt, boundaryShares, layerUrl, newestTracts, parseBoundaryLayer, tractGeoid, unionOf, type BoundaryShape } from "../../convex/lib/boundaries";
 import { inShape, type Geometry } from "../../convex/lib/geo";
 
 const square = (x0: number, y0: number, x1: number, y1: number): Geometry => ({ type: "Polygon", coordinates: [[[x0, y0], [x1, y0], [x1, y1], [x0, y1], [x0, y0]]] });
@@ -96,5 +96,32 @@ describe("helpers", () => {
     expect(tractGeoid("55079008800")).toBe("55079008800");
     expect(tractGeoid("Harambee")).toBeNull();
     expect(tractGeoid("88.001")).toBeNull();
+  });
+});
+
+describe("boundariesAt", () => {
+  const row = (kind: string, name: string, g: Geometry, details: Record<string, string> = {}, fetchedAt = 2000) => {
+    const ring = (g as { coordinates: number[][][] }).coordinates[0];
+    const lons = ring.map((p) => p[0]); const lats = ring.map((p) => p[1]);
+    return { kind: kind as never, name, details, geometry: JSON.stringify(g), bbox: { minLon: Math.min(...lons), maxLon: Math.max(...lons), minLat: Math.min(...lats), maxLat: Math.max(...lats) }, fetchedAt };
+  };
+  const rows = [
+    row("district", "District 6", square(0, 0, 1, 1), { alder: "Jane Doe" }, 1000),
+    row("ward", "Ward 112", square(0, 0, 1, 1), { pollingPlace: "North Division High School", pollingAddress: "1011 W Center St", accessibleEntrance: "Main entrance" }),
+    row("tin", "Harambee Proud TIN", square(0, 0, 0.5, 1)),
+    row("tid", "TID 1: A", square(0, 0, 1, 1)), row("tid", "TID 2: B", square(0, 0, 1, 1)),
+    row("oz", "Opportunity Zone (2010 tract 88)", square(5, 5, 6, 6)),
+  ];
+  it("finds the district, the ward with its polling place, and every investment and development area containing the point", () => {
+    expect(boundariesAt({ lon: 0.25, lat: 0.5 }, rows)).toEqual({
+      asOf: 1000,
+      district: { name: "District 6", alder: "Jane Doe" },
+      ward: { name: "Ward 112", pollingPlace: "North Division High School", pollingAddress: "1011 W Center St", mainEntrance: "", accessibleEntrance: "Main entrance", mainParking: "", accessibleParking: "" },
+      investment: ["Harambee Proud TIN"],
+      development: ["TID 1: A", "TID 2: B"],
+    });
+  });
+  it("gives no boundaries, and no date, before the City's files were loaded", () => {
+    expect(boundariesAt({ lon: 0.25, lat: 0.5 }, [])).toEqual({ asOf: null, district: null, ward: null, investment: [], development: [] });
   });
 });

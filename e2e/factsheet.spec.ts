@@ -27,19 +27,26 @@ test("each figure says what it measures, and DYCU's own data warnings travel wit
   await expect(page.getByText(/may be missing data/).first()).toBeVisible();
 });
 
-test("the fact sheet list finds your neighborhood from an address", async ({ page }) => {
+test("the fact sheet list shows an address's fact sheet, district, ward and polling place", async ({ page }) => {
   await page.goto("/n");
   await expect(page.getByRole("link", { name: "Harambee" })).toBeVisible();
   await page.getByLabel("Your address").fill("2400 W Center St");
   await page.getByRole("button", { name: "Find" }).click();
-  await expect(page).toHaveURL(/\/n\/amani$/, { timeout: 20_000 }); // 2400 W Center St: City neighborhood Amani (dev check)
+  const panel = page.locator("[data-place-message]");
+  await expect(panel.getByRole("link", { name: "Open Amani's fact sheet →" })).toHaveAttribute("href", "/n/amani", { timeout: 20_000 }); // City's Amani (dev check)
+  await expect(panel).toContainText(/Aldermanic District \d+ · Alder: /);
+  await expect(panel).toContainText(/Ward \d+ · Votes at /);
+  await expect(panel.locator("[data-polling-note]")).toContainText(/as of [A-Z][a-z]{2} \d{1,2}, \d{4}/);
+  await expect(panel.getByRole("link", { name: "myvote.wi.gov" })).toHaveAttribute("href", "https://myvote.wi.gov");
+  await expect(panel).toContainText("Investment areas:");
+  await expect(panel).toContainText("Development districts:");
 });
 
 test("an address outside DYCU's areas says which City neighborhood it is in", async ({ page }) => {
   await page.goto("/n");
   await page.getByLabel("Your address").fill("2000 S Kinnickinnic Ave");
   await page.getByRole("button", { name: "Find" }).click();
-  await expect(page.locator("[data-place-message]")).toContainText(/neighborhood|Milwaukee County/, { timeout: 20_000 });
+  await expect(page.locator("[data-place-message]")).toContainText(/neighborhood, which Data You Can Use doesn't profile/, { timeout: 20_000 });
 });
 
 test("the address box has a visible label matching its name, and an answer area screen readers already know", async ({ page }) => {

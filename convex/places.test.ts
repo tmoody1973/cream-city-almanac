@@ -3,6 +3,7 @@ import rateLimiterTest from "@convex-dev/rate-limiter/test";
 import { convexTest } from "convex-test";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { installFakeFetch } from "../tests/helpers/fakeFetch";
+import { runRefresh, seedBoundaryData } from "../tests/helpers/boundaryFixtures";
 import { api } from "./_generated/api";
 import schema from "./schema";
 
@@ -32,6 +33,7 @@ describe("findPlace", () => {
     expect(await t.withIdentity(reader).action(api.places.findPlace, { address: "2400 W Center St" })).toEqual({
       status: "ok", matched: "2400 W CENTER ST, MILWAUKEE, WI, 53206", tract: { geoid: "55079008800", number: "88" },
       neighborhood: "Harambee", inCity: true, dycu: [{ name: "Harambee", slug: "harambee" }],
+      boundaries: { asOf: null, district: null, ward: null, investment: [], development: [] },
     });
   });
   it("gives the tract only for a County address outside the City, and refuses one outside the County", async () => {
@@ -84,5 +86,30 @@ describe("review fixes", () => {
     installFakeFetch({ geocoder: reply(43.0679, -87.9425, "55079008800") });
     for (let i = 0; i < 25; i++) await t.action(api.places.placeForBox, { address: " " });
     expect(await t.action(api.places.placeForBox, { address: "2400 W Center St" })).toMatchObject({ status: "ok" });
+  });
+});
+
+
+// A fresh backend with the boundary fixtures (tract 88 = the City's and DYCU's Harambee), refreshed when asked.
+async function seedBoundaries() {
+  const t = convexTest(schema, modules);
+  rateLimiterTest.register(t);
+  await seedBoundaryData(t);
+  return t;
+}
+
+describe("address boundaries", () => {
+  it("gives the district and alder, the ward and its polling place, and the investment and development areas", async () => {
+    const t = await seedBoundaries();
+    await runRefresh(t);
+    installFakeFetch({ geocoder: reply(43.07, -87.945, "55079008800") });
+    const r = await t.withIdentity(reader).action(api.places.findPlace, { address: "2400 W Center St" });
+    expect(r).toMatchObject({ status: "ok", inCity: true, boundaries: {
+      district: { name: "District 6", alder: "Jane Doe" },
+      ward: { name: "Ward 112", pollingPlace: "North Division High School", accessibleEntrance: "Main entrance on W Center St", mainParking: "" },
+      investment: ["Harambee Proud TIN", "NRSA 1", "NSP 7: Harambee Great Neighborhood Initiative"],
+      development: ["Opportunity Zone (2010 tract 88)"],
+    } });
+    expect(r.status === "ok" && r.boundaries.asOf).toBeGreaterThan(0);
   });
 });

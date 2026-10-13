@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { action, internalQuery, type ActionCtx } from "./_generated/server";
 import { portraitAreas } from "./factSheet";
+import { boundariesAt, type AddressBoundaries } from "./lib/boundaries";
 import { checkAddress, geocodeUrl, parseGeocode, withCity } from "./lib/geocode";
 import { inBbox, inShape, type Geometry } from "./lib/geo";
 import { fetchWithTimeout } from "./lib/http";
@@ -13,7 +14,7 @@ import { rateLimiter } from "./limits";
 // Address → the places it lies in (spec 2026-10-12-address-lookup §4). Never stores the address, never logs it, never
 // returns anything about the property.
 export type PlaceResult =
-  | { status: "ok"; matched: string; tract: { geoid: string; number: string }; neighborhood: string | null; inCity: boolean; dycu: { name: string; slug: string | null }[] }
+  | { status: "ok"; matched: string; tract: { geoid: string; number: string }; neighborhood: string | null; inCity: boolean; dycu: { name: string; slug: string | null }[]; boundaries: AddressBoundaries }
   | { status: "bad-address" | "no-match" | "unavailable" | "outside-county" | "busy" };
 
 const TIMEOUT_MS = 10_000;
@@ -29,7 +30,9 @@ export const placeAt = internalQuery({
     const names = neighborhoodsFor(tractNumber(geoid), latestDefYear(defs), defs);
     const sheets = await portraitAreas(ctx);
     const dycu = names.map((name) => ({ name, slug: sheets.find((a) => placeKey(a.name) === placeKey(name))?.slug ?? null }));
-    return { neighborhood: hood?.name ?? null, dycu };
+    // ponytail: reads every stored boundary (≈550 rows, 1.75 MB) per lookup; a bbox table would cut it if lookups get busy.
+    const boundaries = boundariesAt(p, await ctx.db.query("boundaries").collect());
+    return { neighborhood: hood?.name ?? null, dycu, boundaries };
   },
 });
 
@@ -49,7 +52,7 @@ async function locate(ctx: ActionCtx, a: string): Promise<PlaceResult> {
   if (!g.geoid) return { status: "unavailable" }; // a match without its tract: the reply was incomplete, not outside the County
   if (!g.geoid.startsWith(COUNTY)) return { status: "outside-county" };
   const at = await ctx.runQuery(internal.places.placeAt, { lat: g.lat, lon: g.lon, geoid: g.geoid });
-  return { status: "ok", matched: g.matched, tract: { geoid: g.geoid, number: tractNumber(g.geoid) }, neighborhood: at.neighborhood, inCity: at.neighborhood !== null, dycu: at.dycu };
+  return { status: "ok", matched: g.matched, tract: { geoid: g.geoid, number: tractNumber(g.geoid) }, neighborhood: at.neighborhood, inCity: at.neighborhood !== null, dycu: at.dycu, boundaries: at.boundaries };
 }
 
 export const findPlace = action({

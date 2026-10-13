@@ -1,5 +1,5 @@
 // convex/lib/boundaries.ts
-import { bboxOf, inBbox, inShape, type Bbox, type Geometry } from "./geo";
+import { bboxOf, inBbox, inShape, type Bbox, type Geometry, type Point } from "./geo";
 import { insidePoints } from "./tractPlaces";
 
 // The City of Milwaukee's boundary files (docs/superpowers/specs/2026-10-12-boundaries-design.md §2, §4). Pure: no I/O.
@@ -109,4 +109,29 @@ export function tractGeoid(asked: string): string | null {
   if (/^55079\d{6}$/.test(s)) return s;
   if (!/^\d{1,4}(\.\d{1,2})?$/.test(s)) return null;
   return `55079${String(Math.round(Number(s) * 100)).padStart(6, "0")}`;
+}
+
+export type WardDetails = { pollingPlace: string; pollingAddress: string; mainEntrance: string; accessibleEntrance: string; mainParking: string; accessibleParking: string };
+export type AddressBoundaries = { asOf: number | null; district: { name: string; alder: string } | null; ward: ({ name: string } & WardDetails) | null; investment: string[]; development: string[] };
+type StoredBoundary = { kind: BoundaryKind; name: string; details: Record<string, string>; geometry: string; bbox: Bbox; fetchedAt: number };
+
+const INVESTMENT: BoundaryKind[] = ["tin", "nrsa", "nsp"];
+const DEVELOPMENT: BoundaryKind[] = ["tid", "bid", "oz"];
+const WARD_KEYS: (keyof WardDetails)[] = ["pollingPlace", "pollingAddress", "mainEntrance", "accessibleEntrance", "mainParking", "accessibleParking"];
+
+// The stored boundaries containing a point. On a shared ward or district edge, inShape's half-open rule puts the point
+// in one shape; the first match is kept. asOf is the oldest file the answer rests on ("None" answers included).
+export function boundariesAt(p: Point, rows: StoredBoundary[]): AddressBoundaries {
+  if (rows.length === 0) return { asOf: null, district: null, ward: null, investment: [], development: [] };
+  const hits = rows.filter((r) => inBbox(p, r.bbox) && inShape(p, JSON.parse(r.geometry) as Geometry));
+  const d = hits.find((h) => h.kind === "district");
+  const w = hits.find((h) => h.kind === "ward");
+  const names = (kinds: BoundaryKind[]) => hits.filter((h) => kinds.includes(h.kind)).map((h) => h.name);
+  return {
+    asOf: Math.min(...rows.map((r) => r.fetchedAt)),
+    district: d ? { name: d.name, alder: d.details.alder ?? "" } : null,
+    ward: w ? { name: w.name, ...(Object.fromEntries(WARD_KEYS.map((k) => [k, w.details[k] ?? ""])) as WardDetails) } : null,
+    investment: names(INVESTMENT),
+    development: names(DEVELOPMENT),
+  };
 }
