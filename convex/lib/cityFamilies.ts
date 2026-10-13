@@ -18,6 +18,22 @@ export const CITY_NOTES: Record<string, string> = {
   "city:nibrs-crime-data": "The City's file names still say WIBR (wibr.csv), the system Milwaukee police used before NIBRS.",
 };
 
+// City datasets split into a "(Current)" and a "(Historical)" file (spec 2026-10-12-crime-history-design §4). `join`
+// reads both as one table from `from`; otherwise the note says why the older file isn't counted.
+// ponytail: hand-kept; add a pair only after checking by hand that its columns and codes match and from when the
+// archive is complete.
+export const ARCHIVES: Record<string, { join: true; from: string; note: string } | { join: false; note: string }> = {
+  "city:nibrs-crime-data": { join: true, from: "2005-01-01", note: "The City's crime records are complete from 2005; earlier years hold only a few stray records." },
+  "city:call-center-data": { join: false, note: "The City's earlier 311 file (2020–2025) is missing most requests after November 2020, so counts here start in 2026." },
+};
+
+// The line a dataset's page shows under its name: the hand-written note, else why an older file isn't counted.
+export function cityNote(familyKey: string): string | null {
+  if (Object.hasOwn(CITY_NOTES, familyKey)) return CITY_NOTES[familyKey];
+  const a = ARCHIVES[familyKey];
+  return a && !a.join ? a.note : null;
+}
+
 // Search lists a replaced dataset after everything else, so its successor is found first (Ask once counted WIBR
 // before NIBRS).
 const replaced = (key: string) => Object.hasOwn(REPLACED_BY, key);

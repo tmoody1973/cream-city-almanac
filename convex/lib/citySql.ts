@@ -4,6 +4,7 @@ import { isOffenseColumn, offenseCodes, offenseName } from "./nibrs";
 import type { Bbox } from "./geo";
 import { POINTS_CAP } from "./cityPoints";
 import { CELL } from "./cityMap";
+import { ARCHIVES } from "./cityFamilies";
 
 // Turns Ask's checked arguments into the City's PostgreSQL. Only profiled columns and profiled values get in;
 // identifiers are double-quoted, literals single-quoted with quotes doubled. Constructs are limited to what the City's
@@ -24,9 +25,9 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 
 export interface CountArgs { from?: string; to?: string; filters?: { column: string; values?: string[]; over?: number; under?: number }[]; groupBy?: string }
 export type Built =
-  | { ok: true; totalSql: string; groupSql: string | null; futureSql: string | null; period: string; filterLabels: string[]; groupLabel: string | null; overlap: boolean; dateColumn: string | null; coverage: string | null; points: { sql: string; missingSql: string } | null; gridSql: string | null; ofSql: string | null; tractSql: string | null }
+  | { ok: true; totalSql: string; groupSql: string | null; futureSql: string | null; period: string; filterLabels: string[]; groupLabel: string | null; overlap: boolean; dateColumn: string | null; coverage: string | null; points: { sql: string; missingSql: string } | null; gridSql: string | null; ofSql: string | null; tractSql: string | null; files: Files }
   | { ok: false; status: "no-locations" }
-  | { ok: false; status: "outside-coverage"; coverage: string }
+  | { ok: false; status: "outside-coverage"; coverage: string; note?: string }
   | { ok: false; status: "choose"; column: string; asked: string; choices: string[] }
   | { ok: false; status: "bad-column"; column: string; columns: string[] }
   | { ok: false; status: "bad-dates"; from: string; to: string };
@@ -105,9 +106,27 @@ export function valueFilter(p: CityProfile, f: { column: string; values?: string
   return { ok: true, where, labels: uniq.map((v) => filterLabel(cat.column, v, p.districtColumns)) };
 }
 
+export type Files = "current" | "archive" | "both";
+// The table a count reads (spec 2026-10-12-crime-history-design §5): the profiled file, its archive, or both as one,
+// with the archive's rows only before the profiled file's first date so nothing is counted twice.
+export function sourceFor(p: CityProfile, from: string, to: string): { table: string; files: Files } {
+  const a = p.archive;
+  if (!a || !p.dateColumn || from >= a.before) return { table: quoteId(p.resourceId), files: "current" };
+  if (!RID.test(a.resourceId)) throw new Error("Not a CKAN resource id");
+  if (to < a.before) return { table: quoteId(a.resourceId), files: "archive" };
+  return { table: `(SELECT * FROM ${quoteId(a.resourceId)} WHERE ${quoteId(p.dateColumn)} < ${lit(a.before)} UNION ALL SELECT * FROM ${quoteId(p.resourceId)}) AS t`, files: "both" };
+}
+
+// Why a count stops at its data's start: crime's note only once the archive is read, 311's always.
+function startNote(p: CityProfile): string | null {
+  const a = ARCHIVES[p.familyKey];
+  if (!a) return null;
+  return a.join ? (p.archive ? a.note : null) : a.note;
+}
+
 export function buildCount(p: CityProfile, a: CountArgs, today: string, area?: Bbox): Built {
   if (!RID.test(p.resourceId)) throw new Error("Not a CKAN resource id");
-  const table = quoteId(p.resourceId);
+  let { table, files } = { table: quoteId(p.resourceId), files: "current" as Files };
   // A date that was given but isn't a real day is refused, never quietly replaced by the default window.
   if ((!absent(a.from) && !isDay(a.from!)) || (!absent(a.to) && !isDay(a.to!))) return { ok: false, status: "bad-dates", from: a.from ?? "", to: a.to ?? "" };
   if (area && !(p.latColumn && p.lonColumn)) return { ok: false, status: "no-locations" };
@@ -149,13 +168,18 @@ export function buildCount(p: CityProfile, a: CountArgs, today: string, area?: B
     const notes = askedFrom || askedTo ? [] : [to === today ? "last 12 months" : "the data's latest 12 months"];
     if (span) {
       coverage = `${human(span.min)} – ${human(span.max)}`;
-      if (to < span.min || from > span.max) return { ok: false, status: "outside-coverage", coverage };
+      const note = startNote(p);
+      if (to < span.min) return { ok: false, status: "outside-coverage", coverage, ...(note ? { note } : {}) };
+      if (from > span.max) return { ok: false, status: "outside-coverage", coverage };
       if (from < span.min || to > span.max) {
-        from = from < span.min ? span.min : from;
+        const early = from < span.min;
+        from = early ? span.min : from;
         to = to > span.max ? span.max : to;
         notes.push("clamped to the data's range");
+        if (early && note) notes.push(note);
       }
     }
+    ({ table, files } = sourceFor(p, from, to));
     const d = quoteId(p.dateColumn);
     const others = where.join(" AND ");
     where.unshift(`${d} >= ${lit(from)} AND ${d} < ${lit(addDays(to, 1))}`);
@@ -210,5 +234,5 @@ export function buildCount(p: CityProfile, a: CountArgs, today: string, area?: B
     const filtered = where.length ? `${where.join(" AND ")} AND ` : "";
     gridSql = `SELECT floor(${lat} / ${CELL.dLat}) AS i, floor(${lon} / ${CELL.dLon}) AS j, COUNT(*) AS n FROM ${table} WHERE ${filtered}${lat} IS NOT NULL AND ${lon} IS NOT NULL GROUP BY i, j`;
   }
-  return { ok: true, totalSql, groupSql, futureSql, period, filterLabels, groupLabel, overlap, dateColumn: p.dateColumn, coverage, points, gridSql, ofSql, tractSql };
+  return { ok: true, totalSql, groupSql, futureSql, period, filterLabels, groupLabel, overlap, dateColumn: p.dateColumn, coverage, points, gridSql, ofSql, tractSql, files };
 }
