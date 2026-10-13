@@ -98,7 +98,8 @@ The ZIPs hold the same tables as CSV files, plus lookup CSVs and PDF dictionarie
 2. **Queryable package:** run one grouped `datastore_search_sql` per matched table. Each table's id comes from its download link in the catalog's `files` (the K2 method), and its columns from `datastoreFields`; the SQL names only columns that list contains.
 3. **ZIP package:** download the member's ZIP link (30-second timeout). Unpack only the three matched CSV entries with `fflate` (`unzipSync` with a filter), parse them with a quote-aware CSV reader (quoted commas, quotes and line breaks), skip a "Column1…" placeholder header, and count in code.
 4. **Replace that period's rows atomically.** Then set `stopPeriods` to counted.
-5. **A package that fails** (download, missing table, missing column) stays out. Its `stopPeriods` row is marked failed, with the reason in the build notes; earlier counts for it are kept.
+5. **A package missing one kind's table counts the others** (amended 2026-10-13 after the first full run). The missing kind is stored on `stopPeriods.missing`, and the card names it: "The City's files for … have no traffic-stop table comparable to earlier quarters, so traffic stops there aren't counted." The 2024 packages have no comparable traffic-stop table: Q1 has none, and Q2–Q4 use combined files. Their field-interview and no-action files (`Inform_FieldInterview…`, `Inform_NoActionEncounter…`) are matched exactly. Only `.csv` entries are read from a ZIP.
+6. **A package that fails** (download, unreadable column) stays out. Its `stopPeriods` row is marked failed, with the reason in the build notes; earlier counts for it are kept.
 
 **Nothing about a person is stored:** only counts per combination.
 

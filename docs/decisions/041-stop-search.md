@@ -16,12 +16,14 @@
 - **Race and ethnicity as one group** (Claude's proposal, approved by Tarik with the spec): traffic stops record Hispanic as a race code, while field interviews record it as a separate ethnicity field. Counting race alone would undercount Hispanic people in field interviews and make the stop types incomparable.
 - **Rates for field interviews:** the share frisked (patted down for weapons), the share searched, and how often a search found something, each shown only when at least 10 people are behind it.
 - **No location:** the person tables don't record where the stop happened.
+- **2024 traffic stops are left out** (found in the first full run, 2026-10-13). The 2024 Q1 file has no traffic-stop person table, and from Q2 MPD switched to combined files whose traffic table counts people differently from the earlier one. Mixing them would show a drop that isn't real, so the card names 2024 as not counted for traffic stops. 2024's field interviews and no-action encounters still count; their combined files are one row per person, with the same columns as before.
 
 **What we gave up:**
 - Stop locations and maps.
 - The officer, dispatch and use-of-force tables.
 - Rates per resident (comparing with Milwaukee's population is a separate question).
 - Any breakdown beyond race/ethnicity, sex, period, kind and what a search found.
+- Traffic stops in 2024.
 
 **How we'll know if this was right:**
 - 2023 Q4 traffic-stop people match the City's file (15,472).
