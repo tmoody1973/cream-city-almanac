@@ -9,6 +9,7 @@ const backend = (relateResult: unknown): AskBackend => ({
   place: async () => ({ status: "no-match" }) as never,
   boundaries: async () => ({ status: "not-loaded" }) as never,
   stops: async () => ({ status: "refused", reason: "" }) as never,
+  turnout: async () => ({ status: "refused", reason: "" }) as never,
 });
 
 const row = (i: number) => ({ geoid: `5507910${String(i).padStart(4, "0")}`, tract: String(i), neighborhood: "Harambee", value: 41.2, lo: 35.1, hi: 47.3, unreliable: false });
@@ -128,5 +129,14 @@ describe("countStops (K3)", () => {
     const tool = askTools(backend({})).find((t) => t.name === "countStops")!;
     expect(tool.description).toMatch(/field interview/i);
     expect(Object.keys(tool.parameters.shape).sort()).toEqual(["filters", "from", "groupBy", "kind", "to"]);
+  });
+});
+
+describe("countTurnout (K4)", () => {
+  it("offers countTurnout with no district argument", () => {
+    const tool = askTools(backend({})).find((t) => t.name === "countTurnout")!;
+    expect(tool.description).toMatch(/turnout/i);
+    expect(tool.description).toMatch(/district/i); // says districts aren't available
+    expect(Object.keys(tool.parameters.shape).sort()).toEqual(["from", "groupBy", "order", "to", "type", "ward"]);
   });
 });
