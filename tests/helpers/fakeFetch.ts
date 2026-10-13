@@ -20,6 +20,8 @@ export interface FakeOptions {
   citySqlTruncated?: (sql: string) => boolean; // the City's own row-limit flag
   cityNeighborhoods?: unknown;
   cityNeighborhoodsStatus?: number;
+  cityLayers?: Record<string, unknown>; // the City's boundary layers (f=geojson), by layer path, e.g. "election/election_wards/MapServer/1"
+  cityLayerStatus?: Record<string, number>;
   tractRows?: (url: string) => { features: { attributes: Record<string, unknown> }[]; exceededTransferLimit?: boolean };
   tractStatus?: number;
   tractShapes?: unknown; // DYCU's tract outlines (f=geojson)
@@ -66,6 +68,10 @@ export function installFakeFetch(opts: FakeOptions = {}) {
 
     if (url.includes("special_districts/MapServer/4/query"))
       return json(opts.cityNeighborhoodsStatus ?? 200, opts.cityNeighborhoods ?? { type: "FeatureCollection", features: [] });
+    if (url.startsWith("https://milwaukeemaps.milwaukee.gov/arcgis/rest/services/") && url.includes("/query?")) {
+      const path = url.slice("https://milwaukeemaps.milwaukee.gov/arcgis/rest/services/".length).split("/query?")[0];
+      return json(opts.cityLayerStatus?.[path] ?? 200, opts.cityLayers?.[path] ?? { type: "FeatureCollection", features: [] });
+    }
 
     if (url.includes("data.milwaukee.gov/api/3/action/package_search")) {
       // Like CKAN, honour `start`: a page past the end of the results is empty.

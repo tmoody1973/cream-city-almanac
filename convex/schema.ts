@@ -1,6 +1,6 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
-import { vBbox, vCityProfile, vDictionaryField, vGlossaryEntry, vKind, vMember, vMismatch, vProvenance, vPortraitTable } from "./validators";
+import { vBbox, vBoundaryKind, vCityProfile, vCover, vPlaceType, vDictionaryField, vGlossaryEntry, vKind, vMember, vMismatch, vProvenance, vPortraitTable } from "./validators";
 
 export default defineSchema({
   families: defineTable({
@@ -126,6 +126,26 @@ export default defineSchema({
     geoid: v.string(),
     city: v.array(v.object({ name: v.string(), share: v.number() })),
   }).index("by_geoid", ["geoid"]),
+
+  // The City's boundary files (districts, wards, investment and development areas), replaced weekly per kind
+  // (docs/superpowers/specs/2026-10-12-boundaries-design.md §4).
+  boundaries: defineTable({
+    kind: vBoundaryKind,
+    name: v.string(),
+    details: v.record(v.string(), v.string()),
+    geometry: v.string(),
+    bbox: vBbox,
+    fetchedAt: v.number(),
+  }).index("by_kind", ["kind"]),
+
+  // For each tract, City neighborhood, DYCU area and district: the boundaries covering it, with their share (percent,
+  // ≥1). City and DYCU places are keyed by their stored name, tracts by GEOID, districts by number.
+  boundaryOverlaps: defineTable({
+    placeType: vPlaceType,
+    place: v.string(),
+    covers: v.array(vCover),
+    builtAt: v.number(),
+  }).index("by_place", ["placeType", "place"]),
 
   // Public sheet maps: an answer by its normalized arguments, kept 10 minutes.
   mapCache: defineTable({ key: v.string(), result: v.string(), expiresAt: v.number() })

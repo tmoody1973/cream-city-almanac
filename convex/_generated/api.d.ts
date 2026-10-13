@@ -19,6 +19,7 @@ import type * as evals from "../evals.js";
 import type * as factSheet from "../factSheet.js";
 import type * as lib_arcgis from "../lib/arcgis.js";
 import type * as lib_ask from "../lib/ask.js";
+import type * as lib_boundaries from "../lib/boundaries.js";
 import type * as lib_card from "../lib/card.js";
 import type * as lib_census from "../lib/census.js";
 import type * as lib_chunk from "../lib/chunk.js";
@@ -94,6 +95,7 @@ declare const fullApi: ApiFromModules<{
   factSheet: typeof factSheet;
   "lib/arcgis": typeof lib_arcgis;
   "lib/ask": typeof lib_ask;
+  "lib/boundaries": typeof lib_boundaries;
   "lib/card": typeof lib_card;
   "lib/census": typeof lib_census;
   "lib/chunk": typeof lib_chunk;

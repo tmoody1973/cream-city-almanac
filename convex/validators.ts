@@ -87,6 +87,9 @@ export const vMismatch = v.object({
 });
 
 export const vBbox = v.object({ minLat: v.number(), maxLat: v.number(), minLon: v.number(), maxLon: v.number() });
+export const vBoundaryKind = v.union(v.literal("district"), v.literal("ward"), v.literal("tin"), v.literal("nrsa"), v.literal("nsp"), v.literal("tid"), v.literal("bid"), v.literal("oz"));
+export const vPlaceType = v.union(v.literal("tract"), v.literal("city"), v.literal("dycu"), v.literal("district"));
+export const vCover = v.object({ kind: vBoundaryKind, name: v.string(), share: v.number(), details: v.optional(v.record(v.string(), v.string())) });
 
 export const vOutcome = v.union(v.literal("done"), v.literal("skipped"), v.literal("failed"));
 

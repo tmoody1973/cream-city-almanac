@@ -5,6 +5,8 @@ import { internalAction, type ActionCtx } from "./_generated/server";
 import { fetchColumns, pdfUrl } from "./lib/arcgis";
 import type { Geometry } from "./lib/geo";
 import { allTractsUrl, cityShares, newestCountyUrl, parseTractShapes, type Hood } from "./lib/tractPlaces";
+import { BOUNDARY_KINDS, BOUNDARY_LAYERS, boundaryShares, layerUrl, parseBoundaryLayer, unionOf, type BoundaryShape } from "./lib/boundaries";
+import { tractNumber } from "./lib/tractData";
 import {
   assembleCard,
   basicCard,
@@ -298,13 +300,19 @@ export const finish = internalAction({
     } catch (e) {
       neighborhoodNotes = [`Neighborhoods refresh failed: ${message(e)}`];
     }
+    let boundaryNotes: string[];
+    try {
+      boundaryNotes = await ctx.runAction(internal.build.refreshBoundaries, {});
+    } catch (e) {
+      boundaryNotes = [`Boundaries refresh failed: ${message(e)}`];
+    }
     let cityNotes: string[];
     try {
       cityNotes = await ctx.runAction(internal.cityFigures.refreshCityFigures, {});
     } catch (e) {
       cityNotes = [`City figures refresh failed: ${message(e)}`];
     }
-    await ctx.runMutation(internal.buildStore.completeBuild, { buildId, orphanChunksDeleted: deleted, notes: [...neighborhoodNotes, ...cityNotes] });
+    await ctx.runMutation(internal.buildStore.completeBuild, { buildId, orphanChunksDeleted: deleted, notes: [...neighborhoodNotes, ...boundaryNotes, ...cityNotes] });
   },
 });
 
@@ -341,21 +349,76 @@ export const refreshNeighborhoods = internalAction({
   },
 });
 
+// Every County tract's outline, from E02's newest County map (the same outlines the count cards' tract maps use).
+// ponytail: fetched twice a week (neighborhoods and boundaries); share one fetch if the build ever gets slow.
+async function tractOutlines(ctx: ActionCtx) {
+  const e02 = await ctx.runQuery(internal.tracts.familyForTracts, { code: "E02" });
+  const url = newestCountyUrl(e02?.members ?? []);
+  if (!url) throw new Error("E02 has no County tract map");
+  return parseTractShapes(await (await fetchOk(allTractsUrl(url), "Tract outlines")).json());
+}
+
 // Each tract's City neighborhoods (convex/lib/tractPlaces.ts), from this run's City shapes and DYCU's tract outlines
 // (E02's newest County map). Replaced only when both were read and at least one tract matched.
 async function refreshTractNeighborhoods(ctx: ActionCtx, hoods: Hood[] | null): Promise<string[]> {
   try {
     if (!hoods) throw new Error("the City's neighborhoods weren't read this week");
-    const e02 = await ctx.runQuery(internal.tracts.familyForTracts, { code: "E02" });
-    const url = newestCountyUrl(e02?.members ?? []);
-    if (!url) throw new Error("E02 has no County tract map");
-    const tracts = parseTractShapes(await (await fetchOk(allTractsUrl(url), "Tract outlines")).json());
+    const tracts = await tractOutlines(ctx);
     const rows = tracts.map((t) => ({ geoid: t.geoid, city: cityShares(t.geometry, hoods) })).filter((r) => r.city.length > 0);
     if (rows.length === 0) throw new Error("no tract matched a City neighborhood");
     await ctx.runMutation(internal.buildStore.replaceTractNeighborhoods, { rows });
     return [];
   } catch (e) {
     return [`Tract neighborhoods unavailable, kept last week's: ${message(e)}`];
+  }
+}
+
+// The City's boundary files (docs/superpowers/specs/2026-10-12-boundaries-design.md §4). Each kind is replaced only when
+// its layer was read; the overlap table is rebuilt from whatever is stored, only when the tract outlines were read.
+export const refreshBoundaries = internalAction({
+  args: {},
+  handler: async (ctx): Promise<string[]> => {
+    const notes: string[] = [];
+    for (const kind of BOUNDARY_KINDS) {
+      const label = BOUNDARY_LAYERS[kind].label;
+      try {
+        const { rows, skipped } = parseBoundaryLayer(kind, await (await fetchOk(layerUrl(kind), `${label} boundaries`)).json());
+        await ctx.runMutation(internal.buildStore.replaceBoundaries, { kind, rows, fetchedAt: Date.now() });
+        if (skipped.length) notes.push(`${label} boundaries skipped (no usable shape or name): ${skipped.join(", ")}`);
+      } catch (e) {
+        notes.push(`${label} boundaries unavailable, kept last week's: ${message(e)}`);
+      }
+    }
+    return [...notes, ...(await refreshOverlaps(ctx))];
+  },
+});
+
+async function refreshOverlaps(ctx: ActionCtx): Promise<string[]> {
+  try {
+    const inputs = await ctx.runQuery(internal.buildStore.overlapInputs, {});
+    if (inputs.boundaries.length === 0) throw new Error("no boundaries are stored");
+    const tracts = await tractOutlines(ctx);
+    const shapes: BoundaryShape[] = inputs.boundaries.map((b) => ({ ...b, geometry: JSON.parse(b.geometry) as Geometry }));
+    const byNumber = new Map(tracts.map((t) => [tractNumber(t.geoid), t.geometry]));
+    const places = [
+      ...tracts.map((t) => ({ placeType: "tract" as const, place: t.geoid, geometry: t.geometry })),
+      ...inputs.city.map((h) => ({ placeType: "city" as const, place: h.name, geometry: JSON.parse(h.geometry) as Geometry })),
+      ...inputs.dycu.flatMap((d) => {
+        const gs = d.tracts.flatMap((n) => byNumber.get(n) ?? []);
+        return gs.length ? [{ placeType: "dycu" as const, place: d.name, geometry: unionOf(gs) }] : [];
+      }),
+      ...shapes.filter((s) => s.kind === "district").map((s) => ({ placeType: "district" as const, place: s.name.replace(/^District /, ""), geometry: s.geometry })),
+    ];
+    const builtAt = Date.now();
+    const rows = places.map((p) => ({
+      placeType: p.placeType, place: p.place, builtAt,
+      covers: boundaryShares(p.geometry, shapes).filter((c) => !(p.placeType === "district" && c.kind === "district" && c.name === `District ${p.place}`)),
+    }));
+    if (rows.length === 0) throw new Error("no place to measure");
+    await ctx.runMutation(internal.buildStore.replaceBoundaryOverlaps, { rows });
+    return [];
+  } catch (e) {
+    return [`Boundary overlaps unavailable, kept last week's: ${message(e)}`];
   }
 }
 
