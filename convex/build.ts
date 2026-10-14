@@ -397,7 +397,13 @@ export const finish = internalAction({
     } catch (e) {
       turnoutNotes = [`Turnout refresh failed: ${message(e)}`];
     }
-    await ctx.runMutation(internal.buildStore.completeBuild, { buildId, orphanChunksDeleted: deleted, notes: [...neighborhoodNotes, ...boundaryNotes, ...cityNotes, ...stopNotes, ...turnoutNotes] });
+    let fireNotes: string[];
+    try {
+      fireNotes = await ctx.runAction(internal.fire.refreshFire, {});
+    } catch (e) {
+      fireNotes = [`Fire history refresh failed: ${message(e)}`];
+    }
+    await ctx.runMutation(internal.buildStore.completeBuild, { buildId, orphanChunksDeleted: deleted, notes: [...neighborhoodNotes, ...boundaryNotes, ...cityNotes, ...stopNotes, ...turnoutNotes, ...fireNotes] });
   },
 });
 

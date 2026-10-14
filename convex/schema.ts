@@ -1,6 +1,6 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
-import { vBbox, vBoundaryKind, vCityProfile, vCover, vPlaceType, vDictionaryField, vGlossaryEntry, vKind, vMember, vMismatch, vProvenance, vPortraitTable, vStopKind, vStopRow } from "./validators";
+import { vBbox, vBoundaryKind, vCityProfile, vCover, vPlaceType, vDictionaryField, vGlossaryEntry, vKind, vMember, vMismatch, vProvenance, vPortraitTable, vStopKind, vStopRow, vFireRow, vFireType } from "./validators";
 
 export default defineSchema({
   families: defineTable({
@@ -124,6 +124,9 @@ export default defineSchema({
   }).index("by_election", ["election"]),
   stopCounts: defineTable({ period: v.string(), year: v.number(), ...vStopRow.fields }).index("by_period", ["period"]),
   stopPeriods: defineTable({ period: v.string(), familyKey: v.string(), modified: v.string(), status: v.union(v.literal("counted"), v.literal("failed")), note: v.optional(v.string()), missing: v.optional(v.array(vStopKind)) }).index("by_period", ["period"]),
+  fireYears: defineTable(vFireRow).index("by_year", ["year"]),
+  fireTypes: defineTable({ year: v.number(), ...vFireType.fields }).index("by_year", ["year"]),
+  fireRefresh: defineTable({ year: v.number(), status: v.union(v.literal("counted"), v.literal("failed")), note: v.optional(v.string()), counted: v.number() }).index("by_year", ["year"]),
   cityFigures: defineTable({
     period: v.number(),
     values: v.record(v.string(), v.object({ estimate: v.number(), moe: v.union(v.number(), v.null()) })),

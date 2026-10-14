@@ -142,3 +142,12 @@ export const vStopRow = v.object({
   kind: vStopKind,
   race: v.string(), sex: v.string(), frisked: v.union(vYesNo, v.null()), searched: v.union(vYesNo, v.null()), found: v.union(v.string(), v.null()), n: v.number(),
 });
+
+// Fire Department history (spec 2026-10-14-fire-history §5).
+export const vFireSpan = v.union(v.object({ median: v.number(), p90: v.number(), n: v.number() }), v.null());
+export const vFireGroup = v.union(v.literal("all"), v.literal("ems"), v.literal("other"));
+export const vFireRow = v.object({
+  year: v.number(), group: vFireGroup, calls: v.number(), dispatch: vFireSpan, arrive: vFireSpan, unreadable: v.number(), backwards: v.number(),
+  source: v.union(v.literal("incident"), v.literal("mfd")), partial: v.union(v.string(), v.null()), toMinute: v.boolean(),
+});
+export const vFireType = v.object({ type: v.string(), calls: v.number() });
