@@ -235,7 +235,7 @@ Residents want to understand their own block and neighborhood, see whether the C
 - **"For my exact address."** **Not in Ask** by design. Ask works at the tract, neighborhood and district level and never lists properties or owners. It points to the City's Address Search for one property.
 - **"Can I share this?"**
   - CSV, text or an image of a card: **Now**.
-  - A link an editor can open: **Not yet** (planned: Project C2).
+  - A link an editor can open: **Now** (C2, decision 043).
 
 ---
 
@@ -244,7 +244,7 @@ Residents want to understand their own block and neighborhood, see whether the C
 1. **Sums and averages in City counts.** Vote totals by ward, tax owed, salaries, sale prices, dollars spent. These are some of the most common accountability questions, and today Ask only counts rows. (Several files; one new measure option on the City count tool.)
 2. **Tract questions for a City neighborhood.** "Poverty in Bay View's tracts", "rank tracts in Harambee". The names exist now (Project B); asking by them doesn't. (Deferred from B.)
 3. **Neighborhood fact sheet and side-by-side comparison.** The grant writer's and editor's one-pager. (Project D.)
-4. **Share link to an answer.** (Project C2.)
+4. **Share link to an answer.** Done (C2, decision 043): any exportable card can be shared as a permanent link that shows it as it was that day.
 5. **Traffic crashes.** The file isn't profiled, so Ask can't count crashes, which is one of the most common local questions. Likely a data-pipeline fix rather than a new feature; worth checking first.
 6. **Files split by period.** Crime's Current and Historical files are now read together, so crime counts reach back to 2005 (K1, decision 039). The property file is now read by year too, 2005 onward, citywide and by district (K2, decision 040). Stop-and-search is counted across all 23 quarterly packages, 2019–2024 (K3, decision 041). Election turnout is read across 12 elections, 2016–2022 (K4, decision 042). Gap 6 is done. 311's older file isn't joined, because it is missing most requests from December 2020 to 2025.
 7. **311 by location.** The 311 file has no coordinates, so "requests near me" fails. Check whether the City publishes a located version.
