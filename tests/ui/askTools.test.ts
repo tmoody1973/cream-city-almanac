@@ -157,3 +157,12 @@ describe("zipProfile (Z1)", () => {
     expect(asked).toEqual({ zip: "53228" });
   });
 });
+
+describe("zipProfile steering (Z1 review)", () => {
+  it("tells the model when to lead with the ZIP being mostly outside the City, in the fields it sees", () => {
+    const tool = askTools(backend({})).find((t) => t.name === "zipProfile")!;
+    expect(tool.description).toMatch(/cityShare is below 0\.5/);
+    expect(tool.description).toMatch(/mainPlace/);
+    expect(ASK_PROMPT).toMatch(/zipProfile[^\n]*cityShare is below 0\.5/);
+  });
+});

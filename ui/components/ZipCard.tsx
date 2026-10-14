@@ -1,7 +1,6 @@
 "use client";
 
-import { verdictText } from "@/ui/lib/factText";
-import { cityCell, placeNote, populationLine, shareCell, zipExport, zipSource, zipTitle, ZIP_NOTES, type ZipOk } from "@/ui/lib/zipText";
+import { cityCell, placeNote, populationLine, shareCell, verdictWord, zipExport, zipSource, zipTitle, ZIP_NOTES, type ZipOk } from "@/ui/lib/zipText";
 import { ExportBar } from "./ExportBar";
 import { ProvenanceTag } from "./ProvenanceTag";
 import styles from "./ask.module.css";
@@ -15,7 +14,7 @@ function Rows({ caption, rows, zip }: { caption: string; rows: ZipOk["race"]; zi
         <thead><tr><th scope="col">Measure</th><th scope="col">ZIP {zip}</th><th scope="col">City of Milwaukee</th><th scope="col">Compared with the city</th></tr></thead>
         <tbody>
           {rows.map((x) => (
-            <tr key={x.id}><th scope="row">{x.label}</th><td>{shareCell(x)}</td><td>{cityCell(x)}</td><td>{verdictText(x.verdict)}</td></tr>
+            <tr key={x.id}><th scope="row">{x.label}</th><td>{shareCell(x)}</td><td>{cityCell(x)}</td><td>{verdictWord(x.verdict)}</td></tr>
           ))}
         </tbody>
       </table>

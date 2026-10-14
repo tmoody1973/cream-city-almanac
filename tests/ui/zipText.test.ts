@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { placeNote, zipExport, zipRefusal, zipTitle, type ZipOk } from "../../ui/lib/zipText";
+import { placeNote, verdictWord, ZIP_NOTES, zipExport, zipRefusal, zipTitle, type ZipOk } from "../../ui/lib/zipText";
 
 const fig = (rate: number) => ({ rate: { estimate: rate, moe: 0.02 }, count: { estimate: 100, moe: 10 }, of: { estimate: 1000, moe: 10 } });
 const r: ZipOk = {
@@ -36,9 +36,16 @@ describe("ZIP card words (Z1)", () => {
       ["White (not Hispanic)", "share (0 to 1)", 0.72, 0.02, null, null, ""],
       ["People in poverty", "share (0 to 1)", 0.08, 0.02, 0.24, 0.02, "clearly lower than the city"],
     ]);
-    expect(e.text.rows[1]).toEqual(["People in poverty", "8.0% ± 2.0 points", "24.0%", "clearly lower than the city"]);
+    expect(e.text.rows[1]).toEqual(["People in poverty", "8.0% ± 2.0 points", "24.0%", "clearly lower"]);
     expect(e.text.rows[0][2]).toBe("—");
     expect(e.notes).toEqual(expect.arrayContaining([expect.stringMatching(/close to, but not exactly, the post office's ZIP/), "U.S. Census Bureau, American Community Survey 5-year estimates, 2020–2024."]));
     expect(e.filename).toBe("almanac_zip_53228");
+  });
+});
+
+describe("ZIP card on a phone (Z1 review)", () => {
+  it("uses short comparison words, with one note for what they mean", () => {
+    expect([verdictWord("higher"), verdictWord("lower"), verdictWord("same"), verdictWord("unknown")]).toEqual(["clearly higher", "clearly lower", "about the same", "—"]);
+    expect(ZIP_NOTES).toContain("\u201cClearly higher\u201d or \u201clower\u201d means the gap is bigger than both margins of error; \u201cabout the same\u201d means it isn't.");
   });
 });

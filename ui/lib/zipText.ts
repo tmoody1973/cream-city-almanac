@@ -11,7 +11,12 @@ export const zipSource = (period: string) => `U.S. Census Bureau, American Commu
 export const ZIP_NOTES = [
   "A Census ZIP area is close to, but not exactly, the post office's ZIP.",
   "These are survey estimates; each comes with a margin of error, the range the true number likely falls in (90% confidence).",
+  "\u201cClearly higher\u201d or \u201clower\u201d means the gap is bigger than both margins of error; \u201cabout the same\u201d means it isn't.",
 ];
+
+// Short enough to fit a phone's width; the note above says what they mean. The CSV keeps the fact sheet's long words.
+const WORD = { higher: "clearly higher", lower: "clearly lower", same: "about the same", unknown: "\u2014" } as const;
+export const verdictWord = (v: Row["verdict"]) => WORD[v];
 
 // Shown unless 95% or more of the ZIP's land is in the City. Land, not people.
 export function placeNote(a: { cityShare: number; mainPlace: string }): string | null {
@@ -50,7 +55,7 @@ export function zipExport(r: ZipOk, ctx: Ctx): CardExport {
         ...rows.map((x) => [x.label, "share (0 to 1)", x.zip?.rate?.estimate ?? null, x.zip?.rate?.moe ?? null, x.city?.rate?.estimate ?? null, x.city?.rate?.moe ?? null, verdictText(x.verdict)]),
       ],
     },
-    text: { head: ["Measure", `ZIP ${r.zip}`, "City of Milwaukee", "Compared with the city"], rows: rows.map((x) => [x.label, shareCell(x), cityCell(x), verdictText(x.verdict)]) },
+    text: { head: ["Measure", `ZIP ${r.zip}`, "City of Milwaukee", "Compared with the city"], rows: rows.map((x) => [x.label, shareCell(x), cityCell(x), verdictWord(x.verdict)]) },
     notes: [...ZIP_NOTES, zipSource(r.period), exported(ctx)],
     filename: safeName(["zip", r.zip]),
   };
