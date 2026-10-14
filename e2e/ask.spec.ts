@@ -315,6 +315,8 @@ test.describe("signed in", () => {
     await expect(p.locator("button[data-share]")).toHaveCount(0);
     await expect(p.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
     expect(await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    // Labels wrap and numbers stay on one line, so the 4-column turnout table fits a phone without scrolling inside it.
+    expect(await p.locator("[data-shared] table").evaluate((t) => t.parentElement!.scrollWidth <= t.parentElement!.clientWidth + 1)).toBe(true);
     await anon.close();
   });
 

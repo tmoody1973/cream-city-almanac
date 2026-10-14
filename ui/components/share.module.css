@@ -2,8 +2,10 @@
 .title { font-size: 1.25rem; margin: 0 0 0.5rem; }
 .line { margin: 0 0 0.5rem; }
 .scroll { overflow-x: auto; max-width: 100%; margin: 0.75rem 0; }
-.table { border-collapse: collapse; font-variant-numeric: tabular-nums; }
-.table th, .table td { text-align: left; padding: 0.25rem 0.75rem 0.25rem 0; border-bottom: var(--hair); white-space: nowrap; }
+.table { border-collapse: collapse; font-variant-numeric: tabular-nums; width: 100%; }
+.table th, .table td { text-align: left; padding: 0.25rem 0.75rem 0.25rem 0; border-bottom: var(--hair); vertical-align: top; overflow-wrap: break-word; }
+.table .num { text-align: right; }
+.table td.num { white-space: nowrap; }
 .notes { padding-left: 1.1rem; font-size: 0.9rem; }
 .quote { white-space: pre-line; }
 .asOf { font-size: 0.9rem; font-style: italic; color: var(--muted); }
