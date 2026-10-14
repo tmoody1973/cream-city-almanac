@@ -5,7 +5,8 @@
 // Definitions are not figures either (Tarik, 2026-10-08):
 // age bands ("ages 20 to 64", "18 and older"), survey periods ("5-year"), and table numbers ("Table 11").
 // Names and dates the person asked about are not figures either: "police district 6", "ward 12", "ZIP 53212",
-// "2263 N Lake Dr", "December 31, 2023".
+// "2263 N Lake Dr", "December 31, 2023". A 5-digit number the person typed (their ZIP) is a name too; nothing else
+// they typed is.
 const NUMBER = /\b[A-Z]\d{2}\b|(?<![A-Za-z\d.])\d+(?:,\d{3})*(?:\.\d+)?%?/g;
 const QUOTE_MARK = /["“”]/g;
 // A district, ward or month-day number is a name only when what follows can't be the thing counted: punctuation (not
@@ -61,14 +62,21 @@ function namedTracts(text: string, data: string): [number, number][] {
   );
 }
 
-function allowedSpans(text: string, data: string): [number, number][] {
+// A 5-digit number the person typed: their ZIP, a name (spec 2026-10-14-zip-profile §8). Only 5-digit tokens.
+function askedZips(text: string, asked: string): [number, number][] {
+  const typed = new Set(asked.match(/(?<!\d)\d{5}(?!\d)/g) ?? []);
+  return [...text.matchAll(/(?<!\d|\d[.,])\d{5}(?!\d|[.,]\d|%)/g)].filter((m) => typed.has(m[0])).map((m): [number, number] => [m.index, m.index + 5]);
+}
+
+function allowedSpans(text: string, data: string, asked: string): [number, number][] {
   const defined = DEFINITIONS.flatMap((re) => [...text.matchAll(re)]).map((m): [number, number] => [m.index, m.index + m[0].length]);
-  return [...quotedFromData(text, data), ...defined, ...documentedDurations(text, data), ...namedTracts(text, data)];
+  return [...quotedFromData(text, data), ...defined, ...documentedDurations(text, data), ...namedTracts(text, data), ...askedZips(text, asked)];
 }
 
 // `data` is what the conversation's tools returned (their results as text); quoted labels must come from it.
-export function proseSegments(text: string, data = ""): { text: string; unverified: boolean }[] {
-  const allowed = allowedSpans(text, data);
+// `asked` is what the person typed; only a 5-digit number from it (a ZIP) is allowed.
+export function proseSegments(text: string, data = "", asked = ""): { text: string; unverified: boolean }[] {
+  const allowed = allowedSpans(text, data, asked);
   const out: { text: string; unverified: boolean }[] = [];
   let last = 0;
   for (const m of text.matchAll(NUMBER)) {

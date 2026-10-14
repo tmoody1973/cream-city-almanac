@@ -35,8 +35,8 @@ function Question({ message }: { message: { content?: unknown } }) {
 
 // The model's words, as paragraphs and a list (ui/lib/askProse.ts proseBlocks). A figure in them is marked
 // unverified: the cards and the open sheet carry every number.
-function Words({ text, data }: { text: string; data: string }) {
-  return proseSegments(text, data).map((s, i) =>
+function Words({ text, data, asked }: { text: string; data: string; asked: string }) {
+  return proseSegments(text, data, asked).map((s, i) =>
     s.unverified ? (
       <mark key={i} className={styles.unverified} data-unverified title="This number didn't come from the data">
         {s.text}
@@ -48,15 +48,15 @@ function Words({ text, data }: { text: string; data: string }) {
   );
 }
 
-function Prose({ text, data }: { text: string; data: string }) {
+function Prose({ text, data, asked }: { text: string; data: string; asked: string }) {
   return (
     <div className={styles.noteText} data-ask-prose>
       {proseBlocks(text).map((b, i) =>
         b.kind === "p" ? (
-          <p key={i}><Words text={b.text} data={data} /></p>
+          <p key={i}><Words text={b.text} data={data} asked={asked} /></p>
         ) : (
           <ul key={i} className={styles.noteList}>
-            {b.items.map((item, j) => <li key={j}><Words text={item} data={data} /></li>)}
+            {b.items.map((item, j) => <li key={j}><Words text={item} data={data} asked={asked} /></li>)}
           </ul>
         ),
       )}
@@ -74,12 +74,14 @@ function Note({ message, messages = [] }: { message: Msg & { toolCalls?: unknown
   }, [text !== "", answered]); // eslint-disable-line react-hooks/exhaustive-deps
   // What the tools returned in this conversation: a quoted label in the note must come from it.
   const data = messages.filter((m) => m.role === "tool").map((m) => (typeof m.content === "string" ? m.content : "")).join("\n");
+  // What the person typed: a ZIP they named isn't a figure the model made up.
+  const asked = messages.filter((m) => m.role === "user").map((m) => (typeof m.content === "string" ? m.content : "")).join("\n");
   return (
     <div className={text ? styles.note : styles.noteResults}>
       {text && (
         <>
           <span className={styles.noteNumber} aria-hidden="true">{n}</span>
-          <Prose text={text} data={data} />
+          <Prose text={text} data={data} asked={asked} />
         </>
       )}
       <div className={styles.results}>
