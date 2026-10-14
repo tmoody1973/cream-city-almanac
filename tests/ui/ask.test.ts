@@ -133,6 +133,7 @@ const backend: AskBackend = {
   place: async () => ({ status: "no-match" }) as never,
   boundaries: async () => ({ status: "not-loaded" }) as never,
   stops: async () => ({ status: "refused", reason: "" }) as never,
+  turnout: async () => ({ status: "refused", reason: "" }) as never,
 };
 const tool = (name: string) => askTools(backend).find((t) => t.name === name)!;
 

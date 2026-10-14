@@ -283,6 +283,14 @@ test.describe("signed in", () => {
     await expect(card.locator("[data-source]")).toContainText("From MPD's quarterly stop-and-search data");
   });
 
+  test("a turnout question draws the turnout card", async ({ page }) => {
+    await ask(page, "Did turnout change between elections?");
+    const card = page.locator("[data-card=turnout]:visible");
+    await expect(card).toBeVisible({ timeout: 40_000 });
+    await expect(card).toContainText("November 2020 general election");
+    await expect(card.locator("[data-source]")).toContainText("From the City of Milwaukee's election results files");
+  });
+
   test("a neighborhood count names the City boundary it used", async ({ page }) => {
     test.skip(!(await page.request.get("https://data.milwaukee.gov/api/3/action/status_show").then((r) => r.ok()).catch(() => false)), "City API unreachable");
     await ask(page, "How many robberies in Harambee this year?");

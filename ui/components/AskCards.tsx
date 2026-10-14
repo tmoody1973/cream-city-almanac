@@ -8,7 +8,7 @@ import { passageBlocks } from "@/ui/lib/askPassage";
 import { propertyCountSummary } from "@/ui/lib/tractSummary";
 import { formatPortraitMargin, formatPortraitNumber } from "@/ui/lib/portrait";
 import { api } from "@/convex/_generated/api";
-import { boundaryParams, changeParams, countParams, rankParams, relateParams, spanParams, stopsParams, type StopsAnswer, type SheetResult, type PlaceAnswer, type BoundariesAnswer, type ChangeResult, type CountForModel, type CountResult, type RankResult, type RelateResult, type SpanResult } from "@/lib/ask/tools";
+import { boundaryParams, changeParams, countParams, rankParams, relateParams, spanParams, stopsParams, turnoutParams, type StopsAnswer, type TurnoutAnswer, type SheetResult, type PlaceAnswer, type BoundariesAnswer, type ChangeResult, type CountForModel, type CountResult, type RankResult, type RelateResult, type SpanResult } from "@/lib/ask/tools";
 import { CityMap } from "./CityMapLoader";
 import { LivePreview } from "./LivePreview";
 import { OpenLink, type Open } from "./OpenLink";
@@ -26,6 +26,8 @@ import { FactSheetCard } from "./FactSheetCard";
 import { PlaceCard } from "./PlaceCard";
 import { BoundariesCard } from "./BoundariesCard";
 import { StopsCard } from "./StopsCard";
+import { TurnoutCard } from "./TurnoutCard";
+import { turnoutFollowUps } from "@/ui/lib/turnoutText";
 import { stopsChoices, stopsFollowUps } from "@/ui/lib/stopsText";
 import { boundariesRefusal } from "@/ui/lib/boundaryText";
 import { placeFollowUps, placeRefusal } from "@/ui/lib/placeText";
@@ -423,6 +425,14 @@ export function AskCards({ onOpen }: { onOpen?: (search: string) => void }) {
     if (r.status === "choose") return <FollowUps pick items={stopsChoices(props.parameters as never, r)} id={props.toolCallId} />;
     if (r.status === "refused") return <p className={styles.failed} data-card="stops-refusal">{r.reason}</p>;
     return <><StopsCard r={r} /><FollowUps items={stopsFollowUps(r)} id={props.toolCallId} /></>;
+  } }, []);
+
+  useRenderTool({ name: "countTurnout", parameters: turnoutParams, render: (props) => {
+    if (props.status !== "complete") return <Busy />;
+    const r = parse<TurnoutAnswer>(props.result);
+    if (!r) return <Failed />;
+    if (r.status === "refused") return <p className={styles.failed} data-card="turnout-refusal">{r.reason}</p>;
+    return <><TurnoutCard r={r} /><FollowUps items={turnoutFollowUps(props.parameters as never, r)} id={props.toolCallId} /></>;
   } }, []);
 
   useRenderTool({ name: "getNumber", parameters: z.object({ neighborhood: z.string() }), render: (props) => {

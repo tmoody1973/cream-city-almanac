@@ -18,7 +18,8 @@ export type ChangeResult = FunctionReturnType<typeof api.tracts.compareYears>;
 export type RelateResult = FunctionReturnType<typeof api.tracts.relateTracts>;
 export type SpanResult = FunctionReturnType<typeof api.spans.timeSpan>;
 export type StopsAnswer = FunctionReturnType<typeof api.stops.countStops>;
-export type AskToolName = "searchCatalog" | "showDataset" | "previewData" | "getNumber" | "readReport" | "countRecords" | "rankTracts" | "compareYears" | "relateTracts" | "timeSpan" | "factSheet" | "findPlace" | "boundariesFor" | "countStops";
+export type TurnoutAnswer = FunctionReturnType<typeof api.elections.countTurnout>;
+export type AskToolName = "searchCatalog" | "showDataset" | "previewData" | "getNumber" | "readReport" | "countRecords" | "rankTracts" | "compareYears" | "relateTracts" | "timeSpan" | "factSheet" | "findPlace" | "boundariesFor" | "countStops" | "countTurnout";
 
 export interface AskBackend {
   search(a: { query: string; topic?: string; place?: string; year?: number }): Promise<SearchResponse>;
@@ -34,6 +35,7 @@ export interface AskBackend {
   relate(a: z.infer<typeof relateParams>): Promise<RelateResult>;
   span(a: z.infer<typeof spanParams>): Promise<SpanResult>;
   stops(a: z.infer<typeof stopsParams>): Promise<StopsAnswer>;
+  turnout(a: z.infer<typeof turnoutParams>): Promise<TurnoutAnswer>;
 }
 
 export interface AskTool<P extends z.ZodObject = z.ZodObject> {
@@ -86,6 +88,16 @@ export const stopsParams = z.object({
     frisked: z.enum(["yes", "no"]).optional(), searched: z.enum(["yes", "no"]).optional(), found: z.array(z.string()).max(6).optional(),
   }).optional().describe("frisked, searched and found exist for field interviews only"),
   groupBy: z.enum(["year", "quarter", "race", "sex", "kind", "found"]).optional(),
+});
+
+// countTurnout's arguments; the turnout card reads the same ones for its follow-up questions.
+export const turnoutParams = z.object({
+  type: z.enum(["spring", "primary", "general", "all"]).optional().describe("Which elections; default all"),
+  from: z.number().int().optional().describe("First year, 2016–2022"),
+  to: z.number().int().optional().describe("Last year, 2016–2022"),
+  ward: z.number().int().optional().describe("One ward number, followed across elections"),
+  groupBy: z.enum(["election", "ward"]).optional().describe('"ward" lists the wards of one election'),
+  order: z.enum(["lowest", "highest"]).optional().describe("With groupBy ward: the 10 lowest or highest-turnout wards"),
 });
 
 // Generated from the approved measures, so Ask's list can't drift from what the tool totals.
@@ -223,6 +235,12 @@ export function askTools(b: AskBackend): AskTool[] {
       description: "Count the people MPD stopped, 2019–2024, from MPD's quarterly stop-and-search data: traffic stops, field interviews (stops of people on foot or in vehicles that MPD documents, with frisks and searches) and no-action encounters. Group by year, quarter, race (race and ethnicity as one group), sex, kind or found. For field interviews grouped by race or sex it also gives the share frisked, the share searched, and how often a search found something. Counts people per stop, not residents; the files record no locations, so it can't count by neighborhood or district. If it returns choose, pick from the choices and call again; if refused, tell the person why. The card carries every figure; don't restate them.",
       parameters: stopsParams,
       execute: (a: z.infer<typeof stopsParams>) => b.stops(a),
+    },
+    {
+      name: "countTurnout",
+      description: "Voter turnout in Milwaukee for 12 elections, 2016–2022 (spring, primary and November general elections): registered voters, ballots cast and turnout, citywide per election, for one ward across elections, or one election's lowest or highest-turnout wards. From the City's election files; nothing after 2022, no candidate results, and no aldermanic-district figures (the files don't link wards to districts). If it returns refused, tell the person why. The card carries every figure, including how many elections it covers; don't restate or count them.",
+      parameters: turnoutParams,
+      execute: (a: z.infer<typeof turnoutParams>) => b.turnout(a),
     },
     {
       name: "rankTracts",

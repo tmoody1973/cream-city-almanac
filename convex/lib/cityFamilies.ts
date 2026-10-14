@@ -1,3 +1,4 @@
+import { ELECTIONS } from "./turnout";
 import { searchTextFor } from "./families";
 import { slug } from "./titles";
 import type { Family, HubItem, Member } from "./types";
@@ -42,6 +43,7 @@ export function cityNote(familyKey: string): string | null {
   if (Object.hasOwn(CITY_NOTES, familyKey)) return CITY_NOTES[familyKey];
   const a = ARCHIVES[familyKey];
   if (a && !a.join) return a.note;
+  if (ELECTIONS.some((e) => e.familyKey === familyKey)) return "Ask can compare turnout across elections, 2016–2022.";
   if (/-mpd-stop-and-search-data$/.test(familyKey)) return "Ask can count people stopped across all quarters, 2019–2024.";
   return YEARLY[familyKey]?.page ?? null;
 }
