@@ -10,9 +10,9 @@ const turnout = { status: "ok" as const, title: "Milwaukee voter turnout · 1 ge
 const count = { status: "ok", code: "P32", name: "NIBRS crimes", count: 1234, groups: [], other: 0, otherLabel: null, overlap: false, period: "2025-10-01 to 2026-09-30", filters: [], futureExcluded: 0, caveat: null, dateColumn: "ReportedDate", coverage: "2005 to 2026", resourceName: "wibr", area: null, noLocation: 0 };
 
 describe("shareable tools", () => {
-  it("lists exactly the ten tools with an exported card, never place, boundary or dataset tools", () => {
-    expect([...SHAREABLE].sort()).toEqual(["compareYears", "countRecords", "countStops", "countTurnout", "factSheet", "getNumber", "rankTracts", "readReport", "relateTracts", "timeSpan"]);
-    for (const t of ["findPlace", "boundariesFor", "searchCatalog", "showDataset", "previewData", "nope"]) expect(isShareable(t)).toBe(false);
+  it("lists exactly the nine tools with an exported Ask card, never fact sheet, place, boundary or dataset tools", () => {
+    expect([...SHAREABLE].sort()).toEqual(["compareYears", "countRecords", "countStops", "countTurnout", "getNumber", "rankTracts", "readReport", "relateTracts", "timeSpan"]);
+    for (const t of ["factSheet", "findPlace", "boundariesFor", "searchCatalog", "showDataset", "previewData", "nope"]) expect(isShareable(t)).toBe(false);
   });
 });
 

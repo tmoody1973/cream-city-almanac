@@ -13,7 +13,6 @@ import { isShareable, newShareId, shareCard, shareDate, SITE, type Shared, type 
 async function rerun(ctx: ActionCtx, tool: ShareTool, args: never): Promise<unknown> {
   switch (tool) {
     case "getNumber": return ctx.runQuery(api.ask.getNumber, args);
-    case "factSheet": return ctx.runQuery(api.factSheet.findSheet, args);
     case "countStops": return ctx.runQuery(api.stops.countStops, args);
     case "countTurnout": return ctx.runQuery(api.elections.countTurnout, args);
     case "countRecords": return ctx.runAction(api.city.countRecords, args);

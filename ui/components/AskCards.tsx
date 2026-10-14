@@ -16,6 +16,7 @@ import { ProvenanceTag } from "./ProvenanceTag";
 import { ChangeCard, NEIGHBORHOODS_HELP, RankCard, RelateCard, TractMapSlot } from "./TractCards";
 import { FollowUps, type FollowUp } from "./FollowUps";
 import { ExportBar } from "./ExportBar";
+import { ShareLink, ShareScope } from "./ShareLink";
 import { countExport, measureExport, numberExport, quoteText, spanExport } from "@/ui/lib/cardExport";
 import { areaFollowUps, noTractsText, tooFewText } from "@/ui/lib/tractArea";
 import { MEASURE_HIDDEN, measureNotes, measureSummary, measureTitle, money, type MeasureOk } from "@/ui/lib/measureText";
@@ -424,7 +425,7 @@ export function AskCards({ onOpen }: { onOpen?: (search: string) => void }) {
     if (!r) return <Failed />;
     if (r.status === "choose") return <FollowUps pick items={stopsChoices(props.parameters as never, r)} id={props.toolCallId} />;
     if (r.status === "refused") return <p className={styles.failed} data-card="stops-refusal">{r.reason}</p>;
-    return <><StopsCard r={r} /><FollowUps items={stopsFollowUps(r)} id={props.toolCallId} /></>;
+    return <><ShareScope tool="countStops" args={props.parameters}><StopsCard r={r} /></ShareScope><FollowUps items={stopsFollowUps(r)} id={props.toolCallId} /></>;
   } }, []);
 
   useRenderTool({ name: "countTurnout", parameters: turnoutParams, render: (props) => {
@@ -432,7 +433,7 @@ export function AskCards({ onOpen }: { onOpen?: (search: string) => void }) {
     const r = parse<TurnoutAnswer>(props.result);
     if (!r) return <Failed />;
     if (r.status === "refused") return <p className={styles.failed} data-card="turnout-refusal">{r.reason}</p>;
-    return <><TurnoutCard r={r} /><FollowUps items={turnoutFollowUps(props.parameters as never, r)} id={props.toolCallId} /></>;
+    return <><ShareScope tool="countTurnout" args={props.parameters}><TurnoutCard r={r} /></ShareScope><FollowUps items={turnoutFollowUps(props.parameters as never, r)} id={props.toolCallId} /></>;
   } }, []);
 
   useRenderTool({ name: "getNumber", parameters: z.object({ neighborhood: z.string() }), render: (props) => {
@@ -443,7 +444,7 @@ export function AskCards({ onOpen }: { onOpen?: (search: string) => void }) {
     if (r.status !== "ok") return <FollowUps pick items={numberChoices(props.parameters as never, r as never)} id={props.toolCallId} />;
     return (
       <>
-        <NumberCard r={r} onOpen={onOpen} callKey={key("getNumber", props as never)} />
+        <ShareScope tool="getNumber" args={props.parameters}><NumberCard r={r} onOpen={onOpen} callKey={key("getNumber", props as never)} /></ShareScope>
         <FollowUps items={numberFollowUps({ topic: r.topic, label: r.label })} id={props.toolCallId} />
       </>
     );
@@ -453,9 +454,9 @@ export function AskCards({ onOpen }: { onOpen?: (search: string) => void }) {
     if (props.status !== "complete") return <Busy />;
     const r = parse<CountForModel>(props.result);
     if (!r) return <Failed />;
-    if (r.status === "measured") return <><MeasureCard r={r} onOpen={onOpen} /><FollowUps items={measureFollowUps(props.parameters as never, r)} id={props.toolCallId} /></>;
+    if (r.status === "measured") return <><ShareScope tool="countRecords" args={props.parameters}><MeasureCard r={r} onOpen={onOpen} /></ShareScope><FollowUps items={measureFollowUps(props.parameters as never, r)} id={props.toolCallId} /></>;
     if (r.status === "choose-measure") return <FollowUps pick items={measureChoices(r)} id={props.toolCallId} />;
-    if (r.status === "ok") return <><CountOrEarlier r={r} id={props.toolCallId} onOpen={onOpen} args={props.parameters} /><CountFollowUps items={countFollowUps(props.parameters as never, r)} id={props.toolCallId} /></>;
+    if (r.status === "ok") return <><ShareScope tool="countRecords" args={props.parameters}><CountOrEarlier r={r} id={props.toolCallId} onOpen={onOpen} args={props.parameters} /></ShareScope><CountFollowUps items={countFollowUps(props.parameters as never, r)} id={props.toolCallId} /></>;
     if (r.status === "outside-coverage") return <p className={styles.failed} data-card="count-outside">{outsideCoverage(r)} <OpenLink code={r.code} onOpen={onOpen} /></p>;
     if (r.status === "unavailable") return <p className={styles.failed}>The City&apos;s data didn&apos;t respond. Try again shortly.</p>;
     if (r.status === "not-live") return <p className={styles.failed}>{r.name} can&apos;t be counted live.{r.note ? ` ${r.note}` : ""} <OpenLink code={r.code} onOpen={onOpen} /></p>;
@@ -472,7 +473,7 @@ export function AskCards({ onOpen }: { onOpen?: (search: string) => void }) {
     if (props.status !== "complete") return <Busy />;
     const r = parse<SpanResult>(props.result);
     if (!r) return <Failed />;
-    if (r.status === "ok") return <><SpanCard r={r} onOpen={onOpen} /><FollowUps items={spanFollowUps(props.parameters as never, r)} id={props.toolCallId} /></>;
+    if (r.status === "ok") return <><ShareScope tool="timeSpan" args={props.parameters}><SpanCard r={r} onOpen={onOpen} /></ShareScope><FollowUps items={spanFollowUps(props.parameters as never, r)} id={props.toolCallId} /></>;
     if (r.status === "unavailable") return <p className={styles.failed}>The City&apos;s data didn&apos;t respond. Try again shortly.</p>;
     if (r.status === "too-broad") return <p className={styles.failed}>Too many {r.name} records to measure at once; try a shorter period.</p>;
     if (r.status === "busy") return <p className={styles.failed}>City questions are busy for your account; try again shortly.</p>;
@@ -493,9 +494,9 @@ export function AskCards({ onOpen }: { onOpen?: (search: string) => void }) {
     // A refusal the model words; its listed options (columns, place/years) can be picked here.
     return <FollowUps pick items={choices(r)} id={id} />;
   };
-  useRenderTool({ name: "rankTracts", parameters: rankParams, render: (props) => props.status !== "complete" ? <Busy /> : tractCard<RankResult>(props.result, props.toolCallId, (r) => <RankCard r={r} onOpen={onOpen} />, (r) => areaFollowUps(rankFollowUps(r.header, r.direction), r.area), (r) => rankChoices(props.parameters as never, r as never)) }, [onOpen]);
-  useRenderTool({ name: "compareYears", parameters: changeParams, render: (props) => props.status !== "complete" ? <Busy /> : tractCard<ChangeResult>(props.result, props.toolCallId, (r) => <ChangeCard r={r} onOpen={onOpen} />, (r) => areaFollowUps(changeFollowUps(r.header, r.to), r.area), (r) => changeChoices(props.parameters as never, r as never)) }, [onOpen]);
-  useRenderTool({ name: "relateTracts", parameters: relateParams, render: (props) => props.status !== "complete" ? <Busy /> : tractCard<RelateResult>(props.result, props.toolCallId, (r) => <RelateCard r={r} onOpen={onOpen} />, (r) => areaFollowUps(relateFollowUps({ mode: r.mode, a: r.a, b: r.b, place: (props.parameters as { place: string }).place, year: (props.parameters as { year: string }).year, strength: r.strength, aSide: r.aSide, bSide: r.bSide }), r.area), (r) => relateChoices(props.parameters as never, r as never)) }, [onOpen]);
+  useRenderTool({ name: "rankTracts", parameters: rankParams, render: (props) => props.status !== "complete" ? <Busy /> : tractCard<RankResult>(props.result, props.toolCallId, (r) => <ShareScope tool="rankTracts" args={props.parameters}><RankCard r={r} onOpen={onOpen} /></ShareScope>, (r) => areaFollowUps(rankFollowUps(r.header, r.direction), r.area), (r) => rankChoices(props.parameters as never, r as never)) }, [onOpen]);
+  useRenderTool({ name: "compareYears", parameters: changeParams, render: (props) => props.status !== "complete" ? <Busy /> : tractCard<ChangeResult>(props.result, props.toolCallId, (r) => <ShareScope tool="compareYears" args={props.parameters}><ChangeCard r={r} onOpen={onOpen} /></ShareScope>, (r) => areaFollowUps(changeFollowUps(r.header, r.to), r.area), (r) => changeChoices(props.parameters as never, r as never)) }, [onOpen]);
+  useRenderTool({ name: "relateTracts", parameters: relateParams, render: (props) => props.status !== "complete" ? <Busy /> : tractCard<RelateResult>(props.result, props.toolCallId, (r) => <ShareScope tool="relateTracts" args={props.parameters}><RelateCard r={r} onOpen={onOpen} /></ShareScope>, (r) => areaFollowUps(relateFollowUps({ mode: r.mode, a: r.a, b: r.b, place: (props.parameters as { place: string }).place, year: (props.parameters as { year: string }).year, strength: r.strength, aSide: r.aSide, bSide: r.bSide }), r.area), (r) => relateChoices(props.parameters as never, r as never)) }, [onOpen]);
 
   useRenderTool({ name: "readReport", parameters: z.object({ question: z.string() }), render: (props) => {
     if (props.status !== "complete") return <Busy />;
@@ -513,6 +514,7 @@ export function AskCards({ onOpen }: { onOpen?: (search: string) => void }) {
             <ExportBar copy={(ctx) => quoteText(p, ctx)} />
           </figure>
         ))}
+        {r.passages.length > 0 && <div className={styles.exportBar}><ShareLink tool="readReport" args={props.parameters} /></div>}
       </>
     );
   } }, [onOpen]);
