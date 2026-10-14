@@ -25,14 +25,14 @@ const vFilter = v.object({ column: v.string(), values: v.optional(v.array(v.stri
 const MAX_TRACT_SHAPES = 50; // the tract cards' cap (ui/lib/tractShapes.ts)
 
 // Named so the action below can type what it gets back (a function can't infer its own reference's result).
-type CountContext = { code: string; key: string; name: string; city: boolean; topic: string; profile: Doc<"cityProfiles"> | null; caveat: string | null } | null;
+type CountContext = { code: string; key: string; name: string; city: boolean; topic: string; modified: string; profile: Doc<"cityProfiles"> | null; caveat: string | null } | null;
 
 export const countContext = internalQuery({
   args: { code: v.string() },
   handler: async (ctx, { code }): Promise<CountContext> => {
     const family = await ctx.db.query("families").withIndex("by_code", (q) => q.eq("code", code)).first();
     if (!family) return null;
-    const base = { code: family.code, key: family.key, name: family.name, city: family.source === "city", topic: family.topic };
+    const base = { code: family.code, key: family.key, name: family.name, city: family.source === "city", topic: family.topic, modified: family.latestModified };
     if (!base.city) return { ...base, profile: null, caveat: null };
     const profile = await ctx.db.query("cityProfiles").withIndex("by_family", (q) => q.eq("familyKey", family.key)).first();
     const card = await ctx.db.query("cards").withIndex("by_family", (q) => q.eq("familyKey", family.key)).first();
