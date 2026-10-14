@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { internalAction, internalMutation, internalQuery } from "./_generated/server";
-import { censusUrl, parseCensus, requestsFor } from "./lib/census";
+import { censusUrl, parseCensus, requestsFor, scrubKey } from "./lib/census";
 import type { Est } from "./lib/factMath";
 import { fetchWithTimeout } from "./lib/http";
 
@@ -15,6 +15,15 @@ export const portraitPeriods = internalQuery({
   handler: async (ctx): Promise<number[]> => {
     const members = await ctx.db.query("members").withIndex("by_family", (q) => q.eq("familyKey", N03)).collect();
     return [...new Set(members.flatMap((m) => m.years))].filter((y) => y >= 2010).sort();
+  },
+});
+
+// The newest stored city figures, for the ZIP card's comparison and its survey years (spec 2026-10-14-zip-profile §5).
+export const latestCityFigures = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const row = await ctx.db.query("cityFigures").withIndex("by_period").order("desc").first();
+    return row ? { period: row.period, values: row.values } : null;
   },
 });
 
@@ -52,7 +61,7 @@ export const refreshCityFigures = internalAction({
         await ctx.runMutation(internal.cityFigures.storeCityFigures, { period, values });
       } catch (e) {
         // Never store the key: error text from fetch can include the full request URL.
-        const why = (e instanceof Error ? e.message : String(e)).replace(/key=[^&\s]+/g, "key=\u2026");
+        const why = scrubKey(e instanceof Error ? e.message : String(e));
         // An HTTP error is about one period; a timeout or network failure means the service is down, so stop
         // rather than wait out every remaining request inside the weekly build.
         if (!why.startsWith("Census request failed:")) {
