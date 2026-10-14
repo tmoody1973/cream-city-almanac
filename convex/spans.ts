@@ -4,6 +4,7 @@ import { action, internalAction, internalQuery } from "./_generated/server";
 import { chicagoDay } from "./lib/ask";
 import { EMPTY_FILE_NOTE } from "./lib/cityProfile";
 import { datastoreSql } from "./lib/ckan";
+import { fileModified } from "./city";
 import { buildSpan, SPAN_QUERY_TIMEOUT_MS } from "./lib/spanSql";
 import { pairEnd, pairsFor, SPAN_PAIRS, type AgePair, type BetweenPair, type SpanPair } from "./lib/spanPairs";
 import { shapeSpan, type SpanAll, type SpanGroup } from "./lib/spanShape";
@@ -77,7 +78,10 @@ export function asOfDay(pair: SpanPair, modified: string | undefined, now: numbe
 
 export const modifiedFor = internalQuery({
   args: { familyKey: v.string() },
-  handler: async (ctx, { familyKey }): Promise<string | null> => (await ctx.db.query("families").withIndex("by_key", (q) => q.eq("key", familyKey)).first())?.latestModified ?? null,
+  handler: async (ctx, { familyKey }): Promise<string | null> => {
+    const family = await ctx.db.query("families").withIndex("by_key", (q) => q.eq("key", familyKey)).first();
+    return family ? fileModified(ctx, familyKey, family.latestModified) : null;
+  },
 });
 
 export const profileFor = internalQuery({
