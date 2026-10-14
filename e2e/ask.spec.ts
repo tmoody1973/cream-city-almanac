@@ -292,6 +292,7 @@ test.describe("signed in", () => {
   });
 
   test("a shared turnout card opens for someone signed out", async ({ page, browser, baseURL }) => {
+    test.slow(); // signs in, asks, makes a link, then opens a second browser: more than one test's usual 45 seconds under load
     await ask(page, "Did turnout change between elections?");
     const card = page.locator("[data-card=turnout]:visible");
     await expect(card).toBeVisible({ timeout: 40_000 });
