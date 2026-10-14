@@ -4,7 +4,7 @@ import { action, internalAction, internalQuery } from "./_generated/server";
 import { chicagoDay } from "./lib/ask";
 import { EMPTY_FILE_NOTE } from "./lib/cityProfile";
 import { datastoreSql } from "./lib/ckan";
-import { buildSpan } from "./lib/spanSql";
+import { buildSpan, SPAN_QUERY_TIMEOUT_MS } from "./lib/spanSql";
 import { pairsFor, SPAN_PAIRS } from "./lib/spanPairs";
 import { shapeSpan, type SpanAll, type SpanGroup } from "./lib/spanShape";
 import { rateLimiter } from "./limits";
@@ -52,8 +52,8 @@ export const timeSpan = action({
     }
     try {
       const [groupRows, allRows] = await Promise.all([
-        built.groupSql ? datastoreSql<Record<string, unknown>>(built.groupSql) : Promise.resolve(null),
-        datastoreSql<Record<string, unknown>>(built.allSql),
+        built.groupSql ? datastoreSql<Record<string, unknown>>(built.groupSql, SPAN_QUERY_TIMEOUT_MS) : Promise.resolve(null),
+        datastoreSql<Record<string, unknown>>(built.allSql, SPAN_QUERY_TIMEOUT_MS),
       ]);
       const shaped = shapeSpan(groupRows, allRows[0], built.overlap, built.groupLabel === "year");
       const { familyKey: _k, file: _f, ...out } = pair;
@@ -83,7 +83,7 @@ export const checkPairs = internalAction({
       const built = buildSpan(profile, pair, {}, chicagoDay(Date.now()));
       if (!built.ok) { out.push({ id: pair.id, ok: false, error: built.status }); continue; }
       try {
-        const rows = await datastoreSql<Record<string, unknown>>(built.allSql);
+        const rows = await datastoreSql<Record<string, unknown>>(built.allSql, SPAN_QUERY_TIMEOUT_MS);
         out.push({ id: pair.id, ok: true, all: shapeSpan(null, rows[0], false, false).all });
       } catch (e) {
         out.push({ id: pair.id, ok: false, error: e instanceof Error ? e.message : String(e) });

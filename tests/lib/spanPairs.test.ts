@@ -3,7 +3,7 @@ import { pairsFor, SPAN_PAIRS } from "../../convex/lib/spanPairs";
 
 describe("approved time-span pairs", () => {
   it("are well-formed, with unique ids, a real unit and a {n} in the missing note", () => {
-    expect(SPAN_PAIRS).toHaveLength(7);
+    expect(SPAN_PAIRS).toHaveLength(9);
     expect(new Set(SPAN_PAIRS.map((p) => p.id)).size).toBe(SPAN_PAIRS.length);
     for (const p of SPAN_PAIRS) {
       expect(p.familyKey).toMatch(/^city:[a-z0-9-]+$/);
@@ -16,6 +16,7 @@ describe("approved time-span pairs", () => {
   it("finds a file's pairs by its family key", () => {
     expect(pairsFor("city:fire-incident-detail").map((p) => p.id)).toEqual(["fire-dispatch", "fire-arrive", "fire-clear"]);
     expect(pairsFor("city:citizen-complaints-against-police-and-fire-departments-the-department-of-emergency-communication").map((p) => p.from)).toEqual(["DateReported"]);
+    expect(pairsFor("city:mfd-calls-for-service-detail").map((p) => p.id)).toEqual(["mfd-arrive", "mfd-dispatch", "mfd-close"]); // L1
     expect(pairsFor("city:nibrs-crime-data")).toEqual([]);
   });
 });

@@ -28,6 +28,10 @@ export const readDate = (c: string) => {
 };
 const present = (c: string) => { const q = quoteId(c); return `(${q} IS NOT NULL AND ${q} <> '' AND upper(${q}) <> 'NULL')`; };
 
+// Medians over a whole file are the heaviest queries Ask sends: on the Fire Department's 350,000 calls they took
+// 9.5–10.5s on the City's server (2026-10-14), past the 10s default.
+export const SPAN_QUERY_TIMEOUT_MS = 25_000;
+
 export function buildSpan(p: CityProfile, pair: SpanPair, a: SpanArgs, today: string): SpanBuilt {
   if (!RID.test(p.resourceId)) throw new Error("Not a CKAN resource id");
   const table = quoteId(p.resourceId);
