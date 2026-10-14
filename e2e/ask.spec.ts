@@ -291,6 +291,38 @@ test.describe("signed in", () => {
     await expect(card.locator("[data-source]")).toContainText("From the City of Milwaukee's election results files");
   });
 
+  test("a shared turnout card opens for someone signed out", async ({ page, browser }) => {
+    await ask(page, "Did turnout change between elections?");
+    const card = page.locator("[data-card=turnout]:visible");
+    await expect(card).toBeVisible({ timeout: 40_000 });
+    await card.locator("button[data-share]").click();
+    const link = card.locator("[data-share-url]");
+    await expect(link).toBeVisible({ timeout: 30_000 });
+    const url = await link.getAttribute("href");
+    expect(url).toMatch(/\/s\/[0-9A-Za-z]{10}$/);
+    const anon = await browser.newContext(); // no sign-in: anyone with the link
+    const p = await anon.newPage();
+    await p.setViewportSize(page.viewportSize() ?? { width: 1280, height: 800 });
+    await p.goto(url!);
+    const shared = p.locator("[data-shared]");
+    await expect(shared).toContainText("Milwaukee voter turnout");
+    await expect(shared).toContainText("November 2020 general election");
+    await expect(p.locator("[data-as-of]")).toContainText("Numbers are as of that day.");
+    await expect(p.locator("[data-export] button")).toHaveText(["CSV", "Copy text", "PNG"]);
+    await expect(p.locator("button[data-share]")).toHaveCount(0);
+    await expect(p.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
+    expect(await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await anon.close();
+  });
+
+  test("a share link that doesn't exist says so", async ({ page }) => {
+    for (const path of ["/s/doesnotexi", "/s/..%2F..", `/s/${"x".repeat(500)}`]) {
+      const res = await page.goto(path);
+      expect(res?.status()).toBe(404);
+      await expect(page.getByText("This shared answer isn't available.")).toBeVisible();
+    }
+  });
+
   test("a neighborhood count names the City boundary it used", async ({ page }) => {
     test.skip(!(await page.request.get("https://data.milwaukee.gov/api/3/action/status_show").then((r) => r.ok()).catch(() => false)), "City API unreachable");
     await ask(page, "How many robberies in Harambee this year?");
