@@ -7,10 +7,11 @@ import type { AreaHead } from "@/convex/lib/tractsIn";
 import { areaLine, cityRankText, rankColumn, shareText } from "@/ui/lib/tractArea";
 import type { ChangeAnswer, Header, RankDetail, RelateAnswer, RelateDetail, TractRow } from "@/convex/tracts";
 import { cityList, dycuText, placesLabel } from "@/ui/lib/placeNames";
-import { changeText, mismatchVerdict, noMargin, plainMeaning, rangeText, tooFew, unitOf, type Unit } from "@/ui/lib/tractFormat";
-import { changeSummary, EXACT, fineText, KIND, rankSummary, relateSummary } from "@/ui/lib/tractSummary";
+import { changeText, plainMeaning, rangeText, unitOf, type Unit } from "@/ui/lib/tractFormat";
+import { EXACT, fineText, KIND } from "@/ui/lib/tractSummary";
 import { capTractIds, MAX_TRACT_SHAPES } from "@/ui/lib/tractShapes";
 import { changeExport, rankExport, relateExport } from "@/ui/lib/cardExport";
+import { BARE_RANK, changeCardText, changeHead, rankCardText, rankHead, relateCardText, relateHead, TIES_INLINE } from "@/ui/lib/tractCardText";
 import { BigView } from "./BigView";
 import { CityMap } from "./CityMapLoader";
 import { ExportBar } from "./ExportBar";
@@ -28,7 +29,6 @@ const range = (r: { value: number; lo: number | null; hi: number | null }, pct: 
   const t = rangeText(r, pct);
   return t.span ? <>{t.value} <span className={styles.tractNb}>{t.span}</span></> : t.value;
 };
-const STRENGTH = { little: "Little relationship", weak: "Weakly related", moderate: "Moderately related", strong: "Strongly related" } as const;
 
 export type RankShown = RankDetail;
 export type ChangeShown = ChangeAnswer;
@@ -131,10 +131,6 @@ function Where({ t, area }: { t: { city: CityShare[]; share?: number }; area?: A
 }
 const AreaLine = ({ area }: { area?: AreaHead }) => (area ? <p className={styles.tractMeta} data-area>{areaLine(area)}</p> : null);
 
-const TIES_INLINE = 5;
-
-const BARE_RANK = "No margin of error found for this column, so ranks may be ties.";
-
 export function RankCard({ r, onOpen }: { r: RankShown; onOpen: Open }) {
   const { detail, expired } = useDetail(r.key);
   const full = detail?.tool === "rank" ? detail : null;
@@ -150,9 +146,7 @@ export function RankCard({ r, onOpen }: { r: RankShown; onOpen: Open }) {
   );
   const area = full?.area ?? r.area;
   const head = ["#", "Tract", "Neighborhood", "DYCU area", h.column, ...(area ? [rankColumn(h.place)] : [])];
-  const title = `${r.direction === "high" ? "Highest" : "Lowest"} ${h.column} \u00b7 ${h.place} ${h.year}`;
-  const bare = !h.confidence; // no ranges: no ties or unreliable tracts can be found (spec §5 rule 7)
-  const summary = rankSummary({ header: h, direction: r.direction, top: r.top.length, tieCount: bare ? 0 : r.tieCount, unreliableCount: bare ? 0 : r.unreliableCount, inline: TIES_INLINE, area });
+  const { title, summary, bare } = rankHead({ ...r, header: h, area });
   const table = (
     <Table head={head} title={title}>
       {r.top.map((t, i) => (
@@ -203,7 +197,7 @@ export function RankCard({ r, onOpen }: { r: RankShown; onOpen: Open }) {
         {exact ? `Tracts with exactly the same figure as #${r.top.length} are listed beside it.` : `Tracts whose range overlaps the range of #${r.top.length} could really be #${r.top.length}, so they're listed as tied with it. A tract whose margin of error is large next to its estimate is too uncertain to rank, so it's left out of the list.`}
       </HowToRead>
       <Fine heads={[h]} onOpen={onOpen} />
-      <ExportBar expired={expired} make={full && ((ctx) => rankExport(full, { title, lines: bare ? [summary, BARE_RANK] : [summary], fine: fineText([full.header]) }, ctx))} />
+      <ExportBar expired={expired} make={full && ((ctx) => rankExport(full, rankCardText(full), ctx))} />
     </div>
   );
 }
@@ -214,13 +208,8 @@ export function ChangeCard({ r, onOpen }: { r: ChangeShown; onOpen: Open }) {
   const h = full?.header ?? r.header;
   const pct = unitOf(h.meaning);
   const changes = full?.changes ?? r.changes;
-  const title = `${h.column} \u00b7 ${h.place} ${r.from} \u2192 ${r.to}`;
-  const bare = noMargin([h]);
   const area = full?.area ?? r.area;
-  const summary = changeSummary({ header: h, from: r.from, to: r.to, increases: r.increases, decreases: r.decreases, none: r.none, area });
-  const counts = bare
-    ? `Can't tell which tracts changed clearly: ${bare}.`
-    : `${r.increases} clear increases · ${r.decreases} clear decreases · ${r.none} no clear change${r.unreliableCount > 0 ? ` · ${r.unreliableCount} not compared (too uncertain)` : ""}`;
+  const { title, summary, counts, bare } = changeHead({ ...r, header: h, area });
   const table = changes.length > 0 && (
     <Table head={["Tract", "Neighborhood", "DYCU area", r.from, r.to, "Change"]} title={title}>
       {changes.map((c) => (
@@ -267,7 +256,7 @@ export function ChangeCard({ r, onOpen }: { r: ChangeShown; onOpen: Open }) {
         {"A change counts as clear only when it is bigger than both years' margins of error combined, the Census Bureau's test. A smaller change could be survey noise, so it isn't listed."}
       </HowToRead>
       <Fine heads={[h]} onOpen={onOpen} />
-      <ExportBar expired={expired} make={full && ((ctx) => changeExport(full, { title, lines: [summary, counts], fine: fineText([full.header]) }, ctx))} />
+      <ExportBar expired={expired} make={full && ((ctx) => changeExport(full, changeCardText(full), ctx))} />
     </div>
   );
 }
@@ -279,15 +268,8 @@ export function RelateCard({ r, onOpen }: { r: RelateShown; onOpen: Open }) {
   const fits = full?.fits ?? r.fits, close = full?.close ?? r.close;
   const points = full?.points ?? [];
   const pa = unitOf(a.meaning), pb = unitOf(b.meaning);
-  const mismatch = r.mode === "mismatch";
-  const gated = mismatch && r.cutA === undefined; // fewer than 20 reliable pairs: no cutoffs were drawn
-  const side = (s?: "high" | "low") => (s === "low" ? "bottom" : "top");
-  const bare = noMargin([a, b]);
-  const title = `${a.name} vs. ${b.name}`;
   const area = full?.area ?? r.area;
-  const summary = relateSummary({ ...r, a, b, area });
-  const verdict = mismatch ? mismatchVerdict({ fitsCount: r.fitsCount, closeCount: r.closeCount, n: r.n, gated, bare }) : r.strength === "too-few" ? tooFew(r.n) : STRENGTH[r.strength];
-  const lead = mismatch && !gated ? `Cutoffs: ${side(r.aSide)} third on ${a.column}, ${side(r.bSide)} third on ${b.column}.` : undefined;
+  const { title, summary, verdict, lead, mismatch, gated, bare } = relateHead({ ...r, a, b, area });
   const plot = (big?: boolean) => (
     <>
       <TractScatter points={points} cutA={r.cutA} cutB={r.cutB} aSide={r.aSide} bSide={r.bSide} a={a} b={b} counts={bare ? undefined : { fits: r.fitsCount, close: r.closeCount }} big={big} />
@@ -342,7 +324,7 @@ export function RelateCard({ r, onOpen }: { r: RelateShown; onOpen: Open }) {
       <MapSlot url={full?.a.url} fits={full?.highlighted} close={full?.closeIds} />
       {(mismatch ? !gated : r.strength !== "too-few") && <HowToRead>{how}</HowToRead>}
       <Fine heads={[a, b]} causal onOpen={onOpen} lead={lead} />
-      <ExportBar expired={expired} make={full && ((ctx) => relateExport(full, { title, lines: [summary, verdict, ...(r.unreliableCount > 0 ? [`${r.unreliableCount} tracts are too uncertain to count (shown faint).`] : [])], fine: fineText([full.a, full.b], { causal: true, lead }) }, ctx))} />
+      <ExportBar expired={expired} make={full && ((ctx) => relateExport(full, relateCardText(full), ctx))} />
     </div>
   );
 }
