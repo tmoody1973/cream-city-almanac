@@ -39,6 +39,7 @@ import type * as lib_evalQuestions from "../lib/evalQuestions.js";
 import type * as lib_factMath from "../lib/factMath.js";
 import type * as lib_factSheet from "../lib/factSheet.js";
 import type * as lib_families from "../lib/families.js";
+import type * as lib_fireHistory from "../lib/fireHistory.js";
 import type * as lib_fireYears from "../lib/fireYears.js";
 import type * as lib_firecrawl from "../lib/firecrawl.js";
 import type * as lib_gateway from "../lib/gateway.js";
@@ -128,6 +129,7 @@ declare const fullApi: ApiFromModules<{
   "lib/factMath": typeof lib_factMath;
   "lib/factSheet": typeof lib_factSheet;
   "lib/families": typeof lib_families;
+  "lib/fireHistory": typeof lib_fireHistory;
   "lib/fireYears": typeof lib_fireYears;
   "lib/firecrawl": typeof lib_firecrawl;
   "lib/gateway": typeof lib_gateway;

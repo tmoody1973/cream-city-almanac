@@ -2,7 +2,7 @@
 import { convexTest } from "convex-test";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { installFakeFetch } from "../tests/helpers/fakeFetch";
-import { internal } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import schema from "./schema";
 
 const modules = import.meta.glob("./**/*.*s");
@@ -85,5 +85,14 @@ describe("refreshFire (L3)", () => {
     const notes = await t.action(internal.fire.refreshFire, {});
     expect(notes.filter((n) => /no calls/.test(n))).toHaveLength(9);
     expect((await yearsIn(t)).rows).toHaveLength(0);
+  });
+});
+
+describe("fireHistory query (L3)", () => {
+  it("summarizes what refreshFire stored", async () => {
+    const t = await seed();
+    installFakeFetch({ citySql: city([]) });
+    await t.action(internal.fire.refreshFire, {});
+    expect(await t.query(api.fire.fireHistory, { measure: "dispatch", from: 2021, to: 2021 })).toMatchObject({ status: "ok", rows: [{ year: 2021, calls: 120, median: 1.5, p90: 3, n: 118 }] });
   });
 });

@@ -1,11 +1,12 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import { internalAction, internalMutation, internalQuery, type MutationCtx } from "./_generated/server";
+import { internalAction, internalMutation, internalQuery, query, type MutationCtx } from "./_generated/server";
 import { chicagoDay } from "./lib/ask";
 import { datastoreSql } from "./lib/ckan";
+import { summarize, type FireResult } from "./lib/fireHistory";
 import { allSql, groupSql, INCIDENT_YEARS, MFD_FAMILY, mergeTypes, mfdQuery, mfdYears, parseStats, partialNote, typesSql, yearQuery, type YearQuery } from "./lib/fireYears";
 import { SPAN_QUERY_TIMEOUT_MS } from "./lib/spanSql";
-import { vFireRow, vFireType } from "./validators";
+import { vFireGroup, vFireRow, vFireType } from "./validators";
 
 // Fire Department calls and response times by year, as stored totals (spec 2026-10-14-fire-history §5).
 type Raw = Record<string, unknown>;
@@ -84,5 +85,15 @@ export const refreshFire = internalAction({
       }
     }
     return notes;
+  },
+});
+
+// Ask's fireHistory: the stored years, filtered and labeled by code. Public: yearly totals, no City request.
+export const fireHistory = query({
+  args: { measure: v.union(v.literal("calls"), v.literal("dispatch"), v.literal("arrive")), group: v.optional(vFireGroup), type: v.optional(v.string()), from: v.optional(v.number()), to: v.optional(v.number()) },
+  handler: async (ctx, a): Promise<FireResult> => {
+    const rows = (await ctx.db.query("fireYears").collect()).map(({ _id, _creationTime, ...r }) => r);
+    const types = (await ctx.db.query("fireTypes").collect()).map(({ _id, _creationTime, ...t }) => t);
+    return summarize(rows, types, a);
   },
 });
