@@ -262,7 +262,7 @@ export function askTools(b: AskBackend): AskTool[] {
     },
     {
       name: "fireHistory",
-      description: "Milwaukee Fire Department calls and response times by year, 2015 to now, from stored yearly totals: calls per year (all, EMS, or other; or one call type), and median time to dispatch or time to arrive. Call types run 2015–2023 only. One year's details, by ZIP, place or type, stay with countRecords and timeSpan. If it returns choose, pick a type from its choices and call again; if refused, tell the person why. The card carries every figure and note; don't restate them.",
+      description: "Milwaukee Fire Department calls and response times by year, 2015 to now, from stored yearly totals: calls per year (all, EMS, or other; or one call type), and median time to dispatch or time to arrive. Call types run 2015–2023 only. Any year's total calls or response times come from here, even one year (set from and to to that year); only breakdowns within a year by ZIP or place go to countRecords or timeSpan. If it returns choose, pick a type from its choices and call again; if refused, tell the person why. The card carries every figure and note; don't restate them.",
       parameters: fireParams,
       execute: (a: z.infer<typeof fireParams>) => b.fire(a),
     },

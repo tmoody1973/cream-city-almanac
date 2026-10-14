@@ -96,3 +96,14 @@ describe("fireHistory query (L3)", () => {
     expect(await t.query(api.fire.fireHistory, { measure: "dispatch", from: 2021, to: 2021 })).toMatchObject({ status: "ok", rows: [{ year: 2021, calls: 120, median: 1.5, p90: 3, n: 118 }] });
   });
 });
+
+describe("fireHistory when the MFD file isn't profiled (review #1)", () => {
+  it("names 2024 on as missing instead of ending quietly at 2023", async () => {
+    const t = await seed(false);
+    installFakeFetch({ citySql: city([]) });
+    await t.action(internal.fire.refreshFire, {});
+    const r = await t.query(api.fire.fireHistory, { measure: "calls" });
+    expect(r).toMatchObject({ status: "ok" });
+    expect((r as { notes: string[] }).notes).toContain("No figures are stored for 2024, 2025, 2026.");
+  });
+});

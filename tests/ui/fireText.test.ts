@@ -31,10 +31,24 @@ describe("Fire history card words (L3)", () => {
     expect(fireFollowUps(base).map((f) => f.label)).toEqual(["EMS ONLY", "TIME TO DISPATCH"]);
     expect(fireFollowUps({ ...base, group: "ems" })[0].label).toBe("ALL CALLS");
     const calls = fireFollowUps({ ...base, measure: "calls" });
-    expect(calls.map((f) => f.label)).toEqual(["BY CALL TYPE", "TIME TO ARRIVE"]);
+    expect(calls.map((f) => f.label)).toEqual(["BY CALL TYPE", "EMS ONLY", "TIME TO ARRIVE"]);
     expect(calls[0].question).toBe("How many Alarm Sounding calls did the Fire Department get each year, 2015 to 2023?");
   });
   it("turns choose into pick-one buttons", () => {
     expect(fireChoices({ status: "choose", asked: "Dragon", choices: ["EMS", "Auto Fire"] })[1]).toEqual({ label: "AUTO FIRE", question: "How many Auto Fire calls did the Fire Department get each year, 2015 to 2023?" });
+  });
+  it("keeps the card's years and group in its follow-up questions (review #3)", () => {
+    const f = fireFollowUps(base);
+    expect(f[0].question).toBe("How has the Fire Department's time to arrive for EMS calls changed each year from 2023 to 2024?");
+    expect(f[1].question).toBe("How has the Fire Department's time to dispatch changed each year from 2023 to 2024?");
+    expect(fireFollowUps({ ...base, group: "ems" })[1].question).toBe("How has the Fire Department's time to dispatch for EMS calls changed each year from 2023 to 2024?");
+    const calls = fireFollowUps({ ...base, measure: "calls" });
+    expect(calls.map((x) => x.label)).toEqual(["BY CALL TYPE", "EMS ONLY", "TIME TO ARRIVE"]);
+    expect(calls[1].question).toBe("How many Fire Department EMS calls were there each year from 2023 to 2024?");
+    expect(calls[2].question).toBe("How has the Fire Department's time to arrive changed each year from 2023 to 2024?");
+  });
+  it("shows a dash for a year a call type didn't exist (review #2)", () => {
+    const calls = { ...base, measure: "calls" as const, rows: [{ ...base.rows[0], calls: null }] };
+    expect(fireCells(calls as never, calls.rows[0] as never)).toEqual(["2023", "—"]);
   });
 });

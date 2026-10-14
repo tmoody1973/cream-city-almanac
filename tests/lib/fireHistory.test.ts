@@ -63,4 +63,16 @@ describe("fireHistory summary (L3)", () => {
     expect(r.rows.map((x) => x.year)).toEqual([2015, 2016, 2017, 2019, 2020]);
     expect(r.notes).toContain("No figures are stored for 2018.");
   });
+  it("names expected years missing at the edges of the range, from 2015–2023 and every year the refresh tried (review #1)", () => {
+    const r = summarize(rows.filter((x) => x.year !== 2015 && x.year < 2024), types, { measure: "calls" }, [2024, 2025, 2026]);
+    if (r.status !== "ok") throw new Error(r.status);
+    expect(r.rows[0].year).toBe(2016);
+    expect(r.notes).toContain("No figures are stored for 2015, 2024, 2025, 2026.");
+  });
+  it("shows no count, not 0, for years a call type didn't exist (review #2)", () => {
+    const r = summarize(rows, types.filter((x) => !(x.type === "Auto Fire" && x.year < 2017)), { measure: "calls", type: "Auto Fire" });
+    if (r.status !== "ok") throw new Error(r.status);
+    expect(r.rows.slice(0, 3).map((x) => x.calls)).toEqual([null, null, 5]);
+    expect(r.notes).toContain("Auto Fire isn't a call type in 2015, 2016.");
+  });
 });

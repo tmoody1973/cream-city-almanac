@@ -72,8 +72,11 @@ export const refreshFire = internalAction({
       .filter((s) => force || done.get(s.year) !== "counted")
       .map((s) => ({ year: s.year, query: yearQuery(s), source: "incident", toMinute: s.toMinute, types: true }));
     const mfd = await ctx.runQuery(internal.fire.mfdResource, {});
-    if (!mfd) notes.push("Fire: the MFD calls file isn't profiled; 2024 on not counted");
-    else for (const year of mfdYears(current)) jobs.push({ year, query: mfdQuery(mfd, year), source: "mfd", toMinute: false, types: false });
+    if (!mfd) {
+      notes.push("Fire: the MFD calls file isn't profiled; 2024 on not counted");
+      // Recorded as failed years, so the card names them as missing rather than ending quietly at 2023.
+      for (const year of mfdYears(current)) await ctx.runMutation(internal.fire.markFireFailed, { year, note: "MFD calls file not profiled" });
+    } else for (const year of mfdYears(current)) jobs.push({ year, query: mfdQuery(mfd, year), source: "mfd", toMinute: false, types: false });
     for (const j of jobs) {
       try {
         const { stats, types } = await countYear(j.query, j.types);
@@ -94,6 +97,7 @@ export const fireHistory = query({
   handler: async (ctx, a): Promise<FireResult> => {
     const rows = (await ctx.db.query("fireYears").collect()).map(({ _id, _creationTime, ...r }) => r);
     const types = (await ctx.db.query("fireTypes").collect()).map(({ _id, _creationTime, ...t }) => t);
-    return summarize(rows, types, a);
+    const attempted = (await ctx.db.query("fireRefresh").collect()).map((s) => s.year);
+    return summarize(rows, types, a, attempted);
   },
 });

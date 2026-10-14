@@ -179,3 +179,11 @@ describe("fireHistory (L3)", () => {
     expect(ASK_PROMPT).toMatch(/fireHistory/);
   });
 });
+
+describe("fireHistory routing (review #4)", () => {
+  it("sends any year's totals to fireHistory, even one year", () => {
+    const tool = askTools(backend({})).find((t) => t.name === "fireHistory")!;
+    expect(tool.description).toMatch(/even one year/i);
+    expect(ASK_PROMPT).toMatch(/fireHistory[^\n]*even one year/i);
+  });
+});

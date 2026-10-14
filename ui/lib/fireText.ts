@@ -9,6 +9,12 @@ type Row = FireOk["rows"][number];
 const NAME = { dispatch: "time to dispatch", arrive: "time to arrive" } as const;
 const count = (v: number | null) => (v === null ? "—" : v.toLocaleString("en-US"));
 const isTime = (r: Pick<FireOk, "measure">) => r.measure !== "calls";
+const span = (r: FireOk) => (r.rows.length ? ` from ${r.rows[0].year} to ${r.rows[r.rows.length - 1].year}` : "");
+const TIME_FOR = { all: "", ems: " for EMS calls", other: " for non-EMS calls" } as const;
+const CALLS_OF = { all: "", ems: " EMS", other: " non-EMS" } as const;
+// Next questions keep the card's years and group (the rule since PR #31), so a follow-up asks about the same calls.
+const timeQ = (m: "dispatch" | "arrive", group: FireOk["group"], r: FireOk) => `How has the Fire Department's ${NAME[m]}${TIME_FOR[group]} changed each year${span(r)}?`;
+const callsQ = (group: FireOk["group"], r: FireOk) => `How many Fire Department${CALLS_OF[group]} calls were there each year${span(r)}?`;
 const typeQuestion = (t: string) => `How many ${t} calls did the Fire Department get each year, 2015 to 2023?`;
 
 export const yearLabel = (x: Pick<Row, "year" | "partial">) => (x.partial ? `${x.year} (${x.partial})` : String(x.year));
@@ -36,15 +42,14 @@ export function fireFollowUps(r: FireOk): FollowUp[] {
     const out: FollowUp[] = [];
     const t = r.type ? null : r.types.find((x) => x.toUpperCase() !== "EMS");
     if (t) out.push({ label: "BY CALL TYPE", question: typeQuestion(t) });
-    out.push({ label: "TIME TO ARRIVE", question: "How has the Fire Department's time to arrive changed each year?" });
-    return out;
+    if (!r.type) out.push(r.group === "ems" ? { label: "ALL CALLS", question: callsQ("all", r) } : { label: "EMS ONLY", question: callsQ("ems", r) });
+    out.push({ label: "TIME TO ARRIVE", question: timeQ("arrive", r.group, r) });
+    return out.slice(0, 3);
   }
   const other = r.measure === "dispatch" ? "arrive" : "dispatch";
   return [
-    r.group === "ems"
-      ? { label: "ALL CALLS", question: `How has the Fire Department's ${NAME[r.measure]} changed each year?` }
-      : { label: "EMS ONLY", question: `How has the Fire Department's ${NAME[r.measure]} for EMS calls changed each year?` },
-    { label: other === "arrive" ? "TIME TO ARRIVE" : "TIME TO DISPATCH", question: `How has the Fire Department's ${NAME[other]} changed each year?` },
+    r.group === "ems" ? { label: "ALL CALLS", question: timeQ(r.measure, "all", r) } : { label: "EMS ONLY", question: timeQ(r.measure, "ems", r) },
+    { label: other === "arrive" ? "TIME TO ARRIVE" : "TIME TO DISPATCH", question: timeQ(other, r.group, r) },
   ];
 }
 

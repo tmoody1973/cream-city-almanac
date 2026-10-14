@@ -1,10 +1,10 @@
-import { LAST_TYPE_YEAR, type FireGroup, type Span } from "./fireYears";
+import { INCIDENT_YEARS, LAST_TYPE_YEAR, type FireGroup, type Span } from "./fireYears";
 
 // fireHistory's summary of the stored years (spec 2026-10-14-fire-history §6): code computes every figure.
 export type StoredRow = { year: number; group: FireGroup; calls: number; dispatch: Span | null; arrive: Span | null; unreadable: number; backwards: number; source: "incident" | "mfd"; partial: string | null; toMinute: boolean };
 export type StoredType = { year: number; type: string; calls: number };
 export type FireArgs = { measure: "calls" | "dispatch" | "arrive"; group?: FireGroup; type?: string; from?: number; to?: number };
-export type FireOut = { year: number; calls: number; median: number | null; p90: number | null; n: number | null; partial: string | null };
+export type FireOut = { year: number; calls: number | null; median: number | null; p90: number | null; n: number | null; partial: string | null };
 export type FireResult =
   | { status: "ok"; title: string; measure: FireArgs["measure"]; group: FireGroup; type: string | null; rows: FireOut[]; notes: string[]; source: string; types: string[] }
   | { status: "choose"; asked: string; choices: string[] }
@@ -32,7 +32,9 @@ function typeTotals(types: StoredType[]): { type: string; calls: number }[] {
   return [...by.values()].sort((a, b) => b.calls - a.calls).map((e) => ({ type: [...e.spellings].sort((x, y) => y[1] - x[1])[0][0], calls: e.calls }));
 }
 
-export function summarize(rows: StoredRow[], types: StoredType[], a: FireArgs): FireResult {
+// `attempted`: every year the refresh has tried (fireRefresh), failed ones included; with 2015–2023 always expected, a
+// year with no stored rows is named in the notes instead of the card quietly starting or ending early.
+export function summarize(rows: StoredRow[], types: StoredType[], a: FireArgs, attempted: number[] = []): FireResult {
   if (!rows.length) return refused("Fire Department history hasn't been built yet.");
   if (a.type?.trim() && a.measure !== "calls") return refused("Response times are by EMS versus other calls, not by call type.");
   const totals = typeTotals(types);
@@ -43,7 +45,7 @@ export function summarize(rows: StoredRow[], types: StoredType[], a: FireArgs): 
     type = hit.type;
   }
   const group: FireGroup = type ? "all" : a.group ?? "all";
-  const years = [...new Set(rows.map((r) => r.year))].sort((x, y) => x - y);
+  const years = [...new Set([...rows.map((r) => r.year), ...attempted, ...INCIDENT_YEARS.map((s) => s.year)])].sort((x, y) => x - y);
   const first = years[0];
   const last = years[years.length - 1];
   const lo = Math.max(a.from ?? first, first);
@@ -56,14 +58,18 @@ export function summarize(rows: StoredRow[], types: StoredType[], a: FireArgs): 
   const picked = rows.filter((r) => r.group === group && r.year >= lo && r.year <= hi).sort((x, y) => x.year - y.year);
   if (!picked.length) return refused(`No Fire Department years in that range; the data runs ${first}–${last}.`);
   const out: FireOut[] = picked.map((r) => {
-    if (type) return { year: r.year, calls: types.filter((t) => t.year === r.year && key(t.type) === key(type!)).reduce((s, t) => s + t.calls, 0), median: null, p90: null, n: null, partial: r.partial };
+    if (type) {
+      const hits = types.filter((t) => t.year === r.year && key(t.type) === key(type!));
+      return { year: r.year, calls: hits.length ? hits.reduce((s, t) => s + t.calls, 0) : null, median: null, p90: null, n: null, partial: r.partial };
+    }
     const s = a.measure === "calls" ? null : r[a.measure];
     return { year: r.year, calls: r.calls, median: s?.median ?? null, p90: s?.p90 ?? null, n: a.measure === "calls" ? null : s?.n ?? 0, partial: r.partial };
   });
   const ys = out.map((r) => r.year);
-  const missing: number[] = [];
-  for (let y = ys[0]; y <= ys[ys.length - 1]; y++) if (!ys.includes(y)) missing.push(y);
+  const missing = years.filter((y) => y >= lo && y <= hi && !ys.includes(y));
   if (missing.length) notes.push(`No figures are stored for ${missing.join(", ")}.`);
+  const absent = out.filter((r) => r.calls === null).map((r) => r.year);
+  if (type && absent.length) notes.push(`${type} isn't a call type in ${absent.join(", ")}.`);
   if (ys.some((y) => y >= 2024) && ys.some((y) => y <= 2023)) notes.push(SYSTEM);
   if (ys.includes(2024)) notes.push(GAP);
   if (a.measure !== "calls") {
