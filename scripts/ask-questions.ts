@@ -18,6 +18,7 @@ export const ASK_QUESTIONS: AskQuestion[] = [
   { q: "What does the asthma prevalence dataset measure?", tool: "showDataset", expect: { code: "W01" } },
   { q: "What are the caveats on Housing Built Before 1950?", tool: "showDataset", expect: { code: "H05" } },
   { q: "How long do citizen complaints take to close, by department?", tool: "timeSpan", expect: { groupBy: "Department", pair: "complaint-close" }, final: true },
+  { q: "How long have Milwaukee's vacant buildings been vacant?", tool: "timeSpan", expect: { pair: "vacant-age" }, final: true },
   { q: "How much back property tax is owed, by aldermanic district?", tool: "countRecords", expect: { measure: "tax-owed", groupBy: "Ald Dist" }, final: true },
   { q: "What's the poverty rate in Bay View's tracts?", tool: "rankTracts", expect: { neighborhood: "Bay View" }, final: true },
   { q: "Give me a fact sheet for Clarke Square", tool: "factSheet", expect: { slug: "clarke-square" }, final: true },

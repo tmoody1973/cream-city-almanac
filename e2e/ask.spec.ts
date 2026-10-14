@@ -200,6 +200,16 @@ test.describe("signed in", () => {
     await expect(card.getByRole("link", { name: /open the data/i })).toBeVisible();
   });
 
+  test("a vacant-buildings question draws a so-far card with its as-of note (L2)", async ({ page }) => {
+    test.skip(!(await page.request.get("https://data.milwaukee.gov/api/3/action/status_show").then((r) => r.ok()).catch(() => false)), "City API unreachable");
+    await ask(page, "How long have vacant buildings been vacant?");
+    const card = page.locator("[data-card=span]:visible");
+    await expect(card).toBeVisible({ timeout: 40_000 });
+    await expect(card).toContainText("time vacant so far");
+    await expect(card).toContainText("buildings still on the City's vacant-building list");
+    await expect(card.locator("th", { hasText: "Still open" })).toHaveCount(0);
+  });
+
   test("a how-long question draws a time-span card with medians, open cases and the export line", async ({ page }) => {
     test.skip(!(await page.request.get("https://data.milwaukee.gov/api/3/action/status_show").then((r) => r.ok()).catch(() => false)), "City API unreachable");
     await ask(page, "How long do complaints take to close, by department?");
