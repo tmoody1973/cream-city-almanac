@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { installFakeFetch } from "../tests/helpers/fakeFetch";
 import { reader, seedNibrs } from "../tests/helpers/citySeed";
 import { api, internal } from "./_generated/api";
+import { logLine } from "./shares";
 import schema from "./schema";
 
 const modules = import.meta.glob("./**/*.*s");
@@ -43,6 +44,13 @@ describe("shares:create", () => {
     expect(await t.withIdentity(reader).action(api.shares.create, { tool: "countTurnout", args: { from: "twenty" } })).toEqual({ ok: false, reason: "failed" });
     expect(await rows(t)).toEqual([]);
   });
+  it("never logs the arguments, which can hold a typed question (review fix)", async () => {
+    const t = await setup();
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(await t.withIdentity(reader).action(api.shares.create, { tool: "readReport", args: { question: "SECRET-QUESTION-TEXT", stray: 1 } })).toEqual({ ok: false, reason: "failed" });
+    expect(logged).toHaveBeenCalled();
+    expect(JSON.stringify(logged.mock.calls)).not.toContain("SECRET-QUESTION-TEXT");
+  });
   it("fails without storing when the tool refuses at share time", async () => {
     const t = await setup(); // no turnout rows: "Turnout hasn't been built yet."
     expect(await t.withIdentity(reader).action(api.shares.create, { tool: "countTurnout", args: {} })).toEqual({ ok: false, reason: "failed" });
@@ -76,6 +84,14 @@ describe("shares:create", () => {
     await seedTurnout(t);
     for (let i = 0; i < 30; i++) expect(await t.withIdentity(reader).action(api.shares.create, { tool: "countTurnout", args: {} })).toMatchObject({ ok: true });
     expect(await t.withIdentity(reader).action(api.shares.create, { tool: "countTurnout", args: {} })).toEqual({ ok: false, reason: "limit" });
+  });
+});
+
+describe("what a failed share logs", () => {
+  it("keeps only the error's first line: Convex puts the argument values on later lines", () => {
+    const e = new Error('ArgumentValidationError: Object contains extra field `stray` that is not in the validator.\n\nObject: {question: "SECRET-QUESTION-TEXT", stray: 1}\nValidator: v.object({question: v.string()})');
+    expect(logLine(e)).toBe("ArgumentValidationError: Object contains extra field `stray` that is not in the validator.");
+    expect(logLine("plain")).toBe("plain");
   });
 });
 

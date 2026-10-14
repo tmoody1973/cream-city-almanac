@@ -1,6 +1,6 @@
 // The shared fixtures add the Vercel preview bypass in CI.
 import { readFile } from "node:fs/promises";
-import { expect, test } from "./fixtures";
+import { expect, previewAccess, test } from "./fixtures";
 
 test("signed out, Ask offers sign-in and search stays public", async ({ page }, info) => {
   await page.goto(info.project.name === "phone" ? "/ask" : "/search?ask=1");
@@ -291,16 +291,18 @@ test.describe("signed in", () => {
     await expect(card.locator("[data-source]")).toContainText("From the City of Milwaukee's election results files");
   });
 
-  test("a shared turnout card opens for someone signed out", async ({ page, browser }) => {
+  test("a shared turnout card opens for someone signed out", async ({ page, browser, baseURL }) => {
     await ask(page, "Did turnout change between elections?");
     const card = page.locator("[data-card=turnout]:visible");
     await expect(card).toBeVisible({ timeout: 40_000 });
+    await expect(page.getByText("Here is what the data shows.")).toBeVisible({ timeout: 30_000 }); // the reply has settled
     await card.locator("button[data-share]").click();
     const link = card.locator("[data-share-url]");
     await expect(link).toBeVisible({ timeout: 30_000 });
     const url = await link.getAttribute("href");
     expect(url).toMatch(/\/s\/[0-9A-Za-z]{10}$/);
     const anon = await browser.newContext(); // no sign-in: anyone with the link
+    await previewAccess(anon, baseURL); // only Vercel's preview pass, never cookies or sign-in
     const p = await anon.newPage();
     await p.setViewportSize(page.viewportSize() ?? { width: 1280, height: 800 });
     await p.goto(url!);

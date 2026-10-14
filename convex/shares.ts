@@ -28,6 +28,10 @@ async function rerun(ctx: ActionCtx, tool: ShareTool, args: never): Promise<unkn
   }
 }
 
+// A failed share's log line: the error's first line only. A Convex argument error lists the argument values on later
+// lines, and those can hold a typed question, which is never kept (spec §2).
+export const logLine = (e: unknown) => (e instanceof Error ? e.message : String(e)).split("\n")[0];
+
 export const create = action({
   args: { tool: v.string(), args: v.any() },
   handler: async (ctx, a): Promise<ShareResult> => {
@@ -39,8 +43,8 @@ export const create = action({
     try {
       shared = shareCard(a.tool, await rerun(ctx, a.tool, a.args as never), { origin: SITE, date: shareDate(Date.now()) });
     } catch (e) {
-      // Arguments that don't fit, or the source failing: no link. The arguments aren't logged (they can hold typed words).
-      console.error(`share ${a.tool} failed:`, e instanceof Error ? e.message : String(e));
+      // Arguments that don't fit, or the source failing: no link.
+      console.error(`share ${a.tool} failed:`, logLine(e));
     }
     if (!shared) return { ok: false, reason: "failed" };
     const card = JSON.stringify(shared);
