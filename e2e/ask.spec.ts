@@ -1,6 +1,6 @@
 // The shared fixtures add the Vercel preview bypass in CI.
 import { readFile } from "node:fs/promises";
-import { expect, test } from "./fixtures";
+import { expect, previewAccess, test } from "./fixtures";
 
 test("signed out, Ask offers sign-in and search stays public", async ({ page }, info) => {
   await page.goto(info.project.name === "phone" ? "/ask" : "/search?ask=1");
@@ -289,6 +289,46 @@ test.describe("signed in", () => {
     await expect(card).toBeVisible({ timeout: 40_000 });
     await expect(card).toContainText("November 2020 general election");
     await expect(card.locator("[data-source]")).toContainText("From the City of Milwaukee's election results files");
+  });
+
+  test("a shared turnout card opens for someone signed out", async ({ page, browser, baseURL }) => {
+    test.slow(); // signs in, asks, makes a link, then opens a second browser: more than one test's usual 45 seconds under load
+    await ask(page, "Did turnout change between elections?");
+    const card = page.locator("[data-card=turnout]:visible");
+    await expect(card).toBeVisible({ timeout: 40_000 });
+    await expect(page.getByText("Here is what the data shows.")).toBeVisible({ timeout: 30_000 }); // the reply has settled
+    await card.locator("button[data-share]").click();
+    const link = card.locator("[data-share-url]");
+    await expect(link).toBeVisible({ timeout: 30_000 });
+    const url = await link.getAttribute("href");
+    expect(url).toMatch(/\/s\/[0-9A-Za-z]{10}$/);
+    const anon = await browser.newContext(); // no sign-in: anyone with the link
+    await previewAccess(anon, baseURL); // only Vercel's preview pass, never cookies or sign-in
+    const p = await anon.newPage();
+    await p.setViewportSize(page.viewportSize() ?? { width: 1280, height: 800 });
+    await p.goto(url!);
+    const shared = p.locator("[data-shared]");
+    await expect(shared).toContainText("Milwaukee voter turnout");
+    await expect(shared).toContainText("November 2020 general election");
+    await expect(p.locator("[data-as-of]")).toContainText("Numbers are as of that day.");
+    await expect(p.locator("[data-export] button")).toHaveText(["CSV", "Copy text", "PNG"]);
+    await expect(p.locator("button[data-share]")).toHaveCount(0);
+    await expect(p.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
+    expect(await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    // Labels wrap and numbers stay on one line, so the 4-column turnout table fits a phone without scrolling inside it.
+    expect(await p.locator("[data-shared] table").evaluate((t) => t.parentElement!.scrollWidth <= t.parentElement!.clientWidth + 1)).toBe(true);
+    await anon.close();
+  });
+
+  test("a share link that doesn't exist says so", async ({ page }) => {
+    for (const path of ["/s/doesnotexi", `/s/${"x".repeat(500)}`]) {
+      const res = await page.goto(path);
+      expect(res?.status()).toBe(404);
+      await expect(page.getByText("This shared answer isn't available.")).toBeVisible();
+    }
+    // Vercel's edge answers an encoded "../" with 400 on every route before the app sees it; the dev server
+    // passes it to the page (404). Either way, never a server error.
+    expect((await page.goto("/s/..%2F.."))?.status()).toBeLessThan(500);
   });
 
   test("a neighborhood count names the City boundary it used", async ({ page }) => {

@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { exportState, toCsv, toText, type CardExport, type Ctx } from "@/ui/lib/cardExport";
 import { cardPng } from "@/ui/lib/cardPng";
+import { ShareLink, useShare } from "./ShareLink";
 import styles from "./ask.module.css";
 
 type Props = { make: ((ctx: Ctx) => CardExport) | null; expired?: boolean } | { copy: (ctx: Ctx) => string };
@@ -22,6 +23,7 @@ function save(blob: Blob, name: string) {
 // CSV · Copy text · PNG under a card (spec 2026-10-12 §4); a report quote gets Copy text only.
 export function ExportBar(props: Props) {
   const [status, setStatus] = useState("");
+  const share = useShare();
   const say = (s: string) => {
     setStatus(s);
     setTimeout(() => setStatus(""), 4_000);
@@ -59,6 +61,7 @@ export function ExportBar(props: Props) {
       <button type="button" disabled={!make} onClick={() => { if (!make) return; const e = make(here()); save(new Blob([toCsv(e)], { type: "text/csv;charset=utf-8" }), `${e.filename}.csv`); }}>CSV</button>
       <button type="button" disabled={!make} onClick={() => make && copy(toText(make(here())), "Couldn't copy. Use CSV instead.")}>Copy text</button>
       <button type="button" disabled={!make} onClick={png}>PNG</button>
+      {share && make && <ShareLink {...share} />}
       {state === "loading" && <span>Loading…</span>}
       {live}
     </div>

@@ -85,7 +85,9 @@ export function HowItWorks({ status, example, areas }: { status: CatalogStatus |
             <p>Numbers on a sheet come from the Hub&apos;s data, never from the AI.</p>
             <p>
               Ask&apos;s number cards can be exported as a CSV, as plain text or as an image. Each export copies the card: its figures, its
-              fine print, the dataset&apos;s caveats and the source. The AI doesn&apos;t write any of it.
+              fine print, the dataset&apos;s caveats and the source. The AI doesn&apos;t write any of it. A card can also be shared as a link anyone can
+              open. It shows the card as it was the day it was shared; the server asks the question again to build it, so nothing on
+              the page comes from the reporter&apos;s browser.
             </p>
             <p>
               Ask can also say how long things take in a few City files, like complaints, 311 requests, permits and fire calls. The median is

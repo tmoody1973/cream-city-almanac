@@ -1,4 +1,4 @@
-import { HOUR, RateLimiter } from "@convex-dev/rate-limiter";
+import { DAY, HOUR, RateLimiter } from "@convex-dev/rate-limiter";
 import { components } from "./_generated/api";
 
 // Public search spends one embedding call per non-blank query. About 10 a minute sustained, bursts to 100.
@@ -26,6 +26,9 @@ export const ASK_PLACE = { kind: "token bucket" as const, rate: 60, period: HOUR
 // The public "Find your neighborhood" box: one geocoder request, site-wide, so the box can't hammer the Census.
 export const PLACE_PUBLIC = { kind: "token bucket" as const, rate: 60, period: 60_000, capacity: 20 };
 
+// Share links from Ask: each re-runs one tool and stores one snapshot, per account.
+export const ASK_SHARES = { kind: "token bucket" as const, rate: 30, period: DAY, capacity: 30 };
+
 export const rateLimiter = new RateLimiter(components.rateLimiter, {
   searchEmbeds: SEARCH_EMBEDS,
   askEmbeds: ASK_EMBEDS,
@@ -36,4 +39,5 @@ export const rateLimiter = new RateLimiter(components.rateLimiter, {
   mapCity: MAP_CITY,
   askPlace: ASK_PLACE,
   placePublic: PLACE_PUBLIC,
+  askShares: ASK_SHARES,
 });
