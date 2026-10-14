@@ -196,6 +196,7 @@ Residents want to understand their own block and neighborhood, see whether the C
 | How long does a building permit take? | Permit Work Data | **Now** (how long) |
 | How long have vacant buildings been vacant? | Vacant Buildings | **Now** (age so far, L2) |
 | How long have open complaints against police and fire been waiting? | Citizen Complaints | **Now** (age so far, as of the file's last update, L2) |
+| What is the demographic makeup of 53228? | Census survey, ZIP areas | **Now** (ZIP card, Z1) |
 | Where are the libraries, and when are they open? | Libraries | **Now** |
 | When is garbage or recycling pickup? | DPW Sanitation | **Partly** (sheet and download; not in Ask's counts) |
 | Where are the bike lanes, streetcar stops and Bublr stations? | Bicycle Network, Streetcar, Bublr | **Partly** (maps and links) |

@@ -210,6 +210,18 @@ test.describe("signed in", () => {
     await expect(card.locator("th", { hasText: "Still open" })).toHaveCount(0);
   });
 
+  test("a ZIP question draws the Census ZIP card with where the ZIP is (Z1)", async ({ page }) => {
+    test.skip(!(await page.request.get("https://api.census.gov/data.json").then((r) => r.ok()).catch(() => false)), "Census API unreachable");
+    await ask(page, "What is the demographic makeup of 53228?");
+    const card = page.locator("[data-card=zip]:visible");
+    await expect(card).toBeVisible({ timeout: 40_000 });
+    await expect(card).toContainText("ZIP 53228 · Census estimates");
+    await expect(card.locator("[data-place-note]")).toContainText("the largest part is in Greenfield");
+    await expect(card).toContainText("Hispanic or Latino (any race)");
+    await expect(card.getByTitle("From the U.S. Census Bureau's American Community Survey")).toBeVisible();
+    await expect(card.locator("[data-export]").getByRole("button", { name: "CSV" })).toBeVisible();
+  });
+
   test("a how-long question draws a time-span card with medians, open cases and the export line", async ({ page }) => {
     test.skip(!(await page.request.get("https://data.milwaukee.gov/api/3/action/status_show").then((r) => r.ok()).catch(() => false)), "City API unreachable");
     await ask(page, "How long do complaints take to close, by department?");
