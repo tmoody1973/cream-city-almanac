@@ -5,11 +5,12 @@ import { chicagoDay } from "./lib/ask";
 import { EMPTY_FILE_NOTE } from "./lib/cityProfile";
 import { datastoreSql } from "./lib/ckan";
 import { buildSpan, SPAN_QUERY_TIMEOUT_MS } from "./lib/spanSql";
-import { pairEnd, pairsFor, SPAN_PAIRS, type SpanPair } from "./lib/spanPairs";
+import { pairEnd, pairsFor, SPAN_PAIRS, type AgePair, type BetweenPair, type SpanPair } from "./lib/spanPairs";
 import { shapeSpan, type SpanAll, type SpanGroup } from "./lib/spanShape";
 import { rateLimiter } from "./limits";
 
-type PairOut = Omit<SpanPair, "familyKey" | "file">;
+// Spelled out per kind: Omit over a union keeps only the shared keys and loses the kind narrowing.
+type PairOut = Omit<BetweenPair, "familyKey" | "file"> | Omit<AgePair, "familyKey" | "file">;
 export type SpanResult =
   | { status: "ok"; code: string; name: string; pair: PairOut; asOf: string | null; groupBy: string | null; overlap: boolean; period: string; filters: string[]; coverage: string | null; columns: string[]; groups: SpanGroup[]; other: number; all: SpanAll }
   | { status: "not-found"; code: string }

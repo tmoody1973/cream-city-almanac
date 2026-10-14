@@ -6,7 +6,7 @@ import type { ChangeDetail, Header, RankDetail, RelateDetail } from "@/convex/tr
 import { cityList, dycuText } from "./placeNames";
 import { changeText, plainMeaning, rangeText, unitOf, type Unit } from "./tractFormat";
 import { EXACT, KIND, propertyCountSummary } from "./tractSummary";
-import { cellTime, spanNotes, spanRows, spanSummary, spanTitle, type SpanOk } from "./spanText";
+import { spanCells, spanColumns, spanNotes, spanRows, spanSummary, spanTitle, type SpanOk } from "./spanText";
 import { MEASURE_HIDDEN, measureNotes, measureSummary, measureTitle, money, type MeasureOk } from "./measureText";
 
 // One export per card (spec 2026-10-12-card-export-design.md): CSV, text and PNG are all written from it, so they
@@ -216,20 +216,18 @@ export const quoteText = (p: { quote: string; section: string; report: string; c
   [`“${p.quote}”`, `${p.report}, ${p.section}`, sourceNote("DYCU", p.code, null, ctx), exported(ctx)].join("\n");
 
 export function spanExport(r: SpanOk, ctx: Ctx): CardExport {
-  const u = r.pair.unit;
   const rows = [...spanRows(r), { ...r.all, rest: false }];
   const { warning, notes } = spanNotes(r);
+  const group = r.groupBy === "year" ? "Year" : r.groupBy ?? "Group";
+  // An age (L2) has no "Still open": every case it counts is open.
+  const csv = r.pair.kind === "age"
+    ? { head: [group, "Cases", "Median (days)", "Longest 1 in 10 (days)"], rows: rows.map((g) => [g.label, g.cases, g.median, g.p90]) }
+    : { head: [group, "Cases", `Median (${r.pair.unit})`, `9 in 10 within (${r.pair.unit})`, "Still open"], rows: rows.map((g) => [g.label, g.cases, g.median, g.p90, g.open]) };
   return {
     title: spanTitle(r),
     lines: [...(warning ? [warning] : []), spanSummary(r)],
-    csv: {
-      head: [r.groupBy === "year" ? "Year" : r.groupBy ?? "Group", "Cases", `Median (${u})`, `9 in 10 within (${u})`, "Still open"],
-      rows: rows.map((g) => [g.label, g.cases, g.median, g.p90, g.open]),
-    },
-    text: {
-      head: [r.groupBy === "year" ? "Year" : r.groupBy ?? "", "Cases", "Median", "9 in 10 within", "Still open"],
-      rows: rows.map((g) => [g.label, g.cases.toLocaleString("en-US"), g.rest ? "" : cellTime(g, g.median, u), g.rest ? "" : cellTime(g, g.p90, u), g.open === null ? "" : g.open.toLocaleString("en-US")]),
-    },
+    csv,
+    text: { head: [r.groupBy === "year" ? "Year" : r.groupBy ?? "", ...spanColumns(r)], rows: rows.map((g) => [g.label, ...spanCells(r, g)]) },
     notes: [...notes, sourceNote("City of Milwaukee", r.code, r.name, ctx), exported(ctx)],
     filename: safeName([r.code, r.pair.id, ...(r.groupBy ? [r.groupBy] : [])]),
   };

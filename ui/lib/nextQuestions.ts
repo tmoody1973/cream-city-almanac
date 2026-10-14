@@ -87,12 +87,15 @@ const scope = (a: Scope) =>
 const filtered = (a: Scope) => new Set((a.filters ?? []).map((f) => f.column));
 
 type SpanArgsIn = Scope & { code: string; groupBy?: string };
-const spanBase = (r: SpanOk) => `How long did ${r.pair.things} take ${r.pair.toWhat} in ${r.name} (${r.code})`;
+// An age card (L2) asks how long cases have been open, naming its entry so Ask doesn't measure the closing time instead.
+const spanBase = (r: SpanOk) =>
+  r.pair.kind === "age" ? `How long have ${r.pair.things} been ${r.pair.toWhat} in ${r.name} (${r.code})` : `How long did ${r.pair.things} take ${r.pair.toWhat} in ${r.name} (${r.code})`;
 export function spanFollowUps(args: SpanArgsIn, r: SpanOk): FollowUp[] {
   const out: FollowUp[] = [];
   const base = `${spanBase(r)}${scope(args)}`;
-  if (r.groupBy !== "year") out.push({ label: "BY YEAR", question: `${base}, by year?` });
-  for (const c of r.columns.filter((c) => c !== r.groupBy && !filtered(args).has(c)).slice(0, 2)) out.push({ label: `BY ${c.replace(/_/g, " ").toUpperCase()}`, question: `${base}, by ${c}?` });
+  const tail = r.pair.kind === "age" ? ` (pair ${r.pair.id})` : "";
+  if (r.groupBy !== "year") out.push({ label: "BY YEAR", question: `${base}, by year?${tail}` });
+  for (const c of r.columns.filter((c) => c !== r.groupBy && !filtered(args).has(c)).slice(0, 2)) out.push({ label: `BY ${c.replace(/_/g, " ").toUpperCase()}`, question: `${base}, by ${c}?${tail}` });
   return out.slice(0, MAX);
 }
 

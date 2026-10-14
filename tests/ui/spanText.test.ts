@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 import { spanExport } from "../../ui/lib/cardExport";
 import { spanChoices } from "../../ui/lib/refusalChoices";
 import { spanFollowUps } from "../../ui/lib/nextQuestions";
-import { durationText, spanNotes, spanRows, spanSummary, spanTitle } from "../../ui/lib/spanText";
+import { ageText, durationText, spanCells, spanColumns, spanNotes, spanRows, spanSummary, spanTitle } from "../../ui/lib/spanText";
 
-const pair = { id: "complaint-close", name: "time to close", things: "complaints", toWhat: "to close", unit: "days" as const, missing: "{n} complaints aren't closed yet and aren't counted, so slow cases are under-counted.", caveat: "Dates are typed by hand in more than one format; a few can't be read.", from: "DateReported", to: "Date Closed" };
+const pair = { kind: "between" as const, id: "complaint-close", name: "time to close", things: "complaints", toWhat: "to close", unit: "days" as const, missing: "{n} complaints aren't closed yet and aren't counted, so slow cases are under-counted.", caveat: "Dates are typed by hand in more than one format; a few can't be read.", from: "DateReported", to: "Date Closed" };
 const r = {
-  status: "ok" as const, code: "P24", name: "Citizen Complaints", pair, groupBy: "Department", overlap: false, period: "all records", filters: [], coverage: null, columns: ["Department", "Status"],
+  status: "ok" as const, code: "P24", name: "Citizen Complaints", pair, asOf: null, groupBy: "Department", overlap: false, period: "all records", filters: [], coverage: null, columns: ["Department", "Status"],
   groups: [
     { label: "Milwaukee Police Department", cases: 2437, median: 92, p90: 478.4, open: 105 },
     { label: "Milwaukee Fire Department", cases: 64, median: 22, p90: 86.7, open: 0 },
@@ -100,5 +100,42 @@ describe("review fixes", () => {
     const e = spanExport(withOther, ctx);
     expect(e.text.rows[0]).toEqual(["Other", "40", "12 days", "30 days", "1"]);
     expect(e.csv.rows[1]).toEqual(["All other groups", 25, null, null, null]);
+  });
+});
+
+describe("ages (L2)", () => {
+  const age = {
+    status: "ok" as const, code: "B12", name: "Vacant Buildings", groupBy: null, overlap: false, period: "all records", filters: [], coverage: null, columns: ["AldermanicDistrict"], asOf: "2026-10-14",
+    pair: { kind: "age" as const, id: "vacant-age", from: "DATEOPENED", asOf: "today" as const, name: "time vacant so far", things: "buildings", toWhat: "on the vacant list", unit: "days" as const, caveat: "The City adds a building when it registers it as vacant and removes it when it is no longer vacant.", asOfNote: "As of {date}: buildings still on the City's vacant-building list. The date is when the City registered the building as vacant, not when it emptied. Buildings taken off the list aren't counted." },
+    groups: [], other: 0, all: { label: "All", cases: 1750, median: 420, p90: 1300, open: 0, unreadable: 0, backwards: 1 },
+  };
+  it("prints a year or more as years, and less in days", () => {
+    expect(ageText(420)).toBe("1.2 years");
+    expect(ageText(1300)).toBe("3.6 years");
+    expect(ageText(200)).toBe("200 days");
+    expect(ageText(null)).toBe("too few to say");
+  });
+  it("says how long the open cases have been open, with the longest tenth", () => {
+    expect(spanTitle(age)).toBe("Vacant Buildings · time vacant so far");
+    expect(spanSummary(age)).toBe("Half of the buildings have been on the vacant list 1.2 years or more; 1 in 10 for 3.6 years or more.");
+  });
+  it("names the longest and shortest groups when split", () => {
+    const g = (label: string, median: number) => ({ label, cases: 50, median, p90: median * 2, open: 0 });
+    expect(spanSummary({ ...age, groupBy: "AldermanicDistrict", groups: [g("6", 1240), g("14", 290)] })).toBe("Overall, half of the buildings have been on the vacant list 1.2 years or more. Longest: 6 (3.4 years); shortest: 14 (290 days).");
+  });
+  it("leads the notes with the dated as-of note and counts records after it", () => {
+    const { warning, notes } = spanNotes(age);
+    expect(warning).toBeNull();
+    expect(notes[0]).toBe("As of October 14, 2026: buildings still on the City's vacant-building list. The date is when the City registered the building as vacant, not when it emptied. Buildings taken off the list aren't counted.");
+    expect(notes).toContain("1 records dated after the as-of date were left out.");
+    expect(notes.join(" ")).not.toMatch(/later date before the earlier one|still open|aren't closed/);
+  });
+  it("has no still-open column", () => {
+    expect(spanColumns(age)).toEqual(["Cases", "Median", "Longest 1 in 10"]);
+    expect(spanCells(age, { ...age.all, rest: false })).toEqual(["1,750", "1.2 years", "3.6 years"]);
+  });
+it("asks an age question after an age card (L2)", () => {
+    const r = { status: "ok", code: "B12", name: "Vacant Buildings", groupBy: null, columns: ["AldermanicDistrict"], pair: { kind: "age", id: "vacant-age", things: "buildings", toWhat: "on the vacant list" } } as never;
+    expect(spanFollowUps({ code: "B12" } as never, r)[0].question).toBe("How long have buildings been on the vacant list in Vacant Buildings (B12), by year? (pair vacant-age)");
   });
 });
