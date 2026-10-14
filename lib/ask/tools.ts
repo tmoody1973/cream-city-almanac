@@ -20,7 +20,8 @@ export type SpanResult = FunctionReturnType<typeof api.spans.timeSpan>;
 export type StopsAnswer = FunctionReturnType<typeof api.stops.countStops>;
 export type TurnoutAnswer = FunctionReturnType<typeof api.elections.countTurnout>;
 export type ZipAnswer = FunctionReturnType<typeof api.zips.zipProfile>;
-export type AskToolName = "searchCatalog" | "showDataset" | "previewData" | "getNumber" | "readReport" | "countRecords" | "rankTracts" | "compareYears" | "relateTracts" | "timeSpan" | "factSheet" | "findPlace" | "boundariesFor" | "countStops" | "countTurnout" | "zipProfile";
+export type FireAnswer = FunctionReturnType<typeof api.fire.fireHistory>;
+export type AskToolName = "searchCatalog" | "showDataset" | "previewData" | "getNumber" | "readReport" | "countRecords" | "rankTracts" | "compareYears" | "relateTracts" | "timeSpan" | "factSheet" | "findPlace" | "boundariesFor" | "countStops" | "countTurnout" | "zipProfile" | "fireHistory";
 
 export interface AskBackend {
   search(a: { query: string; topic?: string; place?: string; year?: number }): Promise<SearchResponse>;
@@ -38,6 +39,7 @@ export interface AskBackend {
   stops(a: z.infer<typeof stopsParams>): Promise<StopsAnswer>;
   turnout(a: z.infer<typeof turnoutParams>): Promise<TurnoutAnswer>;
   zip(a: z.infer<typeof zipParams>): Promise<ZipAnswer>;
+  fire(a: z.infer<typeof fireParams>): Promise<FireAnswer>;
 }
 
 export interface AskTool<P extends z.ZodObject = z.ZodObject> {
@@ -93,6 +95,13 @@ export const stopsParams = z.object({
 });
 
 // countTurnout's arguments; the turnout card reads the same ones for its follow-up questions.
+export const fireParams = z.object({
+  measure: z.enum(["calls", "dispatch", "arrive"]).describe("calls, time to dispatch, or time to arrive"),
+  group: z.enum(["all", "ems", "other"]).optional().describe("EMS calls, other calls, or all (default)"),
+  type: z.string().max(80).optional().describe("A call type such as Auto Fire, for calls only"),
+  from: z.number().int().optional(),
+  to: z.number().int().optional(),
+});
 export const zipParams = z.object({ zip: z.string().max(12).describe("One 5-digit ZIP code, e.g. 53212.") });
 export const turnoutParams = z.object({
   type: z.enum(["spring", "primary", "general", "all"]).optional().describe("Which elections; default all"),
@@ -250,6 +259,12 @@ export function askTools(b: AskBackend): AskTool[] {
       description: "Who lives in one ZIP code in Milwaukee County and what it's like: population, race and ethnicity, poverty, low incomes, renters, vacant homes, rent burden, households with no car, and schooling, each beside Milwaukee's figure, from the U.S. Census Bureau's American Community Survey for that ZIP's Census area. One ZIP per call. Never answer a ZIP question by adding up tracts or neighborhoods. When cityShare is below 0.5, say first that most of the ZIP's land is outside the City of Milwaukee, the largest part in mainPlace. If it returns outside, say Ask covers ZIP codes that touch Milwaukee County; bad-zip, ask for a 5-digit ZIP; unavailable or busy, try later. The card carries every figure; don't restate them.",
       parameters: zipParams,
       execute: (a: z.infer<typeof zipParams>) => b.zip(a),
+    },
+    {
+      name: "fireHistory",
+      description: "Milwaukee Fire Department calls and response times by year, 2015 to now, from stored yearly totals: calls per year (all, EMS, or other; or one call type), and median time to dispatch or time to arrive. Call types run 2015–2023 only. One year's details, by ZIP, place or type, stay with countRecords and timeSpan. If it returns choose, pick a type from its choices and call again; if refused, tell the person why. The card carries every figure and note; don't restate them.",
+      parameters: fireParams,
+      execute: (a: z.infer<typeof fireParams>) => b.fire(a),
     },
     {
       name: "rankTracts",
