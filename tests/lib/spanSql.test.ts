@@ -63,6 +63,25 @@ describe("the span query", () => {
     expect(scene).toContain('"IncidentClosed"');
     expect(scene).not.toContain('"IncidentStarted"');
   });
+  it("measures an age to the day after the as-of date, and counts later dates as after it (L2)", () => {
+    const vacant = SPAN_PAIRS.find((p) => p.id === "vacant-age")!;
+    const V: CityProfile = { ...P, familyKey: vacant.familyKey, dateColumn: "DATEOPENED", categories: [{ column: "AldermanicDistrict", values: [{ value: "15", count: 90 }] }] };
+    const b = ok(buildSpan(V, vacant, { groupBy: "AldermanicDistrict" }, TODAY, "2026-10-14"));
+    expect(b.allSql).toContain("'2026-10-15'::timestamp - f"); // age to the end of the as-of day
+    expect(b.allSql).toContain("CASE WHEN f >= '2026-10-15'::timestamp THEN 1 ELSE 0 END) AS backwards");
+    expect(b.allSql).toContain("0 AS open");
+    expect(b.allSql).not.toContain("Date Closed");
+    expect(b.groupSql).toContain('"AldermanicDistrict"');
+  });
+  it("keeps only rows with no close date for an age entry with openWhen (L2)", () => {
+    const open = SPAN_PAIRS.find((p) => p.id === "complaint-open-age")!;
+    const b = ok(buildSpan(P, open, {}, TODAY, "2026-02-25"));
+    expect(b.allSql).toContain(`NOT ("Date Closed" IS NOT NULL AND "Date Closed" <> '' AND upper("Date Closed") <> 'NULL')`);
+    expect(b.allSql).toContain("'2026-02-26'::timestamp - f");
+  });
+  it("leaves a between pair's query exactly as before when an as-of date is passed", () => {
+    expect(ok(buildSpan(P, complaints, {}, TODAY, "2026-02-25")).allSql).toBe(ok(buildSpan(P, complaints, {}, TODAY)).allSql);
+  });
   it("groups by a column, merging labels that differ only in capitals and punctuation", () => {
     const b = ok(buildSpan(P, complaints, { groupBy: "department" }, TODAY));
     expect(b.groupSql).toContain(`"Department" AS g`);
