@@ -136,9 +136,13 @@ type SpanArgsIn = { code: string; groupBy?: string; from?: string; to?: string; 
 type SpanRefusal = { status: string; code?: string; name?: string; pairs?: { id: string; name: string; from?: string; to?: string }[]; columns?: string[]; column?: string; choices?: string[] };
 export function spanChoices(args: SpanArgsIn, r: SpanRefusal): FollowUp[] {
   const where = `${r.name ?? "this file"} (${r.code ?? args.code})`;
-  if (r.status === "choose-pair" && r.pairs) return r.pairs.slice(0, MAX).map((p) => ({ label: p.name, question: `How long is the ${p.name} in ${where}? (pair ${p.id})` }));
-  if (r.status === "bad-column" && r.columns) return r.columns.slice(0, MAX).map((c) => ({ label: c, question: `How long does it take in ${where}, by ${c}?` }));
-  if (r.status === "choose" && r.choices && r.column) return r.choices.slice(0, MAX).map((v) => ({ label: v, question: `How long does it take in ${where}, only ${r.column} ${v}?` }));
+  // A file can have more than one measure (complaints: time to close, time open so far), so a button names the asked one
+  // and keeps the split and period; otherwise it comes back as a different measure or loses what was asked.
+  const pin = args.pair ? ` (pair ${args.pair})` : "";
+  const kept = `${args.groupBy ? `, by ${args.groupBy}` : ""}${args.from ? `, from ${args.from}` : ""}${args.to ? `, to ${args.to}` : ""}`;
+  if (r.status === "choose-pair" && r.pairs) return r.pairs.slice(0, MAX).map((p) => ({ label: p.name, question: `How long is the ${p.name} in ${where}${kept}? (pair ${p.id})` }));
+  if (r.status === "bad-column" && r.columns) return r.columns.slice(0, MAX).map((c) => ({ label: c, question: `How long does it take in ${where}, by ${c}?${pin}` }));
+  if (r.status === "choose" && r.choices && r.column) return r.choices.slice(0, MAX).map((v) => ({ label: v, question: `How long does it take in ${where}, only ${r.column} ${v}?${pin}` }));
   return [];
 }
 

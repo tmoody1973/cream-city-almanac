@@ -4,6 +4,8 @@ import { convexTest } from "convex-test";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { installFakeFetch } from "../tests/helpers/fakeFetch";
 import { api, internal } from "./_generated/api";
+import { SPAN_PAIRS } from "./lib/spanPairs";
+import { asOfDay } from "./spans";
 import schema from "./schema";
 
 const modules = import.meta.glob("./**/*.*s");
@@ -42,7 +44,7 @@ describe("timeSpan", () => {
   it("measures a pair by department, with the pair's words and the All row", async () => {
     const t = await seed();
     installFakeFetch({ citySql: (sql) => sql.includes("GROUP BY k") ? [{ k: "MILWAUKEEPOLICEDEPARTMENT", label: "Milwaukee Police Department", cases: "2437", median: "92", p90: "478.4", open: "105", unreadable: "12", backwards: "15" }] : all });
-    const r = await t.withIdentity(reader).action(api.spans.timeSpan, { code: "p24", groupBy: "Department" });
+    const r = await t.withIdentity(reader).action(api.spans.timeSpan, { code: "p24", pair: "complaint-close", groupBy: "Department" });
     expect(r).toMatchObject({
       status: "ok", code: "P24", name: "Citizen Complaints", groupBy: "Department", period: "all records",
       pair: { id: "complaint-close", name: "time to close", unit: "days" },
@@ -62,14 +64,14 @@ describe("timeSpan", () => {
   it("refuses an unknown pair id with the file's pairs", async () => {
     const t = await seed();
     installFakeFetch({ citySql: () => all });
-    expect(await t.withIdentity(reader).action(api.spans.timeSpan, { code: "P24", pair: "nope" })).toMatchObject({ status: "choose-pair", pairs: [{ id: "complaint-close" }] });
+    expect(await t.withIdentity(reader).action(api.spans.timeSpan, { code: "P24", pair: "nope" })).toMatchObject({ status: "choose-pair", pairs: [{ id: "complaint-close" }, { id: "complaint-open-age" }] });
   });
   it("says unavailable when the City fails, and too-broad when it times out", async () => {
     const t = await seed();
     installFakeFetch({ cityStatus: 403 });
-    expect(await t.withIdentity(reader).action(api.spans.timeSpan, { code: "P24" })).toMatchObject({ status: "unavailable", code: "P24" });
+    expect(await t.withIdentity(reader).action(api.spans.timeSpan, { code: "P24", pair: "complaint-close" })).toMatchObject({ status: "unavailable", code: "P24" });
     vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("Timed out after 10s: https://data.milwaukee.gov/…"); }));
-    expect(await t.withIdentity(reader).action(api.spans.timeSpan, { code: "P24" })).toMatchObject({ status: "too-broad", code: "P24" });
+    expect(await t.withIdentity(reader).action(api.spans.timeSpan, { code: "P24", pair: "complaint-close" })).toMatchObject({ status: "too-broad", code: "P24" });
   });
 });
 
@@ -80,6 +82,36 @@ describe("checkPairs", () => {
     const out = await t.action(internal.spans.checkPairs, {});
     expect(out.find((x) => x.id === "complaint-close")).toMatchObject({ ok: true, all: { cases: 2731 } });
     expect(out.find((x) => x.id === "311-close")).toMatchObject({ ok: false, error: "no profile" });
-    expect(out).toHaveLength(9); // one result per approved pair (L1 added two)
+    expect(out).toHaveLength(11); // one result per approved entry (L1 and L2 added two each)
+  });
+});
+
+describe("ages (L2)", () => {
+  it("asks which measure on the complaints file, listing the closing time and the open age", async () => {
+    const t = await seed();
+    installFakeFetch({ citySql: () => all });
+    expect(await t.withIdentity(reader).action(api.spans.timeSpan, { code: "P24" })).toMatchObject({ status: "choose-pair", pairs: [{ id: "complaint-close", to: "Date Closed" }, { id: "complaint-open-age", to: "as of the file's last update" }] });
+  });
+  it("measures open complaints to the Chicago day the City last changed the data file (review fix)", async () => {
+    const t = await seed();
+    let sql = "";
+    // The file's own last_modified (UTC, no zone): 03:20 UTC on Feb 25 is the evening of Feb 24 in Milwaukee.
+    installFakeFetch({ resourceModified: "2026-02-25T03:20:47.682186", citySql: (s) => { sql = s; return [{ cases: "98", median: "300", p90: "500", open: "0", unreadable: "0", backwards: "0" }]; } });
+    const r = await t.withIdentity(reader).action(api.spans.timeSpan, { code: "P24", pair: "complaint-open-age" });
+    expect(r).toMatchObject({ status: "ok", asOf: "2026-02-24", pair: { kind: "age", id: "complaint-open-age" }, all: { cases: 98, median: 300 } });
+    expect(sql).toContain("'2026-02-25'::timestamp");
+  });
+  it("falls back to the newest member record when the City's file lookup fails, not the family's creation date", async () => {
+    const t = await seed(); // the complaints family's latestModified is 2025-10-01 (live it is the 2019 creation date)
+    await t.run(async (ctx) => {
+      await ctx.db.insert("members", { familyKey: KEY, hubId: "m1", title: "Citizen Complaints", yearLabel: "", featureServerUrl: "", kind: "dataset", landingPage: "", place: "City", years: [], modified: "2026-03-13T21:07:03.024554", downloads: {}, description: "", keywords: [], files: [] });
+    });
+    installFakeFetch({ citySql: () => [{ cases: "98", median: "300", p90: "500", open: "0", unreadable: "0", backwards: "0" }] });
+    expect(await t.withIdentity(reader).action(api.spans.timeSpan, { code: "P24", pair: "complaint-open-age" })).toMatchObject({ status: "ok", asOf: "2026-03-13" });
+  });
+  it("falls back to today when the file's date can't be read", () => {
+    expect(asOfDay(SPAN_PAIRS.find((p) => p.id === "complaint-open-age")!, "unknown", Date.parse("2026-10-14T15:00:00Z"))).toBe("2026-10-14");
+    expect(asOfDay(SPAN_PAIRS.find((p) => p.id === "vacant-age")!, "2020-01-01", Date.parse("2026-10-14T15:00:00Z"))).toBe("2026-10-14");
+    expect(asOfDay(SPAN_PAIRS[0], "2020-01-01", Date.now())).toBeNull();
   });
 });

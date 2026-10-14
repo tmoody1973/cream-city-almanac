@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
-import { action, internalAction, internalQuery, type ActionCtx } from "./_generated/server";
+import { action, internalAction, internalQuery, type ActionCtx, type QueryCtx } from "./_generated/server";
 import { chicagoDay } from "./lib/ask";
 import { datastoreSql, datastoreSqlPage } from "./lib/ckan";
 import { POINTS_CAP, rankGroups, tallyPoints } from "./lib/cityPoints";
@@ -25,6 +25,13 @@ const vFilter = v.object({ column: v.string(), values: v.optional(v.array(v.stri
 const MAX_TRACT_SHAPES = 50; // the tract cards' cap (ui/lib/tractShapes.ts)
 
 // Named so the action below can type what it gets back (a function can't infer its own reference's result).
+// A fallback for when the City last updated a file: its newest member record's date (CKAN metadata_modified, which
+// can move without the data changing). The family's latestModified is the creation date, by design (cityFamilies.ts).
+export async function fileModified(ctx: QueryCtx, familyKey: string, fallback: string): Promise<string> {
+  const members = await ctx.db.query("members").withIndex("by_family", (q) => q.eq("familyKey", familyKey)).collect();
+  return members.reduce((newest, m) => (m.modified > newest ? m.modified : newest), "") || fallback;
+}
+
 type CountContext = { code: string; key: string; name: string; city: boolean; topic: string; profile: Doc<"cityProfiles"> | null; caveat: string | null } | null;
 
 export const countContext = internalQuery({

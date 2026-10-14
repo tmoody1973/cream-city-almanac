@@ -194,6 +194,8 @@ Residents want to understand their own block and neighborhood, see whether the C
 | What do people call 311 about most? | Call Center Data | **Now** (City count by request type) |
 | How fast does the Fire Department get to calls? | MFD Calls for Service | **Now** (how long) |
 | How long does a building permit take? | Permit Work Data | **Now** (how long) |
+| How long have vacant buildings been vacant? | Vacant Buildings | **Now** (age so far, L2) |
+| How long have open complaints against police and fire been waiting? | Citizen Complaints | **Now** (age so far, as of the file's last update, L2) |
 | Where are the libraries, and when are they open? | Libraries | **Now** |
 | When is garbage or recycling pickup? | DPW Sanitation | **Partly** (sheet and download; not in Ask's counts) |
 | Where are the bike lanes, streetcar stops and Bublr stations? | Bicycle Network, Streetcar, Bublr | **Partly** (maps and links) |
@@ -250,7 +252,7 @@ Residents want to understand their own block and neighborhood, see whether the C
 7. **311 by location.** The 311 file has no coordinates, so "requests near me" fails. Check whether the City publishes a located version.
 8. **More "how long" pairs.** Checked on 2026-10-14 (decision 044). Only 7 City datasets have two or more date columns.
    - **L1, done:** the Fire Department's current calls file (2024–2026) now measures time to dispatch and time on scene, alongside time to arrive.
-   - **Vacant buildings have no end date.** The file lists buildings vacant now, so it can say how long today's vacant buildings have been vacant, a "still open" measure (L2).
+   - **L2, done:** vacant buildings have no end date, so Ask says how long today's vacant buildings have been vacant, and how long open complaints have waited: "still open" ages to an as-of date (decision 045).
    - **Liquor licenses** run about a year by rule, so a term measures nothing.
    - **There is no DPW work-order file** on the portal.
    - **Still to do:** fire incidents across 2015–2023 (L3) and City employee tenure (L4).

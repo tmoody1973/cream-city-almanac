@@ -1,17 +1,19 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import { action, internalAction, internalQuery } from "./_generated/server";
+import { action, internalAction, internalQuery, type ActionCtx } from "./_generated/server";
 import { chicagoDay } from "./lib/ask";
 import { EMPTY_FILE_NOTE } from "./lib/cityProfile";
-import { datastoreSql } from "./lib/ckan";
+import { datastoreSql, resourceModified } from "./lib/ckan";
+import { fileModified } from "./city";
 import { buildSpan, SPAN_QUERY_TIMEOUT_MS } from "./lib/spanSql";
-import { pairsFor, SPAN_PAIRS } from "./lib/spanPairs";
+import { pairEnd, pairsFor, SPAN_PAIRS, type AgePair, type BetweenPair, type SpanPair } from "./lib/spanPairs";
 import { shapeSpan, type SpanAll, type SpanGroup } from "./lib/spanShape";
 import { rateLimiter } from "./limits";
 
-type PairOut = { id: string; name: string; things: string; toWhat: string; unit: "days" | "minutes"; missing: string; caveat: string; from: string; to: string };
+// Spelled out per kind: Omit over a union keeps only the shared keys and loses the kind narrowing.
+type PairOut = Omit<BetweenPair, "familyKey" | "file"> | Omit<AgePair, "familyKey" | "file">;
 export type SpanResult =
-  | { status: "ok"; code: string; name: string; pair: PairOut; groupBy: string | null; overlap: boolean; period: string; filters: string[]; coverage: string | null; columns: string[]; groups: SpanGroup[]; other: number; all: SpanAll }
+  | { status: "ok"; code: string; name: string; pair: PairOut; asOf: string | null; groupBy: string | null; overlap: boolean; period: string; filters: string[]; coverage: string | null; columns: string[]; groups: SpanGroup[]; other: number; all: SpanAll }
   | { status: "not-found"; code: string }
   | { status: "not-city" | "too-broad" | "unavailable"; code: string; name: string }
   | { status: "not-live"; code: string; name: string; note?: string }
@@ -44,8 +46,9 @@ export const timeSpan = action({
     const pairs = pairsFor(data.key);
     if (!pairs.length) return { status: "no-pair", code: data.code, name, files: FILES };
     const pair = asked ? pairs.find((p) => p.id === asked.trim()) : pairs.length === 1 ? pairs[0] : undefined;
-    if (!pair) return { status: "choose-pair", code: data.code, name, pairs: pairs.map((p) => ({ id: p.id, name: p.name, from: p.from, to: p.to })) };
-    const built = buildSpan(data.profile, pair, args, chicagoDay(Date.now()));
+    if (!pair) return { status: "choose-pair", code: data.code, name, pairs: pairs.map((p) => ({ id: p.id, name: p.name, from: p.from, to: pairEnd(p) })) };
+    const asOf = asOfDay(pair, pair.kind === "age" && pair.asOf === "file" ? await fileDate(ctx, data.profile.resourceId, data.key) : null, Date.now());
+    const built = buildSpan(data.profile, pair, args, chicagoDay(Date.now()), asOf ?? undefined);
     if (!built.ok) {
       const { ok: _ok, ...refusal } = built;
       return { ...refusal, code: data.code, name };
@@ -57,12 +60,36 @@ export const timeSpan = action({
       ]);
       const shaped = shapeSpan(groupRows, allRows[0], built.overlap, built.groupLabel === "year");
       const { familyKey: _k, file: _f, ...out } = pair;
-      return { status: "ok", code: data.code, name, pair: out, groupBy: built.groupLabel, overlap: built.overlap, period: built.period, filters: built.filterLabels, coverage: built.coverage, columns: built.columns, ...shaped };
+      return { status: "ok", code: data.code, name, pair: out, asOf, groupBy: built.groupLabel, overlap: built.overlap, period: built.period, filters: built.filterLabels, coverage: built.coverage, columns: built.columns, ...shaped };
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
       console.error(`City time span failed for ${data.code}: ${message}`);
       return { status: /Timed out/.test(message) ? "too-broad" : "unavailable", code: data.code, name };
     }
+  },
+});
+
+// The day an age is measured to (spec §6): today, or the Milwaukee day the City last changed the file; a between pair has
+// none. CKAN writes UTC without a zone ("2026-02-25T03:20:47"), so it is read as UTC; an unreadable date means today.
+export function asOfDay(pair: SpanPair, modified: string | null | undefined, now: number): string | null {
+  if (pair.kind !== "age") return null;
+  if (pair.asOf !== "file" || !modified) return chicagoDay(now);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(modified)) return modified;
+  const ms = Date.parse(/[zZ]|[+-]\d{2}:?\d{2}$/.test(modified) ? modified : `${modified}Z`);
+  return /^\d{4}-\d{2}-\d{2}T/.test(modified) && Number.isFinite(ms) ? chicagoDay(ms) : chicagoDay(now);
+}
+
+// A "file" age's date: the data file's own last_modified from the City; if that lookup fails, the newest member record.
+async function fileDate(ctx: ActionCtx, resourceId: string, familyKey: string): Promise<string | null> {
+  const live = await resourceModified(resourceId).catch(() => null);
+  return live ?? (await ctx.runQuery(internal.spans.modifiedFor, { familyKey }));
+}
+
+export const modifiedFor = internalQuery({
+  args: { familyKey: v.string() },
+  handler: async (ctx, { familyKey }): Promise<string | null> => {
+    const family = await ctx.db.query("families").withIndex("by_key", (q) => q.eq("key", familyKey)).first();
+    return family ? fileModified(ctx, familyKey, family.latestModified) : null;
   },
 });
 
@@ -80,7 +107,8 @@ export const checkPairs = internalAction({
     for (const pair of SPAN_PAIRS) {
       const profile = await ctx.runQuery(internal.spans.profileFor, { familyKey: pair.familyKey });
       if (!profile) { out.push({ id: pair.id, ok: false, error: "no profile" }); continue; }
-      const built = buildSpan(profile, pair, {}, chicagoDay(Date.now()));
+      const modified = pair.kind === "age" && pair.asOf === "file" ? await fileDate(ctx, profile.resourceId, pair.familyKey) : null;
+      const built = buildSpan(profile, pair, {}, chicagoDay(Date.now()), asOfDay(pair, modified, Date.now()) ?? undefined);
       if (!built.ok) { out.push({ id: pair.id, ok: false, error: built.status }); continue; }
       try {
         const rows = await datastoreSql<Record<string, unknown>>(built.allSql, SPAN_QUERY_TIMEOUT_MS);

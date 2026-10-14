@@ -18,6 +18,7 @@ export interface FakeOptions {
   cityFields?: { id: string; type: string }[];
   cityFieldsFor?: (rid: string) => { id: string; type: string }[] | undefined; // one file's columns, when files differ
   citySql?: (sql: string) => unknown[];
+  resourceModified?: string; // a City file's last_modified from resource_show; unset, the lookup fails
   citySqlTruncated?: (sql: string) => boolean; // the City's own row-limit flag
   cityDownloads?: Record<string, Uint8Array | number>; // a City download link → its bytes, or an HTTP status for a failure
   cityNeighborhoods?: unknown;
@@ -86,6 +87,9 @@ export function installFakeFetch(opts: FakeOptions = {}) {
       const start = Number(new URL(url).searchParams.get("start") ?? 0);
       const paged = catalog.result?.results ? { ...catalog, result: { ...catalog.result, results: catalog.result.results.slice(start) } } : catalog;
       return json(opts.cityStatus ?? 200, paged);
+    }
+    if (url.includes("data.milwaukee.gov/api/3/action/resource_show")) {
+      return opts.resourceModified ? json(200, { success: true, result: { last_modified: opts.resourceModified } }) : json(404, { success: false });
     }
     if (url.includes("data.milwaukee.gov/api/3/action/datastore_search_sql")) {
       const sql = new URL(url).searchParams.get("sql") ?? body?.sql ?? ""; // long SQL arrives in a POST body

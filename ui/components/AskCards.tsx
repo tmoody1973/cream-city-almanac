@@ -20,7 +20,7 @@ import { ShareLink, ShareScope } from "./ShareLink";
 import { countExport, measureExport, numberExport, quoteText, spanExport } from "@/ui/lib/cardExport";
 import { areaFollowUps, noTractsText, tooFewText } from "@/ui/lib/tractArea";
 import { MEASURE_HIDDEN, measureNotes, measureSummary, measureTitle, money, type MeasureOk } from "@/ui/lib/measureText";
-import { cellTime, spanNotes, spanRows, spanSummary, spanTitle, type SpanOk } from "@/ui/lib/spanText";
+import { spanCells, spanColumns, spanNotes, spanRows, spanSummary, spanTitle, type SpanOk } from "@/ui/lib/spanText";
 import { changeFollowUps, countFollowUps, datasetFollowUps, numberFollowUps, previewFollowUps, rankFollowUps, relateFollowUps, spanFollowUps, measureFollowUps } from "@/ui/lib/nextQuestions";
 import { changeChoices, countChoices, numberChoices, rankChoices, relateChoices, spanChoices, measureChoices, refusalChoicesFor } from "@/ui/lib/refusalChoices";
 import { FactSheetCard } from "./FactSheetCard";
@@ -270,7 +270,6 @@ function CountCard({ r, id, onOpen, noMap, args }: { r: CountOk; id?: string; on
 // comes from the City's server through code, never the AI.
 function SpanCard({ r, onOpen }: { r: SpanOk; onOpen: Open }) {
   const { warning, notes } = spanNotes(r);
-  const u = r.pair.unit;
   const rows = spanRows(r);
   return (
     <figure className={styles.excerpt} data-card="span">
@@ -281,13 +280,12 @@ function SpanCard({ r, onOpen }: { r: SpanOk; onOpen: Open }) {
       <div className={styles.tractScroll} tabIndex={0} role="region" aria-label={`${spanTitle(r)}, scroll sideways for more`}>
       <table className={styles.excerptTable}>
         <thead>
-          <tr><th scope="col">{r.groupBy === "year" ? "Year" : r.groupBy ?? ""}</th><th scope="col">Cases</th><th scope="col">Median</th><th scope="col">9 in 10 within</th><th scope="col">Still open</th></tr>
+          <tr><th scope="col">{r.groupBy === "year" ? "Year" : r.groupBy ?? ""}</th>{spanColumns(r).map((c) => <th key={c} scope="col">{c}</th>)}</tr>
         </thead>
         <tbody>
-          {rows.map((g, i) => (
-            <tr key={i}><th scope="row">{g.label}</th><td>{g.cases.toLocaleString("en-US")}</td><td>{g.rest ? "" : cellTime(g, g.median, u)}</td><td>{g.rest ? "" : cellTime(g, g.p90, u)}</td><td>{g.open === null ? "" : g.open.toLocaleString("en-US")}</td></tr>
+          {[...rows, { ...r.all, rest: false }].map((g, i) => (
+            <tr key={i}><th scope="row">{g.label}</th>{spanCells(r, g).map((c, j) => <td key={j}>{c}</td>)}</tr>
           ))}
-          <tr><th scope="row">All</th><td>{r.all.cases.toLocaleString("en-US")}</td><td>{cellTime(r.all, r.all.median, u)}</td><td>{cellTime(r.all, r.all.p90, u)}</td><td>{r.all.open.toLocaleString("en-US")}</td></tr>
         </tbody>
       </table>
       </div>

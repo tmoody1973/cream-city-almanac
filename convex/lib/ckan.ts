@@ -86,3 +86,10 @@ export async function datastoreSqlPage<T>(sql: string, timeoutMs = QUERY_TIMEOUT
 export async function datastoreSql<T>(sql: string, timeoutMs?: number): Promise<T[]> {
   return (await datastoreSqlPage<T>(sql, timeoutMs)).records;
 }
+
+// When the City last changed one data file (resource_show's last_modified). The package's metadata_modified moves
+// daily even on static files (cityFamilies.ts), so an "as of the file's last update" date must come from here.
+export async function resourceModified(id: string): Promise<string | null> {
+  const r = await action<{ last_modified?: string | null }>("resource_show", { id }, QUERY_TIMEOUT_MS);
+  return r.last_modified ?? null;
+}

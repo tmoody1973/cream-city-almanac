@@ -32,7 +32,7 @@ const present = (c: string) => { const q = quoteId(c); return `(${q} IS NOT NULL
 // 9.5–10.5s on the City's server (2026-10-14), past the 10s default.
 export const SPAN_QUERY_TIMEOUT_MS = 25_000;
 
-export function buildSpan(p: CityProfile, pair: SpanPair, a: SpanArgs, today: string): SpanBuilt {
+export function buildSpan(p: CityProfile, pair: SpanPair, a: SpanArgs, today: string, asOf?: string): SpanBuilt {
   if (!RID.test(p.resourceId)) throw new Error("Not a CKAN resource id");
   const table = quoteId(p.resourceId);
   const askedFrom = absent(a.from) ? undefined : a.from!;
@@ -78,17 +78,30 @@ export function buildSpan(p: CityProfile, pair: SpanPair, a: SpanArgs, today: st
   if (askedTo) outer.push(`f < ${lit(addDays(askedTo, 1))}`);
   const period = askedFrom && askedTo ? `${human(askedFrom)} – ${human(askedTo)}` : askedFrom ? `since ${human(askedFrom)}` : askedTo ? `through ${human(askedTo)}` : "all records";
 
+  // An age (L2) runs to the end of its as-of day; a later "from" date is a record dated after it, never a negative age.
+  const age = pair.kind === "age";
+  const cutoff = age ? `${lit(addDays(asOf ?? today, 1))}::timestamp` : "";
+  if (age && pair.openWhen) inner.push(`NOT ${present(pair.openWhen)}`);
   const innerSql = (grouped: boolean) =>
-    `SELECT ${readDate(pair.from)} AS f, ${readDate(pair.to)} AS t, ${present(pair.from)} AS hf, ${present(pair.to)} AS ht${grouped && g ? `, ${g} AS g` : ""} FROM ${table}${inner.length ? ` WHERE ${inner.join(" AND ")}` : ""}`;
-  const d = `CASE WHEN t >= f THEN date_part('epoch', t - f) / ${PER[pair.unit]} END`;
-  const measures = [
-    "SUM(CASE WHEN t >= f THEN 1 ELSE 0 END) AS cases",
-    `percentile_cont(0.5) WITHIN GROUP (ORDER BY ${d}) AS median`,
-    `percentile_cont(0.9) WITHIN GROUP (ORDER BY ${d}) AS p90`,
-    "SUM(CASE WHEN hf AND NOT ht THEN 1 ELSE 0 END) AS open",
-    "SUM(CASE WHEN (hf AND f IS NULL) OR (ht AND t IS NULL) THEN 1 ELSE 0 END) AS unreadable",
-    "SUM(CASE WHEN t < f THEN 1 ELSE 0 END) AS backwards",
-  ].join(", ");
+    `SELECT ${readDate(pair.from)} AS f, ${pair.kind === "between" ? `${readDate(pair.to)} AS t, ` : ""}${present(pair.from)} AS hf${pair.kind === "between" ? `, ${present(pair.to)} AS ht` : ""}${grouped && g ? `, ${g} AS g` : ""} FROM ${table}${inner.length ? ` WHERE ${inner.join(" AND ")}` : ""}`;
+  const d = age ? `CASE WHEN f < ${cutoff} THEN date_part('epoch', ${cutoff} - f) / 86400 END` : `CASE WHEN t >= f THEN date_part('epoch', t - f) / ${PER[pair.unit]} END`;
+  const measures = (age
+    ? [
+        `SUM(CASE WHEN f < ${cutoff} THEN 1 ELSE 0 END) AS cases`,
+        `percentile_cont(0.5) WITHIN GROUP (ORDER BY ${d}) AS median`,
+        `percentile_cont(0.9) WITHIN GROUP (ORDER BY ${d}) AS p90`,
+        "0 AS open",
+        "SUM(CASE WHEN hf AND f IS NULL THEN 1 ELSE 0 END) AS unreadable",
+        `SUM(CASE WHEN f >= ${cutoff} THEN 1 ELSE 0 END) AS backwards`,
+      ]
+    : [
+        "SUM(CASE WHEN t >= f THEN 1 ELSE 0 END) AS cases",
+        `percentile_cont(0.5) WITHIN GROUP (ORDER BY ${d}) AS median`,
+        `percentile_cont(0.9) WITHIN GROUP (ORDER BY ${d}) AS p90`,
+        "SUM(CASE WHEN hf AND NOT ht THEN 1 ELSE 0 END) AS open",
+        "SUM(CASE WHEN (hf AND f IS NULL) OR (ht AND t IS NULL) THEN 1 ELSE 0 END) AS unreadable",
+        "SUM(CASE WHEN t < f THEN 1 ELSE 0 END) AS backwards",
+      ]).join(", ");
   const where = outer.length ? ` WHERE ${outer.join(" AND ")}` : "";
   const allSql = `SELECT ${measures} FROM (${innerSql(false)}) s${where}`;
   const groupSql = key
