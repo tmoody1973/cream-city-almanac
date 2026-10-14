@@ -73,6 +73,8 @@ import type * as lib_turnout from "../lib/turnout.js";
 import type * as lib_turnoutMath from "../lib/turnoutMath.js";
 import type * as lib_types from "../lib/types.js";
 import type * as lib_xlsx from "../lib/xlsx.js";
+import type * as lib_zipFigures from "../lib/zipFigures.js";
+import type * as lib_zips from "../lib/zips.js";
 import type * as limits from "../limits.js";
 import type * as map from "../map.js";
 import type * as places from "../places.js";
@@ -84,6 +86,7 @@ import type * as spans from "../spans.js";
 import type * as stops from "../stops.js";
 import type * as tracts from "../tracts.js";
 import type * as validators from "../validators.js";
+import type * as zips from "../zips.js";
 
 import type {
   ApiFromModules,
@@ -157,6 +160,8 @@ declare const fullApi: ApiFromModules<{
   "lib/turnoutMath": typeof lib_turnoutMath;
   "lib/types": typeof lib_types;
   "lib/xlsx": typeof lib_xlsx;
+  "lib/zipFigures": typeof lib_zipFigures;
+  "lib/zips": typeof lib_zips;
   limits: typeof limits;
   map: typeof map;
   places: typeof places;
@@ -168,6 +173,7 @@ declare const fullApi: ApiFromModules<{
   stops: typeof stops;
   tracts: typeof tracts;
   validators: typeof validators;
+  zips: typeof zips;
 }>;
 
 /**
