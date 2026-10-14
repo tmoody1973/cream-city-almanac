@@ -80,6 +80,6 @@ describe("checkPairs", () => {
     const out = await t.action(internal.spans.checkPairs, {});
     expect(out.find((x) => x.id === "complaint-close")).toMatchObject({ ok: true, all: { cases: 2731 } });
     expect(out.find((x) => x.id === "311-close")).toMatchObject({ ok: false, error: "no profile" });
-    expect(out).toHaveLength(7);
+    expect(out).toHaveLength(9); // one result per approved pair (L1 added two)
   });
 });

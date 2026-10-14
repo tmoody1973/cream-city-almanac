@@ -43,6 +43,19 @@ describe("the span query", () => {
   it("measures minutes for a minutes pair", () => {
     expect(ok(buildSpan(FIRE, arrive, {}, TODAY)).allSql).toContain("/ 60 END");
   });
+  it("measures the Fire Department's dispatch and on-scene times from their own columns (L1)", () => {
+    const pair = (id: string) => SPAN_PAIRS.find((p) => p.id === id)!;
+    const MFD: CityProfile = { ...P, familyKey: "city:mfd-calls-for-service-detail", dateColumn: "IncidentStarted", categories: [] };
+    const dispatch = ok(buildSpan(MFD, pair("mfd-dispatch"), {}, TODAY)).allSql;
+    expect(dispatch).toContain('"IncidentStarted"');
+    expect(dispatch).toContain('"FirstUnitDispatched"');
+    expect(dispatch).toContain("/ 60 END");
+    // On scene starts at arrival: a call no unit reached has no start, so it is neither measured nor counted as open.
+    const scene = ok(buildSpan(MFD, pair("mfd-close"), {}, TODAY)).allSql;
+    expect(scene).toContain('"FirstUnitArrived"');
+    expect(scene).toContain('"IncidentClosed"');
+    expect(scene).not.toContain('"IncidentStarted"');
+  });
   it("groups by a column, merging labels that differ only in capitals and punctuation", () => {
     const b = ok(buildSpan(P, complaints, { groupBy: "department" }, TODAY));
     expect(b.groupSql).toContain(`"Department" AS g`);
