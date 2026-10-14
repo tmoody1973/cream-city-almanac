@@ -10,6 +10,7 @@
 - **Liquor licenses** have start and expiry dates, but a license runs about a year by rule. The "term" would measure the rule, not anything that varies.
 - **There is no DPW work-order file** on the portal.
 - **The Fire Department's current calls file** (350,530 calls, February 2024 to September 2026) has clean dispatch and close times, but Ask measured only time to arrive. 96% of calls have a dispatch time; all but 6 have a close time.
+- **Whole-file medians on that file take 9.5–10.5 seconds** on the City's server, past the 10-second limit Ask gave every City query. Time to dispatch failed outright, and the existing time to arrive was on the edge. "How long" queries now get 25 seconds.
 
 **Options:**
 - **Build the original three anyway.** That means inventing an end date for vacant buildings and publishing a liquor "term" that is always about a year. Misleading.

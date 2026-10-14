@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { CityProfile } from "../../convex/lib/cityProfile";
 import { SPAN_PAIRS } from "../../convex/lib/spanPairs";
-import { buildSpan, readDate } from "../../convex/lib/spanSql";
+import { buildSpan, readDate, SPAN_QUERY_TIMEOUT_MS } from "../../convex/lib/spanSql";
 
 const RID = "5cb9ea51-c23f-4171-ad2d-9e9b1bfde280";
 const complaints = SPAN_PAIRS.find((p) => p.id === "complaint-close")!;
@@ -17,6 +17,13 @@ const P: CityProfile = {
 const FIRE: CityProfile = { ...P, familyKey: arrive.familyKey, dateColumn: "Date_Received", minDate: "2021-01-01", maxDate: "2021-12-31", updatedAt: Date.parse("2026-10-01"), categories: [{ column: "ZIP_Code", values: [{ value: "53206", count: 900 }] }] };
 const TODAY = "2026-10-12";
 const ok = (b: ReturnType<typeof buildSpan>) => { if (!b.ok) throw new Error(`refused: ${b.status}`); return b; };
+
+describe("the City's time limit", () => {
+  // A whole-file median on the Fire Department's 350,000 calls took 9.5–10.5s on the City's server (2026-10-14).
+  it("gives span queries well past the 10s default", () => {
+    expect(SPAN_QUERY_TIMEOUT_MS).toBeGreaterThanOrEqual(25_000);
+  });
+});
 
 describe("reading dates", () => {
   it("reads ISO and month/day/year text, with the year floor inside the pattern", () => {
