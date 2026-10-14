@@ -3,22 +3,17 @@ import rateLimiterTest from "@convex-dev/rate-limiter/test";
 import { convexTest } from "convex-test";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { installFakeFetch } from "../tests/helpers/fakeFetch";
+import { RID, reader, seedNibrs } from "../tests/helpers/citySeed";
 import { api } from "./_generated/api";
 import schema from "./schema";
 
 const modules = import.meta.glob("./**/*.*s");
-const RID = "87843297-a6fa-46d4-ba5d-cb342fb2d3bb";
-const reader = { subject: "u1", issuer: "test", tokenIdentifier: "test|u1" };
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 
 async function seed(withProfile = true) {
   const t = convexTest(schema, modules);
   rateLimiterTest.register(t);
-  await t.run(async (ctx) => {
-    await ctx.db.insert("families", { key: "city:nibrs-crime-data", code: "P01", name: "NIBRS Crime Data", kind: "dataset", topic: "Public Safety", keywords: [], places: ["City"], years: [], latestModified: "2023-01-05", baseSearchText: "", searchText: "", dictionaryTab: null, source: "city", live: true });
-    await ctx.db.insert("cards", { familyKey: "city:nibrs-crime-data", inputHash: "h", explainer: "x", explainerProvenance: "AI", hubSummary: "", glossary: [], caveats: ["These are reported incidents, not all crime."], storyAngles: [], basic: false, embedding: new Array(1536).fill(0) });
-    if (withProfile) await ctx.db.insert("cityProfiles", { familyKey: "city:nibrs-crime-data", resourceId: RID, columns: [], dateColumn: "Incident_Date", latColumn: "Address_Latitude", lonColumn: "Address_Longitude", districtColumns: ["Police_District"], categories: [{ column: "Police_District", values: [{ value: "6", count: 5 }] }, { column: "Offense_All", values: [{ value: "120", count: 5 }, { value: "13A", count: 3 }], multi: true }], rowCount: 10, minDate: "2024-01-01", maxDate: "2026-10-08", namesPeople: false, resourceName: "2025", signature: "s", updatedAt: 0 });
-  });
+  await t.run((ctx) => seedNibrs(ctx, withProfile));
   return t;
 }
 

@@ -79,6 +79,7 @@ import type * as places from "../places.js";
 import type * as property from "../property.js";
 import type * as search from "../search.js";
 import type * as settings from "../settings.js";
+import type * as shares from "../shares.js";
 import type * as spans from "../spans.js";
 import type * as stops from "../stops.js";
 import type * as tracts from "../tracts.js";
@@ -162,6 +163,7 @@ declare const fullApi: ApiFromModules<{
   property: typeof property;
   search: typeof search;
   settings: typeof settings;
+  shares: typeof shares;
   spans: typeof spans;
   stops: typeof stops;
   tracts: typeof tracts;

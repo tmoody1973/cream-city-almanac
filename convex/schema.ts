@@ -207,4 +207,7 @@ export default defineSchema({
   // Ask keeps only counts: questions per account per day, and the site's spend per day (America/Chicago).
   askCounts: defineTable({ day: v.string(), user: v.string(), questions: v.number() }).index("by_day_user", ["day", "user"]),
   askSpend: defineTable({ day: v.string(), usd: v.number() }).index("by_day", ["day"]),
+  // Share links (spec 2026-10-14-share-link-design.md §6): a server-built snapshot of one card. `by` traces a bad link;
+  // the public query never returns it. No arguments, question or reply are stored.
+  shares: defineTable({ shareId: v.string(), kind: v.string(), card: v.string(), createdAt: v.number(), by: v.string() }).index("by_shareId", ["shareId"]),
 });
