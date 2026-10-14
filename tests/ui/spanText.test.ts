@@ -139,3 +139,20 @@ it("asks an age question after an age card (L2)", () => {
     expect(spanFollowUps({ code: "B12" } as never, r)[0].question).toBe("How long have buildings been on the vacant list in Vacant Buildings (B12), by year? (pair vacant-age)");
   });
 });
+
+describe("pick-one buttons keep the measure that was asked (L2 review fix)", () => {
+  const where = { code: "P24", name: "Citizen Complaints" };
+  it("names the asked entry after a bad column or a value choice", () => {
+    const bad = spanChoices({ code: "P24", pair: "complaint-open-age" }, { status: "bad-column", ...where, columns: ["Department"] });
+    expect(bad[0].question).toBe("How long does it take in Citizen Complaints (P24), by Department? (pair complaint-open-age)");
+    const pick = spanChoices({ code: "P24", pair: "complaint-open-age" }, { status: "choose", ...where, column: "Department", choices: ["Milwaukee Police Department"] });
+    expect(pick[0].question).toBe("How long does it take in Citizen Complaints (P24), only Department Milwaukee Police Department? (pair complaint-open-age)");
+  });
+  it("keeps the split and period when asking which measure", () => {
+    const c = spanChoices({ code: "P24", groupBy: "Department", from: "2024-01-01" }, { status: "choose-pair", ...where, pairs: [{ id: "complaint-close", name: "time to close" }, { id: "complaint-open-age", name: "time open so far" }] });
+    expect(c.map((x) => x.question)).toEqual([
+      "How long is the time to close in Citizen Complaints (P24), by Department, from 2024-01-01? (pair complaint-close)",
+      "How long is the time open so far in Citizen Complaints (P24), by Department, from 2024-01-01? (pair complaint-open-age)",
+    ]);
+  });
+});

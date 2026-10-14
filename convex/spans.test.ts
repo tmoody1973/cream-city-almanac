@@ -92,16 +92,22 @@ describe("ages (L2)", () => {
     installFakeFetch({ citySql: () => all });
     expect(await t.withIdentity(reader).action(api.spans.timeSpan, { code: "P24" })).toMatchObject({ status: "choose-pair", pairs: [{ id: "complaint-close", to: "Date Closed" }, { id: "complaint-open-age", to: "as of the file's last update" }] });
   });
-  it("measures open complaints to the file's last update, from its member record, not the family's stale date", async () => {
-    const t = await seed(); // the complaints family's latestModified is 2025-10-01; live it was 2019 while the City updated in 2026
+  it("measures open complaints to the Chicago day the City last changed the data file (review fix)", async () => {
+    const t = await seed();
+    let sql = "";
+    // The file's own last_modified (UTC, no zone): 03:20 UTC on Feb 25 is the evening of Feb 24 in Milwaukee.
+    installFakeFetch({ resourceModified: "2026-02-25T03:20:47.682186", citySql: (s) => { sql = s; return [{ cases: "98", median: "300", p90: "500", open: "0", unreadable: "0", backwards: "0" }]; } });
+    const r = await t.withIdentity(reader).action(api.spans.timeSpan, { code: "P24", pair: "complaint-open-age" });
+    expect(r).toMatchObject({ status: "ok", asOf: "2026-02-24", pair: { kind: "age", id: "complaint-open-age" }, all: { cases: 98, median: 300 } });
+    expect(sql).toContain("'2026-02-25'::timestamp");
+  });
+  it("falls back to the newest member record when the City's file lookup fails, not the family's creation date", async () => {
+    const t = await seed(); // the complaints family's latestModified is 2025-10-01 (live it is the 2019 creation date)
     await t.run(async (ctx) => {
       await ctx.db.insert("members", { familyKey: KEY, hubId: "m1", title: "Citizen Complaints", yearLabel: "", featureServerUrl: "", kind: "dataset", landingPage: "", place: "City", years: [], modified: "2026-03-13T21:07:03.024554", downloads: {}, description: "", keywords: [], files: [] });
     });
-    let sql = "";
-    installFakeFetch({ citySql: (s) => { sql = s; return [{ cases: "98", median: "300", p90: "500", open: "0", unreadable: "0", backwards: "0" }]; } });
-    const r = await t.withIdentity(reader).action(api.spans.timeSpan, { code: "P24", pair: "complaint-open-age" });
-    expect(r).toMatchObject({ status: "ok", asOf: "2026-03-13", pair: { kind: "age", id: "complaint-open-age" }, all: { cases: 98, median: 300 } });
-    expect(sql).toContain("'2026-03-14'::timestamp");
+    installFakeFetch({ citySql: () => [{ cases: "98", median: "300", p90: "500", open: "0", unreadable: "0", backwards: "0" }] });
+    expect(await t.withIdentity(reader).action(api.spans.timeSpan, { code: "P24", pair: "complaint-open-age" })).toMatchObject({ status: "ok", asOf: "2026-03-13" });
   });
   it("falls back to today when the file's date can't be read", () => {
     expect(asOfDay(SPAN_PAIRS.find((p) => p.id === "complaint-open-age")!, "unknown", Date.parse("2026-10-14T15:00:00Z"))).toBe("2026-10-14");

@@ -53,6 +53,7 @@ describe("timeSpan", () => {
     expect(spanDescription()).toContain("citizen complaints against the Police and Fire Departments");
     // L2 graded run: the model read an age's "backwards" count as "dates that run backwards" and repeated "9 in 10".
     expect(spanDescription()).toContain("For an age entry, all.backwards counts records dated after the as-of date");
+    expect(spanDescription()).toContain("Every case an age counts is still open, so ignore its all.open"); // review fix: not "none are open"
     expect(spanDescription()).toContain("age vacant-age: DATEOPENED → as of today");
     expect(ASK_PROMPT).toContain("don't restate its times or counts (not even \"9 in 10\")");
   });

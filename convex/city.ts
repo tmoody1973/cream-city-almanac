@@ -25,21 +25,21 @@ const vFilter = v.object({ column: v.string(), values: v.optional(v.array(v.stri
 const MAX_TRACT_SHAPES = 50; // the tract cards' cap (ui/lib/tractShapes.ts)
 
 // Named so the action below can type what it gets back (a function can't infer its own reference's result).
-// When the City last updated a file: its newest member record's date. The family's latestModified can be years stale
-// (citizen complaints read 2019 while the City updated the file in 2026, found 2026-10-14).
+// A fallback for when the City last updated a file: its newest member record's date (CKAN metadata_modified, which
+// can move without the data changing). The family's latestModified is the creation date, by design (cityFamilies.ts).
 export async function fileModified(ctx: QueryCtx, familyKey: string, fallback: string): Promise<string> {
   const members = await ctx.db.query("members").withIndex("by_family", (q) => q.eq("familyKey", familyKey)).collect();
   return members.reduce((newest, m) => (m.modified > newest ? m.modified : newest), "") || fallback;
 }
 
-type CountContext = { code: string; key: string; name: string; city: boolean; topic: string; modified: string; profile: Doc<"cityProfiles"> | null; caveat: string | null } | null;
+type CountContext = { code: string; key: string; name: string; city: boolean; topic: string; profile: Doc<"cityProfiles"> | null; caveat: string | null } | null;
 
 export const countContext = internalQuery({
   args: { code: v.string() },
   handler: async (ctx, { code }): Promise<CountContext> => {
     const family = await ctx.db.query("families").withIndex("by_code", (q) => q.eq("code", code)).first();
     if (!family) return null;
-    const base = { code: family.code, key: family.key, name: family.name, city: family.source === "city", topic: family.topic, modified: await fileModified(ctx, family.key, family.latestModified) };
+    const base = { code: family.code, key: family.key, name: family.name, city: family.source === "city", topic: family.topic };
     if (!base.city) return { ...base, profile: null, caveat: null };
     const profile = await ctx.db.query("cityProfiles").withIndex("by_family", (q) => q.eq("familyKey", family.key)).first();
     const card = await ctx.db.query("cards").withIndex("by_family", (q) => q.eq("familyKey", family.key)).first();

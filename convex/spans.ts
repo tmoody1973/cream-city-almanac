@@ -1,9 +1,9 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import { action, internalAction, internalQuery } from "./_generated/server";
+import { action, internalAction, internalQuery, type ActionCtx } from "./_generated/server";
 import { chicagoDay } from "./lib/ask";
 import { EMPTY_FILE_NOTE } from "./lib/cityProfile";
-import { datastoreSql } from "./lib/ckan";
+import { datastoreSql, resourceModified } from "./lib/ckan";
 import { fileModified } from "./city";
 import { buildSpan, SPAN_QUERY_TIMEOUT_MS } from "./lib/spanSql";
 import { pairEnd, pairsFor, SPAN_PAIRS, type AgePair, type BetweenPair, type SpanPair } from "./lib/spanPairs";
@@ -47,7 +47,7 @@ export const timeSpan = action({
     if (!pairs.length) return { status: "no-pair", code: data.code, name, files: FILES };
     const pair = asked ? pairs.find((p) => p.id === asked.trim()) : pairs.length === 1 ? pairs[0] : undefined;
     if (!pair) return { status: "choose-pair", code: data.code, name, pairs: pairs.map((p) => ({ id: p.id, name: p.name, from: p.from, to: pairEnd(p) })) };
-    const asOf = asOfDay(pair, data.modified, Date.now());
+    const asOf = asOfDay(pair, pair.kind === "age" && pair.asOf === "file" ? await fileDate(ctx, data.profile.resourceId, data.key) : null, Date.now());
     const built = buildSpan(data.profile, pair, args, chicagoDay(Date.now()), asOf ?? undefined);
     if (!built.ok) {
       const { ok: _ok, ...refusal } = built;
@@ -69,11 +69,20 @@ export const timeSpan = action({
   },
 });
 
-// The day an age is measured to (spec §6): today, or the day the City last updated the file; a between pair has none.
-export function asOfDay(pair: SpanPair, modified: string | undefined, now: number): string | null {
+// The day an age is measured to (spec §6): today, or the Milwaukee day the City last changed the file; a between pair has
+// none. CKAN writes UTC without a zone ("2026-02-25T03:20:47"), so it is read as UTC; an unreadable date means today.
+export function asOfDay(pair: SpanPair, modified: string | null | undefined, now: number): string | null {
   if (pair.kind !== "age") return null;
-  const day = modified?.slice(0, 10);
-  return pair.asOf === "file" && day && /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : chicagoDay(now);
+  if (pair.asOf !== "file" || !modified) return chicagoDay(now);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(modified)) return modified;
+  const ms = Date.parse(/[zZ]|[+-]\d{2}:?\d{2}$/.test(modified) ? modified : `${modified}Z`);
+  return /^\d{4}-\d{2}-\d{2}T/.test(modified) && Number.isFinite(ms) ? chicagoDay(ms) : chicagoDay(now);
+}
+
+// A "file" age's date: the data file's own last_modified from the City; if that lookup fails, the newest member record.
+async function fileDate(ctx: ActionCtx, resourceId: string, familyKey: string): Promise<string | null> {
+  const live = await resourceModified(resourceId).catch(() => null);
+  return live ?? (await ctx.runQuery(internal.spans.modifiedFor, { familyKey }));
 }
 
 export const modifiedFor = internalQuery({
@@ -98,8 +107,8 @@ export const checkPairs = internalAction({
     for (const pair of SPAN_PAIRS) {
       const profile = await ctx.runQuery(internal.spans.profileFor, { familyKey: pair.familyKey });
       if (!profile) { out.push({ id: pair.id, ok: false, error: "no profile" }); continue; }
-      const modified = await ctx.runQuery(internal.spans.modifiedFor, { familyKey: pair.familyKey });
-      const built = buildSpan(profile, pair, {}, chicagoDay(Date.now()), asOfDay(pair, modified ?? undefined, Date.now()) ?? undefined);
+      const modified = pair.kind === "age" && pair.asOf === "file" ? await fileDate(ctx, profile.resourceId, pair.familyKey) : null;
+      const built = buildSpan(profile, pair, {}, chicagoDay(Date.now()), asOfDay(pair, modified, Date.now()) ?? undefined);
       if (!built.ok) { out.push({ id: pair.id, ok: false, error: built.status }); continue; }
       try {
         const rows = await datastoreSql<Record<string, unknown>>(built.allSql, SPAN_QUERY_TIMEOUT_MS);
