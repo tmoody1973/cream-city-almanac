@@ -5,11 +5,11 @@ import { chicagoDay } from "./lib/ask";
 import { EMPTY_FILE_NOTE } from "./lib/cityProfile";
 import { datastoreSql } from "./lib/ckan";
 import { buildSpan, SPAN_QUERY_TIMEOUT_MS } from "./lib/spanSql";
-import { pairsFor, SPAN_PAIRS } from "./lib/spanPairs";
+import { pairEnd, pairsFor, SPAN_PAIRS, type SpanPair } from "./lib/spanPairs";
 import { shapeSpan, type SpanAll, type SpanGroup } from "./lib/spanShape";
 import { rateLimiter } from "./limits";
 
-type PairOut = { id: string; name: string; things: string; toWhat: string; unit: "days" | "minutes"; missing: string; caveat: string; from: string; to: string };
+type PairOut = Omit<SpanPair, "familyKey" | "file">;
 export type SpanResult =
   | { status: "ok"; code: string; name: string; pair: PairOut; groupBy: string | null; overlap: boolean; period: string; filters: string[]; coverage: string | null; columns: string[]; groups: SpanGroup[]; other: number; all: SpanAll }
   | { status: "not-found"; code: string }
@@ -44,7 +44,7 @@ export const timeSpan = action({
     const pairs = pairsFor(data.key);
     if (!pairs.length) return { status: "no-pair", code: data.code, name, files: FILES };
     const pair = asked ? pairs.find((p) => p.id === asked.trim()) : pairs.length === 1 ? pairs[0] : undefined;
-    if (!pair) return { status: "choose-pair", code: data.code, name, pairs: pairs.map((p) => ({ id: p.id, name: p.name, from: p.from, to: p.to })) };
+    if (!pair) return { status: "choose-pair", code: data.code, name, pairs: pairs.map((p) => ({ id: p.id, name: p.name, from: p.from, to: pairEnd(p) })) };
     const built = buildSpan(data.profile, pair, args, chicagoDay(Date.now()));
     if (!built.ok) {
       const { ok: _ok, ...refusal } = built;

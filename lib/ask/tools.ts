@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { FunctionReturnType } from "convex/server";
 import type { api } from "../../convex/_generated/api";
 import type { SearchResponse } from "../../convex/lib/types";
-import { SPAN_PAIRS } from "../../convex/lib/spanPairs";
+import { pairEnd, SPAN_PAIRS } from "../../convex/lib/spanPairs";
 import { CITY_MEASURES } from "../../convex/lib/cityMeasures";
 import { BOUNDARY_KINDS } from "../../convex/lib/boundaries";
 
@@ -110,9 +110,9 @@ export function measureSentence(): string {
 export function spanDescription(): string {
   const files = [...new Set(SPAN_PAIRS.map((p) => p.file))].map((file) => {
     const ps = SPAN_PAIRS.filter((p) => p.file === file);
-    return `${file}: ${ps.map((p) => `${p.name} (pair ${p.id}: ${p.from} → ${p.to})`).join("; ")}`;
+    return `${file}: ${ps.map((p) => `${p.name} (${p.kind === "age" ? "age" : "pair"} ${p.id}: ${p.from} → ${pairEnd(p)})`).join("; ")}`;
   });
-  return `Measure how long things take between two dates in a City of Milwaukee file: per group, the number of cases, the median (half took less) and the time 9 in 10 took less than, plus how many are still open or have unreadable dates. Only these files and pairs: ${files.join(". ")}. Find the file's code with searchCatalog first. Split by "year" or one of the file's columns; limit to a period with from/to. If it returns choose-pair or columns, pick and call again. If no-pair, tell the person this file has no from-and-to dates to measure and name the files that do. Never compute, average or estimate times yourself; the card shows them.`;
+  return `Measure how long things take between two dates in a City of Milwaukee file: per group, the number of cases, the median (half took less) and the time 9 in 10 took less than, plus how many are still open or have unreadable dates. Age entries measure how long the cases still open have been open, up to an as-of date: use them for "how long has … been open, vacant or waiting". Only these files and pairs: ${files.join(". ")}. Find the file's code with searchCatalog first. Split by "year" or one of the file's columns; limit to a period with from/to. If it returns choose-pair or columns, pick and call again. If no-pair, tell the person this file has no from-and-to dates to measure and name the files that do. Never compute, average or estimate times yourself; the card shows them.`;
 }
 
 const place = z.enum(["City", "County"]).describe("City or County, as the dataset's sheet lists it");
