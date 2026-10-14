@@ -10,6 +10,7 @@ const backend = (relateResult: unknown): AskBackend => ({
   boundaries: async () => ({ status: "not-loaded" }) as never,
   stops: async () => ({ status: "refused", reason: "" }) as never,
   turnout: async () => ({ status: "refused", reason: "" }) as never,
+  zip: async () => ({ status: "busy" }) as never,
 });
 
 const row = (i: number) => ({ geoid: `5507910${String(i).padStart(4, "0")}`, tract: String(i), neighborhood: "Harambee", value: 41.2, lo: 35.1, hi: 47.3, unreliable: false });
@@ -143,5 +144,25 @@ describe("countTurnout (K4)", () => {
     expect(tool.description).toMatch(/turnout/i);
     expect(tool.description).toMatch(/district/i); // says districts aren't available
     expect(Object.keys(tool.parameters.shape).sort()).toEqual(["from", "groupBy", "order", "to", "type", "ward"]);
+  });
+});
+
+describe("zipProfile (Z1)", () => {
+  it("offers zipProfile for ZIP questions and never adding up tracts", async () => {
+    let asked: unknown;
+    const tool = askTools({ ...backend({}), zip: async (a) => { asked = a; return { status: "busy" } as never; } }).find((t) => t.name === "zipProfile")!;
+    expect(tool.description).toMatch(/ZIP/);
+    expect(tool.description).toMatch(/never .*add(ing)? up tracts/i);
+    await tool.execute({ zip: "53228" } as never);
+    expect(asked).toEqual({ zip: "53228" });
+  });
+});
+
+describe("zipProfile steering (Z1 review)", () => {
+  it("tells the model when to lead with the ZIP being mostly outside the City, in the fields it sees", () => {
+    const tool = askTools(backend({})).find((t) => t.name === "zipProfile")!;
+    expect(tool.description).toMatch(/cityShare is below 0\.5/);
+    expect(tool.description).toMatch(/mainPlace/);
+    expect(ASK_PROMPT).toMatch(/zipProfile[^\n]*cityShare is below 0\.5/);
   });
 });

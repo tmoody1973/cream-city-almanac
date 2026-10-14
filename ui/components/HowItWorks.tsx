@@ -97,6 +97,11 @@ export function HowItWorks({ status, example, areas }: { status: CatalogStatus |
               data is as of.
             </p>
             <p>
+              Ask can describe one ZIP code in Milwaukee County: who lives there and how it compares with Milwaukee, from the U.S. Census
+              Bureau&apos;s survey for that ZIP&apos;s Census area, marked <ProvenanceTag source="CENSUS" />. When most of a ZIP lies outside the
+              City, the card says so; the figures cover the whole ZIP.
+            </p>
+            <p>
               You can also ask about one neighborhood&apos;s census tracts, like &ldquo;the poverty rate in Bay View&apos;s tracts.&rdquo; Ask
               lists every tract with at least 10% of its area in the neighborhood, each with its own figure and range, and says how much of
               it is inside: &ldquo;61% of this tract is in Bay View.&rdquo; It never adds tracts together into one neighborhood number.

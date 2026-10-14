@@ -29,6 +29,7 @@ export const ASK_QUESTIONS: AskQuestion[] = [
   { q: "How has the typical home value in Milwaukee changed each year since 2005?", tool: "countRecords", expect: { status: "measured", year: "2005", homes: "condominiums" }, final: true },
   { q: "Who gets stopped in MPD field interviews, by race, from 2019 to 2024?", tool: "countStops", expect: { status: "ok", kind: "field-interview", race: "Black" }, final: true },
   { q: "How did voter turnout in Milwaukee change across elections from 2016 to 2022?", tool: "countTurnout", expect: { status: "ok", election: "November 2020 general election" }, final: true },
+  { q: "What is the demographic makeup of 53228?", tool: "zipProfile", expect: { status: "ok", zip: "53228" }, final: true },
   { q: "What did the Harambee neighborhood report say about housing?", tool: "readReport", expect: {} },
   { q: "What are the key takeaways for Lincoln Park?", tool: "readReport", expect: {} },
   { q: "How should I interpret the neighborhood tables?", tool: "readReport", expect: {} },

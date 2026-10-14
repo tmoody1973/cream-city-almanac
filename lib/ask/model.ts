@@ -62,7 +62,7 @@ const call = (toolName: string, input: object) => ({ type: "tool-call" as const,
 
 // A scripted model: the first step calls the tool the question's keyword names; the next step replies.
 // "wrong column" → rankTracts E02 with a column that doesn't exist (choose-column); "rank tracts" → rankTracts, "despite" → relateTracts (mismatch), "grow most" → compareYears, "bay view" → rankTracts E02 County 2023 limited to Bay View (all four before "poverty", which they may contain); "poverty" → getNumber (Harambee); "over 200000" → searchCatalog "Master Property File", then countRecords on the row named "Master Property File (MPROP)" over $200,000 by district; "home values" → the same search, then relateTracts median_value × H04 per_broadband (County 2023); "air" → previewData V02; "twice" → showDataset and previewData V02 in one step;
-// "angles" → a reply with two paragraphs and three story angles; "report" → readReport; "unverified" → a reply with a figure; "thefts" and "robberies" → searchCatalog, then countRecords (robberies: a broad count, then robbery in Harambee); "vacant" → searchCatalog "vacant buildings", then timeSpan vacant-age by AldermanicDistrict; "how long" → searchCatalog "citizen complaints", then timeSpan complaint-close on the complaints row by Department; "how much" → searchCatalog "delinquent real estate tax", then countRecords with measure tax-owed by "Ald Dist"; "tins overlap" → boundariesFor Harambee (TINs); "each year from 2019" → searchCatalog, then countRecords robbery citywide 2019–2024 by year; "since 2005" → searchCatalog "Master Property File", then countRecords assessed-value by year 2005–2026, residential and condominiums; "who gets stopped" → countStops field interviews by race; "did turnout change" → countTurnout citywide, all elections; else searchCatalog.
+// "angles" → a reply with two paragraphs and three story angles; "report" → readReport; "unverified" → a reply with a figure; "thefts" and "robberies" → searchCatalog, then countRecords (robberies: a broad count, then robbery in Harambee); "vacant" → searchCatalog "vacant buildings", then timeSpan vacant-age by AldermanicDistrict; "how long" → searchCatalog "citizen complaints", then timeSpan complaint-close on the complaints row by Department; "how much" → searchCatalog "delinquent real estate tax", then countRecords with measure tax-owed by "Ald Dist"; "tins overlap" → boundariesFor Harambee (TINs); "each year from 2019" → searchCatalog, then countRecords robbery citywide 2019–2024 by year; "since 2005" → searchCatalog "Master Property File", then countRecords assessed-value by year 2005–2026, residential and condominiums; "who gets stopped" → countStops field interviews by race; "53228" → zipProfile 53228; "did turnout change" → countTurnout citywide, all elections; else searchCatalog.
 export function fakeAskModel(): LanguageModel {
   return new MockLanguageModelV3({
     doStream: async ({ prompt }) => {
@@ -161,6 +161,8 @@ export function fakeAskModel(): LanguageModel {
                 ? call("boundariesFor", { neighborhood: "Harambee", kinds: ["tin"] })
                 : question.includes("center st")
                 ? call("findPlace", { address: "2400 W Center St, Milwaukee, WI" })
+                : question.includes("53228")
+                ? call("zipProfile", { zip: "53228" })
                 : question.includes("did turnout change")
                 ? call("countTurnout", {})
                 : question.includes("who gets stopped")

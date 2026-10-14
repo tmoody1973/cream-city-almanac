@@ -37,6 +37,13 @@ describe("proseSegments", () => {
     expect(flagged("I can't look up 2263 N Lake Dr, or 410 E. Wells St.")).toEqual([]);
     expect(flagged("The data ends December 31, 2023, and Dec 31 is the last day. Sep. 5 and Mar 3, 2025 too.")).toEqual([]);
   });
+  it("allows a 5-digit number the person typed in their question, and only that (Z1)", () => {
+    const flag = (t: string, asked: string) => proseSegments(t, "", asked).filter((s) => s.unverified).map((s) => s.text);
+    expect(flag("Most of 53228 is in Greenfield.", "what is the demographic makeup of 53228")).toEqual([]);
+    expect(flag("Most of it is outside 53228.", "makeup of 53228?")).toEqual([]);
+    expect(flag("Most of 53228 is in Greenfield.", "what about Greenfield")).toEqual(["53228"]);
+    expect(flag("About 40% rent; 12345 people.", "is it 40% renters? 12345")).toEqual(["40%"]);
+  });
   it("allows a tract number the tract tools returned, and flags one they didn't", () => {
     const data = JSON.stringify({ top: [{ tract: "1860", neighborhood: "Harambee" }, { tract: "78" }, { tract: "1601.01" }] });
     const check = (t: string) => proseSegments(t, data).filter((s) => s.unverified).map((s) => s.text);
@@ -134,6 +141,7 @@ const backend: AskBackend = {
   boundaries: async () => ({ status: "not-loaded" }) as never,
   stops: async () => ({ status: "refused", reason: "" }) as never,
   turnout: async () => ({ status: "refused", reason: "" }) as never,
+  zip: async () => ({ status: "busy" }) as never,
 };
 const tool = (name: string) => askTools(backend).find((t) => t.name === name)!;
 

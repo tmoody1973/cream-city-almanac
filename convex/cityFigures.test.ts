@@ -30,6 +30,14 @@ describe("refreshCityFigures", () => {
     expect(fake.count("api.census.gov/data/2024/")).toBe(3);
     expect(await t.query(internal.cityFigures.cityValues, { period: 2023 })).toMatchObject({ B17001_001: { estimate: 100, moe: 10 } });
   });
+  it("returns the newest stored period with its values, or null when none is stored", async () => {
+    const t = await seed();
+    expect(await t.query(internal.cityFigures.latestCityFigures, {})).toBeNull();
+    process.env.CENSUS_API_KEY = "k";
+    installFakeFetch({ census: reply });
+    await t.action(internal.cityFigures.refreshCityFigures, {});
+    expect(await t.query(internal.cityFigures.latestCityFigures, {})).toMatchObject({ period: 2024, values: { B03002_001: { estimate: 100, moe: 10 } } });
+  });
   it("keeps last week's figures and notes the failure when the Census fails", async () => {
     const t = await seed();
     process.env.CENSUS_API_KEY = "k";
