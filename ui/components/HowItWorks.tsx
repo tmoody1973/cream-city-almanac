@@ -92,7 +92,9 @@ export function HowItWorks({ status, example, areas }: { status: CatalogStatus |
             <p>
               Ask can also say how long things take in a few City files, like complaints, 311 requests, permits and fire calls. The median is
               the middle case: half took less time. The &ldquo;9 in 10&rdquo; time is how long all but the slowest tenth took. Cases still
-              open aren&apos;t counted, so the slowest ones are missing, and the card says how many.
+              open aren&apos;t counted, so the slowest ones are missing, and the card says how many. It can also say how long things still
+              open have been open so far, like buildings on the City&apos;s vacant list or complaints not yet closed, measured to the day the
+              data is as of.
             </p>
             <p>
               You can also ask about one neighborhood&apos;s census tracts, like &ldquo;the poverty rate in Bay View&apos;s tracts.&rdquo; Ask
