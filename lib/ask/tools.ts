@@ -19,7 +19,8 @@ export type RelateResult = FunctionReturnType<typeof api.tracts.relateTracts>;
 export type SpanResult = FunctionReturnType<typeof api.spans.timeSpan>;
 export type StopsAnswer = FunctionReturnType<typeof api.stops.countStops>;
 export type TurnoutAnswer = FunctionReturnType<typeof api.elections.countTurnout>;
-export type AskToolName = "searchCatalog" | "showDataset" | "previewData" | "getNumber" | "readReport" | "countRecords" | "rankTracts" | "compareYears" | "relateTracts" | "timeSpan" | "factSheet" | "findPlace" | "boundariesFor" | "countStops" | "countTurnout";
+export type ZipAnswer = FunctionReturnType<typeof api.zips.zipProfile>;
+export type AskToolName = "searchCatalog" | "showDataset" | "previewData" | "getNumber" | "readReport" | "countRecords" | "rankTracts" | "compareYears" | "relateTracts" | "timeSpan" | "factSheet" | "findPlace" | "boundariesFor" | "countStops" | "countTurnout" | "zipProfile";
 
 export interface AskBackend {
   search(a: { query: string; topic?: string; place?: string; year?: number }): Promise<SearchResponse>;
@@ -36,6 +37,7 @@ export interface AskBackend {
   span(a: z.infer<typeof spanParams>): Promise<SpanResult>;
   stops(a: z.infer<typeof stopsParams>): Promise<StopsAnswer>;
   turnout(a: z.infer<typeof turnoutParams>): Promise<TurnoutAnswer>;
+  zip(a: z.infer<typeof zipParams>): Promise<ZipAnswer>;
 }
 
 export interface AskTool<P extends z.ZodObject = z.ZodObject> {
@@ -91,6 +93,7 @@ export const stopsParams = z.object({
 });
 
 // countTurnout's arguments; the turnout card reads the same ones for its follow-up questions.
+export const zipParams = z.object({ zip: z.string().max(12).describe("One 5-digit ZIP code, e.g. 53212.") });
 export const turnoutParams = z.object({
   type: z.enum(["spring", "primary", "general", "all"]).optional().describe("Which elections; default all"),
   from: z.number().int().optional().describe("First year, 2016–2022"),
@@ -241,6 +244,12 @@ export function askTools(b: AskBackend): AskTool[] {
       description: "Voter turnout in Milwaukee for 12 elections, 2016–2022 (spring, primary and November general elections): registered voters, ballots cast and turnout, citywide per election, for one ward across elections, or one election's lowest or highest-turnout wards. From the City's election files; nothing after 2022, no candidate results, and no aldermanic-district figures (the files don't link wards to districts). If it returns refused, tell the person why. The card carries every figure, including how many elections it covers; don't restate or count them.",
       parameters: turnoutParams,
       execute: (a: z.infer<typeof turnoutParams>) => b.turnout(a),
+    },
+    {
+      name: "zipProfile",
+      description: "Who lives in one ZIP code in Milwaukee County and what it's like: population, race and ethnicity, poverty, low incomes, renters, vacant homes, rent burden, households with no car, and schooling, each beside Milwaukee's figure, from the U.S. Census Bureau's American Community Survey for that ZIP's Census area. One ZIP per call. Never answer a ZIP question by adding up tracts or neighborhoods. If the card says most of the ZIP is outside the City of Milwaukee, say that first. If it returns outside, say Ask covers ZIP codes that touch Milwaukee County; bad-zip, ask for a 5-digit ZIP; unavailable or busy, try later. The card carries every figure; don't restate them.",
+      parameters: zipParams,
+      execute: (a: z.infer<typeof zipParams>) => b.zip(a),
     },
     {
       name: "rankTracts",

@@ -134,6 +134,7 @@ const backend: AskBackend = {
   boundaries: async () => ({ status: "not-loaded" }) as never,
   stops: async () => ({ status: "refused", reason: "" }) as never,
   turnout: async () => ({ status: "refused", reason: "" }) as never,
+  zip: async () => ({ status: "busy" }) as never,
 };
 const tool = (name: string) => askTools(backend).find((t) => t.name === name)!;
 
