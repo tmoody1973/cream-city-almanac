@@ -11,7 +11,7 @@ const count = { status: "ok", code: "P32", name: "NIBRS crimes", count: 1234, gr
 
 describe("shareable tools", () => {
   it("lists exactly the nine tools with an exported Ask card, never fact sheet, place, boundary or dataset tools", () => {
-    expect([...SHAREABLE].sort()).toEqual(["compareYears", "countRecords", "countStops", "countTurnout", "getNumber", "rankTracts", "readReport", "relateTracts", "timeSpan"]);
+    expect([...SHAREABLE].sort()).toEqual(["compareYears", "countRecords", "countStops", "countTurnout", "fireHistory", "getNumber", "rankTracts", "readReport", "relateTracts", "timeSpan"]);
     for (const t of ["factSheet", "findPlace", "boundariesFor", "searchCatalog", "showDataset", "previewData", "nope"]) expect(isShareable(t)).toBe(false);
   });
 });
