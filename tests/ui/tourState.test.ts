@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clearDone, markDone, nextAskStage, pickTarget, replayKeys, shouldRun, tooltipFooter, type KeyStore } from "../../ui/lib/tourState";
+import { clearDone, endAskStage, markDone, nextAskStage, pickTarget, replayKeys, shouldRun, tooltipFooter, type KeyStore } from "../../ui/lib/tourState";
 import { ASK_CARD_STEPS, ASK_STEPS, FRONT_STEPS } from "../../ui/lib/tourSteps";
 
 const store = (init: Record<string, string> = {}): KeyStore & { data: Record<string, string> } => {
@@ -36,6 +36,12 @@ describe("tour state", () => {
     expect(nextAskStage(store({ "almanac:tour:ask": "done", "almanac:tour:ask-card": "done" }), false)).toBeNull();
     expect(nextAskStage(store({ "almanac:tour:ask": "done", "almanac:tour:ask-card": "done" }), true)).toBe("ask");
     expect(nextAskStage(null, false)).toBeNull();
+  });
+  it("skipping Ask's first stage skips the card stage too; finishing it leads on to the card stage (review I3)", () => {
+    const skipped = store({ "almanac:tour:ask": "done" });
+    expect(endAskStage(true, skipped)).toBeNull();
+    expect(skipped.data["almanac:tour:ask-card"]).toBe("done");
+    expect(endAskStage(false, store({ "almanac:tour:ask": "done" }))).toBe("ask-card");
   });
   it("words the tooltip footer: counter, back from step 2, done on the last", () => {
     expect(tooltipFooter(0, 5)).toEqual({ counter: "1 OF 5", back: false, primary: "NEXT" });

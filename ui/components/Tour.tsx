@@ -17,10 +17,13 @@ const visible = (sel: string) => {
 const resolve = (steps: TourStep[]): Step[] =>
   steps.flatMap((s) => { const target = pickTarget(s.targets, visible); return target ? [{ target, title: s.title, content: s.content }] : []; });
 
+// DESIGN.md: the library's note otherwise carries a drop shadow and a fade-in, and a spinning loader while it waits.
+const NO_SHADOW_NO_FADE = { floater: { filter: "none", transition: "none" } };
+
 // The buttons' accessible names match what they say.
 const LOCALE = { back: "Back", close: "Close", last: "Done", next: "Next", skip: "Skip tour" };
 
-export default function Tour({ id, steps, onDone }: { id: TourKey; steps: TourStep[]; onDone?: () => void }) {
+export default function Tour({ id, steps, onDone }: { id: TourKey; steps: TourStep[]; onDone?: (skipped: boolean) => void }) {
   const [resolved, setResolved] = useState<Step[]>([]);
   const [run, setRun] = useState(false);
   const [index, setIndex] = useState(0);
@@ -53,14 +56,15 @@ export default function Tour({ id, steps, onDone }: { id: TourKey; steps: TourSt
     return () => el?.removeAttribute("data-tour-active");
   }, [run, index, resolved]);
 
-  const finish = () => {
-    if (!run) return; // finish once, however many end events arrive
+  const finish = (skipped: boolean) => {
+    if (!run) return;
     setRun(false);
     markDone(id, safeStorage());
-    onDone?.();
+    onDone?.(skipped);
   };
   const onEvent = (d: EventData) => {
-    if (d.status === STATUS.FINISHED || d.status === STATUS.SKIPPED || d.action === ACTIONS.CLOSE) return finish();
+    if (d.status === STATUS.FINISHED) return finish(false);
+    if (d.status === STATUS.SKIPPED || d.action === ACTIONS.CLOSE) return finish(true);
     if (d.type === EVENTS.STEP_AFTER || d.type === EVENTS.TARGET_NOT_FOUND) setIndex(d.index + (d.action === ACTIONS.PREV ? -1 : 1));
   };
 
@@ -74,6 +78,8 @@ export default function Tour({ id, steps, onDone }: { id: TourKey; steps: TourSt
       onEvent={onEvent}
       tooltipComponent={TourTooltip}
       locale={LOCALE}
+      styles={NO_SHADOW_NO_FADE}
+      loaderComponent={null}
       options={{ skipBeacon: true, hideOverlay: true, spotlightRadius: 0, zIndex: 900, width: "min(380px, calc(100vw - 32px))", scrollDuration: reduce ? 0 : 300, dismissKeyAction: "close", overlayClickAction: false, arrowColor: "var(--paper)" }}
     />
   );

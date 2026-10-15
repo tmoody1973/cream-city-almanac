@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
-import { clearDone, nextAskStage, replayKeys, safeStorage, shouldRun } from "@/ui/lib/tourState";
+import { clearDone, endAskStage, nextAskStage, replayKeys, safeStorage, shouldRun } from "@/ui/lib/tourState";
 import { ASK_CARD_STEPS, ASK_STEPS, FRONT_STEPS } from "@/ui/lib/tourSteps";
 
 // The tour library loads only in the browser, and only when a tour will run.
@@ -56,7 +56,7 @@ export function AskTours() {
     watch.observe(document.body, { childList: true, subtree: true });
     return () => watch.disconnect();
   }, [stage, cardReady]);
-  if (stage === "ask") return <Tour id="ask" steps={ASK_STEPS} onDone={() => setStage(nextAskStage(safeStorage(), false))} />;
+  if (stage === "ask") return <Tour id="ask" steps={ASK_STEPS} onDone={(skipped) => setStage(endAskStage(skipped, safeStorage()))} />;
   if (stage === "ask-card" && cardReady) return <Tour id="ask-card" steps={ASK_CARD_STEPS} />;
   return null;
 }

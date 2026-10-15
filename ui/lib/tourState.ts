@@ -39,6 +39,12 @@ export function nextAskStage(s: KeyStore | null, forced: boolean): "ask" | "ask-
   return shouldRun("ask-card", s, false) ? "ask-card" : null;
 }
 
+// When Ask's first stage ends: a skip (or Escape) skips the whole Ask tour, card stage included.
+export function endAskStage(skipped: boolean, s: KeyStore | null): "ask" | "ask-card" | null {
+  if (skipped) markDone("ask-card", s);
+  return nextAskStage(s, false);
+}
+
 export const tooltipFooter = (index: number, size: number) => ({
   counter: `${index + 1} OF ${size}`,
   back: index > 0,
