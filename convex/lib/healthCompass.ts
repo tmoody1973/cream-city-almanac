@@ -51,6 +51,15 @@ const PERIOD = /^(\d{4})(?:-(\d{4}))?$/;
 const end = (d: string) => Number(PERIOD.exec(d)![2] ?? PERIOD.exec(d)![1]);
 const span = (d: string) => end(d) - Number(PERIOD.exec(d)![1]);
 
+const GeoPage = z.object({ next: z.string().nullish(), results: z.array(z.object({ layer: z.string(), geoid: z.string(), population: z.number().nullish() }).passthrough()) }).passthrough();
+
+// ZIP populations from Health Compass's place list, to leave out ZIPs with almost no residents (53295, the VA).
+export function parseGeographies(json: unknown): { next: string | null; zips: Record<string, number> } {
+  const p = GeoPage.safeParse(json);
+  if (!p.success) throw new Error("Health Compass places changed shape");
+  return { next: p.data.next ?? null, zips: Object.fromEntries(p.data.results.filter((g) => g.layer === "zip" && typeof g.population === "number").map((g) => [g.geoid, g.population as number])) };
+}
+
 // One figure per topic for a place: the whole population, the newest end year, and on a tie the longer (steadier) span.
 // prefer names a period per topic (the ZIPs' own, for the county and city), taken when the place has it, so a ZIP is
 // never compared with a county figure from another year when a same-year one exists.

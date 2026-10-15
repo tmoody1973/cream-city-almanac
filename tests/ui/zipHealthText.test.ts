@@ -9,7 +9,7 @@ import { HC_ROWS, HC_TOPICS_PAGE } from "../fixtures/healthCompass";
 const geos = [...new Set(HC_ROWS.map((r) => r.g))];
 const data: HealthData = {
   topics: parseTopicsPage(HC_TOPICS_PAGE).topics,
-  places: geos.map((geo) => ({ layer: geo === "55079" ? "county" : "zip", geo, figures: pickFigures(parseDataPage({ results: HC_ROWS.filter((r) => r.g === geo) })) })),
+  places: geos.map((geo) => ({ layer: geo === "55079" ? "county" : "zip", geo, population: geo === "53295" ? 114 : geo === "55079" ? null : 20_000, figures: pickFigures(parseDataPage({ results: HC_ROWS.filter((r) => r.g === geo) })) })),
   hoods: { "53208": ["Washington Park", "Sherman Park"] },
   asOf: Date.UTC(2026, 9, 12, 17),
 };
@@ -41,6 +41,10 @@ describe("ZIP health words", () => {
     expect(n).toMatch(/Low food insecurity: below Milwaukee County's 13\.85%/);
     expect(n).toContain("Too uncertain to use: 53203.");
     expect(n).toContain("Health Compass figures as of October 12, 2026.");
+  });
+  it("names the ZIPs left out for having under 1,000 residents", () => {
+    expect(notesOf(ok({ mode: "rank", measure: "Poverty rate" }))).toContain("Left out (fewer than 1,000 residents): 53295 (114).");
+    expect(notesOf(ok({ mode: "one", measure: "Poverty rate", zip: "53295" }))).toContain("53295 has only 114 residents, so its figures describe very few people.");
   });
   it("keeps the credit, source and link on every export path (review focus 4)", () => {
     const e = zipHealthExport(mismatch, ctx);

@@ -2,13 +2,15 @@ import { CITY_GEO, COUNTY_GEO, modalPeriods, type HealthFigure, type HealthLayer
 import { matchTopic, mismatchZips, rangeOf, rankZips, togetherZips, versus, type Strength, type Verdict } from "./healthMath";
 import { checkZip, COUNTY_ZIPS } from "./zips";
 
+export const MIN_RESIDENTS = 1_000;
+
 // One ZIP-health answer from the stored copy (spec 2026-10-15-zip-health §4). Pure, so it tests without a database.
-export type HealthPlace = { layer: HealthLayer; geo: string; figures: HealthFigure[] };
+export type HealthPlace = { layer: HealthLayer; geo: string; population?: number | null; figures: HealthFigure[] };
 export type HealthData = { topics: HealthTopic[]; places: HealthPlace[]; hoods: Record<string, string[]>; asOf: number | null };
 export type HealthArgs = { mode: "one" | "rank" | "together" | "mismatch"; measure: string; zip?: string; direction?: "high" | "low"; side?: "high" | "low"; other?: string; otherSide?: "high" | "low" };
 export type FigOut = { value: number; se: number | null; lo: number | null; hi: number | null; period: string };
 export type ZipLine = { zip: string; places: string[]; town: string; a: FigOut; b?: FigOut; verdict?: Verdict };
-type Base = { status: "ok"; measure: HealthTopic; county: FigOut | null; asOf: number | null; periods: Record<string, string> };
+type Base = { status: "ok"; measure: HealthTopic; county: FigOut | null; asOf: number | null; periods: Record<string, string>; small: { zip: string; population: number }[] };
 export type HealthOk =
   | (Base & { mode: "one"; zip: ZipLine; city: FigOut | null })
   | (Base & { mode: "rank"; direction: "high" | "low"; rows: ZipLine[]; uncertain: ZipLine[] })
@@ -36,12 +38,14 @@ export function answer(a: HealthArgs, d: HealthData): HealthResult {
     return { value: f.value, se: f.se, lo: r?.lo ?? null, hi: r?.hi ?? null, period: f.period };
   };
   const line = (zip: string, fa: FigOut, fb?: FigOut): ZipLine => ({ zip, places: d.hoods[zip] ?? [], town: COUNTY_ZIPS[zip]?.mainPlace ?? "", a: fa, ...(fb ? { b: fb } : {}) });
-  const zips = d.places.filter((p) => p.layer === "zip").map((p) => p.geo).sort();
+  // ZIPs with almost no residents (53295, the VA Medical Center: 114) stay out of rankings and comparisons, named on the card.
+  const tiny = d.places.filter((p) => p.layer === "zip" && typeof p.population === "number" && p.population < MIN_RESIDENTS).map((p) => ({ zip: p.geo, population: p.population as number })).sort((x, y) => x.zip.localeCompare(y.zip));
+  const zips = d.places.filter((p) => p.layer === "zip" && !tiny.some((s) => s.zip === p.geo)).map((p) => p.geo).sort();
   const county = fig(COUNTY_GEO, measure.key);
   // Each measure's most common ZIP period: the period its credit and notes name, whatever the rows shown.
   const zipPlaces = d.places.filter((p) => p.layer === "zip");
   const periodsOf = (...keys: string[]) => { const all = modalPeriods(zipPlaces.flatMap((p) => p.figures)); return Object.fromEntries(keys.filter((k) => all[k]).map((k) => [k, all[k]])); };
-  const base = { status: "ok" as const, measure, county, asOf: d.asOf, periods: periodsOf(measure.key) };
+  const base = { status: "ok" as const, measure, county, asOf: d.asOf, periods: periodsOf(measure.key), small: tiny };
   const judged = (l: ZipLine): ZipLine => (county ? { ...l, verdict: versus(l.a, county) } : l);
 
   if (a.mode === "one") {
@@ -50,7 +54,7 @@ export function answer(a: HealthArgs, d: HealthData): HealthResult {
     if (!COUNTY_ZIPS[z]) return { status: "outside", zip: z };
     const f = fig(z, measure.key);
     if (!f) return { status: "no-data", zip: z, measure: measure.name };
-    return { ...base, mode: "one", zip: judged(line(z, f)), city: fig(CITY_GEO, measure.key) };
+    return { ...base, small: tiny.filter((s) => s.zip === z), mode: "one", zip: judged(line(z, f)), city: fig(CITY_GEO, measure.key) };
   }
   if (a.mode === "rank") {
     const all = zips.flatMap((z) => { const f = fig(z, measure.key); return f ? [line(z, f)] : []; });

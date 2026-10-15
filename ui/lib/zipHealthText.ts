@@ -104,6 +104,8 @@ export function notesOf(r: HealthOk): string[] {
   out.push("Ranges are 95%: each figure plus or minus 1.96 standard errors, as Health Compass publishes them.");
   const uncertain = r.mode === "rank" ? r.uncertain.map((l) => l.zip) : r.mode === "mismatch" ? r.uncertain : [];
   if (uncertain.length) out.push(`Too uncertain to use: ${uncertain.join(", ")}.`);
+  if (r.mode === "one" && r.small.length) out.push(`${r.zip.zip} has only ${r.small[0].population.toLocaleString("en-US")} residents, so its figures describe very few people.`);
+  else if (r.mode !== "one" && r.small.length) out.push(`Left out (fewer than 1,000 residents): ${r.small.map((s) => `${s.zip} (${s.population.toLocaleString("en-US")})`).join(", ")}.`);
   for (const t of topicsOf(r)) { const l = limitationOf(t); if (l) out.push(l); }
   if (r.mode !== "one") out.push("Where: the City's neighborhoods covering at least 10% of the ZIP; outside the City, the ZIP's main town.");
   if (r.asOf) out.push(`Health Compass figures as of ${asOfText(r.asOf)}.`);

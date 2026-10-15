@@ -129,7 +129,7 @@ export default defineSchema({
   fireRefresh: defineTable({ year: v.number(), status: v.union(v.literal("counted"), v.literal("failed")), note: v.optional(v.string()), counted: v.number() }).index("by_year", ["year"]),
   // Health Compass Milwaukee's figures, one row per place (37 ZIPs, the county, the city), replaced weekly together.
   healthTopics: defineTable(vHealthTopic).index("by_key", ["key"]),
-  healthPlaces: defineTable({ layer: vHealthLayer, geo: v.string(), figures: v.array(vHealthFigure) }).index("by_geo", ["geo"]),
+  healthPlaces: defineTable({ layer: vHealthLayer, geo: v.string(), population: v.optional(v.union(v.number(), v.null())), figures: v.array(vHealthFigure) }).index("by_geo", ["geo"]),
   healthRefresh: defineTable({ status: v.union(v.literal("read"), v.literal("failed")), note: v.optional(v.string()), at: v.number(), places: v.number() }),
   cityFigures: defineTable({
     period: v.number(),

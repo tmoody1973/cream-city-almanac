@@ -6,7 +6,7 @@ import { HC_ROWS, HC_TOPICS_PAGE } from "../fixtures/healthCompass";
 const geos = [...new Set(HC_ROWS.map((r) => r.g))];
 const data: HealthData = {
   topics: parseTopicsPage(HC_TOPICS_PAGE).topics,
-  places: geos.map((geo) => ({ layer: geo === "55079" ? "county" : "zip", geo, figures: pickFigures(parseDataPage({ results: HC_ROWS.filter((r) => r.g === geo) })) })),
+  places: geos.map((geo) => ({ layer: geo === "55079" ? "county" : "zip", geo, population: geo === "53295" ? 114 : geo === "55079" ? null : 20_000, figures: pickFigures(parseDataPage({ results: HC_ROWS.filter((r) => r.g === geo) })) })),
   hoods: { "53208": ["Washington Park", "Sherman Park"] },
   asOf: Date.UTC(2026, 9, 12),
 };
@@ -27,6 +27,14 @@ describe("ZIP health answers", () => {
     const r = answer({ mode: "rank", measure: "Food Insecurity (2024 Food Insecurity)" }, data);
     if (r.status !== "ok" || r.mode !== "rank") throw new Error("not a ranking");
     expect(r.rows[0]).toMatchObject({ zip: "53205", verdict: "higher" });
+  });
+  it("leaves ZIPs under 1,000 residents out of rankings and comparisons, and says so (53295, the VA)", () => {
+    const r = answer({ mode: "rank", measure: "Poverty rate" }, data);
+    if (r.status !== "ok" || r.mode !== "rank") throw new Error("not a ranking");
+    expect(r.rows.map((l) => l.zip)).not.toContain("53295");
+    expect(r.small).toEqual([{ zip: "53295", population: 114 }]);
+    const one = answer({ mode: "one", measure: "Poverty rate", zip: "53295" }, data);
+    expect(one).toMatchObject({ status: "ok", mode: "one", small: [{ zip: "53295", population: 114 }] });
   });
   it("asks which measure when several fit, and says so when none does", () => {
     expect(answer({ mode: "rank", measure: "food insecurity" }, data)).toMatchObject({ status: "choose", which: "measure" });

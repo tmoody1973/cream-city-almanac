@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { internalAction, internalMutation, query } from "./_generated/server";
-import { CITY_GEO, COUNTY_GEO, HC_API, HC_HEADERS, parseDataPage, modalPeriods, parseTopicsPage, pickFigures, placeUrl, type HealthFigure, type HealthLayer, type HealthTopic, type RawRow } from "./lib/healthCompass";
+import { CITY_GEO, COUNTY_GEO, HC_API, HC_HEADERS, parseDataPage, modalPeriods, parseGeographies, parseTopicsPage, pickFigures, placeUrl, type HealthFigure, type HealthLayer, type HealthTopic, type RawRow } from "./lib/healthCompass";
 import { answer, type HealthArgs, type HealthResult } from "./lib/healthAnswer";
 import { fetchWithTimeout } from "./lib/http";
 import { COUNTY_ZIPS } from "./lib/zips";
@@ -28,7 +28,7 @@ async function getJson(url: string, waits: number[], absent: number[] = []): Pro
 }
 
 export const replaceHealth = internalMutation({
-  args: { topics: v.array(vHealthTopic), places: v.array(v.object({ layer: vHealthLayer, geo: v.string(), figures: v.array(vHealthFigure) })), at: v.number() },
+  args: { topics: v.array(vHealthTopic), places: v.array(v.object({ layer: vHealthLayer, geo: v.string(), population: v.union(v.number(), v.null()), figures: v.array(vHealthFigure) })), at: v.number() },
   handler: async (ctx, { topics, places, at }) => {
     for (const r of await ctx.db.query("healthTopics").collect()) await ctx.db.delete(r._id);
     for (const r of await ctx.db.query("healthPlaces").collect()) await ctx.db.delete(r._id);
@@ -68,6 +68,13 @@ export const refreshHealth = internalAction({
         url = p.next;
       }
       if (!topics.length) throw new Error("Health Compass listed no topics"); // before 39 paced place requests
+      const population: Record<string, number> = {};
+      let geoUrl: string | null = `${HC_API}/geographies/?limit=500`;
+      for (let page = 0; geoUrl && page < 20; page++) {
+        const p = parseGeographies(await getJson(geoUrl, waits));
+        Object.assign(population, p.zips);
+        geoUrl = p.next;
+      }
       const targets: { layer: HealthLayer; geo: string }[] = [
         ...Object.keys(COUNTY_ZIPS).map((geo) => ({ layer: "zip" as const, geo })),
         { layer: "county", geo: COUNTY_GEO },
@@ -84,11 +91,11 @@ export const refreshHealth = internalAction({
         await sleep(paceMs);
       }
       // ZIPs first; the county and city then take each topic's most common ZIP period when they have it.
-      const zipFigures = raw.filter((p) => p.layer === "zip").map((p) => ({ layer: p.layer, geo: p.geo, figures: pickFigures(p.rows) }));
+      const zipFigures = raw.filter((p) => p.layer === "zip").map((p) => ({ layer: p.layer, geo: p.geo, population: population[p.geo] ?? null, figures: pickFigures(p.rows) }));
       const prefer = modalPeriods(zipFigures.flatMap((p) => p.figures));
-      const places: { layer: HealthLayer; geo: string; figures: HealthFigure[] }[] = [
+      const places: { layer: HealthLayer; geo: string; population: number | null; figures: HealthFigure[] }[] = [
         ...zipFigures,
-        ...raw.filter((p) => p.layer !== "zip").map((p) => ({ layer: p.layer, geo: p.geo, figures: pickFigures(p.rows, prefer) })),
+        ...raw.filter((p) => p.layer !== "zip").map((p) => ({ layer: p.layer, geo: p.geo, population: null, figures: pickFigures(p.rows, prefer) })),
       ];
       const onZips = new Set(places.filter((p) => p.layer === "zip").flatMap((p) => p.figures.map((f) => f.topic)));
       const kept = topics.filter((t) => onZips.has(t.key));

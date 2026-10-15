@@ -12,6 +12,7 @@ afterEach(() => vi.unstubAllGlobals());
 // Health Compass, faked from the real fixture: topics, and each place's rows.
 const hc = (url: string) => {
   if (url.includes("/topics/")) return HC_TOPICS_PAGE;
+  if (url.includes("/geographies/")) return { count: 2, next: null, previous: null, results: [{ layer: "zip", geoid: "53208", population: 29644 }, { layer: "zip", geoid: "53295", population: 114 }, { layer: "county", geoid: "55079", population: 939489 }] };
   const geo = new URL(url).searchParams.get("geography");
   return { count: 0, next: null, previous: null, results: HC_ROWS.filter((r) => r.g === geo) };
 };
@@ -26,6 +27,9 @@ describe("refreshHealth", () => {
     expect(places.find((p) => p.geo === "53208")!.figures.find((f) => f.topic === "MQ35")).toMatchObject({ period: "2024", se: expect.any(Number) });
     expect((await t.run((ctx) => ctx.db.query("healthTopics").collect())).map((x) => x.key).sort()).toEqual(["MQ35", "POV"]);
     expect(await t.run((ctx) => ctx.db.query("healthRefresh").first())).toMatchObject({ status: "read", places: 39 });
+    const geo = (g: string) => t.run((ctx) => ctx.db.query("healthPlaces").withIndex("by_geo", (q) => q.eq("geo", g)).first());
+    expect((await geo("53295"))!.population).toBe(114);
+    expect((await geo("55079"))!.population).toBeNull();
   });
   it("picks the county's figure from the ZIPs' own period when it has one (review I1)", async () => {
     installFakeFetch({ healthCompass: (url) => {
@@ -41,7 +45,7 @@ describe("refreshHealth", () => {
     installFakeFetch({ healthCompass: hc });
     const t = convexTest(schema, modules);
     await t.action(internal.health.refreshHealth, { paceMs: 0 });
-    installFakeFetch({ healthCompass: (url) => (url.includes("/topics/") ? HC_TOPICS_PAGE : { results: [{ g: "53208", v: "9.7" }] }) });
+    installFakeFetch({ healthCompass: (url) => (url.includes("/topics/") || url.includes("/geographies/") ? hc(url) : { results: [{ g: "53208", v: "9.7" }] }) });
     const notes = await t.action(internal.health.refreshHealth, { paceMs: 0 });
     expect(notes[0]).toMatch(/Health Compass refresh failed, kept last week's: Health Compass figures changed shape/);
     expect(await t.run((ctx) => ctx.db.query("healthPlaces").collect())).toHaveLength(39);
