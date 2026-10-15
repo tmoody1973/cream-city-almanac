@@ -1,5 +1,4 @@
 import type { FollowUp } from "@/ui/components/FollowUps";
-import type { TractShapes } from "@/ui/components/CityMap";
 // Value imports are relative: shareCard runs this inside Convex, whose bundler resolves "@/" only for erased type imports.
 import { creditLines, type HealthTopic } from "../../convex/lib/healthCompass";
 import type { FigOut, HealthOk, HealthResult, ZipLine } from "@/convex/lib/healthAnswer";
@@ -116,7 +115,10 @@ export function notesOf(r: HealthOk): string[] {
 // Health Compass's credit for each measure on the card (spec §6).
 export const creditsOf = (r: HealthOk): string[][] => topicsOf(r).map((t) => creditLines(t, periodOf(r, t)));
 
-export function mapOf(r: HealthOk): TractShapes | null {
+// The map's highlighted shapes (CityMap's TractShapes), spelled out here: Convex type-checks this file through shareCard,
+// and CityMap's map-library types aren't available there.
+export type ZipShapes = { url: string; fits: string[]; close: string[]; noun: string };
+export function mapOf(r: HealthOk): ZipShapes | null {
   const fits = r.mode === "one" ? [r.zip.zip] : r.mode === "rank" ? r.rows.slice(0, 10).map((l) => l.zip) : r.mode === "mismatch" ? r.fits.map((l) => l.zip) : [];
   const close = r.mode === "mismatch" ? r.close.map((l) => l.zip) : [];
   return fits.length || close.length ? { url: ZCTA_LAYER, fits, close, noun: "ZIP" } : null;
