@@ -1,98 +1,88 @@
 /// <reference types="vite/client" />
 import { convexTest } from "convex-test";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { HC_ROWS, HC_TOPICS_PAGE } from "../tests/fixtures/healthCompass";
-import { api } from "./_generated/api";
-import { healthTargets } from "./lib/healthCompass";
+import { installFakeFetch } from "../tests/helpers/fakeFetch";
+import { api, internal } from "./_generated/api";
 import schema from "./schema";
 
 const modules = import.meta.glob("./**/*.*s");
-const SECRET = "test-secret-0123456789abcdef0123456789abcdef";
-beforeEach(() => vi.stubEnv("HEALTH_PUSH_SECRET", SECRET));
-afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
+afterEach(() => vi.unstubAllGlobals());
 
-const auth = { authorization: `Bearer ${SECRET}` };
-// What the Hetzner script posts: Health Compass's own answers, whole-population rows only, for every place asked for.
-const upload = (extra: (geo: string) => unknown[] = () => []) => ({
-  topics: [HC_TOPICS_PAGE],
-  places: healthTargets().map(({ layer, geo }) => ({ layer, geo, data: { results: [...HC_ROWS.filter((r) => r.g === geo), ...extra(geo)] } })),
-});
-const post = (t: ReturnType<typeof convexTest>, body: unknown, headers: Record<string, string> = auth) =>
-  t.fetch("/health-compass", { method: "POST", headers: { "content-type": "application/json", ...headers }, body: JSON.stringify(body) });
-const places = (t: ReturnType<typeof convexTest>) => t.run((ctx) => ctx.db.query("healthPlaces").collect());
-const status = (t: ReturnType<typeof convexTest>) => t.run((ctx) => ctx.db.query("healthRefresh").first());
+// Health Compass, faked from the real fixture: topics, and each place's rows.
+const hc = (url: string) => {
+  if (url.includes("/topics/")) return HC_TOPICS_PAGE;
+  const geo = new URL(url).searchParams.get("geography");
+  return { count: 0, next: null, previous: null, results: HC_ROWS.filter((r) => r.g === geo) };
+};
 
-describe("the Health Compass upload (the download runs on Hetzner; decision 050)", () => {
-  it("refuses anyone without the secret, and works only when a secret is set", async () => {
-    const t = convexTest(schema, modules);
-    expect((await t.fetch("/health-compass/targets")).status).toBe(401);
-    expect((await post(t, upload(), { authorization: "Bearer wrong" })).status).toBe(401);
-    vi.stubEnv("HEALTH_PUSH_SECRET", "");
-    expect((await post(t, upload(), { authorization: "Bearer " })).status).toBe(401);
-    expect(await places(t)).toHaveLength(0);
-  });
-  it("tells the script which places to fetch", async () => {
-    const t = convexTest(schema, modules);
-    const res = await t.fetch("/health-compass/targets", { headers: auth });
-    const body = (await res.json()) as { places: { layer: string; geo: string }[] };
-    expect(body.places).toHaveLength(39);
-    expect(body.places).toContainEqual({ layer: "county", geo: "55079" });
-    expect(body.places).toContainEqual({ layer: "place", geo: "5553000" });
-  });
+describe("refreshHealth", () => {
   it("stores one row per place and only topics with a ZIP figure", async () => {
+    installFakeFetch({ healthCompass: hc });
     const t = convexTest(schema, modules);
-    const res = await post(t, upload());
-    expect(await res.json()).toEqual({ ok: true, places: 39, topics: 2 });
-    const all = await places(t);
-    expect(all).toHaveLength(39);
-    expect(all.find((p) => p.geo === "53208")!.figures.find((f: { topic: string }) => f.topic === "MQ35")).toMatchObject({ period: "2024", se: expect.any(Number) });
+    expect(await t.action(internal.health.refreshHealth, { paceMs: 0 })).toEqual([]);
+    const places = await t.run((ctx) => ctx.db.query("healthPlaces").collect());
+    expect(places).toHaveLength(39);
+    expect(places.find((p) => p.geo === "53208")!.figures.find((f) => f.topic === "MQ35")).toMatchObject({ period: "2024", se: expect.any(Number) });
     expect((await t.run((ctx) => ctx.db.query("healthTopics").collect())).map((x) => x.key).sort()).toEqual(["MQ35", "POV"]);
-    expect(await status(t)).toMatchObject({ status: "read", places: 39 });
+    expect(await t.run((ctx) => ctx.db.query("healthRefresh").first())).toMatchObject({ status: "read", places: 39 });
   });
   it("picks the county's figure from the ZIPs' own period when it has one (review I1)", async () => {
+    installFakeFetch({ healthCompass: (url) => {
+      const r = hc(url) as { results?: unknown[] };
+      return url.includes("geography=55079") ? { ...r, results: [...(r.results ?? []), { g: "55079", l: "county", a: "POV", p: "", d: "2021-2025", v: 99, se: 1 }] } : r;
+    } });
     const t = convexTest(schema, modules);
-    await post(t, upload((geo) => (geo === "55079" ? [{ g: "55079", l: "county", a: "POV", p: "", d: "2021-2025", v: 99, se: 1 }] : [])));
-    const county = (await places(t)).find((p) => p.geo === "55079")!;
-    expect(county.figures.find((f: { topic: string }) => f.topic === "POV")).toMatchObject({ period: "2020-2024" });
+    await t.action(internal.health.refreshHealth, { paceMs: 0 });
+    const county = await t.run((ctx) => ctx.db.query("healthPlaces").withIndex("by_geo", (q) => q.eq("geo", "55079")).first());
+    expect(county!.figures.find((f) => f.topic === "POV")).toMatchObject({ period: "2020-2024" });
   });
-  it("refuses a changed shape, keeps last week's copy and says why (review focus 1)", async () => {
+  it("keeps last week's copy and says why when Health Compass fails or changes shape (review focus 1)", async () => {
+    installFakeFetch({ healthCompass: hc });
     const t = convexTest(schema, modules);
-    await post(t, upload());
-    const bad = upload();
-    bad.places[0].data = { results: [{ g: "53208", v: "9.7" }] } as never;
-    const res = await post(t, bad);
-    expect(res.status).toBe(400);
-    expect(await places(t)).toHaveLength(39);
-    expect(await status(t)).toMatchObject({ status: "failed", note: "Health Compass figures changed shape", places: 39 });
+    await t.action(internal.health.refreshHealth, { paceMs: 0 });
+    installFakeFetch({ healthCompass: (url) => (url.includes("/topics/") ? HC_TOPICS_PAGE : { results: [{ g: "53208", v: "9.7" }] }) });
+    const notes = await t.action(internal.health.refreshHealth, { paceMs: 0 });
+    expect(notes[0]).toMatch(/Health Compass refresh failed, kept last week's: Health Compass figures changed shape/);
+    expect(await t.run((ctx) => ctx.db.query("healthPlaces").collect())).toHaveLength(39);
+    expect(await t.run((ctx) => ctx.db.query("healthRefresh").first())).toMatchObject({ status: "failed", places: 39 });
   });
-  it("refuses an upload missing a place, rather than storing a partial week", async () => {
+  it("stops at once when Health Compass lists no topics", async () => {
+    const seen: string[] = [];
+    installFakeFetch({ healthCompass: (url) => { seen.push(url); return { results: [] }; } });
     const t = convexTest(schema, modules);
-    const partial = upload();
-    partial.places = partial.places.filter((p) => p.geo !== "53208");
-    expect((await post(t, partial)).status).toBe(400);
-    expect(await status(t)).toMatchObject({ status: "failed", note: "Health Compass upload is missing 53208" });
+    expect(await t.action(internal.health.refreshHealth, {})).toEqual(["Health Compass refresh failed, kept last week's: Health Compass listed no topics"]);
+    expect(seen).toHaveLength(1);
   });
-  it("records the script's own failure, keeping last week's copy", async () => {
+  it("gives up past its deadline, marks the run failed and keeps last week's copy (review I4)", async () => {
+    installFakeFetch({ healthCompass: hc });
     const t = convexTest(schema, modules);
-    await post(t, upload());
-    const res = await post(t, { error: "Health Compass request failed: 403" });
-    expect(await res.json()).toEqual({ ok: false, stored: false });
-    expect(await places(t)).toHaveLength(39);
-    expect(await status(t)).toMatchObject({ status: "failed", note: "Health Compass download failed: Health Compass request failed: 403" });
+    await t.action(internal.health.refreshHealth, { paceMs: 0 });
+    const notes = await t.action(internal.health.refreshHealth, { paceMs: 0, deadlineMs: 0 });
+    expect(notes).toEqual(["Health Compass refresh failed, kept last week's: Health Compass took too long; stopped at the deadline"]);
+    expect(await t.run((ctx) => ctx.db.query("healthPlaces").collect())).toHaveLength(39);
+  });
+  it("retries a busy answer, then fails the run without storing", async () => {
+    installFakeFetch({ healthCompass: hc, healthStatus: 429 });
+    const t = convexTest(schema, modules);
+    const notes = await t.action(internal.health.refreshHealth, { paceMs: 0 });
+    expect(notes[0]).toMatch(/Health Compass request failed: 429/);
+    expect(await t.run((ctx) => ctx.db.query("healthPlaces").collect())).toHaveLength(0);
   });
 });
 
 describe("zipHealth", () => {
   it("answers from the stored copy, with no outside request", async () => {
+    installFakeFetch({ healthCompass: hc });
     const t = convexTest(schema, modules);
-    await post(t, upload());
+    await t.action(internal.health.refreshHealth, { paceMs: 0 });
     const seen: string[] = [];
     vi.stubGlobal("fetch", async (u: string) => { seen.push(String(u)); return new Response("{}", { status: 500 }); });
     const r = await t.query(api.health.zipHealth, { mode: "one", measure: "Poverty rate", zip: "53208" });
     expect(r).toMatchObject({ status: "ok", mode: "one", zip: { zip: "53208" } });
     expect(seen).toEqual([]);
   });
-  it("says the figures aren't loaded yet before the first upload", async () => {
+  it("says the figures aren't loaded yet before the first refresh", async () => {
     const t = convexTest(schema, modules);
     expect(await t.query(api.health.zipHealth, { mode: "rank", measure: "Poverty rate" })).toEqual({ status: "unavailable" });
   });
