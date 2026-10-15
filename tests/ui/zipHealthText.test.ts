@@ -3,14 +3,14 @@ import { parseDataPage, parseTopicsPage, pickFigures, HC_CREDIT } from "../../co
 import { answer, type HealthData, type HealthOk } from "../../convex/lib/healthAnswer";
 import { toCsv } from "../../ui/lib/cardExport";
 import { shareCard } from "../../ui/lib/shareCard";
-import { creditsOf, label, leadOf, mapOf, notesOf, tableOf, zipHealthChoices, zipHealthExport, zipHealthFollowUps, zipHealthRefusal } from "../../ui/lib/zipHealthText";
+import { countyLine, creditsOf, label, leadOf, mapOf, notesOf, num, tableOf, zipHealthChoices, zipHealthExport, zipHealthFollowUps, zipHealthRefusal } from "../../ui/lib/zipHealthText";
 import { HC_ROWS, HC_TOPICS_PAGE } from "../fixtures/healthCompass";
 
 const geos = [...new Set(HC_ROWS.map((r) => r.g))];
 const data: HealthData = {
   topics: parseTopicsPage(HC_TOPICS_PAGE).topics,
   places: geos.map((geo) => ({ layer: geo === "55079" ? "county" : "zip", geo, population: geo === "53295" ? 114 : geo === "55079" ? null : 20_000, figures: pickFigures(parseDataPage({ results: HC_ROWS.filter((r) => r.g === geo) })) })),
-  hoods: { "53208": ["Washington Park", "Sherman Park"] },
+  hoods: { "53208": ["Washington Park", "Sherman Park"], "53205": ["Midtown"] },
   asOf: Date.UTC(2026, 9, 12, 17),
 };
 const ok = (a: Parameters<typeof answer>[0]) => answer(a, data) as HealthOk;
@@ -24,9 +24,19 @@ describe("ZIP health words", () => {
     expect(label(data.topics.find((t) => t.key === "ALI")!)).toBe("households below ALICE threshold");
   });
   it("leads with what was found, written by code", () => {
-    expect(leadOf(mismatch)).toEqual({ strong: "No ZIP clearly has high poverty rate with low food insecurity. Possible: 53208.", rest: "Its figures point that way, but its ranges overlap the cutoffs." });
-    expect(leadOf(ok({ mode: "rank", measure: FI })).strong).toBe("Highest food insecurity: 53205, 53218, 53235.");
-    expect(leadOf(ok({ mode: "one", measure: FI, zip: "53208" })).strong).toBe("53208 is about the same as Milwaukee County on food insecurity.");
+    expect(leadOf(mismatch)).toEqual({ strong: "No ZIP clearly has high poverty rate with low food insecurity. Possible: 53208 (Washington Park).", rest: "Its figures point that way, but its ranges overlap the cutoffs." });
+    expect(leadOf(ok({ mode: "rank", measure: FI })).strong).toBe("Highest food insecurity: 53205 (Midtown), 53218, 53235 (St. Francis).");
+    expect(leadOf(ok({ mode: "one", measure: FI, zip: "53208" })).strong).toBe("53208 (Washington Park) is about the same as Milwaukee County on food insecurity.");
+  });
+  it("shows Milwaukee County's own figure under the lead (Tarik's read of the asthma card)", () => {
+    expect(countyLine(ok({ mode: "rank", measure: FI }))).toMatch(/^Milwaukee County: 13\.85% \(12\.9\d%–14\.7\d%\)\.$/);
+    expect(countyLine(mismatch)).toMatch(/^Milwaukee County: 13\.85%/);
+    expect(zipHealthExport(ok({ mode: "rank", measure: FI }), ctx).lines[1]).toMatch(/^Milwaukee County: 13\.85%/);
+  });
+  it("shows rates per 100,000 or 10,000 as whole numbers; other figures keep Health Compass's decimals", () => {
+    const wihra = data.topics.find((t) => t.key === "WIHRA")!;
+    expect(num(1664.98, wihra)).toBe("1,665");
+    expect(num(9.7143, data.topics.find((t) => t.key === "MQ35")!)).toBe("9.71%");
   });
   it("rows name each ZIP's neighborhoods, or its town", () => {
     const t = tableOf(mismatch);

@@ -13,19 +13,24 @@ export const label = (t: Pick<HealthTopic, "name">) =>
   t.name.replace(/\s*\([^)]*\)/g, "").trim().split(/\s+/).map((w) => (w.length > 1 && w === w.toUpperCase() ? w : w.toLowerCase())).join(" ");
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
-export const num = (v: number, t: HealthTopic) =>
-  t.units.startsWith("%") ? `${v.toFixed(t.decimals)}%` : v.toLocaleString("en-US", { minimumFractionDigits: t.decimals, maximumFractionDigits: t.decimals });
+// A rate per 100,000 or 10,000 people reads as a whole number; hundredths there mean nothing. The CSV keeps exact values.
+export const num = (v: number, t: HealthTopic) => {
+  const d = /^per [\d,]+/.test(t.units) ? 0 : t.decimals;
+  return t.units.startsWith("%") ? `${v.toFixed(d)}%` : v.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
+};
 export const figText = (f: FigOut | undefined | null, t: HealthTopic) =>
   !f ? "—" : f.lo === null || f.hi === null ? `${num(f.value, t)} (no range published)` : `${num(f.value, t)} (${num(f.lo, t)}–${num(f.hi, t)})`;
 export const placeText = (l: ZipLine) => (l.places.length ? `${l.places.slice(0, 2).join(", ")}${l.places.length > 2 ? " and more" : ""}` : l.town || "—");
-const zipList = (ls: ZipLine[]) => `${ls.slice(0, 3).map((l) => l.zip).join(", ")}${ls.length > 3 ? ` and ${ls.length - 3} more` : ""}`;
+// A ZIP as people know it: "53206 (North Division)", its first City neighborhood, or its town outside the City.
+const zipName = (l: ZipLine) => { const where = l.places[0] ?? (l.town && l.town !== "Milwaukee" ? l.town : ""); return where ? `${l.zip} (${where})` : l.zip; };
+const zipList = (ls: ZipLine[]) => `${ls.slice(0, 3).map(zipName).join(", ")}${ls.length > 3 ? ` and ${ls.length - 3} more` : ""}`;
 const VERDICT = { higher: "clearly higher", lower: "clearly lower", same: "about the same", uncertain: "too uncertain to say", "no-range": "no range published" } as const;
 const verdictText = (l: ZipLine) => (l.verdict ? VERDICT[l.verdict] : "—");
 
 export function leadOf(r: HealthOk): { strong: string; rest: string | null } {
   const m = label(r.measure);
   if (r.mode === "one") {
-    const z = r.zip.zip;
+    const z = zipName(r.zip);
     switch (r.zip.verdict) {
       case "higher": case "lower": return { strong: `${z} is clearly ${r.zip.verdict} than Milwaukee County on ${m}.`, rest: null };
       case "same": return { strong: `${z} is about the same as Milwaukee County on ${m}.`, rest: null };
@@ -54,6 +59,9 @@ export function leadOf(r: HealthOk): { strong: string; rest: string | null } {
   }
   return { strong: `No ZIP has ${phrase}.`, rest: null };
 }
+
+// The benchmark every verdict is against, shown under the lead.
+export const countyLine = (r: HealthOk): string | null => (r.mode === "together" || !r.county ? null : `Milwaukee County: ${figText(r.county, r.measure)}.`);
 
 export function zipHealthTitle(r: HealthOk): string {
   if (r.mode === "one") return `ZIP ${r.zip.zip} · ${r.measure.name}`;
@@ -134,7 +142,7 @@ export function zipHealthExport(r: HealthOk, ctx: Ctx): CardExport {
   const t = tableOf(r);
   return {
     title: zipHealthTitle(r),
-    lines: [lead.rest ? `${lead.strong} ${lead.rest}` : lead.strong],
+    lines: [lead.rest ? `${lead.strong} ${lead.rest}` : lead.strong, ...(countyLine(r) ? [countyLine(r) as string] : [])],
     csv: {
       head: ["ZIP", "Where", ...figHead(r.measure.name), ...(r.mode === "one" || r.mode === "rank" ? [] : figHead(r.other.name)), "Milwaukee County", "Milwaukee County standard error", "Milwaukee County period"],
       rows: lines.map((l) => [l.zip, placeText(l), ...fig(l.a), ...(r.mode === "one" || r.mode === "rank" ? [] : fig(l.b)), r.county?.value ?? null, r.county?.se ?? null, r.county?.period ?? ""]),

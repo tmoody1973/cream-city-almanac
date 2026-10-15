@@ -1,7 +1,7 @@
 "use client";
 
 import type { HealthOk } from "@/convex/lib/healthAnswer";
-import { creditsOf, leadOf, mapOf, notesOf, tableOf, zipHealthExport, zipHealthTitle } from "@/ui/lib/zipHealthText";
+import { countyLine, creditsOf, leadOf, mapOf, notesOf, tableOf, zipHealthExport, zipHealthTitle } from "@/ui/lib/zipHealthText";
 import { CityMap } from "./CityMapLoader";
 import { ExportBar } from "./ExportBar";
 import { ProvenanceTag } from "./ProvenanceTag";
@@ -17,6 +17,7 @@ export function ZipHealthCard({ r }: { r: HealthOk }) {
     <figure className={styles.excerpt} data-card="zip-health">
       <figcaption className={styles.excerptTitle}>{zipHealthTitle(r)} <ProvenanceTag source="HCM" /></figcaption>
       <p className={styles.tractSummary} data-summary><strong>{lead.strong}</strong>{lead.rest && ` ${lead.rest}`}</p>
+      {countyLine(r) && <p className={styles.source} data-county>{countyLine(r)}</p>}
       {t.rows.length > 0 && (
         <div className={styles.tractScroll} tabIndex={0} role="region" aria-label={`${zipHealthTitle(r)}, scroll sideways for more`}>
           <table className={styles.excerptTable}>
