@@ -204,3 +204,25 @@ describe("employee tenure (L4)", () => {
     expect(ASK_PROMPT).toMatch(/City employees/);
   });
 });
+
+describe("plain replies (spec 2026-10-15-plain-replies §4)", () => {
+  it("asks for meaning, one caveat and an optional next question, with two worked examples and no codes", () => {
+    expect(ASK_PROMPT).toContain("The card already states the answer and carries every figure, place and source.");
+    expect(ASK_PROMPT).toContain("Name datasets by their names, never by code or column name.");
+    expect(ASK_PROMPT).toContain("That means the ZIPs with the most poverty mostly also report the most food hardship");
+    expect(ASK_PROMPT).toContain("The highest-poverty areas sit close together");
+    expect(ASK_PROMPT).not.toContain("dataset codes (like N03) are fine");
+    expect(ASK_PROMPT).not.toContain("by code (H05, W01)");
+    expect(ASK_PROMPT).not.toContain("Find the datasets first, read the column guide");
+  });
+  it("keeps the rules it doesn't replace (review focus 5)", () => {
+    for (const kept of ["Never write a number, percentage, count or amount in your own words.", "For datasets that name private people", "use zipHealth, by ZIP code, from Health Compass Milwaukee", "Never name or single out an employee"]) expect(ASK_PROMPT).toContain(kept);
+  });
+  it("no longer sends the tract tools to dataset sheets first", () => {
+    for (const name of ["rankTracts", "compareYears", "relateTracts"]) {
+      const d = askTools(backend({})).find((t) => t.name === name)!.description;
+      expect(d).not.toContain("column guide (showDataset) first");
+      expect(d).toContain("if you don't know the column, call without a valid one and choose from the list it returns");
+    }
+  });
+});
