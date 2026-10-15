@@ -232,6 +232,15 @@ test.describe("signed in", () => {
     await expect(card.getByTitle("From the City of Milwaukee's open data")).toBeVisible();
   });
 
+  test("a City-employee tenure question draws a so-far card in years (L4)", async ({ page }) => {
+    test.skip(!(await page.request.get("https://data.milwaukee.gov/api/3/action/status_show").then((r) => r.ok()).catch(() => false)), "City API unreachable");
+    await ask(page, "How long have city employees worked here, by department?");
+    const card = page.locator("[data-card=span]:visible");
+    await expect(card).toBeVisible({ timeout: 40_000 });
+    await expect(card).toContainText("time worked so far");
+    await expect(card).toContainText("years");
+  });
+
   test("a how-long question draws a time-span card with medians, open cases and the export line", async ({ page }) => {
     test.skip(!(await page.request.get("https://data.milwaukee.gov/api/3/action/status_show").then((r) => r.ok()).catch(() => false)), "City API unreachable");
     await ask(page, "How long do complaints take to close, by department?");

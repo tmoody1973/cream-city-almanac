@@ -94,7 +94,8 @@ export function HowItWorks({ status, example, areas }: { status: CatalogStatus |
               the middle case: half took less time. The &ldquo;9 in 10&rdquo; time is how long all but the slowest tenth took. Cases still
               open aren&apos;t counted, so the slowest ones are missing, and the card says how many. It can also say how long things still
               open have been open so far, like buildings on the City&apos;s vacant list or complaints not yet closed, measured to the day the
-              data is as of.
+              data is as of.{" "}It also says how long City employees have worked there. In files that name people, a group of fewer than 10 shows no
+              times at all, so no one&apos;s tenure can be picked out.
             </p>
             <p>
               Ask can describe one ZIP code in Milwaukee County: who lives there and how it compares with Milwaukee, from the U.S. Census
