@@ -12,6 +12,7 @@ import { boundaryParams, changeParams, countParams, rankParams, relateParams, sp
 import { CityMap } from "./CityMapLoader";
 import { LivePreview } from "./LivePreview";
 import { OpenLink, type Open } from "./OpenLink";
+import { sheetView } from "@/ui/lib/askNotes";
 import { ProvenanceTag } from "./ProvenanceTag";
 import { ChangeCard, NEIGHBORHOODS_HELP, RankCard, RelateCard, TractMapSlot } from "./TractCards";
 import { FollowUps, type FollowUp } from "./FollowUps";
@@ -185,6 +186,11 @@ export const Lookups = createContext<Set<string>>(new Set());
 function Lookup({ id, folded = null, children }: { id?: string; folded?: ReactNode; children: ReactNode }) {
   const lookups = useContext(Lookups);
   return id && lookups.has(id) ? folded : children;
+}
+// A showDataset card shown once per answer (sheetView): hidden when repeated, one line when folded, else in full.
+function Sheet({ id, line, children }: { id?: string; line: ReactNode; children: ReactNode }) {
+  const view = sheetView(id, useContext(EarlierSheets), useContext(Lookups));
+  return view === "hidden" ? null : view === "line" ? line : children;
 }
 const DatasetUsed = ({ code, name, onOpen }: { code: string; name: string; onOpen: Open }) => (
   <p className={styles.source} data-card="dataset-used">Dataset used: {name} <OpenLink code={code} onOpen={onOpen} label="Open the sheet" /></p>
@@ -392,10 +398,10 @@ export function AskCards({ onOpen }: { onOpen?: (search: string) => void }) {
     if (!r) return <Failed />;
     if (r.status !== "ok") return null;
     return (
-      <Lookup id={props.toolCallId} folded={<DatasetUsed code={r.code} name={r.name} onOpen={onOpen} />}>
-        <Once id={props.toolCallId}><SheetCard code={r.code} name={r.name} onOpen={onOpen} callKey={key("showDataset", props as never)} /></Once>
-        <Once id={props.toolCallId}><FollowUps items={datasetFollowUps(r)} id={props.toolCallId} /></Once>
-      </Lookup>
+      <Sheet id={props.toolCallId} line={<DatasetUsed code={r.code} name={r.name} onOpen={onOpen} />}>
+        <SheetCard code={r.code} name={r.name} onOpen={onOpen} callKey={key("showDataset", props as never)} />
+        <FollowUps items={datasetFollowUps(r)} id={props.toolCallId} />
+      </Sheet>
     );
   } }, [onOpen]);
 

@@ -48,9 +48,9 @@ Tarik approved this design in conversation on 2026-10-15.
 **Two worked examples follow it in the prompt.** Neither contains a figure.
 
 1. After a ZIP health "low despite high" card:
-   > That means the ZIPs with the most poverty mostly also report the most food hardship; only one comes close to being an exception. The food figures come from a survey, so ZIPs where few people answered have wide ranges. You could ask how that ZIP compares with the county on child food insecurity.
+   > The ZIPs the card lists are leads worth checking on the ground, not proof that something there protects people. The food figures come from a survey, so ZIPs where few people answered have wide ranges. You could ask how one of those ZIPs compares with the county on child food insecurity.
 2. After a tract ranking card:
-   > The highest-poverty areas sit close together, which matters if you're choosing where to focus outreach. Small Census areas have wide margins, so neighbors in the list may not truly differ. You could ask which neighborhoods those areas fall in.
+   > This ranking shows where to look first, not why those areas rank high. Small Census areas have wide margins, so areas next to each other in the list may not truly differ. You could ask which neighborhoods those areas fall in.
 
 **Other prompt changes:**
 - **Codes:**

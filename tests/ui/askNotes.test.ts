@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { earlierCountIds, earlierSheetIds, lookupIds, lastCountId, newestTurnCallIds, noteNumbers, retriedCallIds, noteOrder } from "../../ui/lib/askNotes";
+import { earlierCountIds, earlierSheetIds, lookupIds, sheetView, lastCountId, newestTurnCallIds, noteNumbers, retriedCallIds, noteOrder } from "../../ui/lib/askNotes";
 
 const u = (id: string) => ({ id, role: "user", content: "q" });
 const call = (id: string) => ({ id, role: "assistant", content: "", toolCalls: [{ id: `c-${id}` }] });
@@ -96,18 +96,32 @@ describe("retriedCallIds", () => {
 
 describe("lookups fold when an answer reaches an analysis card (plain replies §3)", () => {
   const calls = (id: string, ...named: [string, string][]) => ({ id, role: "assistant", content: "", toolCalls: named.map(([cid, name]) => ({ id: cid, function: { name } })) });
+  const result = (callId: string, status: string) => ({ id: `t-${callId}`, role: "tool", toolCallId: callId, content: JSON.stringify({ status }) });
   it("folds the answer's searches and sheets once it has an analysis call", () => {
-    const m = [u("1"), calls("a", ["s1", "searchCatalog"], ["d1", "showDataset"]), calls("b", ["r1", "relateTracts"])];
+    const m = [u("1"), calls("a", ["s1", "searchCatalog"], ["d1", "showDataset"]), calls("b", ["r1", "relateTracts"]), result("r1", "ok")];
     expect([...lookupIds(m as never)].sort()).toEqual(["d1", "s1"]);
   });
   it("leaves a search-only answer alone (review focus 1)", () => {
     expect(lookupIds([u("1"), calls("a", ["s1", "searchCatalog"])] as never).size).toBe(0);
   });
   it("never folds a preview", () => {
-    expect([...lookupIds([u("1"), calls("a", ["p1", "previewData"], ["c1", "countRecords"])] as never)]).toEqual([]);
+    expect([...lookupIds([u("1"), calls("a", ["p1", "previewData"], ["c1", "countRecords"]), result("c1", "ok")] as never)]).toEqual([]);
+  });
+  it("folds only when the analysis answered: a refusal, a failure or a call still running keeps the search (review I4)", () => {
+    const base = [u("1"), calls("a", ["s1", "searchCatalog"], ["c1", "countRecords"])];
+    expect(lookupIds([...base, result("c1", "no-locations")] as never).size).toBe(0);
+    expect(lookupIds([...base, result("c1", "not-found")] as never).size).toBe(0);
+    expect(lookupIds(base as never).size).toBe(0);
+    expect([...lookupIds([...base, result("c1", "ok")] as never)]).toEqual(["s1"]);
+  });
+  it("shows a sheet once: a repeat hides, a folded one is a line, otherwise the card (review I1)", () => {
+    expect(sheetView("d1", new Set(["d1"]), new Set(["d1"]))).toBe("hidden");
+    expect(sheetView("d1", new Set(), new Set(["d1"]))).toBe("line");
+    expect(sheetView("d1", new Set(), new Set())).toBe("card");
+    expect(sheetView(undefined, new Set(), new Set())).toBe("card");
   });
   it("judges each answer on its own (review focus 2)", () => {
-    const m = [u("1"), calls("a", ["s1", "searchCatalog"]), u("2"), calls("b", ["s2", "searchCatalog"], ["c2", "countRecords"])];
+    const m = [u("1"), calls("a", ["s1", "searchCatalog"]), u("2"), calls("b", ["s2", "searchCatalog"], ["c2", "countRecords"]), result("c2", "measured")];
     expect([...lookupIds(m as never)]).toEqual(["s2"]);
   });
 });

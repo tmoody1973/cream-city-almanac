@@ -209,8 +209,11 @@ describe("plain replies (spec 2026-10-15-plain-replies §4)", () => {
   it("asks for meaning, one caveat and an optional next question, with two worked examples and no codes", () => {
     expect(ASK_PROMPT).toContain("The card already states the answer and carries every figure, place and source.");
     expect(ASK_PROMPT).toContain("Name datasets by their names, never by code or column name.");
-    expect(ASK_PROMPT).toContain("That means the ZIPs with the most poverty mostly also report the most food hardship");
-    expect(ASK_PROMPT).toContain("The highest-poverty areas sit close together");
+    expect(ASK_PROMPT).toContain("The ZIPs the card lists are leads worth checking on the ground");
+    expect(ASK_PROMPT).toContain("This ranking shows where to look first, not why those areas rank high.");
+    // The examples carry no counts in words and no claims the card can't support (review I3).
+    expect(ASK_PROMPT).not.toContain("only one comes close");
+    expect(ASK_PROMPT).not.toContain("sit close together");
     expect(ASK_PROMPT).not.toContain("dataset codes (like N03) are fine");
     expect(ASK_PROMPT).not.toContain("by code (H05, W01)");
     expect(ASK_PROMPT).not.toContain("Find the datasets first, read the column guide");

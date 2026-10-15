@@ -97,8 +97,20 @@ export function newestTurnCallIds(messages: CallMsg[]): Set<string> {
 const ANALYSIS = new Set(["countRecords", "timeSpan", "rankTracts", "compareYears", "relateTracts", "getNumber", "factSheet", "zipProfile", "zipHealth", "fireHistory", "countStops", "countTurnout", "findPlace", "boundariesFor", "readReport"]);
 const LOOKUPS = new Set(["searchCatalog", "showDataset"]);
 
-export function lookupIds(messages: CallMsg[]): Set<string> {
+// Only an analysis that answered folds the lookups: after a refusal ("no locations", "not found") or while the call
+// is still running, the search list may be what the person needs to see.
+const ANSWERED = new Set(["ok", "measured"]);
+const answered = (m: CallMsg & { toolCallId?: string }) => {
+  try {
+    return ANSWERED.has(String((JSON.parse(String(m.content)) as { status?: unknown }).status));
+  } catch {
+    return false;
+  }
+};
+
+export function lookupIds(messages: (CallMsg & { toolCallId?: string })[]): Set<string> {
   const folded = new Set<string>();
+  const ok = new Set(messages.filter((m) => m.role === "tool" && m.toolCallId && answered(m)).map((m) => m.toolCallId as string));
   let lookups: string[] = [];
   let analysed = false;
   const close = () => {
@@ -111,11 +123,18 @@ export function lookupIds(messages: CallMsg[]): Set<string> {
     for (const c of m.toolCalls ?? []) {
       const name = c.function?.name ?? "";
       if (LOOKUPS.has(name)) lookups.push(c.id);
-      if (ANALYSIS.has(name)) analysed = true;
+      if (ANALYSIS.has(name) && ok.has(c.id)) analysed = true;
     }
   }
   close();
   return folded;
+}
+
+// A dataset sheet's card: a repeat of one shown later in the answer draws nothing (earlierSheetIds), a lookup on the
+// way to an answer is one line (lookupIds), otherwise the full card.
+export function sheetView(id: string | undefined, earlier: Set<string>, lookups: Set<string>): "hidden" | "line" | "card" {
+  if (id && earlier.has(id)) return "hidden";
+  return id && lookups.has(id) ? "line" : "card";
 }
 
 // A call the model repeated later in the same answer: it refused (a list of options) and the model fixed it itself,
