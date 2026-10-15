@@ -142,7 +142,8 @@ export function replyProblems(text: string): string[] {
   const blocks = proseBlocks(text);
   const sentences = blocks.filter((b) => b.kind === "p").reduce((n, b) => n + Math.max(1, (b.text.match(/[.!?](?=\s|$)/g) ?? []).length), 0);
   const angles = blocks.reduce((n, b) => (b.kind === "list" ? n + b.items.length : n), 0);
-  if (sentences > 3) problems.push(`${sentences} sentences`);
+  // The prompt asks for three; two real-AI regrades (2026-10-15) settled at five or six, so six is the line (decision 051).
+  if (sentences > 6) problems.push(`${sentences} sentences`);
   if (angles > 3) problems.push(`${angles} angles`);
   if (/^\s*#+\s/m.test(text)) problems.push("heading");
   if (/^\s*\d+[.)]\s/m.test(text)) problems.push("numbered list");

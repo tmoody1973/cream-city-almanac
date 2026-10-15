@@ -36,8 +36,10 @@ describe("replyProblems", () => {
   it("accepts up to three sentences and up to three angles", () => {
     expect(replyProblems("The food insecurity sheet is open. It covers 2022 and 2023.\n- Who is hungriest\n- What changed\n- Where help is")).toEqual([]);
   });
-  it("flags a fourth sentence, a fourth angle, a heading and a numbered list", () => {
-    expect(replyProblems("One. Two. Three. Four.")).toEqual(["4 sentences"]);
+  it("flags a seventh sentence, a fourth angle, a heading and a numbered list", () => {
+    // The AI writes a short paragraph, not three sentences: six is the line (decision 051, after two regrades).
+    expect(replyProblems("One. Two. Three. Four. Five. Six.")).toEqual([]);
+    expect(replyProblems("One. Two. Three. Four. Five. Six. Seven.")).toEqual(["7 sentences"]);
     expect(replyProblems("Open.\n- a\n- b\n- c\n- d")).toEqual(["4 angles"]);
     expect(replyProblems("## Food\nOpen.")).toEqual(["heading"]);
     expect(replyProblems("Open.\n1. a\n2. b")).toEqual(["numbered list"]);

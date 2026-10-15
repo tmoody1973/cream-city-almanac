@@ -29,8 +29,11 @@
 - **Two worked example replies** are in the instructions. Neither contains a figure or a place the AI could copy wrongly.
 - **The report card now fails a reply that breaks the shape.** This reverses Tarik's 2026-10-10 call that reply length is "tracked, not failed": a warning nobody acted on let every reply drift long.
 
+- **Two real-AI regrades settled the length (2026-10-15).** With the new rules, replies dropped from 6–10 sentences to mostly 5–6, with no codes and no restating of the card. They did not reach three. A second round of wording (an explicit three-part shape) made replies *longer*, so it was reverted. The report card now fails a reply over **six** sentences. On the first regrade's replies, that is 51 of 58 within shape and 44 of 58 passing outright. The prompt still asks for three.
+
 **What we gave up:**
 - **Lookup cards are hidden when an analysis follows.** A reader who wants the full search results has to ask a search question.
+- **Three sentences.** Replies are a short paragraph, five or six sentences, not the three the rules ask for.
 - **The pass rate will drop at first.** A stricter grader means misses for long replies until the rules take hold.
 - **Follow-up buttons still carry dataset codes** in the question they fill in, so Ask picks the exact dataset.
 - **The census-tract cards' own headlines and field definitions are unchanged.** They're rebuilt with the neighborhood answers (Part 1).
