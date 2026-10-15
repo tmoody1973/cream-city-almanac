@@ -23,7 +23,7 @@ Tarik approved this design in conversation on 2026-10-15, section by section.
 - **First slice:**
   - `rankTracts` and `relateTracts` (both modes) by neighborhood;
   - `compareYears` by neighborhood comes next;
-  - the City's property file (MPROP medians) keeps tract answers, because tract medians can't be averaged.
+  - only rates are built into neighborhoods: counts can't be averaged, and neither can tract medians (median income, the City's property file values), so those keep tract answers.
 - **This revisits decision 035** ("never blend tracts"). The blend is labeled as approximate, and the tract answer stays one click away.
 
 ## 3. Data (weekly, in `build:refreshNeighborhoods`)
@@ -74,7 +74,7 @@ Tarik approved this design in conversation on 2026-10-15, section by section.
 ## 5. Tools and routing
 
 - **`rankParams` and `relateParams`** gain `unit: "neighborhood" | "tract"` (default `"neighborhood"`).
-  - With `neighborhood` (limit to one neighborhood's tracts) set, or a City property file code, the unit is `"tract"` whatever was asked.
+  - With `neighborhood` (limit to one neighborhood's tracts) set, or a measure that isn't a rate (`Header.kind` other than `"rate"`), the unit is `"tract"` whatever was asked.
   - With unit `"neighborhood"`, only City tracts are used, from whichever member (City or County) the dataset has.
 - **`rankTracts` / `relateTracts`** return their current tract answer for `"tract"`. For `"neighborhood"` they return `{ status: "ok", tool: "rank-n" | "relate-n", … }`, stored and served through `tractDetail` like today's answers, so share links and exports work the same way.
 - **The prompt's routing line** (lib/ask/prompt.ts) states §2's rule, and that census tracts are only for questions that say so.
@@ -97,9 +97,7 @@ Shaped like the ZIP health card:
    - the period;
    - DYCU's credit and a link to the dataset.
 5. **Map:** the matching neighborhoods, from the City's neighborhood layer (`NEIGHBORHD` field). `CityMap`'s shape loader gains a `field` option (default `GEOID`) and accepts neighborhood names.
-6. **Follow-up buttons:**
-   - "BY CENSUS AREA" (the same question, by census tract);
-   - for rank, "{top} VS CITY" (that neighborhood's fact sheet, if DYCU profiles it, or its rank figure).
+6. **Follow-up button:** "BY CENSUS AREA" (the same question, by census tract).
 7. **Export bar and share link,** as on other cards.
 
 ## 7. When things go wrong
@@ -109,7 +107,7 @@ Shaped like the ZIP health card:
 | No populations stored yet | rank and relate fall back to the tract answer, and say "neighborhood figures aren't ready yet" |
 | A tract is missing from the populations | its pieces count with no residents (left out); the build notes how many |
 | Fewer than 20 usable neighborhoods for "go together" | the existing "too few" wording |
-| A measure that's a count, not a rate | neighborhoods aren't built (a weighted average of counts is wrong); the tract answer, with the note "counts can't be combined across census areas" |
+| A measure that isn't a rate (a count, or a median such as median income) | neighborhoods aren't built (counts and medians can't be averaged); the tract answer, with the note "this measure can't be combined across census areas" |
 
 ## 8. Tests and grading
 
@@ -123,14 +121,15 @@ Shaped like the ZIP health card:
 **Backend tests:**
 - the population refresh stores tracts and keeps last week's on failure;
 - `rankTracts` with unit `"neighborhood"` returns a `rank-n` answer from fixtures;
-- a count measure falls back to tracts.
+- a count or median measure falls back to tracts.
 
 **Browser test:** the scripted model's "rank tracts" question with unit `"neighborhood"` draws `[data-card=neighborhood-rank]` with "City of Milwaukee:".
 
 **Live check on dev (with Tarik's OK):**
 - push;
 - run `build:refreshNeighborhoods`;
-- confirm populations for about 300 County tracts and pieces stored, and a sample neighborhood's residents within 10% of the Census Bureau's own neighborhood-sized totals where known.
+- confirm populations for about 300 County tracts and pieces stored;
+- confirm the City total built from the pieces is within 3% of the Census Bureau's City of Milwaukee population (the stored city figures).
 
 **Graded (real AI):**
 - add "Which neighborhoods have the highest rent burden?" (`rankTracts`, `tool: "rank-n"`) and "Do neighborhoods with more renters have less internet at home?" (`relateTracts`, `relate-n`);
@@ -141,7 +140,7 @@ Shaped like the ZIP health card:
 - **Decision 052:**
   - blending tracts into neighborhoods, revisiting 035;
   - the weights;
-  - why counts and MPROP medians stay tract answers;
+  - why only rates are built (counts and medians stay tract answers);
   - "What actually happened" is left blank.
 - **DESIGN.md:** a "Neighborhood figures" card section.
 
