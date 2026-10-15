@@ -47,4 +47,8 @@ describe("geojsonBounds", () => {
     expect(shapeSummary({ fits: ["53208"], close: [], noun: "ZIP" })).toBe("Map of 1 highlighted ZIP");
     expect(shapeSummary({ fits: [], close: ["1", "2"] })).toBe("Map of 2 close tracts");
   });
+  it("asks the City's neighborhood layer by name, doubling quotes and refusing anything else (review focus 3)", () => {
+    expect(tractShapesUrl("https://x/MapServer/4", ["O'CONNOR", "ST. JOSEPH"], "NEIGHBORHD")).toContain(encodeURIComponent("NEIGHBORHD IN ('O''CONNOR','ST. JOSEPH')"));
+    expect(tractShapesUrl("https://x/MapServer/4", ["X); DROP"], "NEIGHBORHD")).toBeNull();
+  });
 });

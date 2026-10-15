@@ -36,7 +36,7 @@ function pattern(color: string, crossed: boolean, size: number): ImageData {
 }
 
 const TRACT_IDS = ["tracts-fit", "tracts-line"];
-export type TractShapes = { url: string; fits: string[]; close: string[]; noun?: string };
+export type TractShapes = { url: string; fits: string[]; close: string[]; noun?: string; field?: string };
 type Props = { cells?: MapData | null; count?: number; boundary?: string | null; layer?: { url: string; name: string } | null; tracts?: TractShapes | null; height?: number | string; after?: string };
 
 export default function CityMap({ cells = null, count = 0, boundary = null, layer = null, tracts = null, height = 260, after }: Props) {
@@ -197,7 +197,7 @@ export default function CityMap({ cells = null, count = 0, boundary = null, laye
     setTractNote(null);
     const t = tractsNow.current;
     if (!t) return;
-    const url = tractShapesUrl(t.url, [...t.fits, ...t.close]);
+    const url = tractShapesUrl(t.url, [...t.fits, ...t.close], t.field);
     if (!url) { setTractNote("Tract map unavailable."); return; }
     const ctl = new AbortController();
     (async () => {
@@ -225,7 +225,7 @@ export default function CityMap({ cells = null, count = 0, boundary = null, laye
       if (m.hasImage("tract-hatch")) m.removeImage("tract-hatch");
       m.addImage("tract-hatch", pattern(ink, false, 8));
       m.addSource("tracts", { type: "geojson", data: tractData });
-      if (t.fits.length) m.addLayer({ id: "tracts-fit", type: "fill", source: "tracts", filter: ["in", ["get", "GEOID"], ["literal", t.fits]], paint: { "fill-pattern": "tract-hatch" } });
+      if (t.fits.length) m.addLayer({ id: "tracts-fit", type: "fill", source: "tracts", filter: ["in", ["get", t.field ?? "GEOID"], ["literal", t.fits]], paint: { "fill-pattern": "tract-hatch" } });
       m.addLayer({ id: "tracts-line", type: "line", source: "tracts", paint: { "line-color": ink, "line-width": 1.5 } });
       const box = geojsonBounds(tractData);
       // Once per set of tracts: a day/night redraw keeps whatever view the person has panned to. Extra room at the

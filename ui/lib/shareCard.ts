@@ -4,6 +4,7 @@ import { changeCardText, rankCardText, relateCardText } from "./tractCardText";
 import { fireExport } from "./fireText";
 import { turnoutExport } from "./turnoutText";
 import { zipHealthExport } from "./zipHealthText";
+import { nExport } from "./neighborhoodText";
 
 // A share link's snapshot (spec 2026-10-14-share-link-design.md §5): the server re-runs the card's tool and builds
 // the same export the card's CSV, text and PNG come from. Runs in Convex, so it imports only plain functions.
@@ -43,9 +44,9 @@ export function shareCard(tool: ShareTool, result: unknown, ctx: Ctx): Shared | 
     case "countTurnout": return ok ? card(turnoutExport(r as never, ctx)) : null;
     case "fireHistory": return ok ? card(fireExport(r as never, ctx)) : null;
     case "zipHealth": return ok ? card(zipHealthExport(r as never, ctx)) : null;
-    case "rankTracts": return ok && r.tool === "rank" ? card(rankExport(r as never, rankCardText(r as never), ctx)) : null;
+    case "rankTracts": return ok && r.tool === "rank" ? card(rankExport(r as never, rankCardText(r as never), ctx)) : ok && r.tool === "rank-n" ? card(nExport(r as never, ctx)) : null;
     case "compareYears": return ok && r.tool === "change" ? card(changeExport(r as never, changeCardText(r as never), ctx)) : null;
-    case "relateTracts": return ok && r.tool === "relate" ? card(relateExport(r as never, relateCardText(r as never), ctx)) : null;
+    case "relateTracts": return ok && r.tool === "relate" ? card(relateExport(r as never, relateCardText(r as never), ctx)) : ok && r.tool === "relate-n" ? card(nExport(r as never, ctx)) : null;
     case "readReport": return ok && r.passages?.length ? { quote: r.passages.map((p) => quoteText(p, ctx)).join("\n\n") } : null;
   }
 }

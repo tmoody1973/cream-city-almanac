@@ -11,6 +11,7 @@ import { areaYears, latestDefYear, neighborhoodsFor, type DycuDef } from "./lib/
 import { areaHead, placeRanks, RELATE_MIN, shareIn, type Area, type AreaHead, type AreaMap } from "./lib/tractsIn";
 import type { CityShare } from "./lib/tractPlaces";
 import { byClearance, changeOf, isUnreliable, mismatch, rankValues, relationship, spearman, type TractValue } from "./lib/tractStats";
+import { buildNeighborhoods, nMismatch, nTogether, versusCity, type NFigure, type NVerdict, type Piece } from "./lib/neighborhoodFigures";
 import { rateLimiter } from "./limits";
 import { loadProperty, NO_PROPERTY, propertyHead, propertySide, type PropertySide } from "./property";
 
@@ -35,7 +36,7 @@ export type Refusal = Tag & (
   | { status: "no-tracts"; name: string; map: AreaMap; years?: number[] }
   | { status: "too-few-tracts"; name: string; map: AreaMap; n: number; needed: number }
 );
-export type RankDetail = { status: "ok"; tool: "rank"; header: Header; direction: "high" | "low"; top: TractRow[]; ties: TractRow[]; tieCount: number; unreliable: TractRow[]; unreliableCount: number; highlighted: string[]; key: string; area?: AreaHead };
+export type RankDetail = { status: "ok"; tool: "rank"; header: Header; direction: "high" | "low"; top: TractRow[]; ties: TractRow[]; tieCount: number; unreliable: TractRow[]; unreliableCount: number; highlighted: string[]; key: string; area?: AreaHead; unitNote?: string };
 
 const vPlace = v.union(v.literal("City"), v.literal("County"));
 const CONFIDENCE = { moe90: "90% confidence (Census)", ci95: "95% confidence (CDC)" } as const;
@@ -234,9 +235,34 @@ export async function store(ctx: ActionCtx, args: unknown) {
   return { key, save: (detail: unknown) => ctx.runMutation(internal.map.remember, { key, result: JSON.stringify(detail), expiresAt: Date.now() + DETAIL_TTL_MS }) };
 }
 
+
+// Neighborhood answers' inputs (spec 2026-10-15-neighborhood-answers §3): each tract's pieces and population.
+export const neighborhoodInputs = internalQuery({
+  args: {},
+  handler: async (ctx) => ({
+    pieces: (await ctx.db.query("tractNeighborhoods").collect()).map((r) => ({ geoid: r.geoid, pieces: r.pieces ?? [] })),
+    pops: (await ctx.db.query("tractPopulations").collect()).map((r) => ({ geoid: r.geoid, population: r.population })),
+  }),
+});
+
+const vUnit = v.optional(v.union(v.literal("neighborhood"), v.literal("tract")));
+const UNIT_NOTE = {
+  notRate: "This measure can't be combined across census areas, so these are census areas.",
+  notReady: "Neighborhood figures aren't ready yet, so these are census areas.",
+  property: "The City's property figures are medians, which can't be combined across census areas, so these are census areas.",
+} as const;
+
+// Neighborhood figures for one measure, or why they can't be built (the tract answer then carries the reason).
+async function neighborhoodsOf(ctx: ActionCtx, values: TractValue[]): Promise<ReturnType<typeof buildNeighborhoods> | null> {
+  const { pieces, pops } = await ctx.runQuery(internal.tracts.neighborhoodInputs, {});
+  if (!pops.length) return null;
+  return buildNeighborhoods(values, new Map(pieces.filter((p) => p.pieces.length).map((p) => [p.geoid, p.pieces as Piece[]])), new Map(pops.map((p) => [p.geoid, p.population])));
+}
+const nRow = (f: NFigure, city: NFigure | null): NRow => ({ ...f, verdict: versusCity(f, city) });
+
 export const rankTracts = action({
-  args: { code: v.string(), column: v.string(), place: vPlace, year: v.string(), direction: v.union(v.literal("high"), v.literal("low")), cutoff: v.optional(v.number()), ...vArea },
-  handler: async (ctx, args): Promise<RankDetail | Refusal> => {
+  args: { code: v.string(), column: v.string(), place: vPlace, year: v.string(), direction: v.union(v.literal("high"), v.literal("low")), cutoff: v.optional(v.number()), unit: vUnit, ...vArea },
+  handler: async (ctx, args): Promise<RankDetail | NRankDetail | Refusal> => {
     const spend = await spender(ctx);
     // A neighborhood is checked first, from the database alone: a misspelling or an empty one costs nothing.
     const area = await areaFor(ctx, args);
@@ -270,6 +296,29 @@ export const rankTracts = action({
       return { ...r, share: shareIn(r, area) ?? undefined, ...(position ? { cityRank: { position, of: places.of } } : {}) };
     };
     const head = area ? side.head(args.place, kept.length, Math.max(0, areaSize(names, area, nameYear) - kept.length)) : side.head(args.place, all.length, side.rows.leftOut);
+    const wantN = (args.unit ?? "neighborhood") === "neighborhood" && !area;
+    let unitNote: string | undefined;
+    if (wantN) {
+      if (side.property) unitNote = UNIT_NOTE.property;
+      else if (head.kind !== "rate") unitNote = UNIT_NOTE.notRate;
+      else {
+        const built = await neighborhoodsOf(ctx, all);
+        if (!built) unitNote = UNIT_NOTE.notReady;
+        else {
+          const ranked = rankValues(built.figures.map((f) => ({ geoid: f.name, value: f.value, lo: f.lo, hi: f.hi, kind: f.kind })), args.direction, 10);
+          const byName = new Map(built.figures.map((f) => [f.name, f]));
+          const { key, save } = await store(ctx, { tool: "rank-n", ...args, year: head.year, code: head.code, column: head.column });
+          const detail: NRankDetail = {
+            status: "ok", tool: "rank-n", header: head, direction: args.direction, city: built.city,
+            top: ranked.top.map((x) => nRow(byName.get(x.geoid)!, built.city)),
+            uncertain: ranked.unreliable.map((x) => nRow(byName.get(x.geoid)!, built.city)),
+            small: built.small, thin: built.thin, key,
+          };
+          await save(detail);
+          return detail;
+        }
+      }
+    }
     const { key, save } = await store(ctx, { tool: "rank", ...args, year: head.year, code: head.code, column: head.column });
     const detail: RankDetail = {
       status: "ok", tool: "rank", header: head, direction: args.direction,
@@ -278,6 +327,7 @@ export const rankTracts = action({
       unreliable: ranked.unreliable.map(row), unreliableCount: ranked.unreliable.length,
       highlighted: ranked.top.map((x) => x.geoid), key,
       ...(area ? { area: areaHead(area, kept.map((x) => shareIn(placesOf(x.geoid, nameYear, names), area) ?? 0)) } : {}),
+      ...(unitNote ? { unitNote } : {}),
     };
     await save(detail); // the card gets every tie and every unreliable tract; the model gets the first three of each, with the totals
     return { ...detail, ties: detail.ties.slice(0, 3), unreliable: detail.unreliable.slice(0, 3) };
@@ -287,7 +337,7 @@ export const rankTracts = action({
 // The card's full answer by key. Anyone with the key may read it: it holds public DYCU data and expires in a day.
 export const tractDetail = query({
   args: { key: v.string(), now: v.number() }, // the page passes its clock: queries don't read the wall clock
-  handler: async (ctx, { key, now }): Promise<RankDetail | ChangeDetail | RelateDetail | { status: "expired" }> => {
+  handler: async (ctx, { key, now }): Promise<RankDetail | ChangeDetail | RelateDetail | NRankDetail | NRelateDetail | { status: "expired" }> => {
     if (!key.startsWith("tracts:")) return { status: "expired" };
     const row = await ctx.db.query("mapCache").withIndex("by_key", (q) => q.eq("key", key)).first();
     return row && row.expiresAt > now ? JSON.parse(row.result) : { status: "expired" };
@@ -302,8 +352,14 @@ export type RelateDetail = {
   strength: "too-few" | "little" | "weak" | "moderate" | "strong"; direction: "higher" | "lower";
   aSide?: "high" | "low"; bSide?: "high" | "low"; cutA?: number; cutB?: number;
   fits: { a: TractRow; b: TractRow }[]; fitsCount: number; close: { a: TractRow; b: TractRow }[]; closeCount: number;
-  points: Point[]; highlighted: string[]; closeIds: string[]; key: string; area?: AreaHead;
+  points: Point[]; highlighted: string[]; closeIds: string[]; key: string; area?: AreaHead; unitNote?: string;
 };
+// Neighborhood answers built from census tracts (spec 2026-10-15-neighborhood-answers §4–§5).
+export type NRow = NFigure & { verdict: NVerdict | null };
+export type NRankDetail = { status: "ok"; tool: "rank-n"; header: Header; direction: "high" | "low"; city: NFigure | null; top: NRow[]; uncertain: NRow[]; small: { name: string; residents: number }[]; thin: string[]; key: string };
+export type NRelateDetail = { status: "ok"; tool: "relate-n"; mode: "relate" | "mismatch"; a: Header; b: Header; city: { a: NFigure | null; b: NFigure | null }; n: number; strength: "too-few" | "little" | "weak" | "moderate" | "strong"; direction: "higher" | "lower"; aSide?: "high" | "low"; bSide?: "high" | "low"; cutA?: number; fits: { name: string; a: NRow; b: NRow }[]; close: { name: string; a: NRow; b: NRow }[]; uncertain: string[]; small: { name: string; residents: number }[]; key: string };
+// RankDetail and RelateDetail gain: unitNote?: string
+
 
 // What the model sees: the card reads the rest (caveats, urls, ids, points, every finding) from tractDetail by key.
 type SlimHeader = Omit<Header, "caveats" | "url">;
@@ -383,8 +439,8 @@ const vSide = v.union(v.literal("high"), v.literal("low"));
 const vPick = v.object({ code: v.string(), column: v.string(), cutoff: v.optional(v.number()) });
 
 export const relateTracts = action({
-  args: { a: vPick, b: vPick, place: vPlace, year: v.string(), mode: v.union(v.literal("relate"), v.literal("mismatch")), aSide: v.optional(vSide), bSide: v.optional(vSide), ...vArea },
-  handler: async (ctx, args): Promise<RelateAnswer | Refusal> => {
+  args: { a: vPick, b: vPick, place: vPlace, year: v.string(), mode: v.union(v.literal("relate"), v.literal("mismatch")), aSide: v.optional(vSide), bSide: v.optional(vSide), unit: vUnit, ...vArea },
+  handler: async (ctx, args): Promise<RelateAnswer | NRelateDetail | Refusal> => {
     const spend = await spender(ctx); // one charge covers both datasets
     const area = await areaFor(ctx, args);
     if (area && "status" in area) return area;
@@ -420,6 +476,35 @@ export const relateTracts = action({
     if ("status" in ra) return tag(ra, "a");
     if ("status" in rb) return tag(rb, "b");
     const va = ra.rows, vb = rb.rows;
+    const wantN = (args.unit ?? "neighborhood") === "neighborhood" && !area;
+    let unitNote: string | undefined;
+    if (wantN) {
+      if (ra.property || rb.property) unitNote = UNIT_NOTE.property;
+      else if (ra.head(args.place, 0, 0).kind !== "rate" || rb.head(args.place, 0, 0).kind !== "rate") unitNote = UNIT_NOTE.notRate;
+      else {
+        const [na, nb] = await Promise.all([neighborhoodsOf(ctx, va.values), neighborhoodsOf(ctx, vb.values)]);
+        if (!na || !nb) unitNote = UNIT_NOTE.notReady;
+        else {
+          const bBy = new Map(nb.figures.map((f) => [f.name, f]));
+          const pairs = na.figures.flatMap((a) => (bBy.has(a.name) ? [{ name: a.name, a, b: bBy.get(a.name)! }] : []));
+          const together = nTogether(pairs);
+          const aSide = args.aSide ?? "high", bSide = args.bSide ?? "low";
+          const mm = args.mode === "mismatch" && nb.city ? nMismatch(pairs, aSide, bSide, nb.city.value) : null;
+          const both = (p: { name: string; a: NFigure; b: NFigure }) => ({ name: p.name, a: nRow(p.a, na.city), b: nRow(p.b, nb.city) });
+          const { key, save } = await store(ctx, { tool: "relate-n", ...args });
+          const detail: NRelateDetail = {
+            status: "ok", tool: "relate-n", mode: args.mode,
+            a: ra.head(args.place, pairs.length, 0), b: rb.head(args.place, pairs.length, 0),
+            city: { a: na.city, b: nb.city }, n: together.n, strength: together.strength, direction: together.direction,
+            ...(mm ? { aSide, bSide, cutA: mm.cutA } : {}),
+            fits: (mm?.fits ?? []).map(both), close: (mm?.close ?? []).map(both), uncertain: mm?.uncertain ?? [],
+            small: [...na.small, ...nb.small.filter((s) => !na.small.some((x) => x.name === s.name))], key,
+          };
+          await save(detail);
+          return detail;
+        }
+      }
+    }
     const nameYear = ra.year ?? rb.year ?? String(latestDefYear(names.defs));
     const bBy = new Map(vb.values.map((x) => [x.geoid, x]));
     const pairs = va.values.flatMap((a) => (bBy.has(a.geoid) ? [{ geoid: a.geoid, a, b: bBy.get(a.geoid)! }] : []));
@@ -454,6 +539,7 @@ export const relateTracts = action({
       }),
       highlighted: [...fitsIds], closeIds: [...closeIds], key,
       ...(area ? { area: areaHead(area, shown.map((p) => inArea(p.geoid) ?? 0)) } : {}),
+      ...(unitNote ? { unitNote } : {}),
     };
     await save(detail);
     const { points: _points, highlighted: _highlighted, closeIds: _closeIds, ...rest } = detail;

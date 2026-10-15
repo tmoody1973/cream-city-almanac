@@ -48,7 +48,8 @@ function useDetail(key: string) {
 // The property side is the City's own file; every other side is DYCU's.
 const sourceOf = (h: { confidence: string | null }) => (h.confidence === EXACT ? "CITY" : "DYCU");
 
-function Head({ h, title, summary, expand }: { h: Header | Omit<Header, "caveats" | "url">; title: string; summary: string; expand?: ReactNode }) {
+// note: why a neighborhood question got census areas (spec 2026-10-15-neighborhood-answers §5).
+function Head({ h, title, summary, expand, note }: { h: Header | Omit<Header, "caveats" | "url">; title: string; summary: string; expand?: ReactNode; note?: string }) {
   return (
     <>
       <div className={styles.tractTop}>
@@ -56,6 +57,7 @@ function Head({ h, title, summary, expand }: { h: Header | Omit<Header, "caveats
         {expand}
       </div>
       <p className={styles.tractSummary} data-summary>{summary}</p>
+      {note && <p className={styles.source} data-unit-note>{note}</p>}
       <p className={styles.tractMeta}>
         {h.code} <b>{h.column}</b> ({plainMeaning(h.meaning) || "no definition in the column guide"}, {KIND[h.kind]}) · {h.place} {h.year} · {h.n} census tracts{h.leftOut ? `, ${h.leftOut} left out (${h.leftOutWhy ?? "no data"})` : ""} <ProvenanceTag source={sourceOf(h)} />
       </p>
@@ -170,7 +172,7 @@ export function RankCard({ r, onOpen }: { r: RankShown; onOpen: Open }) {
   );
   return (
     <div className={`${styles.reference} ${styles.tractCard}`} data-card="tract-rank">
-      <Head h={h} title={title} summary={summary} expand={expand} />
+      <Head h={h} title={title} summary={summary} expand={expand} note={r.unitNote} />
       <AreaLine area={area} />
       {table}
       {bare && <p className={styles.tractCounts}>{BARE_RANK}</p>}
@@ -301,7 +303,7 @@ export function RelateCard({ r, onOpen }: { r: RelateShown; onOpen: Open }) {
     : `To see whether two things go together, the tracts are put in order on each measure and the two orders are compared (Spearman's ρ = ${Number.isFinite(r.rho) ? r.rho.toFixed(2) : "not measurable"} across ${r.n} tracts; 1 means the same order, 0 no connection, −1 the opposite order). Below 0.2 is called little relationship, below 0.4 weak, below 0.6 moderate, and 0.6 or more strong.`;
   return (
     <div className={`${styles.reference} ${styles.tractCard}`} data-card="tract-relate">
-      <Head h={a} title={title} summary={summary} expand={expand} />
+      <Head h={a} title={title} summary={summary} expand={expand} note={r.unitNote} />
       <AreaLine area={area} />
       <p className={styles.tractMeta}>
         {b.code} <b>{b.column}</b> ({plainMeaning(b.meaning) || "no definition in the column guide"}, {KIND[b.kind]}) · {b.place} {b.year} <ProvenanceTag source={sourceOf(b)} />

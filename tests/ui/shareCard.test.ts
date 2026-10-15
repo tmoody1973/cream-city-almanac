@@ -68,3 +68,12 @@ describe("the reporter's message", () => {
     }
   });
 });
+
+describe("neighborhood answers share (neighborhood answers §6)", () => {
+  it("snapshots a neighborhood ranking with DYCU's credit", () => {
+    const head = { code: "E09", name: "Rent Burdened Households", column: "pct_burdened", meaning: "Percentage of renter households paying 30% or more of income on rent", kind: "rate" as const, place: "City", year: "2023", n: 300, leftOut: 0, confidence: "90% confidence (Census)", url: "https://x/FeatureServer/0", caveats: [] };
+    const rank = { status: "ok", tool: "rank-n", header: head, direction: "high", city: null, top: [{ name: "Harambee", value: 68.1, lo: 66.1, hi: 70.1, kind: "moe90", residents: 9000, tracts: 3, verdict: null }], uncertain: [], small: [], thin: [], key: "tracts:x" };
+    const shared = shareCard("rankTracts", rank, { origin: "https://www.creamcityalmanac.app", date: "October 15, 2026" });
+    expect(shared && "card" in shared && shared.card.notes.join("\n")).toContain("Data You Can Use");
+  });
+});
