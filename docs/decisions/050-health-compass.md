@@ -33,6 +33,7 @@
 - **Group breakdowns** (by race, sex or age), though Health Compass publishes some.
 - **Health Compass's tract and town data, and older periods.**
 - **A clean headline for the example question.** Once ranges are counted, the agent's "clearest lead" (ZIP 53208) is only a possible match: its food-hardship range reaches past the county's figure, and its poverty sits right at the cutoff for "high". The card says so rather than overstating it.
+- **Two county ZIPs.** Health Compass has no figures for 53126, so it shows "no data". 53295 (the VA Medical Center, 114 residents) is left out of rankings and comparisons, so a few people's figures never headline a list; the card names it.
 - **One answer for "food insecurity".** Two Health Compass measures fit the words equally (the 2024 survey and Feeding America's estimate), so Ask asks which one.
 
 **How we'll know if this was right:**
