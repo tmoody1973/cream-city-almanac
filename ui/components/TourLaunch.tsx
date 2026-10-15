@@ -20,9 +20,10 @@ export function FrontTour() {
   return start ? <Tour id="front" steps={FRONT_STEPS} /> : null;
 }
 
-// Stage 2's targets: the newest card with a live export bar (not an expired one), and the follow-up buttons under it.
+// Stage 2's targets: the newest on-screen card with a live export bar (not an expired one), and the follow-up buttons
+// under it.
 function tagNewestCard(): boolean {
-  const bars = document.querySelectorAll('[data-card] [data-export=""]');
+  const bars = [...document.querySelectorAll('[data-card] [data-export=""]')].filter((el) => el.getClientRects().length > 0);
   const bar = bars[bars.length - 1];
   const card = bar?.closest("[data-card]");
   if (!bar || !card) return false;

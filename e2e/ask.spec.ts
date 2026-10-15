@@ -210,6 +210,19 @@ test.describe("signed in", () => {
     await expect(card.locator("th", { hasText: "Still open" })).toHaveCount(0);
   });
 
+  test("the first answer card gets the card tour: its source, export, share and next questions", async ({ page }) => {
+    test.skip(!(await page.request.get("https://data.milwaukee.gov/api/3/action/status_show").then((r) => r.ok()).catch(() => false)), "City API unreachable");
+    await page.evaluate(() => { localStorage.setItem("almanac:tour:e2e-keep", "1"); localStorage.removeItem("almanac:tour:ask-card"); });
+    await page.reload();
+    await ask(page, "How long have vacant buildings been vacant?");
+    const note = page.locator("[data-tour-tooltip]");
+    await expect(note).toContainText("WHERE IT CAME FROM", { timeout: 45_000 });
+    await expect(page.locator("[data-card=span]:visible abbr[data-tour-active]")).toHaveCount(1);
+    await note.getByRole("button", { name: "Skip tour" }).click();
+    await expect(note).toHaveCount(0);
+    await page.evaluate(() => localStorage.removeItem("almanac:tour:e2e-keep"));
+  });
+
   test("a ZIP question draws the Census ZIP card with where the ZIP is (Z1)", async ({ page }) => {
     test.skip(!(await page.request.get("https://api.census.gov/data.json").then((r) => r.ok()).catch(() => false)), "Census API unreachable");
     await ask(page, "What is the demographic makeup of 53228?");
