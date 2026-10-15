@@ -187,3 +187,13 @@ describe("fireHistory routing (review #4)", () => {
     expect(ASK_PROMPT).toMatch(/fireHistory[^\n]*even one year/i);
   });
 });
+
+describe("employee tenure (L4)", () => {
+  it("lists the tenure entries and tells the model small groups show no times", () => {
+    const d = spanDescription();
+    expect(d).toContain("tenure-current");
+    expect(d).toContain("tenure-left");
+    expect(d).toMatch(/groups under 10 show no times/i);
+    expect(ASK_PROMPT).toMatch(/City employees/);
+  });
+});
