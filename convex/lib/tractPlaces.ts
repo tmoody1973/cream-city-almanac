@@ -24,8 +24,9 @@ export function insidePoints(tract: Geometry): Point[] {
   return inside;
 }
 
-// Each point counts for the City neighborhood it falls in; neighborhoods under 10% of the tract are left out.
-export function cityShares(tract: Geometry, hoods: Hood[]): CityShare[] {
+// Each point counts for the City neighborhood it falls in; neighborhoods under `min` percent of the tract (10 for display)
+// are left out.
+export function cityShares(tract: Geometry, hoods: Hood[], min = MIN_SHARE): CityShare[] {
   const inside = insidePoints(tract);
   if (!inside.length) return [];
   const counts = new Map<string, number>();
@@ -37,7 +38,7 @@ export function cityShares(tract: Geometry, hoods: Hood[]): CityShare[] {
   return [...counts]
     .sort((x, y) => y[1] - x[1] || x[0].localeCompare(y[0]))
     .map(([name, c]) => ({ name, share: Math.round((100 * c) / inside.length) }))
-    .filter((s) => s.share >= MIN_SHARE);
+    .filter((s) => s.share >= min);
 }
 
 type Feature = { properties?: { GEOID?: unknown } | null; geometry?: { type?: unknown; coordinates?: unknown } | null };

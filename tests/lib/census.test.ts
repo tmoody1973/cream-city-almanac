@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { censusUrl, parseCensus, requestsFor, scrubKey, zctaGeo } from "../../convex/lib/census";
+import { censusUrl, parseCensus, parseTractPopulations, requestsFor, scrubKey, tractPopulationUrl, zctaGeo } from "../../convex/lib/census";
 
 describe("Census requests", () => {
   it("asks for each code's estimate and margin for the City of Milwaukee", () => {
@@ -32,5 +32,16 @@ describe("ZIP areas (Z1)", () => {
   it("scrubs the key from error text", () => {
     expect(scrubKey("fetch failed: https://api.census.gov/data?get=x&key=SECRET123&y=1")).toBe("fetch failed: https://api.census.gov/data?get=x&key=\u2026&y=1");
     expect(scrubKey("no key here")).toBe("no key here");
+  });
+});
+
+describe("tract populations (neighborhood answers §3.2)", () => {
+  it("asks for every Milwaukee County tract's population", () => {
+    expect(tractPopulationUrl(2024, "KEY")).toBe("https://api.census.gov/data/2024/acs/acs5?get=B01003_001E&for=tract:*&in=state:55&in=county:079&key=KEY");
+  });
+  it("reads the Census table, dropping missing figures", () => {
+    const json = [["B01003_001E", "state", "county", "tract"], ["4012", "55", "079", "186000"], ["-666666666", "55", "079", "000100"], ["0", "55", "079", "980000"]];
+    expect(parseTractPopulations(json)).toEqual([{ geoid: "55079186000", population: 4012 }, { geoid: "55079980000", population: 0 }]);
+    expect(() => parseTractPopulations({ error: "x" })).toThrow(/changed shape/);
   });
 });

@@ -36,3 +36,21 @@ export function parseCensus(body: unknown, codes: string[]): Record<string, Est>
   }
   return out;
 }
+
+// Every Milwaukee County tract's total population (B01003), for weighting neighborhood figures (spec
+// 2026-10-15-neighborhood-answers §3.2). One request; the key never leaves this URL (notes go through scrubKey).
+export const tractPopulationUrl = (period: number, key: string) =>
+  `${BASE}/${period}/acs/acs5?get=B01003_001E&for=tract:*&in=state:55&in=county:079&key=${key}`;
+
+export function parseTractPopulations(json: unknown): { geoid: string; population: number }[] {
+  if (!Array.isArray(json) || !Array.isArray(json[0])) throw new Error("Census tract populations changed shape");
+  const [head, ...rows] = json as string[][];
+  const at = (name: string) => head.indexOf(name);
+  const [p, s, c, t] = [at("B01003_001E"), at("state"), at("county"), at("tract")];
+  if ([p, s, c, t].some((i) => i < 0)) throw new Error("Census tract populations changed shape");
+  return rows.flatMap((r) => {
+    const population = Number(r[p]);
+    const geoid = `${r[s]}${r[c]}${r[t]}`;
+    return Number.isFinite(population) && population >= 0 && /^\d{11}$/.test(geoid) ? [{ geoid, population }] : [];
+  });
+}

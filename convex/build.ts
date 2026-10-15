@@ -7,6 +7,7 @@ import type { Geometry } from "./lib/geo";
 import { allTractsUrl, cityShares, newestCountyUrl, parseTractShapes, type Hood } from "./lib/tractPlaces";
 import { parseZipShapes, zctaUrl } from "./lib/zipPlaces";
 import { COUNTY_ZIPS } from "./lib/zips";
+import { parseTractPopulations, scrubKey, tractPopulationUrl } from "./lib/census";
 import { BOUNDARY_KINDS, BOUNDARY_LAYERS, boundaryShares, layerUrl, parseBoundaryLayer, unionOf, type BoundaryShape } from "./lib/boundaries";
 import { tractNumber } from "./lib/tractData";
 import {
@@ -436,6 +437,7 @@ export const refreshNeighborhoods = internalAction({
     }
     notes.push(...(await refreshTractNeighborhoods(ctx, hoods)));
     notes.push(...(await refreshZipNeighborhoods(ctx, hoods)));
+    notes.push(...(await refreshTractPopulations(ctx)));
     const { reports, places } = await ctx.runQuery(internal.buildStore.neighborhoodSources, {});
     const found: { name: string; year: number | null; tracts: string[] }[] = [];
     for (const r of reports) {
@@ -464,7 +466,7 @@ async function refreshTractNeighborhoods(ctx: ActionCtx, hoods: Hood[] | null): 
   try {
     if (!hoods) throw new Error("the City's neighborhoods weren't read this week");
     const tracts = await tractOutlines(ctx);
-    const rows = tracts.map((t) => ({ geoid: t.geoid, city: cityShares(t.geometry, hoods) })).filter((r) => r.city.length > 0);
+    const rows = tracts.map((t) => ({ geoid: t.geoid, city: cityShares(t.geometry, hoods), pieces: cityShares(t.geometry, hoods, 1) })).filter((r) => r.pieces.length > 0);
     if (rows.length === 0) throw new Error("no tract matched a City neighborhood");
     await ctx.runMutation(internal.buildStore.replaceTractNeighborhoods, { rows });
     return [];
@@ -485,6 +487,23 @@ async function refreshZipNeighborhoods(ctx: ActionCtx, hoods: Hood[] | null): Pr
     return [];
   } catch (e) {
     return [`ZIP neighborhoods unavailable, kept last week's: ${message(e)}`];
+  }
+}
+
+// Each County tract's population from the Census Bureau, for neighborhood figures. Replaced only when read; the
+// key never reaches a note.
+async function refreshTractPopulations(ctx: ActionCtx): Promise<string[]> {
+  try {
+    const key = process.env.CENSUS_API_KEY;
+    const city = await ctx.runQuery(internal.cityFigures.latestCityFigures, {});
+    if (!key) throw new Error("CENSUS_API_KEY is not set");
+    if (!city) throw new Error("no city figures stored, so no survey period");
+    const rows = parseTractPopulations(await (await fetchOk(tractPopulationUrl(city.period, key), "Census tract populations")).json());
+    if (rows.length === 0) throw new Error("the Census returned no tracts");
+    await ctx.runMutation(internal.buildStore.replaceTractPopulations, { rows: rows.map((r) => ({ ...r, period: city.period })) });
+    return [];
+  } catch (e) {
+    return [`Tract populations unavailable, kept last week's: ${scrubKey(message(e))}`];
   }
 }
 
