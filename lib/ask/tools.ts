@@ -21,7 +21,8 @@ export type StopsAnswer = FunctionReturnType<typeof api.stops.countStops>;
 export type TurnoutAnswer = FunctionReturnType<typeof api.elections.countTurnout>;
 export type ZipAnswer = FunctionReturnType<typeof api.zips.zipProfile>;
 export type FireAnswer = FunctionReturnType<typeof api.fire.fireHistory>;
-export type AskToolName = "searchCatalog" | "showDataset" | "previewData" | "getNumber" | "readReport" | "countRecords" | "rankTracts" | "compareYears" | "relateTracts" | "timeSpan" | "factSheet" | "findPlace" | "boundariesFor" | "countStops" | "countTurnout" | "zipProfile" | "fireHistory";
+export type ZipHealthAnswer = FunctionReturnType<typeof api.health.zipHealth>;
+export type AskToolName = "searchCatalog" | "showDataset" | "previewData" | "getNumber" | "readReport" | "countRecords" | "rankTracts" | "compareYears" | "relateTracts" | "timeSpan" | "factSheet" | "findPlace" | "boundariesFor" | "countStops" | "countTurnout" | "zipProfile" | "fireHistory" | "zipHealth";
 
 export interface AskBackend {
   search(a: { query: string; topic?: string; place?: string; year?: number }): Promise<SearchResponse>;
@@ -40,6 +41,7 @@ export interface AskBackend {
   turnout(a: z.infer<typeof turnoutParams>): Promise<TurnoutAnswer>;
   zip(a: z.infer<typeof zipParams>): Promise<ZipAnswer>;
   fire(a: z.infer<typeof fireParams>): Promise<FireAnswer>;
+  health(a: z.infer<typeof zipHealthParams>): Promise<ZipHealthAnswer>;
 }
 
 export interface AskTool<P extends z.ZodObject = z.ZodObject> {
@@ -103,6 +105,16 @@ export const fireParams = z.object({
   to: z.number().int().optional(),
 });
 export const zipParams = z.object({ zip: z.string().max(12).describe("One 5-digit ZIP code, e.g. 53212.") });
+const side = z.enum(["high", "low"]);
+export const zipHealthParams = z.object({
+  mode: z.enum(["one", "rank", "together", "mismatch"]).describe("one: one ZIP against the county; rank: ZIPs ordered; together: do two measures go together across ZIPs; mismatch: ZIPs where measure is low (or high) despite other being high (or low)"),
+  measure: z.string().min(2).max(120).describe("The measure in plain words (\"food insecurity\", \"asthma emergency visits\"), or a choice's exact name; for mismatch, the one the question says is low or high despite the other"),
+  zip: z.string().max(12).optional().describe("mode one: a 5-digit ZIP code"),
+  direction: side.optional().describe("mode rank: high (default) or low"),
+  side: side.optional().describe("mode mismatch: measure's side, low (default) or high"),
+  other: z.string().min(2).max(120).optional().describe("together and mismatch: the second measure in plain words"),
+  otherSide: side.optional().describe("mode mismatch: other's side, high (default) or low"),
+});
 export const turnoutParams = z.object({
   type: z.enum(["spring", "primary", "general", "all"]).optional().describe("Which elections; default all"),
   from: z.number().int().optional().describe("First year, 2016–2022"),
@@ -261,6 +273,12 @@ export function askTools(b: AskBackend): AskTool[] {
       execute: (a: z.infer<typeof zipParams>) => b.zip(a),
     },
     {
+      name: "zipHealth",
+      description: "Health, food, hospital-visit, poverty and other community measures by ZIP code in Milwaukee County, from Health Compass Milwaukee (the Milwaukee Health Care Partnership's data site), stored weekly with 95% ranges. mode one: one ZIP against Milwaukee County; rank: ZIPs ordered; together: do two measures go together across ZIPs; mismatch: ZIPs where measure is low (or high) despite other being high (or low): 'food insecurity low despite high poverty' → measure food insecurity, side low; other poverty, otherSide high. Pass the measures in plain words; code picks the topic. If it returns choose, pick the choice that fits the question and call again with its exact name; not-found, say what Health Compass didn't have; outside, bad-zip or no-data, say so; refused, give its reason; unavailable, say the health figures aren't loaded yet. The card opens with a sentence saying what was found and carries every figure, range and source; don't restate them.",
+      parameters: zipHealthParams,
+      execute: (a: z.infer<typeof zipHealthParams>) => b.health(a),
+    },
+    {
       name: "fireHistory",
       description: "Milwaukee Fire Department calls and response times by year, 2015 to now, from stored yearly totals: calls per year (all, EMS, or other; or one call type), and median time to dispatch or time to arrive. Call types run 2015–2023 only. Any year's total calls or response times come from here, even one year (set from and to to that year); only breakdowns within a year by ZIP or place go to countRecords or timeSpan. If it returns choose, pick a type from its choices and call again; if refused, tell the person why. The card carries every figure and note; don't restate them.",
       parameters: fireParams,
@@ -280,7 +298,7 @@ export function askTools(b: AskBackend): AskTool[] {
     },
     {
       name: "relateTracts",
-      description: "Line two DYCU tract datasets up tract by tract. mode relate: do they go together (a ranked comparison, worded on the card). mode mismatch: tracts high on one but low on the other (aSide, bSide), counted only when their ranges clear both cutoffs. If they share no place/year, it returns the shared ones. In mismatch mode, put the dataset the person says is high as a with aSide \"high\", and the one that is low as b with bSide \"low\" (or whatever sides they named); always set both sides. Example: 'food insecurity low despite high poverty' → a = poverty (E02, a poverty rate), aSide high; b = food insecurity (F02), bSide low. Returns rows for the card; never restate their numbers. Read the dataset's column guide (showDataset) first and pick a rate over a count. The City's Master Property File (MPROP; find its code with searchCatalog, choosing the dataset named exactly \"Master Property File (MPROP)\", not the \"Visualizations\" one) also works here, as one side: column median_value (typical home value), share_over or share_under (with cutoff in dollars), owner_share, or median_year_built. Its figures are exact City records for the current assessment and cover City tracts only. With neighborhood, only the tracts in that neighborhood are used (the City's boundary, or DYCU's area with map dycu), each with how much of it is inside; if it returns no-neighborhood, offer the names it returned; if no-tracts, say the neighborhood is smaller than any tract or, for DYCU's area, that DYCU doesn't define it for that year. Inside a neighborhood, mode relate returns too-few-tracts (it takes 20 tracts): say so and offer the citywide question.",
+      description: "Line two DYCU tract datasets up tract by tract. mode relate: do they go together (a ranked comparison, worded on the card). mode mismatch: tracts high on one but low on the other (aSide, bSide), counted only when their ranges clear both cutoffs. If they share no place/year, it returns the shared ones. In mismatch mode, put the dataset the person says is high as a with aSide \"high\", and the one that is low as b with bSide \"low\" (or whatever sides they named); always set both sides. Example: 'tracts where E02 is high but F02 is low' → a = E02 (a poverty rate), aSide high; b = F02, bSide low. Returns rows for the card; never restate their numbers. Read the dataset's column guide (showDataset) first and pick a rate over a count. The City's Master Property File (MPROP; find its code with searchCatalog, choosing the dataset named exactly \"Master Property File (MPROP)\", not the \"Visualizations\" one) also works here, as one side: column median_value (typical home value), share_over or share_under (with cutoff in dollars), owner_share, or median_year_built. Its figures are exact City records for the current assessment and cover City tracts only. With neighborhood, only the tracts in that neighborhood are used (the City's boundary, or DYCU's area with map dycu), each with how much of it is inside; if it returns no-neighborhood, offer the names it returned; if no-tracts, say the neighborhood is smaller than any tract or, for DYCU's area, that DYCU doesn't define it for that year. Inside a neighborhood, mode relate returns too-few-tracts (it takes 20 tracts): say so and offer the citywide question.",
       parameters: relateParams,
       execute: (a: z.infer<typeof relateParams>) => b.relate(a),
     },

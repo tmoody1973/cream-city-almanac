@@ -10,6 +10,20 @@ import { simulateReadableStream } from "ai";
 const flagged = (t: string) => proseSegments(t).filter((s) => s.unverified).map((s) => s.text);
 
 describe("proseSegments", () => {
+  it("allows a county ZIP listed anywhere in the tool data, and a rate's own unit (graded run)", () => {
+    const data = JSON.stringify({ status: "ok", mode: "mismatch", uncertain: ["53203"], measure: { units: "per 100,000 residents" } });
+    const check = (t: string) => proseSegments(t, data).filter((s) => s.unverified).map((s) => s.text);
+    expect(check("53203 is too uncertain to use.")).toEqual([]);
+    expect(check("Rates are per 100,000 residents.")).toEqual([]);
+    expect(check("About 100,000 people, per 10,000 residents.")).toEqual(["100,000", "10,000"]);
+    expect(check("99999 is not a county ZIP.")).toEqual(["99999"]);
+  });
+  it("allows a ZIP the tools returned, but not a figure that happens to have five digits (review I5)", () => {
+    const data = JSON.stringify({ status: "ok", mode: "rank", rows: [{ zip: "53205" }, { zip: "53206" }] });
+    const check = (t: string) => proseSegments(t, data).filter((s) => s.unverified).map((s) => s.text);
+    expect(check("53205 and 53206 stand out.")).toEqual([]);
+    expect(check("53212 and 12,345 people.")).toEqual(["53212", "12,345"]);
+  });
   it("flags figures in the model's words", () => {
     expect(flagged("About 6,520 people, or 18% of residents.")).toEqual(["6,520", "18%"]);
     expect(flagged("A rate of 12.5 per 1000.")).toEqual(["12.5", "1000"]);
@@ -143,6 +157,7 @@ const backend: AskBackend = {
   turnout: async () => ({ status: "refused", reason: "" }) as never,
   zip: async () => ({ status: "busy" }) as never,
   fire: async () => ({ status: "refused", reason: "" }) as never,
+  health: async () => ({ status: "unavailable" }) as never,
 };
 const tool = (name: string) => askTools(backend).find((t) => t.name === name)!;
 

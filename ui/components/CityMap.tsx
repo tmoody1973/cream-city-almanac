@@ -8,7 +8,7 @@ import { api } from "@/convex/_generated/api";
 import type { MapData } from "@/convex/lib/cityMap";
 import { escapeHtml, fetchLayer, labelFields } from "@/ui/lib/arcgisLayer";
 import { cellPopupText, cellsToGeoJSON, SOLID_OPACITY, summarySentence } from "@/ui/lib/mapCells";
-import { geojsonBounds, tractShapesUrl } from "@/ui/lib/tractShapes";
+import { geojsonBounds, shapeSummary, tractShapesUrl } from "@/ui/lib/tractShapes";
 import { useNight } from "@/ui/lib/useNight";
 import styles from "./map.module.css";
 
@@ -36,10 +36,7 @@ function pattern(color: string, crossed: boolean, size: number): ImageData {
 }
 
 const TRACT_IDS = ["tracts-fit", "tracts-line"];
-export type TractShapes = { url: string; fits: string[]; close: string[] };
-const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
-const tractSummary = ({ fits, close }: TractShapes) =>
-  fits.length ? `Map of ${plural(fits.length, "highlighted tract")}${close.length ? `, ${close.length} close` : ""}` : `Map of ${plural(close.length, "close tract")}`;
+export type TractShapes = { url: string; fits: string[]; close: string[]; noun?: string };
 type Props = { cells?: MapData | null; count?: number; boundary?: string | null; layer?: { url: string; name: string } | null; tracts?: TractShapes | null; height?: number | string; after?: string };
 
 export default function CityMap({ cells = null, count = 0, boundary = null, layer = null, tracts = null, height = 260, after }: Props) {
@@ -58,7 +55,7 @@ export default function CityMap({ cells = null, count = 0, boundary = null, laye
   const tractsFitted = useRef(false);
   tractsNow.current = tracts;
   const tractKey = tracts ? [tracts.url, tracts.fits.join(","), tracts.close.join(",")].join("|") : ""; // by value: a re-render with the same tracts must not refetch
-  const summary = cells ? summarySentence(cells, count) : tracts ? tractSummary(tracts) : null;
+  const summary = cells ? summarySentence(cells, count) : tracts ? shapeSummary(tracts) : null;
   const edition: "day" | "night" = night ? "night" : "day";
   const editionNow = useRef(edition);
   editionNow.current = edition;
@@ -267,7 +264,7 @@ export default function CityMap({ cells = null, count = 0, boundary = null, laye
       )}
       {tracts && (
         <ul className={styles.key} aria-label="Map key">
-          {tracts.fits.length > 0 && <li><span className={`${styles.swatch} ${styles.hatch}`} />highlighted tract</li>}
+          {tracts.fits.length > 0 && <li><span className={`${styles.swatch} ${styles.hatch}`} />highlighted {tracts.noun ?? "tract"}</li>}
           {tracts.close.length > 0 && <li><span className={styles.swatch} />possible match</li>}
         </ul>
       )}

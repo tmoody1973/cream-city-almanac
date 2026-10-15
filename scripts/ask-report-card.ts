@@ -34,6 +34,7 @@ const backend: AskBackend = {
   turnout: async (a) => run("elections:countTurnout", a),
   zip: async (a) => run("zips:zipProfile", a, true),
   fire: async (a) => run("fire:fireHistory", a),
+  health: async (a) => run("health:zipHealth", a),
   place: async (a) => run("places:findPlace", a, true),
   boundaries: async (a) => run("places:boundariesFor", a, true),
 };

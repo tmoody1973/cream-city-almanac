@@ -391,6 +391,14 @@ export const replaceTractNeighborhoods = internalMutation({
   },
 });
 
+export const replaceZipNeighborhoods = internalMutation({
+  args: { rows: v.array(v.object({ zip: v.string(), city: v.array(v.object({ name: v.string(), share: v.number() })) })) },
+  handler: async (ctx, { rows }) => {
+    for (const r of await ctx.db.query("zipNeighborhoods").collect()) await ctx.db.delete(r._id);
+    for (const r of rows) await ctx.db.insert("zipNeighborhoods", r);
+  },
+});
+
 // One kind's boundaries are replaced together, only after its layer was read successfully.
 export const replaceBoundaries = internalMutation({
   args: { kind: vBoundaryKind, fetchedAt: v.number(), rows: v.array(v.object({ name: v.string(), details: v.record(v.string(), v.string()), geometry: v.string(), bbox: vBbox })) },

@@ -19,6 +19,7 @@ const tractLayer = { type: "FeatureCollection", features: [
   { properties: { GEOID: "55079186000" }, geometry: { type: "Polygon", coordinates: [ring] } },
   { properties: { GEOID: "55079060100" }, geometry: { type: "Polygon", coordinates: [[[-88.0, 42.9], [-87.99, 42.9], [-87.99, 42.91], [-88.0, 42.91], [-88.0, 42.9]]] } },
 ] };
+const zipLayer = { type: "FeatureCollection", features: [{ properties: { GEOID: "53208" }, geometry: { type: "Polygon", coordinates: [ring] } }] };
 const E02_URL = "https://services.test/arcgis/rest/services/2024%20County%20Poverty/FeatureServer/0";
 
 const family = (key: string, code: string, name: string) => ({
@@ -51,7 +52,7 @@ const rowsOf = (t: Awaited<ReturnType<typeof seed>>, definition: "city" | "dycu"
 describe("refreshNeighborhoods", () => {
   it("stores City boundaries and DYCU tract lists", async () => {
     const t = await seed();
-    installFakeFetch({ cityNeighborhoods: layer, tractShapes: tractLayer });
+    installFakeFetch({ cityNeighborhoods: layer, tractShapes: tractLayer, zctaShapes: zipLayer });
     const notes = await t.action(internal.build.refreshNeighborhoods, {});
     expect((await rowsOf(t, "city")).map((r) => [r.name, r.bbox])).toEqual([["Harambee", { minLat: 43.06, maxLat: 43.08, minLon: -87.92, maxLon: -87.9 }]]);
     expect((await rowsOf(t, "dycu")).map((r) => [r.name, r.tracts])).toEqual([["Riverwest", [{ years: [2023], tracts: ["71", "72", "79", "80", "107"] }]]]);
@@ -59,9 +60,9 @@ describe("refreshNeighborhoods", () => {
   });
   it("keeps last week's City boundaries when the layer is down, and says so", async () => {
     const t = await seed();
-    installFakeFetch({ cityNeighborhoods: layer });
+    installFakeFetch({ cityNeighborhoods: layer, zctaShapes: zipLayer });
     await t.action(internal.build.refreshNeighborhoods, {});
-    installFakeFetch({ cityNeighborhoodsStatus: 503 });
+    installFakeFetch({ cityNeighborhoodsStatus: 503, zctaShapes: zipLayer });
     const notes = await t.action(internal.build.refreshNeighborhoods, {});
     expect((await rowsOf(t, "city")).map((r) => r.name)).toEqual(["Harambee"]);
     expect(notes[0]).toMatch(/^City neighborhoods unavailable, kept last week's/);
@@ -72,36 +73,54 @@ describe("refreshNeighborhoods", () => {
 
   it("stores each tract's City neighborhoods, leaving out tracts outside the City", async () => {
     const t = await seed();
-    installFakeFetch({ cityNeighborhoods: layer, tractShapes: tractLayer });
+    installFakeFetch({ cityNeighborhoods: layer, tractShapes: tractLayer, zctaShapes: zipLayer });
     expect(await t.action(internal.build.refreshNeighborhoods, {})).toEqual([]);
     expect(await tractRows(t)).toEqual([["55079186000", [{ name: "Harambee", share: 100 }]]]);
   });
   it("keeps last week's match when the tract outlines are down, and says so", async () => {
     const t = await seed();
-    installFakeFetch({ cityNeighborhoods: layer, tractShapes: tractLayer });
+    installFakeFetch({ cityNeighborhoods: layer, tractShapes: tractLayer, zctaShapes: zipLayer });
     await t.action(internal.build.refreshNeighborhoods, {});
-    installFakeFetch({ cityNeighborhoods: layer, tractShapesStatus: 503 });
+    installFakeFetch({ cityNeighborhoods: layer, tractShapesStatus: 503, zctaShapes: zipLayer });
     const notes = await t.action(internal.build.refreshNeighborhoods, {});
     expect(await tractRows(t)).toEqual([["55079186000", [{ name: "Harambee", share: 100 }]]]);
     expect(notes).toEqual([expect.stringMatching(/^Tract neighborhoods unavailable, kept last week's: /)]);
   });
   it("never rebuilds the match without this week's City shapes", async () => {
     const t = await seed();
-    installFakeFetch({ cityNeighborhoods: layer, tractShapes: tractLayer });
+    installFakeFetch({ cityNeighborhoods: layer, tractShapes: tractLayer, zctaShapes: zipLayer });
     await t.action(internal.build.refreshNeighborhoods, {});
-    installFakeFetch({ cityNeighborhoodsStatus: 503, tractShapes: { type: "FeatureCollection", features: [] } });
+    installFakeFetch({ cityNeighborhoodsStatus: 503, tractShapes: { type: "FeatureCollection", features: [] }, zctaShapes: zipLayer });
     const notes = await t.action(internal.build.refreshNeighborhoods, {});
     expect(await tractRows(t)).toHaveLength(1);
     expect(notes[1]).toMatch(/^Tract neighborhoods unavailable, kept last week's: the City's neighborhoods weren't read/);
   });
   it("keeps last week's match when no tract matches at all", async () => {
     const t = await seed();
-    installFakeFetch({ cityNeighborhoods: layer, tractShapes: tractLayer });
+    installFakeFetch({ cityNeighborhoods: layer, tractShapes: tractLayer, zctaShapes: zipLayer });
     await t.action(internal.build.refreshNeighborhoods, {});
-    installFakeFetch({ cityNeighborhoods: layer, tractShapes: { type: "FeatureCollection", features: [tractLayer.features[1]] } });
+    installFakeFetch({ cityNeighborhoods: layer, tractShapes: { type: "FeatureCollection", features: [tractLayer.features[1]] }, zctaShapes: zipLayer });
     const notes = await t.action(internal.build.refreshNeighborhoods, {});
     expect(await tractRows(t)).toHaveLength(1);
     expect(notes).toEqual([expect.stringMatching(/no tract matched a City neighborhood/)]);
+  });
+  const zipRows = (t: Awaited<ReturnType<typeof seed>>) =>
+    t.run(async (ctx) => (await ctx.db.query("zipNeighborhoods").collect()).map((r) => [r.zip, r.city]));
+
+  it("names each ZIP's City neighborhoods", async () => {
+    const t = await seed();
+    installFakeFetch({ cityNeighborhoods: layer, tractShapes: tractLayer, zctaShapes: zipLayer });
+    expect(await t.action(internal.build.refreshNeighborhoods, {})).toEqual([]);
+    expect(await zipRows(t)).toEqual([["53208", [{ name: "Harambee", share: 100 }]]]);
+  });
+  it("keeps last week's ZIP neighborhoods when the outlines are down, and says so", async () => {
+    const t = await seed();
+    installFakeFetch({ cityNeighborhoods: layer, tractShapes: tractLayer, zctaShapes: zipLayer });
+    await t.action(internal.build.refreshNeighborhoods, {});
+    installFakeFetch({ cityNeighborhoods: layer, tractShapes: tractLayer, zctaStatus: 500 });
+    const notes = await t.action(internal.build.refreshNeighborhoods, {});
+    expect(notes).toEqual(["ZIP neighborhoods unavailable, kept last week's: ZIP outlines request failed: 500"]);
+    expect(await zipRows(t)).toEqual([["53208", [{ name: "Harambee", share: 100 }]]]);
   });
 });
 

@@ -11,6 +11,7 @@ const backend = (relateResult: unknown): AskBackend => ({
   stops: async () => ({ status: "refused", reason: "" }) as never,
   turnout: async () => ({ status: "refused", reason: "" }) as never,
   zip: async () => ({ status: "busy" }) as never,
+  health: async () => ({ status: "unavailable" }) as never,
   fire: async () => ({ status: "refused", reason: "" }) as never,
 });
 
@@ -19,6 +20,12 @@ const call = (b: AskBackend) =>
   askTools(b).find((t) => t.name === "relateTracts")!.execute({ a: { code: "E02", column: "pov_rate" }, b: { code: "F02", column: "per_insecure" }, place: "City", year: "2022", mode: "mismatch" } as never);
 
 describe("tract tools", () => {
+  it("routes ZIP health questions to zipHealth, and keeps tracts for questions that name them", () => {
+    expect(askTools(backend({})).map((t) => t.name)).toContain("zipHealth");
+    expect(ASK_PROMPT).toContain("use zipHealth, by ZIP code, from Health Compass Milwaukee");
+    expect(ASK_PROMPT).toContain("Use the tract tools only when the person names census tracts, a DYCU dataset or its code");
+    expect(ASK_PROMPT).not.toContain("where is poverty high but food insecurity low");
+  });
   it("offers rankTracts, compareYears and relateTracts", () => {
     expect(askTools(backend({})).map((t) => t.name)).toEqual(expect.arrayContaining(["rankTracts", "compareYears", "relateTracts"]));
   });

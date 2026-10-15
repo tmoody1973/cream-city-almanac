@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { capTractIds, geojsonBounds, tractShapesUrl } from "../../ui/lib/tractShapes";
+import { capTractIds, geojsonBounds, shapeSummary, tractShapesUrl } from "../../ui/lib/tractShapes";
 
 describe("tract shapes", () => {
   it("asks for just those tracts as GeoJSON in map coordinates", () => {
@@ -41,5 +41,10 @@ describe("geojsonBounds", () => {
   });
   it("is null with nothing to bound", () => {
     expect(geojsonBounds({ type: "FeatureCollection", features: [] })).toBeNull();
+  });
+  it("takes ZIP codes too, and words the caption for them", () => {
+    expect(tractShapesUrl("https://x/MapServer/2", ["53208"])).toContain(encodeURIComponent("GEOID IN ('53208')"));
+    expect(shapeSummary({ fits: ["53208"], close: [], noun: "ZIP" })).toBe("Map of 1 highlighted ZIP");
+    expect(shapeSummary({ fits: [], close: ["1", "2"] })).toBe("Map of 2 close tracts");
   });
 });
