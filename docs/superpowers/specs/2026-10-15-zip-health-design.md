@@ -95,7 +95,7 @@ The weekly build (`convex/build.ts`, beside `refreshCityFigures` and `refreshFir
 
 1. **A bold lead sentence, written by code.** Examples:
    - "**Clearest lead: <ZIP>.** Poverty is high there, but fewer people reported running short of food money than across Milwaukee County."
-   - "**No ZIP clearly has high poverty with low food hardship. Possible: 53208.** Food hardship there is clearly below the county's; its poverty is near the cutoff for high."
+   - "**No ZIP clearly has high poverty with low food hardship. Possible: 53208.** Its figures point that way, but their ranges overlap the cutoffs."
    - "**Highest: 53205, 53206, 53218.**"
    - "**53208 is clearly lower than the county.**"
 2. **Rows:**
@@ -165,9 +165,10 @@ Nothing about a person is fetched or stored: Health Compass figures are area tot
 - **Modes:**
   - `one`: the verdict words;
   - `rank`: the ordering;
-  - `relate`, on a fixture of real Health Compass figures (poverty `POV` 2020-2024 and survey food hardship `MQ35` 2024, each with its standard error, captured from the API): **53208 is a possible match, and the closest one.**
-    - Its food hardship is clearly below the county: 9.71 ± 1.96 × 2.24, about 5.3–14.1, is wholly below 13.85.
-    - Its poverty is in the top third: 21.63, against a cutoff of about 20.3. But that range (about 17.3–25.9) crosses the cutoff, so it isn't clear.
+  - `relate`, on a fixture of real Health Compass figures (poverty `POV` 2020-2024 and survey food hardship `MQ35` 2024, each with its standard error, captured from the API): **no clear match, and 53208 is the only possible match.**
+    - Its food hardship, 9.71 ± 1.96 × 2.24 (about 5.3–14.1), is below the county's 13.85, but its range reaches past it, so it isn't clear.
+    - Its poverty, 21.63, sits right at the top-third cutoff (about 21.63 across the 34 reliable ZIPs), so it isn't clear either.
+    - Of 35 ZIPs with both figures, 53203 is set aside as too uncertain.
     - The general AI agent called 53208 "the clearest lead"; with margins counted, it's a possible match. The card says so.
 - **The lead sentences** for each mode and each outcome.
 - **ZIP-neighborhood counting** on a small synthetic grid.
