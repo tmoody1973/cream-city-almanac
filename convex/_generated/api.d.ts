@@ -54,6 +54,7 @@ import type * as lib_healthMath from "../lib/healthMath.js";
 import type * as lib_http from "../lib/http.js";
 import type * as lib_measureShape from "../lib/measureShape.js";
 import type * as lib_measureSql from "../lib/measureSql.js";
+import type * as lib_neighborhoodFigures from "../lib/neighborhoodFigures.js";
 import type * as lib_neighborhoodNames from "../lib/neighborhoodNames.js";
 import type * as lib_neighborhoodSources from "../lib/neighborhoodSources.js";
 import type * as lib_nibrs from "../lib/nibrs.js";
@@ -149,6 +150,7 @@ declare const fullApi: ApiFromModules<{
   "lib/http": typeof lib_http;
   "lib/measureShape": typeof lib_measureShape;
   "lib/measureSql": typeof lib_measureSql;
+  "lib/neighborhoodFigures": typeof lib_neighborhoodFigures;
   "lib/neighborhoodNames": typeof lib_neighborhoodNames;
   "lib/neighborhoodSources": typeof lib_neighborhoodSources;
   "lib/nibrs": typeof lib_nibrs;

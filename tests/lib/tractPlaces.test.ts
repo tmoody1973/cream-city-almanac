@@ -63,3 +63,16 @@ describe("addresses", () => {
     expect(newestCountyUrl([{ place: "City", year: "2024", url: "c24" }])).toBeNull();
   });
 });
+
+describe("every piece of a tract (neighborhood answers §3.1)", () => {
+  it("keeps pieces down to the minimum asked for", () => {
+    const sq = (x0: number, x1: number) => ({ type: "Polygon" as const, coordinates: [[[x0, 0], [x1, 0], [x1, 1], [x0, 1], [x0, 0]]] });
+    const tract = sq(0, 1);
+    const hoods = [
+      { name: "Big", geometry: sq(0, 0.95), bbox: { minLon: 0, minLat: 0, maxLon: 0.95, maxLat: 1 } },
+      { name: "Sliver", geometry: sq(0.95, 1), bbox: { minLon: 0.95, minLat: 0, maxLon: 1, maxLat: 1 } },
+    ];
+    expect(cityShares(tract, hoods).map((s) => s.name)).toEqual(["Big"]);
+    expect(cityShares(tract, hoods, 1).map((s) => s.name)).toEqual(["Big", "Sliver"]);
+  });
+});

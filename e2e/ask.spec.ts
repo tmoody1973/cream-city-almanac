@@ -422,6 +422,18 @@ test.describe("signed in", () => {
   const dycuUp = (page: import("@playwright/test").Page) =>
     page.request.get("https://services.arcgis.com/").then((r) => r.status() < 500).catch(() => false);
 
+  test("a which-neighborhoods question draws the neighborhood card with the city figure", async ({ page }) => {
+    test.slow(); // reads every tract value plus pieces and populations: past the usual 45 seconds on a cold preview
+    test.skip(!(await dycuUp(page)), "DYCU unreachable");
+    await ask(page, "Which neighborhoods with the most poverty?");
+    const card = page.locator("[data-card=neighborhood-rank]:visible");
+    const fallback = page.locator("[data-unit-note]:visible");
+    await expect(card.or(fallback)).toBeVisible({ timeout: 60_000 });
+    test.skip(await fallback.isVisible(), "Neighborhood figures aren't stored on this deployment yet (run build:refreshNeighborhoods)");
+    await expect(card.locator("[data-city]")).toContainText("City of Milwaukee:");
+    await expect(card).not.toContainText(/\bE02\b|pov_rate/);
+  });
+
   test("a ranking question draws a ranked tract table with ranges", async ({ page }, info) => {
     test.skip(!(await dycuUp(page)), "DYCU unreachable");
     await ask(page, "rank tracts by poverty");

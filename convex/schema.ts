@@ -140,7 +140,10 @@ export default defineSchema({
   tractNeighborhoods: defineTable({
     geoid: v.string(),
     city: v.array(v.object({ name: v.string(), share: v.number() })),
+    pieces: v.optional(v.array(v.object({ name: v.string(), share: v.number() }))),
   }).index("by_geoid", ["geoid"]),
+  // Each Milwaukee County tract's population (Census ACS B01003), weekly, to weight neighborhood figures.
+  tractPopulations: defineTable({ geoid: v.string(), population: v.number(), period: v.number() }).index("by_geoid", ["geoid"]),
 
   // Each county ZIP's City neighborhoods (≥10% of its area, biggest first), matched weekly from TIGERweb's ZIP outlines.
   zipNeighborhoods: defineTable({ zip: v.string(), city: v.array(v.object({ name: v.string(), share: v.number() })) }).index("by_zip", ["zip"]),

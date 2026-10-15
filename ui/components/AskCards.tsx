@@ -31,6 +31,8 @@ import { StopsCard } from "./StopsCard";
 import { TurnoutCard } from "./TurnoutCard";
 import { ZipCard } from "./ZipCard";
 import { ZipHealthCard } from "./ZipHealthCard";
+import { NeighborhoodRankCard, NeighborhoodRelateCard } from "./NeighborhoodCards";
+import { nFollowUps } from "@/ui/lib/neighborhoodText";
 import { zipHealthChoices, zipHealthFollowUps, zipHealthRefusal } from "@/ui/lib/zipHealthText";
 import { FireHistoryCard } from "./FireHistoryCard";
 import { fireChoices, fireFollowUps } from "@/ui/lib/fireText";
@@ -544,9 +546,9 @@ export function AskCards({ onOpen }: { onOpen?: (search: string) => void }) {
     // A refusal the model words; its listed options (columns, place/years) can be picked here.
     return <FollowUps pick items={choices(r)} id={id} />;
   };
-  useRenderTool({ name: "rankTracts", parameters: rankParams, render: (props) => props.status !== "complete" ? <Busy /> : tractCard<RankResult>(props.result, props.toolCallId, (r) => <ShareScope tool="rankTracts" args={props.parameters}><RankCard r={r} onOpen={onOpen} /></ShareScope>, (r) => areaFollowUps(rankFollowUps(r.header, r.direction), r.area), (r) => rankChoices(props.parameters as never, r as never)) }, [onOpen]);
+  useRenderTool({ name: "rankTracts", parameters: rankParams, render: (props) => props.status !== "complete" ? <Busy /> : tractCard<RankResult>(props.result, props.toolCallId, (r) => <ShareScope tool="rankTracts" args={props.parameters}>{r.tool === "rank-n" ? <NeighborhoodRankCard r={r} /> : <RankCard r={r} onOpen={onOpen} />}</ShareScope>, (r) => (r.tool === "rank-n" ? nFollowUps(props.parameters as never, r) : areaFollowUps(rankFollowUps(r.header, r.direction), r.area)), (r) => rankChoices(props.parameters as never, r as never)) }, [onOpen]);
   useRenderTool({ name: "compareYears", parameters: changeParams, render: (props) => props.status !== "complete" ? <Busy /> : tractCard<ChangeResult>(props.result, props.toolCallId, (r) => <ShareScope tool="compareYears" args={props.parameters}><ChangeCard r={r} onOpen={onOpen} /></ShareScope>, (r) => areaFollowUps(changeFollowUps(r.header, r.to), r.area), (r) => changeChoices(props.parameters as never, r as never)) }, [onOpen]);
-  useRenderTool({ name: "relateTracts", parameters: relateParams, render: (props) => props.status !== "complete" ? <Busy /> : tractCard<RelateResult>(props.result, props.toolCallId, (r) => <ShareScope tool="relateTracts" args={props.parameters}><RelateCard r={r} onOpen={onOpen} /></ShareScope>, (r) => areaFollowUps(relateFollowUps({ mode: r.mode, a: r.a, b: r.b, place: (props.parameters as { place: string }).place, year: (props.parameters as { year: string }).year, strength: r.strength, aSide: r.aSide, bSide: r.bSide }), r.area), (r) => relateChoices(props.parameters as never, r as never)) }, [onOpen]);
+  useRenderTool({ name: "relateTracts", parameters: relateParams, render: (props) => props.status !== "complete" ? <Busy /> : tractCard<RelateResult>(props.result, props.toolCallId, (r) => <ShareScope tool="relateTracts" args={props.parameters}>{r.tool === "relate-n" ? <NeighborhoodRelateCard r={r} /> : <RelateCard r={r} onOpen={onOpen} />}</ShareScope>, (r) => r.tool === "relate-n" ? nFollowUps(props.parameters as never, r) : areaFollowUps(relateFollowUps({ mode: r.mode, a: r.a, b: r.b, place: (props.parameters as { place: string }).place, year: (props.parameters as { year: string }).year, strength: r.strength, aSide: r.aSide, bSide: r.bSide }), r.area), (r) => relateChoices(props.parameters as never, r as never)) }, [onOpen]);
 
   useRenderTool({ name: "readReport", parameters: z.object({ question: z.string() }), render: (props) => {
     if (props.status !== "complete") return <Busy />;

@@ -1,9 +1,10 @@
-// The highlighted tracts' outlines from the dataset's own FeatureServer. Ids are checked before they go in the
-// where clause: only 11-digit tract ids or 5-digit ZIP codes, so nothing else can be injected into DYCU's query.
-export function tractShapesUrl(featureServerUrl: string, geoids: string[]): string | null {
-  if (!geoids.length || geoids.some((g) => !/^(\d{11}|\d{5})$/.test(g))) return null;
-  const where = `GEOID IN (${geoids.map((g) => `'${g}'`).join(",")})`;
-  return `${featureServerUrl}/query?where=${encodeURIComponent(where)}&outFields=GEOID&outSR=4326&f=geojson`;
+// The highlighted shapes' outlines. Ids are checked before they go in the where clause: tract ids or ZIPs (GEOID), or the
+// City layer's neighborhood names (letters, digits, spaces and . ' & - /; quotes doubled), so nothing else is injected.
+export function tractShapesUrl(featureServerUrl: string, ids: string[], field = "GEOID"): string | null {
+  const ok = field === "GEOID" ? (g: string) => /^(\d{11}|\d{5})$/.test(g) : (g: string) => /^[A-Z0-9 .'&\/-]{1,60}$/.test(g);
+  if (!ids.length || ids.some((g) => !ok(g))) return null;
+  const where = `${field} IN (${ids.map((g) => `'${g.replace(/'/g, "''")}'`).join(",")})`;
+  return `${featureServerUrl}/query?where=${encodeURIComponent(where)}&outFields=${field}&outSR=4326&f=geojson`;
 }
 
 export const MAX_TRACT_SHAPES = 50;

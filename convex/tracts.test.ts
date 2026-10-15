@@ -104,7 +104,7 @@ describe("rankTracts", () => {
     });
     installFakeFetch({ columns: POV_FIELDS, tractRows: rows });
     const r = await t.withIdentity(reader).action(api.tracts.rankTracts, { code: "E02", column: "pov_rate", place: "City", year: "2022", direction: "high" });
-    if (r.status !== "ok") throw new Error("expected ok");
+    if (r.status !== "ok" || r.tool !== "rank") throw new Error("expected a tract ranking");
     expect(r.top).toHaveLength(10);
     expect(r.ties).toHaveLength(3);
     expect(r.tieCount).toBe(15);
@@ -325,7 +325,7 @@ describe("relateTracts", () => {
     const all = await t.withIdentity(reader).action(api.tracts.relateTracts, { ...relateArgs, mode: "mismatch", aSide: "high", bSide: "low" });
     const hill = await t.withIdentity(reader).action(api.tracts.relateTracts, { ...relateArgs, mode: "mismatch", aSide: "high", bSide: "low", neighborhood: "Hillside" });
     const bay = await t.withIdentity(reader).action(api.tracts.relateTracts, { ...relateArgs, mode: "mismatch", aSide: "high", bSide: "low", neighborhood: "Bay View" });
-    if (all.status !== "ok" || hill.status !== "ok" || bay.status !== "ok") throw new Error("expected ok");
+    if (all.status !== "ok" || hill.status !== "ok" || bay.status !== "ok" || all.tool !== "relate" || hill.tool !== "relate" || bay.tool !== "relate") throw new Error("expected tract comparisons");
     expect([hill.cutA, hill.cutB]).toEqual([all.cutA, all.cutB]);
     expect(hill).toMatchObject({ area: { name: "Hillside", tracts: 1, partly: 1 }, fitsCount: 1, fits: [{ a: { tract: "1860", share: 51 } }] });
     expect(bay).toMatchObject({ fitsCount: 0, fits: [] });
@@ -491,7 +491,7 @@ describe("rankTracts in a neighborhood", () => {
     installFakeFetch({ columns: POV_FIELDS, tractRows: povertyRows });
     const r = await t.withIdentity(reader).action(api.tracts.rankTracts, { ...rankArgs, neighborhood: "bay view" });
     expect(r).toMatchObject({ status: "ok", area: { name: "Bay View", map: "city", tracts: 3, partly: 2 }, header: { n: 3, leftOut: 1 } });
-    if (r.status !== "ok") return;
+    if (r.status !== "ok" || r.tool !== "rank") return;
     expect(r.top.map((x) => [x.tract, x.share, x.cityRank])).toEqual([
       ["1002", 15, { position: 23, of: 25 }],
       ["1001", 61, { position: 24, of: 25 }],
@@ -533,5 +533,69 @@ describe("review fixes for neighborhoods", () => {
     const r = await t.withIdentity(reader).action(api.tracts.rankTracts, { ...rankArgs, neighborhood: "x".repeat(5000) });
     expect(r).toMatchObject({ status: "no-neighborhood" });
     if (r.status === "no-neighborhood") expect(r.asked.length).toBeLessThanOrEqual(80);
+  });
+});
+
+describe("by neighborhood (neighborhood answers)", () => {
+  // The 25 poverty tracts split across two City neighborhoods, every tract 2,000 people.
+  async function seedNeighborhoods() {
+    const t = await seedTracts();
+    const rows = povertyRows().features.map((f) => f.attributes.GEOID as string);
+    await t.run(async (ctx) => {
+      for (const [i, geoid] of rows.entries()) {
+        const old = await ctx.db.query("tractNeighborhoods").withIndex("by_geoid", (q) => q.eq("geoid", geoid)).first();
+        const pieces = [{ name: i < 13 ? "North" : "South", share: 100 }];
+        if (old) await ctx.db.patch(old._id, { pieces }); else await ctx.db.insert("tractNeighborhoods", { geoid, city: pieces, pieces });
+        await ctx.db.insert("tractPopulations", { geoid, population: 2000, period: 2022 });
+      }
+    });
+    return t;
+  }
+  it("ranks neighborhoods built from tracts, with the city figure and verdicts", async () => {
+    const t = await seedNeighborhoods();
+    installFakeFetch({ columns: POV_FIELDS, tractRows: povertyRows });
+    const r = await t.withIdentity(reader).action(api.tracts.rankTracts, { code: "e02", column: "pov_rate", place: "City", year: "2022", direction: "high" });
+    expect(r).toMatchObject({ status: "ok", tool: "rank-n", header: { code: "E02", kind: "rate" } });
+    if (r.status !== "ok" || r.tool !== "rank-n") return;
+    expect(r.top.map((x) => x.name)).toEqual(["South", "North"]);
+    expect(r.city).toMatchObject({ name: "City of Milwaukee", residents: 50000 });
+    expect(r.top[0].verdict).toBe("higher");
+    expect(await t.query(api.tracts.tractDetail, { key: r.key, now: Date.now() })).toMatchObject({ tool: "rank-n" });
+  });
+  it("answers in tracts when asked, and says why when it falls back (review focus 1)", async () => {
+    const t = await seedNeighborhoods();
+    installFakeFetch({ columns: POV_FIELDS, tractRows: povertyRows });
+    const asked = await t.withIdentity(reader).action(api.tracts.rankTracts, { code: "e02", column: "pov_rate", place: "City", year: "2022", direction: "high", unit: "tract" });
+    expect(asked).toMatchObject({ tool: "rank" });
+    expect((asked as { unitNote?: string }).unitNote).toBeUndefined();
+    const fresh = await seedTracts(); // no populations stored
+    const fell = await fresh.withIdentity(reader).action(api.tracts.rankTracts, { code: "e02", column: "pov_rate", place: "City", year: "2022", direction: "high" });
+    expect(fell).toMatchObject({ tool: "rank", unitNote: "Neighborhood figures aren't ready yet, so these are census areas." });
+  });
+  it("keeps a count measure in tracts, saying it can't be combined", async () => {
+    const t = await seedNeighborhoods();
+    installFakeFetch({ columns: POV_FIELDS, tractRows: (u) => ({ features: povertyRows().features.map((f) => ({ attributes: { GEOID: f.attributes.GEOID, households: 100, pov_rate: f.attributes.pov_rate } })) }) });
+    const r = await t.withIdentity(reader).action(api.tracts.rankTracts, { code: "e02", column: "households", place: "City", year: "2022", direction: "high" });
+    expect(r).toMatchObject({ tool: "rank", unitNote: "This measure can't be combined across census areas, so these are census areas." });
+  });
+  it("compares two measures by neighborhood", async () => {
+    const t = await seedNeighborhoods();
+    installFakeFetch({ columns: POV_FIELDS, tractRows: povertyRows });
+    const r = await t.withIdentity(reader).action(api.tracts.relateTracts, { a: { code: "e02", column: "pov_rate" }, b: { code: "e02", column: "pov_rate" }, place: "City", year: "2022", mode: "relate" });
+    expect(r).toMatchObject({ status: "ok", tool: "relate-n", n: 2, strength: "too-few" });
+  });
+  it("falls back to tracts when populations are stored but no tract has neighborhood pieces (review I3)", async () => {
+    const t = await seedTracts();
+    await t.run(async (ctx) => { for (const f of povertyRows().features) await ctx.db.insert("tractPopulations", { geoid: f.attributes.GEOID as string, population: 2000, period: 2022 }); });
+    installFakeFetch({ columns: POV_FIELDS, tractRows: povertyRows });
+    const r = await t.withIdentity(reader).action(api.tracts.rankTracts, { code: "e02", column: "pov_rate", place: "City", year: "2022", direction: "high" });
+    expect(r).toMatchObject({ tool: "rank", unitNote: "Neighborhood figures aren't ready yet, so these are census areas." });
+  });
+  it("doesn't work out a mismatch from too few neighborhoods (review M5)", async () => {
+    const t = await seedNeighborhoods();
+    installFakeFetch({ columns: POV_FIELDS, tractRows: povertyRows });
+    const r = await t.withIdentity(reader).action(api.tracts.relateTracts, { a: { code: "e02", column: "pov_rate" }, b: { code: "e02", column: "pov_rate" }, place: "City", year: "2022", mode: "mismatch", aSide: "high", bSide: "low" });
+    expect(r).toMatchObject({ tool: "relate-n", n: 2, fits: [], close: [] });
+    expect((r as { cutA?: number }).cutA).toBeUndefined();
   });
 });

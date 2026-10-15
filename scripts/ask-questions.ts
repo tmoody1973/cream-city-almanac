@@ -58,6 +58,8 @@ export const ASK_QUESTIONS: AskQuestion[] = [
   // last card is E02 and has margins (City's poverty columns have none, so a City answer can't claim a finding).
   { q: "Where is food insecurity low despite high poverty?", tool: "zipHealth", expect: { mode: "mismatch", status: "ok" }, final: true },
   { q: "Which census tracts have the highest poverty rate?", tool: "rankTracts", expect: { code: "E02", confidence: "90% confidence (Census)" }, final: true },
+  { q: "Which neighborhoods have the highest rent burden?", tool: "rankTracts", expect: { tool: "rank-n" }, final: true },
+  { q: "Do neighborhoods with more renters have less internet at home?", tool: "relateTracts", expect: { tool: "relate-n" }, final: true },
   { q: "Where did poverty grow most from 2022 to 2023?", tool: "compareYears", expect: { code: "E02", confidence: "90% confidence (Census)" }, final: true },
   { q: "Is asthma higher where poverty is higher?", tool: "zipHealth", expect: { mode: "together", status: "ok" }, final: true },
   { q: "Which ZIP codes have the highest rate of emergency visits for asthma?", tool: "zipHealth", expect: { mode: "rank", status: "ok", key: "WIHRA" }, final: true },
