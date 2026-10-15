@@ -1,0 +1,7 @@
+/* DESIGN.md "Tour": a ruled note on paper. No shadow, no radius, no motion. */
+.tour { max-width: min(380px, calc(100vw - 32px)); padding: 14px 16px; background: var(--paper); color: var(--ink); border: var(--rule); border-radius: 0; box-shadow: none; }
+.title { margin: 0 0 6px; font-family: var(--font-caps); font-weight: 700; font-size: var(--fs-label); line-height: 1.05; }
+.text { margin: 0 0 12px; font-size: var(--fs-small); }
+.foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.count { margin-right: auto; font-family: var(--font-caps); font-weight: 700; font-size: var(--fs-small); font-variant-numeric: tabular-nums; }
+.button { min-height: 44px; padding: 0 clamp(12px, 2.4vw, 20px); border: var(--rule); border-radius: 0; background: var(--paper); color: var(--ink); font-family: var(--font-caps); font-weight: 700; font-size: var(--fs-small); cursor: pointer; }
