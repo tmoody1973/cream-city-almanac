@@ -43,7 +43,7 @@ describe("final review fixes", () => {
   it("shows the measure's plain meaning, never its formula (review I1)", () => {
     const r = { ...rank, header: { ...head, meaning: "Estimate - Percentage of renter households paying 30% or more Calculation: (burdened / renters) x 100" } };
     const n = nNotes(r).join("\n");
-    expect(n).toContain("Rent Burdened Households: Estimate - Percentage of renter households paying 30% or more");
+    expect(n).toContain("Rent Burdened Households: Percentage of renter households paying 30% or more");
     expect(n).not.toMatch(/Calculation|burdened \/ renters/);
   });
   it("offers the same comparison by census area, naming both measures (review I2)", () => {
@@ -67,4 +67,11 @@ describe("final review fixes", () => {
     expect(nExport(r, ctx).notes).toContain("Left out (fewer than 1,000 residents): Baran Park, College Heights, Copernicus Park, Estabrook Park, Golden Gate.");
   });
 });
+  it("words the note without DYCU's \"Estimate -\" label or nested parentheses (Tarik, preview read)", () => {
+    const r = { ...rank, header: { ...head, meaning: "Estimate - percentage of occupied units paying rent that are rent burdened" } };
+    const n = nNotes(r);
+    expect(n).toContain("Rent Burdened Households: Percentage of occupied units paying rent that are rent burdened");
+    expect(n).toContain("Ranges are the Census Bureau's margins of error, at 90% confidence.");
+    expect(n.join("\n")).not.toMatch(/Estimate -|\(90% confidence \(Census\)\)/);
+  });
 });

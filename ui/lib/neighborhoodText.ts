@@ -57,8 +57,17 @@ function smallNote(small: { name: string }[], full: boolean): string {
   return `Left out: ${small.length} neighborhoods with fewer than 1,000 residents (${small.slice(0, 3).map((s) => s.name).join(", ")} and ${small.length - 3} more).`;
 }
 
+// DYCU's meanings start "Estimate - percentage of …"; the card reads "Percentage of …".
+const meaningText = (m: string) => plainMeaning(m).replace(/^estimate\s*-\s*/i, "").replace(/^./, (c) => c.toUpperCase());
+// "90% confidence (Census)" → "Ranges are the Census Bureau's margins of error, at 90% confidence."
+function rangeNote(conf: string): string {
+  const m = conf.match(/^(\d+%) confidence \((.+)\)$/);
+  if (!m) return `Ranges are the margins of error: ${conf}.`;
+  return `Ranges are the ${m[2] === "Census" ? "Census Bureau" : m[2]}'s margins of error, at ${m[1]} confidence.`;
+}
+
 export function nNotes(r: NDetail, full = false): string[] {
-  const out = headers(r).map((h) => `${h.name}: ${plainMeaning(h.meaning)}`);
+  const out = headers(r).map((h) => `${h.name}: ${meaningText(h.meaning)}`);
   out.push("Neighborhood figures are built from census areas, weighted by how many residents live in each part, so they're approximate.");
   if (r.tool === "relate-n" && r.mode === "mismatch" && r.cutA !== undefined) {
     out.push(`${r.aSide === "low" ? "Low" : "High"} ${plain(r.a)}: the third of neighborhoods with the ${r.aSide === "low" ? "least" : "most"} (${r.aSide === "low" ? "at or below" : "at or above"} ${num(r.cutA, r.a)}). ${r.bSide === "high" ? "High" : "Low"} ${plain(r.b)}: ${r.bSide === "high" ? "above" : "below"} the city's figure. "Clear" means a neighborhood's whole range is past both lines.`);
@@ -66,7 +75,7 @@ export function nNotes(r: NDetail, full = false): string[] {
     out.push("“Clearly higher” or “lower” means the neighborhood's whole range is above or below the city's figure.");
   }
   const conf = headers(r)[0].confidence;
-  if (conf) out.push(`Ranges are the margins of error (${conf}).`);
+  if (conf) out.push(rangeNote(conf));
   if (r.small.length) out.push(smallNote(r.small, full));
   if (r.tool === "rank-n" && r.thin.length) out.push(`Left out (too little data): ${r.thin.join(", ")}.`);
   return out;
