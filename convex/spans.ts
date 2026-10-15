@@ -7,13 +7,14 @@ import { datastoreSql, resourceModified } from "./lib/ckan";
 import { fileModified } from "./city";
 import { buildSpan, SPAN_QUERY_TIMEOUT_MS } from "./lib/spanSql";
 import { pairEnd, pairsFor, SPAN_PAIRS, type AgePair, type BetweenPair, type SpanPair } from "./lib/spanPairs";
-import { shapeSpan, type SpanAll, type SpanGroup } from "./lib/spanShape";
+import { MIN_CASES, shapeSpan, type SpanAll, type SpanGroup } from "./lib/spanShape";
 import { rateLimiter } from "./limits";
 
 // Spelled out per kind: Omit over a union keeps only the shared keys and loses the kind narrowing.
 type PairOut = Omit<BetweenPair, "familyKey" | "file"> | Omit<AgePair, "familyKey" | "file">;
 export type SpanResult =
-  | { status: "ok"; code: string; name: string; pair: PairOut; asOf: string | null; groupBy: string | null; overlap: boolean; period: string; filters: string[]; coverage: string | null; columns: string[]; groups: SpanGroup[]; other: number; all: SpanAll }
+  | { status: "private"; code: string; name: string; reason: string }
+  | { status: "ok"; code: string; name: string; pair: PairOut; namesPeople: boolean; asOf: string | null; groupBy: string | null; overlap: boolean; period: string; filters: string[]; coverage: string | null; columns: string[]; groups: SpanGroup[]; other: number; all: SpanAll }
   | { status: "not-found"; code: string }
   | { status: "not-city" | "too-broad" | "unavailable"; code: string; name: string }
   | { status: "not-live"; code: string; name: string; note?: string }
@@ -25,6 +26,10 @@ export type SpanResult =
   | { status: "outside-coverage"; code: string; name: string; coverage: string }
   | { status: "busy" };
 
+// A file that names people (spec 2026-10-14-employee-tenure §6, Tarik's strict rule): no year split or date range,
+// since narrowing by start date finds one person's; and no answer about fewer than 10 people.
+const PRIVATE_SLICE = "This file names people, so Ask doesn't measure it by year or by a date range: that could single someone out.";
+const PRIVATE_FEW = "Fewer than 10 people match, and this file names people, so Ask doesn't report on a group that small.";
 const vFilter = v.object({ column: v.string(), values: v.optional(v.array(v.string())) });
 const FILES = [...new Set(SPAN_PAIRS.map((p) => p.file))];
 
@@ -47,6 +52,7 @@ export const timeSpan = action({
     if (!pairs.length) return { status: "no-pair", code: data.code, name, files: FILES };
     const pair = asked ? pairs.find((p) => p.id === asked.trim()) : pairs.length === 1 ? pairs[0] : undefined;
     if (!pair) return { status: "choose-pair", code: data.code, name, pairs: pairs.map((p) => ({ id: p.id, name: p.name, from: p.from, to: pairEnd(p) })) };
+    if (data.profile.namesPeople && (args.groupBy?.trim().toLowerCase() === "year" || args.from?.trim() || args.to?.trim())) return { status: "private", code: data.code, name, reason: PRIVATE_SLICE };
     const asOf = asOfDay(pair, pair.kind === "age" && pair.asOf === "file" ? await fileDate(ctx, data.profile.resourceId, data.key) : null, Date.now());
     const built = buildSpan(data.profile, pair, args, chicagoDay(Date.now()), asOf ?? undefined);
     if (!built.ok) {
@@ -58,9 +64,10 @@ export const timeSpan = action({
         built.groupSql ? datastoreSql<Record<string, unknown>>(built.groupSql, SPAN_QUERY_TIMEOUT_MS) : Promise.resolve(null),
         datastoreSql<Record<string, unknown>>(built.allSql, SPAN_QUERY_TIMEOUT_MS),
       ]);
-      const shaped = shapeSpan(groupRows, allRows[0], built.overlap, built.groupLabel === "year");
+      const shaped = shapeSpan(groupRows, allRows[0], built.overlap, built.groupLabel === "year", data.profile.namesPeople);
+      if (data.profile.namesPeople && shaped.all.cases < MIN_CASES) return { status: "private", code: data.code, name, reason: PRIVATE_FEW };
       const { familyKey: _k, file: _f, ...out } = pair;
-      return { status: "ok", code: data.code, name, pair: out, asOf, groupBy: built.groupLabel, overlap: built.overlap, period: built.period, filters: built.filterLabels, coverage: built.coverage, columns: built.columns, ...shaped };
+      return { status: "ok", code: data.code, name, pair: out, namesPeople: data.profile.namesPeople, asOf, groupBy: built.groupLabel, overlap: built.overlap, period: built.period, filters: built.filterLabels, coverage: built.coverage, columns: built.columns, ...shaped };
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
       console.error(`City time span failed for ${data.code}: ${message}`);
@@ -112,7 +119,7 @@ export const checkPairs = internalAction({
       if (!built.ok) { out.push({ id: pair.id, ok: false, error: built.status }); continue; }
       try {
         const rows = await datastoreSql<Record<string, unknown>>(built.allSql, SPAN_QUERY_TIMEOUT_MS);
-        out.push({ id: pair.id, ok: true, all: shapeSpan(null, rows[0], false, false).all });
+        out.push({ id: pair.id, ok: true, all: shapeSpan(null, rows[0], false, false, profile.namesPeople).all });
       } catch (e) {
         out.push({ id: pair.id, ok: false, error: e instanceof Error ? e.message : String(e) });
       }

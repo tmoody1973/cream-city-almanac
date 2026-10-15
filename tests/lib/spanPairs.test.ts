@@ -5,7 +5,7 @@ const COMPLAINTS = "city:citizen-complaints-against-police-and-fire-departments-
 
 describe("approved time-span pairs", () => {
   it("are well-formed, with unique ids and a real unit", () => {
-    expect(SPAN_PAIRS).toHaveLength(11);
+    expect(SPAN_PAIRS).toHaveLength(13);
     expect(new Set(SPAN_PAIRS.map((p) => p.id)).size).toBe(SPAN_PAIRS.length);
     for (const p of SPAN_PAIRS) {
       expect(p.familyKey).toMatch(/^city:[a-z0-9-]+$/);
@@ -33,5 +33,23 @@ describe("approved time-span pairs", () => {
     expect(pairEnd(open!)).toBe("as of the file's last update");
     expect(pairEnd(SPAN_PAIRS.find((p) => p.id === "vacant-age")!)).toBe("as of today");
     expect(pairEnd(SPAN_PAIRS[0])).toBe("Date Closed");
+  });
+});
+
+describe("City employee tenure (L4)", () => {
+  it("lists tenure so far and time worked before leaving on the employee pay file", () => {
+    const ps = pairsFor("city:city-employee-salary-data");
+    expect(ps.map((p) => [p.id, p.kind, p.from, p.kind === "between" ? p.to : p.openWhen])).toEqual([
+      ["tenure-current", "age", "Start Date", "Termination Date"],
+      ["tenure-left", "between", "Start Date", "Termination Date"],
+    ]);
+    const current = ps[0];
+    if (current.kind !== "age") throw new Error("age");
+    expect(current.asOf).toBe("file");
+    expect(current.asOfNote).toBe("As of {date}, when the City last updated this file: employees on its 2025 payroll with no termination date.");
+    const left = ps[1];
+    if (left.kind !== "between") throw new Error("between");
+    expect(left).toMatchObject({ verb: "had worked", toWhat: "before leaving", things: "employees who left", missing: "{n} employees are still with the City and aren't counted here." });
+    expect(left.caveat).toBe("Start Date is as the City records it; it may be when someone began their current job rather than their first day with the City.");
   });
 });

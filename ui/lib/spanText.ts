@@ -1,8 +1,9 @@
 import type { SpanResult } from "@/lib/ask/tools";
+import { MIN_CASES } from "../../convex/lib/spanShape";
 
 // The span card's words (spec 2026-10-12-time-spans-design.md §7), written by code from the server's numbers.
 export type SpanOk = Extract<SpanResult, { status: "ok" }>;
-export const MIN_CASES = 10;
+export { MIN_CASES };
 const enough = (g: { cases: number; median: number | null }) => g.cases >= MIN_CASES && g.median !== null;
 
 export function durationText(v: number | null, unit: "days" | "minutes"): string {
@@ -12,6 +13,7 @@ export function durationText(v: number | null, unit: "days" | "minutes"): string
     const m = Math.round(v);
     return `${Math.floor(m / 60)} h ${m % 60} min`;
   }
+  if (v >= 365) return `${(Math.round((v / 365) * 10) / 10).toFixed(1)} years`; // a year or more reads in years
   const d = v < 10 ? Math.round(v * 10) / 10 : Math.round(v);
   return `${d.toLocaleString("en-US")} ${d === 1 ? "day" : "days"}`;
 }
@@ -19,7 +21,7 @@ export function durationText(v: number | null, unit: "days" | "minutes"): string
 export const cellTime = (g: { cases: number }, v: number | null, unit: "days" | "minutes") => (g.cases < MIN_CASES ? "too few to say" : durationText(v, unit));
 
 // An age (L2): a year or more reads better in years ("2.1 years") than days ("761 days").
-export const ageText = (v: number | null) => (v !== null && Number.isFinite(v) && v >= 365 ? `${(Math.round((v / 365) * 10) / 10).toFixed(1)} years` : durationText(v, "days"));
+export const ageText = (v: number | null) => durationText(v, "days");
 const timeOf = (r: SpanOk) => (v: number | null) => (r.pair.kind === "age" ? ageText(v) : durationText(v, r.pair.unit));
 const asOfWords = (day: string) => new Date(`${day}T12:00:00Z`).toLocaleDateString("en-US", { dateStyle: "long", timeZone: "UTC" });
 
@@ -36,9 +38,10 @@ export function spanSummary(r: SpanOk): string {
     if (!split) return `${head[0].toUpperCase()}${head.slice(1)}; 1 in 10 for ${t(r.all.p90)} or more.`;
     return `Overall, ${head}. Longest: ${ranked[0].label} (${t(ranked[0].median)}); shortest: ${ranked.at(-1)!.label} (${t(ranked.at(-1)!.median)}).`;
   }
-  if (r.all.cases < MIN_CASES) return `Too few ${r.pair.things} were measured to say how long they took ${r.pair.toWhat} (${r.all.cases.toLocaleString("en-US")} measured).`;
-  const head = `half of the ${r.pair.things} measured took ${t(r.all.median)} or less ${r.pair.toWhat}`;
-  if (!split) return `${head[0].toUpperCase()}${head.slice(1)}; 9 in 10 took ${t(r.all.p90)} or less.`;
+  const verb = r.pair.verb ?? "took";
+  if (r.all.cases < MIN_CASES) return `Too few ${r.pair.things} were measured to say how long they ${verb} ${r.pair.toWhat} (${r.all.cases.toLocaleString("en-US")} measured).`;
+  const head = `half of the ${r.pair.things} measured ${verb} ${t(r.all.median)} or less ${r.pair.toWhat}`;
+  if (!split) return `${head[0].toUpperCase()}${head.slice(1)}; 9 in 10 ${verb} ${t(r.all.p90)} or less.`;
   const slow = ranked[0], fast = ranked.at(-1)!;
   return `Overall, ${head}. Slowest: ${slow.label} (${t(slow.median)}); fastest: ${fast.label} (${t(fast.median)}).`;
 }
@@ -69,7 +72,7 @@ export function spanNotes(r: SpanOk): { warning: string | null; notes: string[] 
   return {
     // When more lack an end date than were measured (311: 17,175 vs 10,599), the times describe only the minority.
     warning: [
-      ...(a.open > a.cases ? [`${n(a.open)} ${r.pair.things} have no end date, more than the ${n(a.cases)} measured, so these times describe only the ${r.pair.things} that have one.`] : []),
+      ...(a.open > a.cases && !(r.pair.kind === "between" && r.pair.openExpected) ? [`${n(a.open)} ${r.pair.things} have no end date, more than the ${n(a.cases)} measured, so these times describe only the ${r.pair.things} that have one.`] : []),
       ...(rows > 0 && a.unreadable * 5 > rows ? ["More than 1 in 5 dates here couldn't be read, so treat these times with caution."] : []),
     ].join(" ") || null,
     notes: [

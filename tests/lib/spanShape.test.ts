@@ -26,3 +26,19 @@ describe("shaping a span answer", () => {
     expect(shapeSpan(full.slice(0, 3), row(null, "300", "1"), false, false).other).toBe(0);
   });
 });
+
+describe("files that name people (L4)", () => {
+  it("drops groups under 10 and their times entirely, and hides a small rest, only when the file names people", () => {
+    const groups = [row("Small Dept", "9", "1200"), row("Big Dept", "10", "3000"), row("Mid Dept", "12", "2000")];
+    const people = shapeSpan(groups, row(null, "31", "2500"), false, false, true);
+    expect(people.groups.map((g) => g.label)).toEqual(["Big Dept", "Mid Dept"]);
+    expect(people.other).toBe(0); // the 9 left over would be one small group's count, so it isn't shown
+    const two = shapeSpan([row("A", "5", "1"), row("B", "6", "1"), row("Big", "20", "1")], row(null, "31", "1"), false, false, true);
+    expect(two.groups.map((g) => g.label)).toEqual(["Big"]);
+    expect(two.other).toBe(11);
+    expect(shapeSpan(groups, row(null, "9", "1500"), false, false, true).all).toMatchObject({ cases: 9, median: null, p90: null });
+    expect(shapeSpan(groups, row(null, "10", "1500"), false, false, true).all.median).toBe(1500);
+    const plain = shapeSpan(groups, row(null, "31", "2500"), false, false);
+    expect(plain.groups.map((g) => [g.label, g.median])).toEqual([["Small Dept", 1200], ["Big Dept", 3000], ["Mid Dept", 2000]]);
+  });
+});

@@ -88,13 +88,21 @@ const filtered = (a: Scope) => new Set((a.filters ?? []).map((f) => f.column));
 
 type SpanArgsIn = Scope & { code: string; groupBy?: string };
 // An age card (L2) asks how long cases have been open, naming its entry so Ask doesn't measure the closing time instead.
-const spanBase = (r: SpanOk) =>
-  r.pair.kind === "age" ? `How long have ${r.pair.things} been ${r.pair.toWhat} in ${r.name} (${r.code})` : `How long did ${r.pair.things} take ${r.pair.toWhat} in ${r.name} (${r.code})`;
+// A between pair with its own verb ("had worked") asks in that verb: "How long had employees who left worked before leaving".
+function spanBase(r: SpanOk): string {
+  if (r.pair.kind === "age") return `How long have ${r.pair.things} been ${r.pair.toWhat} in ${r.name} (${r.code})`;
+  const [aux, ...rest] = (r.pair.verb ?? "").split(" ");
+  return r.pair.verb && rest.length
+    ? `How long ${aux} ${r.pair.things} ${rest.join(" ")} ${r.pair.toWhat} in ${r.name} (${r.code})`
+    : `How long did ${r.pair.things} take ${r.pair.toWhat} in ${r.name} (${r.code})`;
+}
 export function spanFollowUps(args: SpanArgsIn, r: SpanOk): FollowUp[] {
   const out: FollowUp[] = [];
   const base = `${spanBase(r)}${scope(args)}`;
-  const tail = r.pair.kind === "age" ? ` (pair ${r.pair.id})` : "";
-  if (r.groupBy !== "year") out.push({ label: "BY YEAR", question: `${base}, by year?${tail}` });
+  // Every follow-up names its measure: a file can have two (complaints, employees), and the button must ask the same one.
+  const tail = ` (pair ${r.pair.id})`;
+  // A file that names people is never split by year (spec 2026-10-14-employee-tenure §6).
+  if (r.groupBy !== "year" && !r.namesPeople) out.push({ label: "BY YEAR", question: `${base}, by year?${tail}` });
   for (const c of r.columns.filter((c) => c !== r.groupBy && !filtered(args).has(c)).slice(0, 2)) out.push({ label: `BY ${c.replace(/_/g, " ").toUpperCase()}`, question: `${base}, by ${c}?${tail}` });
   return out.slice(0, MAX);
 }

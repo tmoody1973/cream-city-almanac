@@ -496,6 +496,7 @@ export function AskCards({ onOpen }: { onOpen?: (search: string) => void }) {
     if (r.status === "unavailable") return <p className={styles.failed}>The City&apos;s data didn&apos;t respond. Try again shortly.</p>;
     if (r.status === "too-broad") return <p className={styles.failed}>Too many {r.name} records to measure at once; try a shorter period.</p>;
     if (r.status === "busy") return <p className={styles.failed}>City questions are busy for your account; try again shortly.</p>;
+    if (r.status === "private") return <p className={styles.failed} data-card="span-private">{r.reason}</p>;
     if (r.status === "outside-coverage") return <p className={styles.failed}>{r.name}: the City&apos;s data here covers {r.coverage}, so there is nothing to measure for that period. <OpenLink code={r.code} onOpen={onOpen} /></p>;
     // no-pair, not-found, not-city and not-live are said by the model; the rest offer their options to pick.
     return <FollowUps pick items={spanChoices(props.parameters as never, r as never)} id={props.toolCallId} />;
