@@ -62,7 +62,7 @@ const call = (toolName: string, input: object) => ({ type: "tool-call" as const,
 
 // A scripted model: the first step calls the tool the question's keyword names; the next step replies.
 // "wrong column" → rankTracts E02 with a column that doesn't exist (choose-column); "rank tracts" → rankTracts, "despite" → relateTracts (mismatch), "grow most" → compareYears, "bay view" → rankTracts E02 County 2023 limited to Bay View (all four before "poverty", which they may contain); "poverty" → getNumber (Harambee); "over 200000" → searchCatalog "Master Property File", then countRecords on the row named "Master Property File (MPROP)" over $200,000 by district; "home values" → the same search, then relateTracts median_value × H04 per_broadband (County 2023); "air" → previewData V02; "twice" → showDataset and previewData V02 in one step;
-// "angles" → a reply with two paragraphs and three story angles; "report" → readReport; "unverified" → a reply with a figure; "thefts" and "robberies" → searchCatalog, then countRecords (robberies: a broad count, then robbery in Harambee); "city employees worked" → searchCatalog "employee salary", then timeSpan tenure-current by Department; "vacant" → searchCatalog "vacant buildings", then timeSpan vacant-age by AldermanicDistrict; "how long" → searchCatalog "citizen complaints", then timeSpan complaint-close on the complaints row by Department; "how much" → searchCatalog "delinquent real estate tax", then countRecords with measure tax-owed by "Ald Dist"; "tins overlap" → boundariesFor Harambee (TINs); "each year from 2019" → searchCatalog, then countRecords robbery citywide 2019–2024 by year; "since 2005" → searchCatalog "Master Property File", then countRecords assessed-value by year 2005–2026, residential and condominiums; "who gets stopped" → countStops field interviews by race; "fire calls each year" → fireHistory calls; "53228" → zipProfile 53228; "did turnout change" → countTurnout citywide, all elections; "food hardship" → zipHealth mismatch (survey food insecurity low despite high poverty); else searchCatalog.
+// "angles" → a reply with two paragraphs and three story angles; "report" → readReport; "unverified" → a reply with a figure; "thefts" and "robberies" → searchCatalog, then countRecords (robberies: a broad count, then robbery in Harambee); "city employees worked" → searchCatalog "employee salary", then timeSpan tenure-current by Department; "vacant" → searchCatalog "vacant buildings", then timeSpan vacant-age by AldermanicDistrict; "how long" → searchCatalog "citizen complaints", then timeSpan complaint-close on the complaints row by Department; "how much" → searchCatalog "delinquent real estate tax", then countRecords with measure tax-owed by "Ald Dist"; "tins overlap" → boundariesFor Harambee (TINs); "each year from 2019" → searchCatalog, then countRecords robbery citywide 2019–2024 by year; "since 2005" → searchCatalog "Master Property File", then countRecords assessed-value by year 2005–2026, residential and condominiums; "who gets stopped" → countStops field interviews by race; "fire calls each year" → fireHistory calls; "53228" → zipProfile 53228; "did turnout change" → countTurnout citywide, all elections; "neighborhoods with the most" → rankTracts E02 County 2023 by neighborhood (the default unit; every other scripted tract call passes unit "tract"); "food hardship" → zipHealth mismatch (survey food insecurity low despite high poverty); else searchCatalog.
 export function fakeAskModel(): LanguageModel {
   return new MockLanguageModelV3({
     doStream: async ({ prompt }) => {
@@ -89,7 +89,7 @@ export function fakeAskModel(): LanguageModel {
           ? call("countRecords", { code, filters: [{ column: "C_A_TOTAL", over: 200000 }], groupBy: "GEO_ALDER" })
           : question.includes("since 2005")
           ? call("countRecords", { code, years: { from: 2005, to: 2026 }, measure: { id: "assessed-value" }, filters: [{ column: "C_A_CLASS", values: ["1", "5"] }] })
-          : call("relateTracts", { a: { code, column: "median_value" }, b: { code: "H04", column: "per_broadband" }, place: "County", year: "2023", mode: "relate" });
+          : call("relateTracts", { unit: "tract", a: { code, column: "median_value" }, b: { code: "H04", column: "per_broadband" }, place: "County", year: "2023", mode: "relate" });
         return { stream: simulateReadableStream({ chunks: [{ type: "stream-start" as const, warnings: [] }, next, finish("tool-calls")] }) };
       }
       // Like the real model on the live site: a broad count in one step, then the one that was asked in the next (the
@@ -160,13 +160,15 @@ export function fakeAskModel(): LanguageModel {
                 : property
                 ? call("searchCatalog", { query: "Master Property File" })
                 : question.includes("wrong column")
-                ? call("rankTracts", { code: "E02", column: "nope", place: "County", year: "2023", direction: "high" })
+                ? call("rankTracts", { unit: "tract", code: "E02", column: "nope", place: "County", year: "2023", direction: "high" })
                 : question.includes("bay view")
-                ? call("rankTracts", { code: "E02", column: "pov_rate", place: "County", year: "2023", direction: "high", neighborhood: "Bay View" })
-                : question.includes("rank tracts")
+                ? call("rankTracts", { unit: "tract", code: "E02", column: "pov_rate", place: "County", year: "2023", direction: "high", neighborhood: "Bay View" })
+                : question.includes("neighborhoods with the most")
                 ? call("rankTracts", { code: "E02", column: "pov_rate", place: "County", year: "2023", direction: "high" })
+                : question.includes("rank tracts")
+                ? call("rankTracts", { unit: "tract", code: "E02", column: "pov_rate", place: "County", year: "2023", direction: "high" })
                 : question.includes("despite")
-                ? call("relateTracts", { a: { code: "E02", column: "pov_rate" }, b: { code: "F02", column: "per_insecure" }, place: "County", year: "2023", mode: "mismatch", aSide: "high", bSide: "low" })
+                ? call("relateTracts", { unit: "tract", a: { code: "E02", column: "pov_rate" }, b: { code: "F02", column: "per_insecure" }, place: "County", year: "2023", mode: "mismatch", aSide: "high", bSide: "low" })
                 : question.includes("grow most")
                 ? call("compareYears", { code: "E02", column: "pov_rate", place: "County", from: "2022", to: "2023" })
                 : question.includes("tins overlap")

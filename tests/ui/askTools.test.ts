@@ -229,3 +229,11 @@ describe("plain replies (spec 2026-10-15-plain-replies §4)", () => {
     }
   });
 });
+
+describe("neighborhood answers routing (spec 2026-10-15-neighborhood-answers §2)", () => {
+  it("words decide, then the topic", () => {
+    expect(ASK_PROMPT).toContain("If the person says \"neighborhood\", answer by neighborhood; if they say \"ZIP\", use zipHealth or zipProfile.");
+    expect(ASK_PROMPT).toContain("Housing, income, internet, education and jobs \"where\" questions answer by neighborhood with the tract tools (unit neighborhood, the default)");
+    expect(ASK_PROMPT).toContain("unit \"tract\" only when the person asks about census tracts");
+  });
+});

@@ -395,6 +395,9 @@ Health Compass Milwaukee's figures by ZIP code (`[data-card=zip-health]`), store
 - **Map:** the tract map's style on ZIP outlines: clear matches hatched, possible ones outlined.
 - **Under the rows:** the measure's own description, the cutoff, the 95% range rule, one limitation line, the as-of date, then the credit: "Health Compass Milwaukee (Milwaukee Health Care Partnership), powered by Metopio", the source, the period and the topic link. The credit is in every export and share.
 
+### Neighborhood figures (Ask)
+`[data-card=neighborhood-rank]` and `[data-card=neighborhood-relate]`: the City's neighborhoods, built from DYCU's census tracts weighted by residents (rates only). Bold code-written lead naming neighborhoods; "City of Milwaukee: {figure} ({range})."; rows with ranges and a verdict against the city (or the match strength); the matching neighborhoods outlined on the map; notes on how the figures are built, the cutoff, the range, who was left out (under 1,000 residents, too little data); DYCU credit. A "BY CENSUS AREA" button asks the same question by tract. Tract cards that answer a neighborhood question say why they're tracts (`[data-unit-note]`).
+
 ### Tract names
 Every tract row has two name columns. **Neighborhood**: the City's official neighborhoods covering at least 10% of the tract, biggest first; the first shows, and "+N" (a native disclosure) opens the rest with their shares. **DYCU area**: every DYCU report area that includes the tract, comma-separated. "—" for none; never a guess. Words elsewhere (scatter labels, Ask) say "mostly X" only when X covers at least half the tract, otherwise "partly X". Matched weekly (decision 031).
 
