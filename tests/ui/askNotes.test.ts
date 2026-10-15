@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { earlierCountIds, earlierSheetIds, lastCountId, newestTurnCallIds, noteNumbers, retriedCallIds, noteOrder } from "../../ui/lib/askNotes";
+import { earlierCountIds, earlierSheetIds, lookupIds, lastCountId, newestTurnCallIds, noteNumbers, retriedCallIds, noteOrder } from "../../ui/lib/askNotes";
 
 const u = (id: string) => ({ id, role: "user", content: "q" });
 const call = (id: string) => ({ id, role: "assistant", content: "", toolCalls: [{ id: `c-${id}` }] });
@@ -91,5 +91,23 @@ describe("retriedCallIds", () => {
       { id: "a3", role: "assistant", toolCalls: [call("c4", "rankTracts")] },
     ];
     expect([...retriedCallIds(messages)]).toEqual(["c1"]);
+  });
+});
+
+describe("lookups fold when an answer reaches an analysis card (plain replies §3)", () => {
+  const calls = (id: string, ...named: [string, string][]) => ({ id, role: "assistant", content: "", toolCalls: named.map(([cid, name]) => ({ id: cid, function: { name } })) });
+  it("folds the answer's searches and sheets once it has an analysis call", () => {
+    const m = [u("1"), calls("a", ["s1", "searchCatalog"], ["d1", "showDataset"]), calls("b", ["r1", "relateTracts"])];
+    expect([...lookupIds(m as never)].sort()).toEqual(["d1", "s1"]);
+  });
+  it("leaves a search-only answer alone (review focus 1)", () => {
+    expect(lookupIds([u("1"), calls("a", ["s1", "searchCatalog"])] as never).size).toBe(0);
+  });
+  it("never folds a preview", () => {
+    expect([...lookupIds([u("1"), calls("a", ["p1", "previewData"], ["c1", "countRecords"])] as never)]).toEqual([]);
+  });
+  it("judges each answer on its own (review focus 2)", () => {
+    const m = [u("1"), calls("a", ["s1", "searchCatalog"]), u("2"), calls("b", ["s2", "searchCatalog"], ["c2", "countRecords"])];
+    expect([...lookupIds(m as never)]).toEqual(["s2"]);
   });
 });

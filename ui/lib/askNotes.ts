@@ -92,6 +92,32 @@ export function newestTurnCallIds(messages: CallMsg[]): Set<string> {
   return turn;
 }
 
+// When an answer reaches an analysis card, its catalog searches and dataset sheets were lookups on the way there: they
+// fold (spec 2026-10-15-plain-replies §3). A preview never folds: live rows or a chart can be the answer itself.
+const ANALYSIS = new Set(["countRecords", "timeSpan", "rankTracts", "compareYears", "relateTracts", "getNumber", "factSheet", "zipProfile", "zipHealth", "fireHistory", "countStops", "countTurnout", "findPlace", "boundariesFor", "readReport"]);
+const LOOKUPS = new Set(["searchCatalog", "showDataset"]);
+
+export function lookupIds(messages: CallMsg[]): Set<string> {
+  const folded = new Set<string>();
+  let lookups: string[] = [];
+  let analysed = false;
+  const close = () => {
+    if (analysed) lookups.forEach((id) => folded.add(id));
+    lookups = [];
+    analysed = false;
+  };
+  for (const m of messages) {
+    if (m.role === "user") close();
+    for (const c of m.toolCalls ?? []) {
+      const name = c.function?.name ?? "";
+      if (LOOKUPS.has(name)) lookups.push(c.id);
+      if (ANALYSIS.has(name)) analysed = true;
+    }
+  }
+  close();
+  return folded;
+}
+
 // A call the model repeated later in the same answer: it refused (a list of options) and the model fixed it itself,
 // so its "Pick one:" row would read as "Ask couldn't tell" beside the answer that followed.
 export function retriedCallIds(messages: CallMsg[]): Set<string> {

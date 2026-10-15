@@ -179,6 +179,17 @@ function Once({ id, children }: { id?: string; children: ReactNode }) {
   return id && earlier.has(id) ? null : children;
 }
 
+// Lookups on the way to an answer (ui/lib/askNotes.ts lookupIds); the Ask panel provides them. A folded search draws
+// nothing; a folded sheet draws one line, and never opens the side column (the analysis card keeps it).
+export const Lookups = createContext<Set<string>>(new Set());
+function Lookup({ id, folded = null, children }: { id?: string; folded?: ReactNode; children: ReactNode }) {
+  const lookups = useContext(Lookups);
+  return id && lookups.has(id) ? folded : children;
+}
+const DatasetUsed = ({ code, name, onOpen }: { code: string; name: string; onOpen: Open }) => (
+  <p className={styles.source} data-card="dataset-used">Dataset used: {name} <OpenLink code={code} onOpen={onOpen} label="Open the sheet" /></p>
+);
+
 // The conversation's newest count (Note provides it) and the map the reader picked with "Show map" (AskPanel holds it).
 export const NewestCount = createContext<string | null>(null);
 export const MapPick = createContext<{ picked: { id: string; newest: string | null } | null; pick: (id: string, newest: string | null) => void }>({ picked: null, pick: () => {} });
@@ -363,13 +374,15 @@ export function AskCards({ onOpen }: { onOpen?: (search: string) => void }) {
     const r = parse<{ rows: { code: string; name: string; places: string[]; years: number[] }[] }>(props.result);
     if (!r) return <Failed />;
     return (
-      <ol className={styles.rows} data-card="datasets">
-        {r.rows.map((row) => (
-          <li key={row.code}>
-            <span className={styles.code}>{row.code}</span> {row.name} <OpenLink code={row.code} onOpen={onOpen} />
-          </li>
-        ))}
-      </ol>
+      <Lookup id={props.toolCallId}>
+        <ol className={styles.rows} data-card="datasets">
+          {r.rows.map((row) => (
+            <li key={row.code}>
+              <span className={styles.code}>{row.code}</span> {row.name} <OpenLink code={row.code} onOpen={onOpen} />
+            </li>
+          ))}
+        </ol>
+      </Lookup>
     );
   } }, [onOpen]);
 
@@ -379,10 +392,10 @@ export function AskCards({ onOpen }: { onOpen?: (search: string) => void }) {
     if (!r) return <Failed />;
     if (r.status !== "ok") return null;
     return (
-      <>
+      <Lookup id={props.toolCallId} folded={<DatasetUsed code={r.code} name={r.name} onOpen={onOpen} />}>
         <Once id={props.toolCallId}><SheetCard code={r.code} name={r.name} onOpen={onOpen} callKey={key("showDataset", props as never)} /></Once>
         <Once id={props.toolCallId}><FollowUps items={datasetFollowUps(r)} id={props.toolCallId} /></Once>
-      </>
+      </Lookup>
     );
   } }, [onOpen]);
 

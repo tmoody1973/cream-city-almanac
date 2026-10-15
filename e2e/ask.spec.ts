@@ -99,6 +99,11 @@ test.describe("signed in", () => {
     await expect(page.locator("[data-card=dataset]")).toHaveCount(0);
   });
 
+  test("a search-only answer still shows its results (plain replies §3)", async ({ page }) => {
+    await ask(page, "Is there data on asthma?");
+    await expect(page.locator("[data-card=datasets]:visible")).toBeVisible({ timeout: 30_000 });
+  });
+
   test("a figure in the model's words is marked unverified", async ({ page }) => {
     await ask(page, "unverified please");
     await expect(page.locator("mark[data-unverified]")).toContainText("608", { timeout: 30_000 });
@@ -525,6 +530,8 @@ test.describe("signed in", () => {
     await expect(card.locator("[data-summary]")).toContainText("assessment and 2023 survey", { timeout: 60_000 });
     await expect(card).toContainText("exact (City records)");
     await expect(card).toContainText("Assessed value is the City's figure for property taxes");
+    // The catalog search on the way to the comparison folds away (plain replies §3).
+    await expect(page.locator("[data-card=datasets]:visible")).toHaveCount(0);
   });
 
   test("next-question buttons fill the box, never send, and only the newest answer has them", async ({ page }) => {
