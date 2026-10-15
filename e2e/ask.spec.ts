@@ -423,6 +423,7 @@ test.describe("signed in", () => {
     page.request.get("https://services.arcgis.com/").then((r) => r.status() < 500).catch(() => false);
 
   test("a which-neighborhoods question draws the neighborhood card with the city figure", async ({ page }) => {
+    test.slow(); // reads every tract value plus pieces and populations: past the usual 45 seconds on a cold preview
     test.skip(!(await dycuUp(page)), "DYCU unreachable");
     await ask(page, "Which neighborhoods with the most poverty?");
     const card = page.locator("[data-card=neighborhood-rank]:visible");
