@@ -10,6 +10,7 @@ import { NewestTurn, PromptFill, RetriedCalls } from "./askFill";
 import { readPrompt, withoutPrompt } from "@/ui/lib/askPrompt";
 import { proseBlocks, proseSegments } from "@/ui/lib/askProse";
 import { AskCards, EarlierCounts, EarlierSheets, MapPick, NewestCount } from "./AskCards";
+import { AskTours } from "./TourLaunch";
 import styles from "./ask.module.css";
 
 const MAX_QUESTION = 500;
@@ -141,7 +142,7 @@ function PrefillChatView(props: CopilotChatViewProps) {
 
 const ExamplesLine = () => (
   <p className={styles.examplesLine}>
-    <Link href="/ask/guide">What can I ask? See examples →</Link>
+    <Link href="/ask/guide" data-tour="ask-examples">What can I ask? See examples →</Link>
   </p>
 );
 
@@ -163,7 +164,7 @@ export function AskPanel({ onOpen }: { onOpen?: (search: string) => void }) {
         <p className={styles.intro}>Ask a question about Milwaukee data. Answers show the real tables and reports, with their sources.</p>
         {prompt && <p className={styles.waiting}>Your question is waiting: “{prompt}”</p>}
         <SignInButton mode="modal">
-          <button type="button" className={styles.signIn}>Sign in to ask</button>
+          <button type="button" className={styles.signIn} data-tour="ask-signin">Sign in to ask</button>
         </SignInButton>
         <ExamplesLine />
       </Show>
@@ -175,6 +176,7 @@ export function AskPanel({ onOpen }: { onOpen?: (search: string) => void }) {
           </MapPick.Provider>
         </PromptFill.Provider>
       </Show>
+      <AskTours />
     </section>
   );
 }
