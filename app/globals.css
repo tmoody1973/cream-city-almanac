@@ -103,6 +103,12 @@ a {
   outline-offset: 2px;
 }
 
+/* The tour's current target: the system focus ring, so it reads as "this one" without color (DESIGN.md "Tour"). */
+[data-tour-active] { outline: 3px solid var(--ink); outline-offset: 2px; }
+/* The tour note's pointer: paper with an ink outline, like the note it hangs from. */
+.react-joyride__arrow svg { overflow: visible; }
+.react-joyride__arrow polygon { stroke: var(--ink); stroke-width: 2px; }
+
 .visually-hidden {
   position: absolute;
   width: 1px;

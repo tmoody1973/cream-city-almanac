@@ -19,7 +19,7 @@ export function SiteNav({ placement, current }: { placement: Placement; current:
         SAVED
       </span>
       {!dock && (
-        <Link className={cls(current === "start")} href="/start-here" aria-current={current === "start" ? "page" : undefined}>
+        <Link className={cls(current === "start")} href="/start-here" aria-current={current === "start" ? "page" : undefined} data-tour="start">
           START HERE
         </Link>
       )}

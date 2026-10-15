@@ -47,6 +47,13 @@
 .guides ul { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
 .guides p { margin: 0; }
 /* Phones (comp A): the guides open with a band label, like each example. */
+.ask { display: grid; gap: 12px; margin-top: clamp(28px, 5vw, 48px); padding-top: clamp(16px, 3vw, 24px); border-top: var(--hair); }
+.ask p { margin: 0; }
+.askRows { margin: 0; padding: 0; list-style: none; border-top: var(--rule); }
+.askRows li { display: grid; gap: 4px; padding: 10px 0; border-bottom: var(--hair); }
+.askRows a { font-weight: 700; }
+.askLabel { font-family: var(--font-caps); font-weight: 700; font-size: var(--fs-label); }
+.tourLinks { display: flex; flex-wrap: wrap; gap: 20px; font-weight: 700; }
 .guidesHeading { margin: 0; padding: 6px 12px; background: var(--band); font-family: var(--font-caps); font-weight: 700; font-size: var(--fs-label); }
 
 /* Keep this media query identical to LAPTOP_QUERY in ui/lib/selection.ts. */
@@ -81,6 +88,8 @@
   .try { margin-top: auto; font-size: clamp(18px, 1.5vw, 24px); line-height: 1.2; }
   /* Comp B underlines the whole link, arrow included, with one thick bar. */
   .try a { padding-bottom: 0; border-bottom: 3px solid currentColor; text-decoration: none; }
+  /* Laptop: each ask row reads across, label | what | the question. */
+  .askRows li { grid-template-columns: 21fr 39fr 40fr; gap: 0 clamp(24px, 3.1vw, 48px); align-items: baseline; }
   /* Comp B: one guides row in four ruled columns, closed by a rule. */
   .guides { grid-template-columns: 21fr 32fr 26fr 21fr; align-items: center; gap: 0; margin-top: 16px; padding: 12px 0 20px; border-bottom: var(--hair); }
   .guides > :not(:first-child) { padding-left: clamp(24px, 3.1vw, 48px); border-left: var(--hair); }

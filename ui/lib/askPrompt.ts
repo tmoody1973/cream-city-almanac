@@ -10,7 +10,8 @@ export const askHref = (question: string) => `/ask?prompt=${encodeURIComponent(q
 // Phones keep /ask; laptops open Ask's column on the search page, so the prompt travels with the redirect.
 export function laptopAskHref(search: string): string {
   const prompt = readPrompt(search);
-  return prompt ? `/search?ask=1&prompt=${encodeURIComponent(prompt)}` : "/search?ask=1";
+  const tour = new URLSearchParams(search).get("tour") === "1" ? "&tour=1" : "";
+  return `${prompt ? `/search?ask=1&prompt=${encodeURIComponent(prompt)}` : "/search?ask=1"}${tour}`;
 }
 
 // Once placed, the prompt leaves the address, so a reload doesn't put it back.

@@ -20,4 +20,8 @@ describe("Ask prompt in the address", () => {
     expect(laptopAskHref("?prompt=a%26b")).toBe("/search?ask=1&prompt=a%26b");
     expect(laptopAskHref("")).toBe("/search?ask=1");
   });
+  it("keeps a tour replay through the laptop redirect (review focus 2)", () => {
+    expect(laptopAskHref("?tour=1")).toBe("/search?ask=1&tour=1");
+    expect(laptopAskHref("?prompt=a%26b&tour=1")).toBe("/search?ask=1&prompt=a%26b&tour=1");
+  });
 });

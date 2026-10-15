@@ -6,6 +6,7 @@ import { LandingAskSample } from "./LandingAskSample";
 import { Masthead } from "./Masthead";
 import { ProvenanceTag } from "./ProvenanceTag";
 import { SiteNav } from "./SiteNav";
+import { FrontTour } from "./TourLaunch";
 import styles from "./landing.module.css";
 
 type Stats = FunctionReturnType<typeof api.catalog.landingStats>;
@@ -19,7 +20,7 @@ export function Landing({ stats }: { stats: Stats }) {
       <main className={styles.main}>
         <h2 className={styles.headline}>A guide to Milwaukee&apos;s public data.</h2>
         <p className={styles.tagline}>Find it. Understand it. Check where it came from.</p>
-        <form action="/search" method="get" className={styles.entry} role="search">
+        <form action="/search" method="get" className={styles.entry} role="search" data-tour="search">
           <label htmlFor="landing-q" className={styles.entryLabel}>
             Topic:
           </label>
@@ -29,7 +30,7 @@ export function Landing({ stats }: { stats: Stats }) {
           </button>
         </form>
 
-        <div className={styles.three}>
+        <div className={styles.three} data-tour="three">
           <section>
             <h3 className={styles.heading}>Find it</h3>
             <p>Search in your own words across Data You Can Use and the City of Milwaukee.</p>
@@ -51,7 +52,7 @@ export function Landing({ stats }: { stats: Stats }) {
         </div>
 
         <div className={styles.pair}>
-          <section>
+          <section data-tour="data">
             <h3 className={styles.heading}>The data</h3>
             <table className={styles.table} aria-label="What the almanac holds">
               <thead>
@@ -88,7 +89,7 @@ export function Landing({ stats }: { stats: Stats }) {
               ))}
             </p>
           </section>
-          <section>
+          <section data-tour="ask">
             <h3 className={styles.heading}>Ask a question</h3>
             <p>Ask in plain English; the answer shows the number and its source.</p>
             <LandingAskSample code={stats.sampleCode} />
@@ -115,6 +116,7 @@ export function Landing({ stats }: { stats: Stats }) {
             </li>
           </ul>
         </section>
+        <FrontTour />
       </main>
       <p className={styles.fine}>
         Unofficial. Not affiliated with Data You Can Use or the City of Milwaukee. · <a href="https://github.com/tmoody1973/cream-city-almanac">Code on GitHub</a> ·
