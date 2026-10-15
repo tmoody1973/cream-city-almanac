@@ -235,6 +235,18 @@ test.describe("signed in", () => {
     await expect(card.locator("[data-export]").getByRole("button", { name: "CSV" })).toBeVisible();
   });
 
+  test("a food-hardship-by-ZIP question draws the ZIP health card with Health Compass's credit", async ({ page }) => {
+    await ask(page, "Where is food hardship low despite high poverty, by ZIP?");
+    const card = page.locator("[data-card=zip-health]:visible");
+    const refusal = page.locator("[data-card=zip-health-refusal]:visible");
+    await expect(card.or(refusal)).toBeVisible({ timeout: 30_000 });
+    test.skip(await refusal.isVisible(), "Health Compass figures aren't stored on this deployment yet (run health:refreshHealth)");
+    await expect(card.locator("abbr", { hasText: "HCM" })).toBeVisible();
+    await expect(card.locator("[data-summary]")).toContainText("53208");
+    await expect(card.locator("[data-credit]").first()).toContainText("Health Compass Milwaukee (Milwaukee Health Care Partnership), powered by Metopio");
+    await expect(card.locator("[data-credit] a").first()).toHaveAttribute("href", /^https:\/\/healthcompassmilwaukee\.org\/topics\//);
+  });
+
   test("a fire-history question draws the yearly card with the system-change note (L3)", async ({ page }) => {
     await ask(page, "Show me fire calls each year");
     const card = page.locator("[data-card=fire-history]:visible");

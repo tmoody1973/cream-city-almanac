@@ -384,6 +384,14 @@ A short note that walks a new visitor through the front page and Ask, once per b
 - **Motion:** none of its own; under reduced motion the page jumps to each step instead of scrolling.
 - **Memory:** done or skipped is remembered in this browser; Start here's TAKE THE TOUR and TOUR ASK replay it. If the browser blocks storage, no tour runs.
 
+### ZIP health (Ask)
+Health Compass Milwaukee's figures by ZIP code (`[data-card=zip-health]`), stored weekly.
+- **Title:** "ZIP codes · {measure}" (or "ZIP {zip} · {measure}"), with the **HCM** tag.
+- **Lead:** one code-written sentence, its answer in bold ("No ZIP clearly has … Possible: 53208.").
+- **Rows:** ZIP, Where (the City's neighborhoods covering ≥10% of it, or its town), each figure with its 95% range, and a strength word (clear match, possible match; clearly higher, clearly lower, about the same, too uncertain to say, no range published).
+- **Map:** the tract map's style on ZIP outlines: clear matches hatched, possible ones outlined.
+- **Under the rows:** the measure's own description, the cutoff, the 95% range rule, one limitation line, the as-of date, then the credit: "Health Compass Milwaukee (Milwaukee Health Care Partnership), powered by Metopio", the source, the period and the topic link. The credit is in every export and share.
+
 ### Tract names
 Every tract row has two name columns. **Neighborhood**: the City's official neighborhoods covering at least 10% of the tract, biggest first; the first shows, and "+N" (a native disclosure) opens the rest with their shares. **DYCU area**: every DYCU report area that includes the tract, comma-separated. "—" for none; never a guess. Words elsewhere (scatter labels, Ask) say "mostly X" only when X covers at least half the tract, otherwise "partly X". Matched weekly (decision 031).
 

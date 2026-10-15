@@ -103,6 +103,12 @@ export function HowItWorks({ status, example, areas }: { status: CatalogStatus |
               City, the card says so; the figures cover the whole ZIP.
             </p>
             <p>
+              For health, food, hospital visits and similar measures by ZIP code, Ask uses Health Compass Milwaukee, the Milwaukee Health
+              Care Partnership&apos;s data site, marked <ProvenanceTag source="HCM" />. Ask keeps a weekly copy, shows each figure&apos;s
+              range, compares it with Milwaukee County, and credits Health Compass and the original source on every card, download and
+              share.
+            </p>
+            <p>
               Ask can also show the Fire Department&apos;s calls and response times year by year, 2015 to now. The City&apos;s yearly files are
               counted once a week into stored totals; from 2024 the City publishes from a new system, and the card says where the years
               don&apos;t line up exactly.
