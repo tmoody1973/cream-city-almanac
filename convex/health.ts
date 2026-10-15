@@ -16,10 +16,12 @@ const RETRY_WAITS_MS = [2_000, 5_000];
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 // A busy (429) or failing (5xx) answer is tried again after a pause; anything else fails at once.
-async function getJson(url: string, waits: number[]): Promise<unknown> {
+// absent: statuses that mean "nothing here" (null), not a failure.
+async function getJson(url: string, waits: number[], absent: number[] = []): Promise<unknown> {
   for (let i = 0; ; i++) {
     const res = await fetchWithTimeout(url, { headers: HC_HEADERS }, HC_TIMEOUT_MS);
     if (res.ok) return res.json();
+    if (absent.includes(res.status)) return null;
     if (i >= waits.length || !(res.status === 429 || res.status >= 500)) throw new Error(`Health Compass request failed: ${res.status}`);
     await sleep(waits[i]);
   }
@@ -72,9 +74,13 @@ export const refreshHealth = internalAction({
         { layer: "place", geo: CITY_GEO },
       ];
       const raw: { layer: HealthLayer; geo: string; rows: RawRow[] }[] = [];
+      const missing: string[] = [];
       for (const t of targets) {
         inTime();
-        raw.push({ ...t, rows: parseDataPage(await getJson(placeUrl(t.layer, t.geo), waits)) });
+        // A place Health Compass doesn't cover answers 403 (53126 does) or 404: no data there, not a failed week.
+        const json = await getJson(placeUrl(t.layer, t.geo), waits, [403, 404]);
+        if (json === null) missing.push(t.geo);
+        raw.push({ ...t, rows: json === null ? [] : parseDataPage(json) });
         await sleep(paceMs);
       }
       // ZIPs first; the county and city then take each topic's most common ZIP period when they have it.
@@ -89,7 +95,7 @@ export const refreshHealth = internalAction({
       if (!kept.length) throw new Error("no topic had a ZIP figure");
       const keys = new Set(kept.map((t) => t.key));
       await ctx.runMutation(internal.health.replaceHealth, { topics: kept, places: places.map((p) => ({ ...p, figures: p.figures.filter((f) => keys.has(f.topic)) })), at: Date.now() });
-      return [];
+      return missing.length ? [`Health Compass has no figures for ${missing.join(", ")}`] : [];
     } catch (e) {
       await ctx.runMutation(internal.health.markHealthFailed, { note: message(e) });
       return [`Health Compass refresh failed, kept last week's: ${message(e)}`];

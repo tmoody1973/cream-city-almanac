@@ -62,6 +62,16 @@ describe("refreshHealth", () => {
     expect(notes).toEqual(["Health Compass refresh failed, kept last week's: Health Compass took too long; stopped at the deadline"]);
     expect(await t.run((ctx) => ctx.db.query("healthPlaces").collect())).toHaveLength(39);
   });
+  it("stores a place Health Compass refuses or doesn't know as no data, and notes it (53126 answers 403)", async () => {
+    installFakeFetch({ healthCompass: hc, healthStatusFor: (geo) => (geo === "53126" ? 403 : geo === "53295" ? 404 : undefined) });
+    const t = convexTest(schema, modules);
+    const notes = await t.action(internal.health.refreshHealth, { paceMs: 0 });
+    expect(notes).toEqual(["Health Compass has no figures for 53126, 53295"]);
+    const all = await t.run((ctx) => ctx.db.query("healthPlaces").collect());
+    expect(all).toHaveLength(39);
+    expect(all.find((p) => p.geo === "53126")!.figures).toEqual([]);
+    expect(await t.run((ctx) => ctx.db.query("healthRefresh").first())).toMatchObject({ status: "read" });
+  });
   it("retries a busy answer, then fails the run without storing", async () => {
     installFakeFetch({ healthCompass: hc, healthStatus: 429 });
     const t = convexTest(schema, modules);
