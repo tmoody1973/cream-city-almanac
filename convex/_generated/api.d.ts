@@ -48,6 +48,7 @@ import type * as lib_geo from "../lib/geo.js";
 import type * as lib_geocode from "../lib/geocode.js";
 import type * as lib_grid from "../lib/grid.js";
 import type * as lib_hash from "../lib/hash.js";
+import type * as lib_healthAnswer from "../lib/healthAnswer.js";
 import type * as lib_healthCompass from "../lib/healthCompass.js";
 import type * as lib_healthMath from "../lib/healthMath.js";
 import type * as lib_http from "../lib/http.js";
@@ -142,6 +143,7 @@ declare const fullApi: ApiFromModules<{
   "lib/geocode": typeof lib_geocode;
   "lib/grid": typeof lib_grid;
   "lib/hash": typeof lib_hash;
+  "lib/healthAnswer": typeof lib_healthAnswer;
   "lib/healthCompass": typeof lib_healthCompass;
   "lib/healthMath": typeof lib_healthMath;
   "lib/http": typeof lib_http;
