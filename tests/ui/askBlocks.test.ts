@@ -27,8 +27,14 @@ describe("proseBlocks", () => {
 });
 
 describe("replyProblems", () => {
+  it("flags dataset codes and column names, but not quoted labels (plain replies §5; review focus 4)", () => {
+    expect(replyProblems("Compare E02 with the food sheet.")).toEqual(["code"]);
+    expect(replyProblems("The pov_rate column is the one.")).toEqual(["column name"]);
+    expect(replyProblems('The row "Under 5 years" and "S1501" and "PM2.5" are quoted.')).toEqual([]);
+    expect(replyProblems('The label "E02 pov_rate" is quoted.')).toEqual([]);
+  });
   it("accepts up to three sentences and up to three angles", () => {
-    expect(replyProblems("The F02 sheet is open. It covers 2022 and 2023.\n- Who is hungriest\n- What changed\n- Where help is")).toEqual([]);
+    expect(replyProblems("The food insecurity sheet is open. It covers 2022 and 2023.\n- Who is hungriest\n- What changed\n- Where help is")).toEqual([]);
   });
   it("flags a fourth sentence, a fourth angle, a heading and a numbered list", () => {
     expect(replyProblems("One. Two. Three. Four.")).toEqual(["4 sentences"]);
