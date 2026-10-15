@@ -101,7 +101,7 @@ Example: "Half of the employees who left measured had worked 3.4 years or less b
 
 **Live on dev (with Tarik's OK):**
 - `checkPairs` includes both entries with plausible medians;
-- one `tenure-current` call by Department shows the 1–4-person departments with counts and no times.
+- one `tenure-current` call filtered to a 1–4-person department returns its count and no times. A by-department card shows only the 24 largest departments; the small ones fold into "all other groups".
 
 **Browser:** the scripted question draws the span card with "time worked so far".
 
