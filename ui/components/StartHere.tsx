@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import type { api } from "@/convex/_generated/api";
 import { formatPortraitMargin, formatPortraitNumber } from "@/ui/lib/portrait";
 import { canChart } from "@/ui/lib/preview";
+import { START_ASK } from "@/ui/lib/startAsk";
 import { Arrow } from "./Arrow";
 import { CreditFooter } from "./CreditFooter";
 import { LivePreview } from "./LivePreview";
@@ -40,7 +41,7 @@ export function StartHere({ data }: { data: Data | null }) {
       <Masthead side="START HERE" showDate={false} sideClassName={styles.side} nav={<SiteNav placement="masthead" current="start" />} />
       <main className={styles.main}>
         <h2 className={styles.headline}>START HERE</h2>
-        <p className={styles.lede}>Three people, three questions, and how each gets an answer here.</p>
+        <p className={styles.lede}>Three people, three questions, and how each gets an answer here; below them, what you can ask Ask.</p>
         <p className={styles.try}><Link href="/ask/guide">Prefer to ask in plain English? How to use Ask<Arrow /></Link></p>
 
         <div className={styles.examples}>
@@ -130,6 +131,24 @@ export function StartHere({ data }: { data: Data | null }) {
           tryHref="/d/V02"
         />
         </div>
+
+        <section className={styles.ask} aria-labelledby="ask-heading" data-start-ask>
+          <h3 id="ask-heading" className={styles.guidesHeading}>WHAT YOU CAN ASK</h3>
+          <ul className={styles.askRows}>
+            {START_ASK.map((r) => (
+              <li key={r.label}>
+                <span className={styles.askLabel}>{r.label}</span>
+                <span>{r.line}</span>
+                <Link href={`/ask?prompt=${encodeURIComponent(r.question)}`}>{r.question}<Arrow /></Link>
+              </li>
+            ))}
+          </ul>
+          <p>Every answer card shows where its numbers came from, exports to CSV, text or a picture, and has a share link.</p>
+          <p className={styles.tourLinks}>
+            <Link href="/?tour=1">TAKE THE TOUR<Arrow /></Link>
+            <Link href="/ask?tour=1">TOUR ASK<Arrow /></Link>
+          </p>
+        </section>
 
         <section className={styles.guides} aria-labelledby="guides-heading">
           <h3 id="guides-heading" className={styles.guidesHeading}>DYCU&apos;S OWN GUIDES</h3>
