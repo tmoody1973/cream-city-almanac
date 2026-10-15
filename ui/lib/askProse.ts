@@ -68,9 +68,15 @@ function askedZips(text: string, asked: string): [number, number][] {
   return [...text.matchAll(/(?<!\d|\d[.,])\d{5}(?!\d|[.,]\d|%)/g)].filter((m) => typed.has(m[0])).map((m): [number, number] => [m.index, m.index + 5]);
 }
 
+// A 5-digit number a tool returned as a ZIP ("zip":"53205"): a name the card shows, not a figure the AI made up.
+function returnedZips(text: string, data: string): [number, number][] {
+  const plainData = data.replace(/\\"/g, '"'); // tool results can arrive JSON-encoded twice
+  return [...text.matchAll(/(?<!\d|\d[.,])\d{5}(?!\d|[.,]\d|%)/g)].filter((m) => plainData.includes(`"zip":"${m[0]}"`)).map((m): [number, number] => [m.index, m.index + 5]);
+}
+
 function allowedSpans(text: string, data: string, asked: string): [number, number][] {
   const defined = DEFINITIONS.flatMap((re) => [...text.matchAll(re)]).map((m): [number, number] => [m.index, m.index + m[0].length]);
-  return [...quotedFromData(text, data), ...defined, ...documentedDurations(text, data), ...namedTracts(text, data), ...askedZips(text, asked)];
+  return [...quotedFromData(text, data), ...defined, ...documentedDurations(text, data), ...namedTracts(text, data), ...askedZips(text, asked), ...returnedZips(text, data)];
 }
 
 // `data` is what the conversation's tools returned (their results as text); quoted labels must come from it.

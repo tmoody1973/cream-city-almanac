@@ -52,14 +52,29 @@ const end = (d: string) => Number(PERIOD.exec(d)![2] ?? PERIOD.exec(d)![1]);
 const span = (d: string) => end(d) - Number(PERIOD.exec(d)![1]);
 
 // One figure per topic for a place: the whole population, the newest end year, and on a tie the longer (steadier) span.
-export function pickFigures(rows: RawRow[]): HealthFigure[] {
+// prefer names a period per topic (the ZIPs' own, for the county and city), taken when the place has it, so a ZIP is
+// never compared with a county figure from another year when a same-year one exists.
+export function pickFigures(rows: RawRow[], prefer: Record<string, string> = {}): HealthFigure[] {
   const best = new Map<string, RawRow>();
   for (const r of rows) {
     if (r.p !== "" || r.v === null || !Number.isFinite(r.v) || !PERIOD.test(r.d)) continue;
     const b = best.get(r.a);
-    if (!b || end(r.d) > end(b.d) || (end(r.d) === end(b.d) && span(r.d) > span(b.d))) best.set(r.a, r);
+    const want = prefer[r.a];
+    if (b && want && b.d === want) continue;
+    if (!b || (want && r.d === want) || end(r.d) > end(b.d) || (end(r.d) === end(b.d) && span(r.d) > span(b.d))) best.set(r.a, r);
   }
   return [...best.values()].sort((x, y) => x.a.localeCompare(y.a)).map((r) => ({ topic: r.a, period: r.d, value: r.v as number, se: r.se ?? null }));
+}
+
+// Each topic's most common period among some figures (ties: the newer end year).
+export function modalPeriods(figures: HealthFigure[]): Record<string, string> {
+  const counts = new Map<string, Map<string, number>>();
+  for (const f of figures) {
+    const c = counts.get(f.topic) ?? new Map<string, number>();
+    c.set(f.period, (c.get(f.period) ?? 0) + 1);
+    counts.set(f.topic, c);
+  }
+  return Object.fromEntries([...counts].map(([topic, c]) => [topic, [...c].sort((x, y) => y[1] - x[1] || end(y[0]) - end(x[0]))[0][0]]));
 }
 
 // The credit every Health Compass figure keeps, wherever it goes (spec §6). Sources are Health Compass's own words.

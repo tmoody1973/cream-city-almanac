@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { internalAction, internalMutation, query } from "./_generated/server";
-import { CITY_GEO, COUNTY_GEO, HC_API, HC_HEADERS, parseDataPage, parseTopicsPage, pickFigures, placeUrl, type HealthFigure, type HealthLayer, type HealthTopic } from "./lib/healthCompass";
+import { CITY_GEO, COUNTY_GEO, HC_API, HC_HEADERS, parseDataPage, modalPeriods, parseTopicsPage, pickFigures, placeUrl, type HealthFigure, type HealthLayer, type HealthTopic, type RawRow } from "./lib/healthCompass";
 import { answer, type HealthArgs, type HealthResult } from "./lib/healthAnswer";
 import { fetchWithTimeout } from "./lib/http";
 import { COUNTY_ZIPS } from "./lib/zips";
@@ -10,6 +10,8 @@ import { vHealthFigure, vHealthLayer, vHealthTopic } from "./validators";
 // Health Compass Milwaukee, stored weekly (spec 2026-10-15-zip-health §3.1). One request per place, a second apart.
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 const HC_TIMEOUT_MS = 30_000;
+// Well inside an action's 10 minutes, so a slow Health Compass ends in a noted failure, never a killed run.
+const DEADLINE_MS = 5 * 60_000;
 const RETRY_WAITS_MS = [2_000, 5_000];
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
@@ -50,9 +52,11 @@ export const markHealthFailed = internalMutation({
 
 // Weekly (build.finish) or alone: `npx convex run health:refreshHealth`. Notes, never throws.
 export const refreshHealth = internalAction({
-  args: { paceMs: v.optional(v.number()) },
-  handler: async (ctx, { paceMs = 1_000 }): Promise<string[]> => {
+  args: { paceMs: v.optional(v.number()), deadlineMs: v.optional(v.number()) },
+  handler: async (ctx, { paceMs = 1_000, deadlineMs = DEADLINE_MS }): Promise<string[]> => {
     const waits = paceMs === 0 ? [0, 0] : RETRY_WAITS_MS;
+    const stopAt = Date.now() + deadlineMs;
+    const inTime = () => { if (Date.now() >= stopAt) throw new Error("Health Compass took too long; stopped at the deadline"); };
     try {
       const topics: HealthTopic[] = [];
       let url: string | null = `${HC_API}/topics/?limit=500`;
@@ -67,11 +71,19 @@ export const refreshHealth = internalAction({
         { layer: "county", geo: COUNTY_GEO },
         { layer: "place", geo: CITY_GEO },
       ];
-      const places: { layer: HealthLayer; geo: string; figures: HealthFigure[] }[] = [];
+      const raw: { layer: HealthLayer; geo: string; rows: RawRow[] }[] = [];
       for (const t of targets) {
-        places.push({ ...t, figures: pickFigures(parseDataPage(await getJson(placeUrl(t.layer, t.geo), waits))) });
+        inTime();
+        raw.push({ ...t, rows: parseDataPage(await getJson(placeUrl(t.layer, t.geo), waits)) });
         await sleep(paceMs);
       }
+      // ZIPs first; the county and city then take each topic's most common ZIP period when they have it.
+      const zipFigures = raw.filter((p) => p.layer === "zip").map((p) => ({ layer: p.layer, geo: p.geo, figures: pickFigures(p.rows) }));
+      const prefer = modalPeriods(zipFigures.flatMap((p) => p.figures));
+      const places: { layer: HealthLayer; geo: string; figures: HealthFigure[] }[] = [
+        ...zipFigures,
+        ...raw.filter((p) => p.layer !== "zip").map((p) => ({ layer: p.layer, geo: p.geo, figures: pickFigures(p.rows, prefer) })),
+      ];
       const onZips = new Set(places.filter((p) => p.layer === "zip").flatMap((p) => p.figures.map((f) => f.topic)));
       const kept = topics.filter((t) => onZips.has(t.key));
       if (!kept.length) throw new Error("no topic had a ZIP figure");

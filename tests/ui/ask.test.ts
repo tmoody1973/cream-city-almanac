@@ -10,6 +10,12 @@ import { simulateReadableStream } from "ai";
 const flagged = (t: string) => proseSegments(t).filter((s) => s.unverified).map((s) => s.text);
 
 describe("proseSegments", () => {
+  it("allows a ZIP the tools returned, but not a figure that happens to have five digits (review I5)", () => {
+    const data = JSON.stringify({ status: "ok", mode: "rank", rows: [{ zip: "53205" }, { zip: "53206" }] });
+    const check = (t: string) => proseSegments(t, data).filter((s) => s.unverified).map((s) => s.text);
+    expect(check("53205 and 53206 stand out.")).toEqual([]);
+    expect(check("53212 and 12,345 people.")).toEqual(["53212", "12,345"]);
+  });
   it("flags figures in the model's words", () => {
     expect(flagged("About 6,520 people, or 18% of residents.")).toEqual(["6,520", "18%"]);
     expect(flagged("A rate of 12.5 per 1000.")).toEqual(["12.5", "1000"]);

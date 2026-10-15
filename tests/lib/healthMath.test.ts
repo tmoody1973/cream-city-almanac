@@ -71,6 +71,12 @@ describe("topic matching", () => {
     expect(matchTopic("Food Insecurity (2024 Food Insecurity)", topics)).toMatchObject({ status: "ok", topic: { key: "MQ35" } });
     expect(matchTopic("mq35", topics)).toMatchObject({ status: "ok", topic: { key: "MQ35" } });
   });
+  it("asks rather than guessing when the best name carries more than one word beyond the question (review I3)", () => {
+    const extra = [...topics, { key: "CRC", name: "Colorectal cancer screening", description: "", units: "%", decimals: 1, isCount: false, keywords: "", team: null, sources: [] }];
+    expect(matchTopic("cancer", extra)).toMatchObject({ status: "choose" });
+    expect(matchTopic("poverty", extra)).toMatchObject({ status: "ok", topic: { key: "POV" } });
+    expect(matchTopic("asthma emergency visits", extra)).toMatchObject({ status: "ok", topic: { key: "WIHRA" } });
+  });
   it("finds nothing for words no topic uses", () => {
     expect(matchTopic("zebra stripes", topics)).toEqual({ status: "not-found" });
     expect(matchTopic("the rate", topics)).toEqual({ status: "not-found" });

@@ -3,7 +3,7 @@ import { parseDataPage, parseTopicsPage, pickFigures, HC_CREDIT } from "../../co
 import { answer, type HealthData, type HealthOk } from "../../convex/lib/healthAnswer";
 import { toCsv } from "../../ui/lib/cardExport";
 import { shareCard } from "../../ui/lib/shareCard";
-import { label, leadOf, mapOf, notesOf, tableOf, zipHealthChoices, zipHealthExport, zipHealthFollowUps, zipHealthRefusal } from "../../ui/lib/zipHealthText";
+import { creditsOf, label, leadOf, mapOf, notesOf, tableOf, zipHealthChoices, zipHealthExport, zipHealthFollowUps, zipHealthRefusal } from "../../ui/lib/zipHealthText";
 import { HC_ROWS, HC_TOPICS_PAGE } from "../fixtures/healthCompass";
 
 const geos = [...new Set(HC_ROWS.map((r) => r.g))];
@@ -51,6 +51,19 @@ describe("ZIP health words", () => {
     }
     const shared = shareCard("zipHealth", mismatch, ctx);
     expect(shared && "card" in shared && shared.card.notes.join("\n")).toContain(HC_CREDIT);
+  });
+  it("gives every measure its period, even when no ZIP matches (review I2)", () => {
+    const two = { ...data, places: data.places.filter((pl) => pl.geo === "55079" || pl.geo === "53205") };
+    const none = answer({ mode: "mismatch", measure: FI, side: "low", other: "Poverty rate", otherSide: "high" }, two) as HealthOk;
+    expect(none.status === "ok" && none.mode === "mismatch" && none.close.length + none.fits.length).toBe(0);
+    for (const block of creditsOf(none)) expect(block).toContainEqual(expect.stringMatching(/^Period: \d{4}/));
+    expect(none.periods).toEqual({ MQ35: "2024", POV: "2020-2024" });
+  });
+  it("says when the county's figure is from a different period than the ZIPs' (review I1)", () => {
+    const shifted = { ...data, places: data.places.map((pl) => (pl.geo === "55079" ? { ...pl, figures: pl.figures.map((f) => (f.topic === "MQ35" ? { ...f, period: "2023" } : f)) } : pl)) };
+    const r = answer({ mode: "rank", measure: FI }, shifted) as HealthOk;
+    expect(notesOf(r)).toContain("Milwaukee County's food insecurity figure is from 2023; the ZIPs' are from 2024.");
+    expect(notesOf(mismatch).join("\n")).not.toContain("is from");
   });
   it("maps clear matches hatched and possible ones outlined, as ZIPs", () => {
     expect(mapOf(mismatch)).toMatchObject({ fits: [], close: ["53208"], noun: "ZIP" });

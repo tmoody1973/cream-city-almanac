@@ -27,6 +27,16 @@ describe("refreshHealth", () => {
     expect((await t.run((ctx) => ctx.db.query("healthTopics").collect())).map((x) => x.key).sort()).toEqual(["MQ35", "POV"]);
     expect(await t.run((ctx) => ctx.db.query("healthRefresh").first())).toMatchObject({ status: "read", places: 39 });
   });
+  it("picks the county's figure from the ZIPs' own period when it has one (review I1)", async () => {
+    installFakeFetch({ healthCompass: (url) => {
+      const r = hc(url) as { results?: unknown[] };
+      return url.includes("geography=55079") ? { ...r, results: [...(r.results ?? []), { g: "55079", l: "county", a: "POV", p: "", d: "2021-2025", v: 99, se: 1 }] } : r;
+    } });
+    const t = convexTest(schema, modules);
+    await t.action(internal.health.refreshHealth, { paceMs: 0 });
+    const county = await t.run((ctx) => ctx.db.query("healthPlaces").withIndex("by_geo", (q) => q.eq("geo", "55079")).first());
+    expect(county!.figures.find((f) => f.topic === "POV")).toMatchObject({ period: "2020-2024" });
+  });
   it("keeps last week's copy and says why when Health Compass fails or changes shape (review focus 1)", async () => {
     installFakeFetch({ healthCompass: hc });
     const t = convexTest(schema, modules);
@@ -43,6 +53,14 @@ describe("refreshHealth", () => {
     const t = convexTest(schema, modules);
     expect(await t.action(internal.health.refreshHealth, {})).toEqual(["Health Compass refresh failed, kept last week's: Health Compass listed no topics"]);
     expect(seen).toHaveLength(1);
+  });
+  it("gives up past its deadline, marks the run failed and keeps last week's copy (review I4)", async () => {
+    installFakeFetch({ healthCompass: hc });
+    const t = convexTest(schema, modules);
+    await t.action(internal.health.refreshHealth, { paceMs: 0 });
+    const notes = await t.action(internal.health.refreshHealth, { paceMs: 0, deadlineMs: 0 });
+    expect(notes).toEqual(["Health Compass refresh failed, kept last week's: Health Compass took too long; stopped at the deadline"]);
+    expect(await t.run((ctx) => ctx.db.query("healthPlaces").collect())).toHaveLength(39);
   });
   it("retries a busy answer, then fails the run without storing", async () => {
     installFakeFetch({ healthCompass: hc, healthStatus: 429 });

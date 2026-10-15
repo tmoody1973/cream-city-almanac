@@ -56,7 +56,7 @@ const core = (name: string) => new Set(words(name.replace(/\([^)]*\)/g, " ")).fi
 export type TopicMatch = { status: "ok"; topic: HealthTopic } | { status: "choose"; choices: { key: string; name: string }[] } | { status: "not-found" };
 
 // Code picks the topic, never the AI (spec §4): a name counts three, keywords and the description one; fewer extra name
-// words wins a tie. One clear winner that covers every word answers; otherwise up to eight choices.
+// words wins a tie. One clear winner that covers every word, adding at most one word, answers; otherwise up to eight choices.
 export function matchTopic(asked: string, topics: HealthTopic[]): TopicMatch {
   const exact = topics.find((t) => t.key.toLowerCase() === asked.trim().toLowerCase() || words(t.name).join(" ") === words(asked).join(" "));
   if (exact) return { status: "ok", topic: exact };
@@ -71,6 +71,7 @@ export function matchTopic(asked: string, topics: HealthTopic[]): TopicMatch {
   }).filter((x) => x.score > 0).sort((x, y) => y.score - x.score || x.extra - y.extra || x.t.name.localeCompare(y.t.name));
   if (!scored.length) return { status: "not-found" };
   const [best, next] = scored;
-  if (best.score === 3 * q.length && (!next || next.score < best.score || next.extra > best.extra)) return { status: "ok", topic: best.t };
+  // A name that adds more than one word to the question ("cancer" → "Colorectal cancer screening") is a guess: ask instead.
+  if (best.score === 3 * q.length && best.extra <= 1 && (!next || next.score < best.score || next.extra > best.extra)) return { status: "ok", topic: best.t };
   return { status: "choose", choices: scored.slice(0, 8).map(({ t }) => ({ key: t.key, name: t.name })) };
 }

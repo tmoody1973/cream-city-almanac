@@ -31,6 +31,17 @@ describe("reading Health Compass", () => {
       { topic: "X", period: "2020-2024", value: 2, se: 0.5 },
     ]);
   });
+  it("takes a preferred period when the place has it (the ZIPs' own period, for the county) (review I1)", () => {
+    const rows: RawRow[] = [
+      { g: "55079", l: "county", a: "DIA", p: "", d: "2023", v: 10, se: 1 },
+      { g: "55079", l: "county", a: "DIA", p: "", d: "2024", v: 11, se: 1 },
+      { g: "55079", l: "county", a: "OBE", p: "", d: "2024", v: 30, se: 1 },
+    ];
+    expect(pickFigures(rows, { DIA: "2023", OBE: "2023" })).toEqual([
+      { topic: "DIA", period: "2023", value: 10, se: 1 },
+      { topic: "OBE", period: "2024", value: 30, se: 1 },
+    ]);
+  });
   it("reads the real fixture", () => {
     const figs = pickFigures(parseDataPage({ results: HC_ROWS.filter((r) => r.g === "53208") }));
     expect(figs.map((f) => f.topic)).toEqual(["MQ35", "POV"]);

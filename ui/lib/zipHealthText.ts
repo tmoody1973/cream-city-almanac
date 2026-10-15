@@ -76,11 +76,7 @@ export function tableOf(r: HealthOk): { head: string[]; rows: string[][] } {
 }
 
 const topicsOf = (r: HealthOk) => (r.mode === "one" || r.mode === "rank" ? [r.measure] : [r.measure, r.other]);
-const periodOf = (r: HealthOk, t: HealthTopic) => {
-  const lines = r.mode === "one" ? [r.zip] : r.mode === "rank" ? r.rows : r.mode === "together" ? r.rows : [...r.fits, ...r.close];
-  const f = t.key === r.measure.key ? r.county ?? lines[0]?.a : lines[0]?.b;
-  return f?.period ?? "";
-};
+const periodOf = (r: HealthOk, t: HealthTopic) => r.periods[t.key] ?? "";
 
 // One line per dataset kind, from Health Compass's own source fields (spec §5).
 export function limitationOf(t: HealthTopic): string | null {
@@ -103,6 +99,8 @@ export function notesOf(r: HealthOk): string[] {
   } else if (r.mode !== "together") {
     out.push("“Clearly higher” or “lower” means the ZIP's whole range is above or below Milwaukee County's figure.");
   }
+  const zp = r.mode === "one" ? r.zip.a.period : r.periods[r.measure.key];
+  if (r.county && zp && r.county.period !== zp) out.push(`Milwaukee County's ${label(r.measure)} figure is from ${r.county.period}; the ZIPs' are from ${zp}.`);
   out.push("Ranges are 95%: each figure plus or minus 1.96 standard errors, as Health Compass publishes them.");
   const uncertain = r.mode === "rank" ? r.uncertain.map((l) => l.zip) : r.mode === "mismatch" ? r.uncertain : [];
   if (uncertain.length) out.push(`Too uncertain to use: ${uncertain.join(", ")}.`);
@@ -136,8 +134,8 @@ export function zipHealthExport(r: HealthOk, ctx: Ctx): CardExport {
     title: zipHealthTitle(r),
     lines: [lead.rest ? `${lead.strong} ${lead.rest}` : lead.strong],
     csv: {
-      head: ["ZIP", "Where", ...figHead(r.measure.name), ...(r.mode === "one" || r.mode === "rank" ? [] : figHead(r.other.name)), "Milwaukee County", "Milwaukee County standard error"],
-      rows: lines.map((l) => [l.zip, placeText(l), ...fig(l.a), ...(r.mode === "one" || r.mode === "rank" ? [] : fig(l.b)), r.county?.value ?? null, r.county?.se ?? null]),
+      head: ["ZIP", "Where", ...figHead(r.measure.name), ...(r.mode === "one" || r.mode === "rank" ? [] : figHead(r.other.name)), "Milwaukee County", "Milwaukee County standard error", "Milwaukee County period"],
+      rows: lines.map((l) => [l.zip, placeText(l), ...fig(l.a), ...(r.mode === "one" || r.mode === "rank" ? [] : fig(l.b)), r.county?.value ?? null, r.county?.se ?? null, r.county?.period ?? ""]),
     },
     text: t,
     notes: [...notesOf(r), ...creditsOf(r).flat(), exported(ctx)],
