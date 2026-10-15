@@ -218,6 +218,15 @@ describe("plain replies (spec 2026-10-15-plain-replies §4)", () => {
     expect(ASK_PROMPT).not.toContain("by code (H05, W01)");
     expect(ASK_PROMPT).not.toContain("Find the datasets first, read the column guide");
   });
+  it("round 2: one paragraph in a fixed shape, and the notes that used to add sentences become the caveat", () => {
+    expect(ASK_PROMPT).toContain("Write one short paragraph:");
+    expect(ASK_PROMPT).not.toContain('If you say "tract", say once');
+    expect(ASK_PROMPT).toContain('Say "small Census area" rather than "tract".');
+    expect(ASK_PROMPT).not.toContain("say first that most of the ZIP's land is outside");
+    expect(ASK_PROMPT).toContain("make it your caveat that most of the ZIP's land is outside the City of Milwaukee");
+    expect(ASK_PROMPT).toContain("make it your caveat that the card can't separate findings from noise");
+    expect(askTools(backend({})).find((t) => t.name === "zipProfile")!.description).toContain("make it your caveat that most of the ZIP's land is outside");
+  });
   it("keeps the rules it doesn't replace (review focus 5)", () => {
     for (const kept of ["Never write a number, percentage, count or amount in your own words.", "For datasets that name private people", "use zipHealth, by ZIP code, from Health Compass Milwaukee", "Never name or single out an employee"]) expect(ASK_PROMPT).toContain(kept);
   });

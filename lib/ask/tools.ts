@@ -268,7 +268,7 @@ export function askTools(b: AskBackend): AskTool[] {
     },
     {
       name: "zipProfile",
-      description: "Who lives in one ZIP code in Milwaukee County and what it's like: population, race and ethnicity, poverty, low incomes, renters, vacant homes, rent burden, households with no car, and schooling, each beside Milwaukee's figure, from the U.S. Census Bureau's American Community Survey for that ZIP's Census area. One ZIP per call. Never answer a ZIP question by adding up tracts or neighborhoods. When cityShare is below 0.5, say first that most of the ZIP's land is outside the City of Milwaukee, the largest part in mainPlace. If it returns outside, say Ask covers ZIP codes that touch Milwaukee County; bad-zip, ask for a 5-digit ZIP; unavailable or busy, try later. The card carries every figure; don't restate them.",
+      description: "Who lives in one ZIP code in Milwaukee County and what it's like: population, race and ethnicity, poverty, low incomes, renters, vacant homes, rent burden, households with no car, and schooling, each beside Milwaukee's figure, from the U.S. Census Bureau's American Community Survey for that ZIP's Census area. One ZIP per call. Never answer a ZIP question by adding up tracts or neighborhoods. When cityShare is below 0.5, make it your caveat that most of the ZIP's land is outside the City of Milwaukee, the largest part in mainPlace. If it returns outside, say Ask covers ZIP codes that touch Milwaukee County; bad-zip, ask for a 5-digit ZIP; unavailable or busy, try later. The card carries every figure; don't restate them.",
       parameters: zipParams,
       execute: (a: z.infer<typeof zipParams>) => b.zip(a),
     },

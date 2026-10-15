@@ -27,6 +27,10 @@ describe("proseBlocks", () => {
 });
 
 describe("replyProblems", () => {
+  it("allows four sentences, one of slack over the three-part shape; flags a fifth (plain replies round 2)", () => {
+    expect(replyProblems("One. Two. Three. Four.")).toEqual([]);
+    expect(replyProblems("One. Two. Three. Four. Five.")).toEqual(["5 sentences"]);
+  });
   it("flags dataset codes and column names, but not quoted labels (plain replies §5; review focus 4)", () => {
     expect(replyProblems("Compare E02 with the food sheet.")).toEqual(["code"]);
     expect(replyProblems("The pov_rate column is the one.")).toEqual(["column name"]);
@@ -37,7 +41,7 @@ describe("replyProblems", () => {
     expect(replyProblems("The food insecurity sheet is open. It covers 2022 and 2023.\n- Who is hungriest\n- What changed\n- Where help is")).toEqual([]);
   });
   it("flags a fourth sentence, a fourth angle, a heading and a numbered list", () => {
-    expect(replyProblems("One. Two. Three. Four.")).toEqual(["4 sentences"]);
+    expect(replyProblems("One. Two. Three. Four. Five.")).toEqual(["5 sentences"]);
     expect(replyProblems("Open.\n- a\n- b\n- c\n- d")).toEqual(["4 angles"]);
     expect(replyProblems("## Food\nOpen.")).toEqual(["heading"]);
     expect(replyProblems("Open.\n1. a\n2. b")).toEqual(["numbered list"]);
