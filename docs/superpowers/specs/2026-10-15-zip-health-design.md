@@ -21,9 +21,7 @@ Tarik approved this design in conversation on 2026-10-15, section by section.
 
 ## 2. Decisions (Tarik, 2026-10-15)
 
-- **Use Health Compass now; no permission request.**
-  - Its terms limit downloaded data to "personal or internal business uses", and the almanac is Tarik's personal project.
-  - **The one obligation:** "you must not delete or obscure any trademark, copyright, source-related information." Every figure keeps its source and credit attached wherever it travels (§6).
+- **Use Health Compass now,** with its source and credit attached to every figure wherever it travels (§6).
 - **Health Compass before Part 1.** Neighborhood answers (Part 1) come next and can reuse this work.
 - **First slice:** every Milwaukee County ZIP, every topic with data, the newest period, the whole population. Stored weekly.
 - **Which source answers:** "where" / "which areas" questions about a measure Health Compass has go to ZIP health. Questions that name census tracts or a DYCU dataset keep the tract tools.
@@ -123,7 +121,7 @@ The weekly build (`convex/build.ts`, beside `refreshCityFigures` and `refreshFir
 
 **Follow-up buttons** are written by code in plain words: "Show <measure> for every ZIP", "What else is in 53208?" (zipProfile).
 
-## 6. Source and copyright stay attached (the terms' one obligation)
+## 6. Source and credit stay attached
 
 Wherever a Health Compass figure goes, it carries:
 - "Health Compass Milwaukee (Milwaukee Health Care Partnership), powered by Metopio";
@@ -204,9 +202,7 @@ Nothing about a person is fetched or stored: Health Compass figures are area tot
 ## 9. Docs
 
 - **Decision 050:**
-  - **Options:** add Health Compass now (chosen), ask permission first, or link only.
-  - **Tarik's reasoning:** a personal project, so personal use; credit always attached.
-  - **The named risk:** a takedown request, and licensed hospital data.
+  - **Options:** add Health Compass now (chosen), or link to it only.
   - **Why ZIP answers over tracts for "where" questions.**
   - "What actually happened" is left blank.
 - **DESIGN.md:** a "ZIP health" card section and the HCM tag.
