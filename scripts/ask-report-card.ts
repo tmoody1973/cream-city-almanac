@@ -59,16 +59,15 @@ for (const [i, item] of ASK_QUESTIONS.entries()) {
   const mapMismatch = calls.some((c) => c.toolName === "countRecords" && (c.output as { status?: string; count?: number; map?: { summary: { total: number } } | null })?.status === "ok" && ((c.output as { map?: { summary: { total: number } } | null }).map?.summary.total ?? 0) > ((c.output as { count?: number }).count ?? 0));
   const flaggedWords = proseSegments(r.text, JSON.stringify(calls.map((c) => c.output))).filter((s) => s.unverified).map((s) => s.text);
   const unverified = flaggedWords.length;
-  // Reply shape (lib/ask/prompt.ts: one to three sentences, at most three angles) is a warning, not a miss: the model
-  // runs long, mostly restating the card's caveats (Tarik, 2026-10-10: track it, don't fail on it).
+  // Reply shape (lib/ask/prompt.ts) is part of passing since 2026-10-15 (decision 051, reversing 2026-10-10's "track it, don't fail on it").
   const shape = replyProblems(r.text);
-  const ok = fieldsOk && unverified === 0 && !mapMismatch;
+  const ok = fieldsOk && unverified === 0 && !mapMismatch && shape.length === 0;
   graded++;
   if (ok) passed++;
   if (VERBOSE) {
     for (const c of calls) console.log(`   ${c.toolName}(${JSON.stringify(c.input)}) → ${JSON.stringify(c.output).slice(0, 220)}`);
     console.log(`   TEXT: ${r.text}`);
   }
-  console.log(`${ok ? "PASS" : "MISS"} ${item.q} → ${calls.map((c) => c.toolName).join(", ") || "no tools"}${unverified ? ` (${unverified} unverified: ${flaggedWords.join(" | ")})` : ""}${mapMismatch ? " (MAP>COUNT)" : ""}${shape.length ? ` (shape warning: ${shape.join(", ")})` : ""}`);
+  console.log(`${ok ? "PASS" : "MISS"} ${item.q} → ${calls.map((c) => c.toolName).join(", ") || "no tools"}${unverified ? ` (${unverified} unverified: ${flaggedWords.join(" | ")})` : ""}${mapMismatch ? " (MAP>COUNT)" : ""}${shape.length ? ` (shape: ${shape.join(", ")})` : ""}`);
 }
 console.log(`\n${passed}/${graded} passed · $${spent.toFixed(3)} spent · $${(spent / Math.max(graded, 1)).toFixed(4)} per question`);

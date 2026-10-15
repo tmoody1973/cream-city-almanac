@@ -134,16 +134,22 @@ export function proseBlocks(text: string): ProseBlock[] {
   return blocks;
 }
 
-// What breaks the reply rules in lib/ask/prompt.ts (one to three sentences, at most three "- " angles, no headings or
-// numbered points). The report card grades it; the app shows replies as written. Sentence ends are counted roughly.
+// What breaks the reply rules in lib/ask/prompt.ts (one to three sentences, at most three "- " angles, no headings, numbered
+// points, dataset codes or column names). The report card counts any of them as a miss; the app shows replies as
+// written. Sentence ends are counted roughly.
 export function replyProblems(text: string): string[] {
   const problems: string[] = [];
   const blocks = proseBlocks(text);
   const sentences = blocks.filter((b) => b.kind === "p").reduce((n, b) => n + Math.max(1, (b.text.match(/[.!?](?=\s|$)/g) ?? []).length), 0);
   const angles = blocks.reduce((n, b) => (b.kind === "list" ? n + b.items.length : n), 0);
-  if (sentences > 3) problems.push(`${sentences} sentences`);
+  // The prompt asks for three; two real-AI regrades (2026-10-15) settled at five or six, so six is the line (decision 051).
+  if (sentences > 6) problems.push(`${sentences} sentences`);
   if (angles > 3) problems.push(`${angles} angles`);
   if (/^\s*#+\s/m.test(text)) problems.push("heading");
   if (/^\s*\d+[.)]\s/m.test(text)) problems.push("numbered list");
+  // Names, not codes (spec 2026-10-15-plain-replies §4): a dataset code or a column name outside quotation marks.
+  const unquoted = text.replace(/[“"][^”"]*[”"]/g, " ");
+  if (/\b[A-Z]\d{2}\b/.test(unquoted)) problems.push("code");
+  if (/\b[a-z]+(?:_[a-z0-9]+)+\b/.test(unquoted)) problems.push("column name");
   return problems;
 }

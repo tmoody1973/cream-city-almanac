@@ -377,6 +377,9 @@ One map component, shown in two places: the count card in Ask, and the WHERE sec
 ### Follow-up buttons (Ask)
 Under the newest answer only: up to three next-question buttons under a card, and a "Pick one:" row of up to eight when Ask's tool listed options it couldn't choose between. Ruled caps buttons in the EXPAND style, at least 44px tall, wrapping on phones; the row is labeled for screen readers ("Next questions. Each fills the question box"). A click fills the question box with a full, ready-worded question that names the dataset code and column, and puts the cursor there; it never sends, so nothing is spent from the daily limit until the person presses send. Code builds every button from the card's own settings and result (ui/lib/nextQuestions.ts, ui/lib/refusalChoices.ts); the AI never writes one. A folded earlier count or a repeated sheet card gets no buttons.
 
+### Lookups (Ask)
+When an answer reaches an analysis card, the catalog searches and dataset sheets the AI opened on the way fold: search results draw nothing, and each sheet becomes one line, "Dataset used: {name}" with an "Open the sheet" link, that never takes over the side column. Answers that are only a search or a sheet show in full; data previews never fold.
+
 ### Tour (first visit)
 A short note that walks a new visitor through the front page and Ask, once per browser (react-joyride, restyled).
 - **Note:** paper, a 2px ink rule, square corners, no shadow; the title in label-voice capitals, the text in the body voice; a footer with the "N OF M" counter and compact ruled buttons SKIP TOUR, BACK, NEXT / DONE. Its pointer is paper with an ink outline.

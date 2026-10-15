@@ -5,11 +5,11 @@ import { useQuery } from "convex/react";
 import Link from "next/link";
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
-import { earlierCountIds, earlierSheetIds, lastCountId, newestTurnCallIds, noteNumbers, noteOrder, retriedCallIds } from "@/ui/lib/askNotes";
+import { earlierCountIds, earlierSheetIds, lastCountId, lookupIds, newestTurnCallIds, noteNumbers, noteOrder, retriedCallIds } from "@/ui/lib/askNotes";
 import { NewestTurn, PromptFill, RetriedCalls } from "./askFill";
 import { readPrompt, withoutPrompt } from "@/ui/lib/askPrompt";
 import { proseBlocks, proseSegments } from "@/ui/lib/askProse";
-import { AskCards, EarlierCounts, EarlierSheets, MapPick, NewestCount } from "./AskCards";
+import { AskCards, EarlierCounts, EarlierSheets, Lookups, MapPick, NewestCount } from "./AskCards";
 import { AskTours } from "./TourLaunch";
 import styles from "./ask.module.css";
 
@@ -89,7 +89,9 @@ function Note({ message, messages = [] }: { message: Msg & { toolCalls?: unknown
         <NewestCount.Provider value={lastCountId(messages)}>
           <EarlierCounts.Provider value={earlierCountIds(messages)}>
             <EarlierSheets.Provider value={earlierSheetIds(messages as never)}>
-              <CopilotChatToolCallsView message={message as never} messages={messages as never} />
+              <Lookups.Provider value={lookupIds(messages as never)}>
+                <CopilotChatToolCallsView message={message as never} messages={messages as never} />
+              </Lookups.Provider>
             </EarlierSheets.Provider>
           </EarlierCounts.Provider>
         </NewestCount.Provider>
