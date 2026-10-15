@@ -8,7 +8,7 @@ import { passageBlocks } from "@/ui/lib/askPassage";
 import { propertyCountSummary } from "@/ui/lib/tractSummary";
 import { formatPortraitMargin, formatPortraitNumber } from "@/ui/lib/portrait";
 import { api } from "@/convex/_generated/api";
-import { boundaryParams, changeParams, countParams, rankParams, relateParams, spanParams, stopsParams, turnoutParams, zipParams, fireParams, type StopsAnswer, type TurnoutAnswer, type ZipAnswer, type FireAnswer, type SheetResult, type PlaceAnswer, type BoundariesAnswer, type ChangeResult, type CountForModel, type CountResult, type RankResult, type RelateResult, type SpanResult } from "@/lib/ask/tools";
+import { boundaryParams, changeParams, countParams, rankParams, relateParams, spanParams, stopsParams, turnoutParams, zipParams, fireParams, zipHealthParams, type ZipHealthAnswer, type StopsAnswer, type TurnoutAnswer, type ZipAnswer, type FireAnswer, type SheetResult, type PlaceAnswer, type BoundariesAnswer, type ChangeResult, type CountForModel, type CountResult, type RankResult, type RelateResult, type SpanResult } from "@/lib/ask/tools";
 import { CityMap } from "./CityMapLoader";
 import { LivePreview } from "./LivePreview";
 import { OpenLink, type Open } from "./OpenLink";
@@ -29,6 +29,8 @@ import { BoundariesCard } from "./BoundariesCard";
 import { StopsCard } from "./StopsCard";
 import { TurnoutCard } from "./TurnoutCard";
 import { ZipCard } from "./ZipCard";
+import { ZipHealthCard } from "./ZipHealthCard";
+import { zipHealthChoices, zipHealthFollowUps, zipHealthRefusal } from "@/ui/lib/zipHealthText";
 import { FireHistoryCard } from "./FireHistoryCard";
 import { fireChoices, fireFollowUps } from "@/ui/lib/fireText";
 import { zipRefusal } from "@/ui/lib/zipText";
@@ -444,6 +446,15 @@ export function AskCards({ onOpen }: { onOpen?: (search: string) => void }) {
     if (!r) return <Failed />;
     if (r.status !== "ok") return <p className={styles.failed} data-card="zip-refusal">{zipRefusal(r)}</p>;
     return <ZipCard r={r} />;
+  } }, []);
+
+  useRenderTool({ name: "zipHealth", parameters: zipHealthParams, render: (props) => {
+    if (props.status !== "complete") return <Busy />;
+    const r = parse<ZipHealthAnswer>(props.result);
+    if (!r) return <Failed />;
+    if (r.status === "choose") return <FollowUps pick items={zipHealthChoices(r)} id={props.toolCallId} />;
+    if (r.status !== "ok") return <p className={styles.failed} data-card="zip-health-refusal">{zipHealthRefusal(r)}</p>;
+    return <><ShareScope tool="zipHealth" args={props.parameters}><ZipHealthCard r={r} /></ShareScope><FollowUps items={zipHealthFollowUps(r)} id={props.toolCallId} /></>;
   } }, []);
 
   useRenderTool({ name: "fireHistory", parameters: fireParams, render: (props) => {

@@ -3,12 +3,13 @@ import { stopsExport } from "./stopsText";
 import { changeCardText, rankCardText, relateCardText } from "./tractCardText";
 import { fireExport } from "./fireText";
 import { turnoutExport } from "./turnoutText";
+import { zipHealthExport } from "./zipHealthText";
 
 // A share link's snapshot (spec 2026-10-14-share-link-design.md §5): the server re-runs the card's tool and builds
 // the same export the card's CSV, text and PNG come from. Runs in Convex, so it imports only plain functions.
 // Ask's fact-sheet card has no export (its answer lacks the sheet's source); it links to the public /n page instead.
 
-export const SHAREABLE = ["getNumber", "countRecords", "timeSpan", "rankTracts", "compareYears", "relateTracts", "countStops", "countTurnout", "fireHistory", "readReport"] as const;
+export const SHAREABLE = ["getNumber", "countRecords", "timeSpan", "rankTracts", "compareYears", "relateTracts", "countStops", "countTurnout", "fireHistory", "readReport", "zipHealth"] as const;
 export type ShareTool = (typeof SHAREABLE)[number];
 export const isShareable = (t: string): t is ShareTool => (SHAREABLE as readonly string[]).includes(t);
 
@@ -41,6 +42,7 @@ export function shareCard(tool: ShareTool, result: unknown, ctx: Ctx): Shared | 
     case "countStops": return ok ? card(stopsExport(r as never, ctx)) : null;
     case "countTurnout": return ok ? card(turnoutExport(r as never, ctx)) : null;
     case "fireHistory": return ok ? card(fireExport(r as never, ctx)) : null;
+    case "zipHealth": return ok ? card(zipHealthExport(r as never, ctx)) : null;
     case "rankTracts": return ok && r.tool === "rank" ? card(rankExport(r as never, rankCardText(r as never), ctx)) : null;
     case "compareYears": return ok && r.tool === "change" ? card(changeExport(r as never, changeCardText(r as never), ctx)) : null;
     case "relateTracts": return ok && r.tool === "relate" ? card(relateExport(r as never, relateCardText(r as never), ctx)) : null;
