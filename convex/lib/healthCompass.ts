@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { COUNTY_ZIPS } from "./zips";
 
 // Health Compass Milwaukee (healthcompassmilwaukee.org), the Milwaukee Health Care Partnership's data site, powered by
 // Metopio (spec 2026-10-15-zip-health §3). Pure: reading its API, picking one figure per topic, and the credit line every
@@ -84,3 +85,33 @@ export const creditLines = (t: HealthTopic, period: string): string[] => [
   `Period: ${period}`,
   topicUrl(t.key),
 ];
+
+// The places Ask keeps figures for: every county ZIP, the county and the city.
+export const healthTargets = (): { layer: HealthLayer; geo: string }[] => [
+  ...Object.keys(COUNTY_ZIPS).map((geo) => ({ layer: "zip" as const, geo })),
+  { layer: "county", geo: COUNTY_GEO },
+  { layer: "place", geo: CITY_GEO },
+];
+
+// The week's copy from what the download script uploaded: Health Compass's own answers, parsed and picked here so the
+// rules live in one place. ZIPs first; the county and city take each topic's most common ZIP period when they have it.
+// Every place must be present: a partial week is refused, never stored.
+export function buildCopy(topicPages: unknown, uploaded: unknown): { topics: HealthTopic[]; places: { layer: HealthLayer; geo: string; figures: HealthFigure[] }[] } {
+  if (!Array.isArray(topicPages) || !Array.isArray(uploaded)) throw new Error("Health Compass upload changed shape");
+  const topics = topicPages.flatMap((p) => parseTopicsPage(p).topics);
+  if (!topics.length) throw new Error("Health Compass listed no topics");
+  const byGeo = new Map(uploaded.map((p) => [String((p as { geo?: unknown } | null)?.geo), p as { data?: unknown }]));
+  const raw = healthTargets().map((t) => {
+    const p = byGeo.get(t.geo);
+    if (!p) throw new Error(`Health Compass upload is missing ${t.geo}`);
+    return { ...t, rows: parseDataPage(p.data) };
+  });
+  const zipFigures = raw.filter((p) => p.layer === "zip").map((p) => ({ layer: p.layer, geo: p.geo, figures: pickFigures(p.rows) }));
+  const prefer = modalPeriods(zipFigures.flatMap((p) => p.figures));
+  const places = [...zipFigures, ...raw.filter((p) => p.layer !== "zip").map((p) => ({ layer: p.layer, geo: p.geo, figures: pickFigures(p.rows, prefer) }))];
+  const onZips = new Set(zipFigures.flatMap((p) => p.figures.map((f) => f.topic)));
+  const kept = topics.filter((t) => onZips.has(t.key));
+  if (!kept.length) throw new Error("no topic had a ZIP figure");
+  const keys = new Set(kept.map((t) => t.key));
+  return { topics: kept, places: places.map((p) => ({ ...p, figures: p.figures.filter((f) => keys.has(f.topic)) })) };
+}

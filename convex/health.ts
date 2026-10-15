@@ -1,29 +1,54 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import { internalAction, internalMutation, query } from "./_generated/server";
-import { CITY_GEO, COUNTY_GEO, HC_API, HC_HEADERS, parseDataPage, modalPeriods, parseTopicsPage, pickFigures, placeUrl, type HealthFigure, type HealthLayer, type HealthTopic, type RawRow } from "./lib/healthCompass";
+import { httpAction, internalMutation, query } from "./_generated/server";
+import { buildCopy, healthTargets } from "./lib/healthCompass";
 import { answer, type HealthArgs, type HealthResult } from "./lib/healthAnswer";
-import { fetchWithTimeout } from "./lib/http";
-import { COUNTY_ZIPS } from "./lib/zips";
 import { vHealthFigure, vHealthLayer, vHealthTopic } from "./validators";
 
-// Health Compass Milwaukee, stored weekly (spec 2026-10-15-zip-health §3.1). One request per place, a second apart.
+// Health Compass Milwaukee, stored weekly (spec 2026-10-15-zip-health §3.1; decision 050). Cloudflare in front of
+// Health Compass refuses Convex's servers, so the download runs on a server it accepts (scripts/health-compass-push.py
+// on Hetzner) and posts Health Compass's own answers here; this side parses, picks and stores them.
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
-const HC_TIMEOUT_MS = 30_000;
-// Well inside an action's 10 minutes, so a slow Health Compass ends in a noted failure, never a killed run.
-const DEADLINE_MS = 5 * 60_000;
-const RETRY_WAITS_MS = [2_000, 5_000];
-const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 
-// A busy (429) or failing (5xx) answer is tried again after a pause; anything else fails at once.
-async function getJson(url: string, waits: number[]): Promise<unknown> {
-  for (let i = 0; ; i++) {
-    const res = await fetchWithTimeout(url, { headers: HC_HEADERS }, HC_TIMEOUT_MS);
-    if (res.ok) return res.json();
-    if (i >= waits.length || !(res.status === 429 || res.status >= 500)) throw new Error(`Health Compass request failed: ${res.status}`);
-    await sleep(waits[i]);
-  }
+// Only the script, holding HEALTH_PUSH_SECRET (32+ characters), gets in. Compared in constant time, so the answer takes
+// the same time however much of a guess is right.
+function authorized(req: Request): boolean {
+  const secret = process.env.HEALTH_PUSH_SECRET ?? "";
+  const want = `Bearer ${secret}`;
+  const got = req.headers.get("authorization") ?? "";
+  if (secret.length < 32 || got.length !== want.length) return false;
+  let diff = 0;
+  for (let i = 0; i < want.length; i++) diff |= got.charCodeAt(i) ^ want.charCodeAt(i);
+  return diff === 0;
 }
+
+// GET /health-compass/targets: the places to fetch, so the script keeps no copy of the ZIP list.
+export const targets = httpAction(async (_ctx, req) => (authorized(req) ? json({ places: healthTargets() }) : new Response("unauthorized", { status: 401 })));
+
+// POST /health-compass: { topics, places } stores a new week; { error } records the script's failure. Either way a
+// failure keeps last week's copy and its date, and the status says why.
+export const upload = httpAction(async (ctx, req) => {
+  if (!authorized(req)) return new Response("unauthorized", { status: 401 });
+  let body: { error?: unknown; topics?: unknown; places?: unknown };
+  try {
+    body = await req.json();
+  } catch {
+    body = {};
+  }
+  if (typeof body.error === "string") {
+    await ctx.runMutation(internal.health.markHealthFailed, { note: `Health Compass download failed: ${body.error.slice(0, 300)}` });
+    return json({ ok: false, stored: false });
+  }
+  try {
+    const copy = buildCopy(body.topics, body.places);
+    await ctx.runMutation(internal.health.replaceHealth, { ...copy, at: Date.now() });
+    return json({ ok: true, places: copy.places.length, topics: copy.topics.length });
+  } catch (e) {
+    await ctx.runMutation(internal.health.markHealthFailed, { note: message(e) });
+    return json({ ok: false, error: message(e) }, 400);
+  }
+});
 
 export const replaceHealth = internalMutation({
   args: { topics: v.array(vHealthTopic), places: v.array(v.object({ layer: vHealthLayer, geo: v.string(), figures: v.array(vHealthFigure) })), at: v.number() },
@@ -38,8 +63,6 @@ export const replaceHealth = internalMutation({
     else await ctx.db.insert("healthRefresh", row);
   },
 });
-
-// A failed run keeps the stored copy and its date; only the status and the reason change.
 export const markHealthFailed = internalMutation({
   args: { note: v.string() },
   handler: async (ctx, { note }) => {
@@ -47,53 +70,6 @@ export const markHealthFailed = internalMutation({
     const places = (await ctx.db.query("healthPlaces").collect()).length;
     if (old) await ctx.db.replace(old._id, { status: "failed", note, at: old.at, places });
     else await ctx.db.insert("healthRefresh", { status: "failed", note, at: 0, places });
-  },
-});
-
-// Weekly (build.finish) or alone: `npx convex run health:refreshHealth`. Notes, never throws.
-export const refreshHealth = internalAction({
-  args: { paceMs: v.optional(v.number()), deadlineMs: v.optional(v.number()) },
-  handler: async (ctx, { paceMs = 1_000, deadlineMs = DEADLINE_MS }): Promise<string[]> => {
-    const waits = paceMs === 0 ? [0, 0] : RETRY_WAITS_MS;
-    const stopAt = Date.now() + deadlineMs;
-    const inTime = () => { if (Date.now() >= stopAt) throw new Error("Health Compass took too long; stopped at the deadline"); };
-    try {
-      const topics: HealthTopic[] = [];
-      let url: string | null = `${HC_API}/topics/?limit=500`;
-      for (let page = 0; url && page < 20; page++) {
-        const p = parseTopicsPage(await getJson(url, waits));
-        topics.push(...p.topics);
-        url = p.next;
-      }
-      if (!topics.length) throw new Error("Health Compass listed no topics"); // before 39 paced place requests
-      const targets: { layer: HealthLayer; geo: string }[] = [
-        ...Object.keys(COUNTY_ZIPS).map((geo) => ({ layer: "zip" as const, geo })),
-        { layer: "county", geo: COUNTY_GEO },
-        { layer: "place", geo: CITY_GEO },
-      ];
-      const raw: { layer: HealthLayer; geo: string; rows: RawRow[] }[] = [];
-      for (const t of targets) {
-        inTime();
-        raw.push({ ...t, rows: parseDataPage(await getJson(placeUrl(t.layer, t.geo), waits)) });
-        await sleep(paceMs);
-      }
-      // ZIPs first; the county and city then take each topic's most common ZIP period when they have it.
-      const zipFigures = raw.filter((p) => p.layer === "zip").map((p) => ({ layer: p.layer, geo: p.geo, figures: pickFigures(p.rows) }));
-      const prefer = modalPeriods(zipFigures.flatMap((p) => p.figures));
-      const places: { layer: HealthLayer; geo: string; figures: HealthFigure[] }[] = [
-        ...zipFigures,
-        ...raw.filter((p) => p.layer !== "zip").map((p) => ({ layer: p.layer, geo: p.geo, figures: pickFigures(p.rows, prefer) })),
-      ];
-      const onZips = new Set(places.filter((p) => p.layer === "zip").flatMap((p) => p.figures.map((f) => f.topic)));
-      const kept = topics.filter((t) => onZips.has(t.key));
-      if (!kept.length) throw new Error("no topic had a ZIP figure");
-      const keys = new Set(kept.map((t) => t.key));
-      await ctx.runMutation(internal.health.replaceHealth, { topics: kept, places: places.map((p) => ({ ...p, figures: p.figures.filter((f) => keys.has(f.topic)) })), at: Date.now() });
-      return [];
-    } catch (e) {
-      await ctx.runMutation(internal.health.markHealthFailed, { note: message(e) });
-      return [`Health Compass refresh failed, kept last week's: ${message(e)}`];
-    }
   },
 });
 
