@@ -36,7 +36,7 @@ It links to "How to use Ask", but shows nothing of what Ask now answers:
 | HISTORY | Crime and home values back to 2005, police stops, voter turnout, and Fire Department calls since 2015. | Has the Fire Department's time to arrive changed since 2015? |
 | NEIGHBORHOODS & ADDRESSES | Fact sheets, and which neighborhood, district and ward an address is in. | Which neighborhood is 2400 W Center St in? |
 | ZIP CODES | Who lives in a ZIP code, beside Milwaukee. | What is the demographic makeup of 53228? |
-| CENSUS TRACTS | Rank tracts, see change over time, or where two measures go together. | Where is food insecurity low despite high poverty? |
+| CENSUS TRACTS | Rank tracts, see change over time, or where two measures go together. | Which census tracts have the highest poverty rate? |
 | CITY EMPLOYEES | How long people have worked for the City. | How long have City of Milwaukee employees worked for the City? |
 
 - **The rows live in a data list:** `ui/lib/startAsk.ts`, `START_ASK: { label; line; question }[]`.
