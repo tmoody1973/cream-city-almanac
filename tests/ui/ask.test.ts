@@ -10,6 +10,14 @@ import { simulateReadableStream } from "ai";
 const flagged = (t: string) => proseSegments(t).filter((s) => s.unverified).map((s) => s.text);
 
 describe("proseSegments", () => {
+  it("allows a county ZIP listed anywhere in the tool data, and a rate's own unit (graded run)", () => {
+    const data = JSON.stringify({ status: "ok", mode: "mismatch", uncertain: ["53203"], measure: { units: "per 100,000 residents" } });
+    const check = (t: string) => proseSegments(t, data).filter((s) => s.unverified).map((s) => s.text);
+    expect(check("53203 is too uncertain to use.")).toEqual([]);
+    expect(check("Rates are per 100,000 residents.")).toEqual([]);
+    expect(check("About 100,000 people, per 10,000 residents.")).toEqual(["100,000", "10,000"]);
+    expect(check("99999 is not a county ZIP.")).toEqual(["99999"]);
+  });
   it("allows a ZIP the tools returned, but not a figure that happens to have five digits (review I5)", () => {
     const data = JSON.stringify({ status: "ok", mode: "rank", rows: [{ zip: "53205" }, { zip: "53206" }] });
     const check = (t: string) => proseSegments(t, data).filter((s) => s.unverified).map((s) => s.text);
