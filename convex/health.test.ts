@@ -3,7 +3,7 @@ import { convexTest } from "convex-test";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { HC_ROWS, HC_TOPICS_PAGE } from "../tests/fixtures/healthCompass";
 import { installFakeFetch } from "../tests/helpers/fakeFetch";
-import { internal } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import schema from "./schema";
 
 const modules = import.meta.glob("./**/*.*s");
@@ -50,5 +50,22 @@ describe("refreshHealth", () => {
     const notes = await t.action(internal.health.refreshHealth, { paceMs: 0 });
     expect(notes[0]).toMatch(/Health Compass request failed: 429/);
     expect(await t.run((ctx) => ctx.db.query("healthPlaces").collect())).toHaveLength(0);
+  });
+});
+
+describe("zipHealth", () => {
+  it("answers from the stored copy, with no outside request", async () => {
+    installFakeFetch({ healthCompass: hc });
+    const t = convexTest(schema, modules);
+    await t.action(internal.health.refreshHealth, { paceMs: 0 });
+    const seen: string[] = [];
+    vi.stubGlobal("fetch", async (u: string) => { seen.push(String(u)); return new Response("{}", { status: 500 }); });
+    const r = await t.query(api.health.zipHealth, { mode: "one", measure: "Poverty rate", zip: "53208" });
+    expect(r).toMatchObject({ status: "ok", mode: "one", zip: { zip: "53208" } });
+    expect(seen).toEqual([]);
+  });
+  it("says the figures aren't loaded yet before the first refresh", async () => {
+    const t = convexTest(schema, modules);
+    expect(await t.query(api.health.zipHealth, { mode: "rank", measure: "Poverty rate" })).toEqual({ status: "unavailable" });
   });
 });

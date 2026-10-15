@@ -1,7 +1,8 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import { internalAction, internalMutation } from "./_generated/server";
+import { internalAction, internalMutation, query } from "./_generated/server";
 import { CITY_GEO, COUNTY_GEO, HC_API, HC_HEADERS, parseDataPage, parseTopicsPage, pickFigures, placeUrl, type HealthFigure, type HealthLayer, type HealthTopic } from "./lib/healthCompass";
+import { answer, type HealthArgs, type HealthResult } from "./lib/healthAnswer";
 import { fetchWithTimeout } from "./lib/http";
 import { COUNTY_ZIPS } from "./lib/zips";
 import { vHealthFigure, vHealthLayer, vHealthTopic } from "./validators";
@@ -81,5 +82,21 @@ export const refreshHealth = internalAction({
       await ctx.runMutation(internal.health.markHealthFailed, { note: message(e) });
       return [`Health Compass refresh failed, kept last week's: ${message(e)}`];
     }
+  },
+});
+
+const vMode = v.union(v.literal("one"), v.literal("rank"), v.literal("together"), v.literal("mismatch"));
+const vSide = v.union(v.literal("high"), v.literal("low"));
+
+// Ask's zipHealth: the stored copy, answered by code. Public: area figures only, no outside request.
+export const zipHealth = query({
+  args: { mode: vMode, measure: v.string(), zip: v.optional(v.string()), direction: v.optional(vSide), side: v.optional(vSide), other: v.optional(v.string()), otherSide: v.optional(vSide) },
+  handler: async (ctx, a): Promise<HealthResult> => {
+    const strip = <T extends { _id: unknown; _creationTime: unknown }>({ _id, _creationTime, ...rest }: T) => rest;
+    const topics = (await ctx.db.query("healthTopics").collect()).map(strip);
+    const places = (await ctx.db.query("healthPlaces").collect()).map(strip);
+    const hoods = Object.fromEntries((await ctx.db.query("zipNeighborhoods").collect()).map((r) => [r.zip, r.city.map((c) => c.name)]));
+    const refresh = await ctx.db.query("healthRefresh").first();
+    return answer(a as HealthArgs, { topics, places, hoods, asOf: refresh && refresh.at > 0 ? refresh.at : null });
   },
 });
