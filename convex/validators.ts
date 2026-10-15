@@ -151,3 +151,8 @@ export const vFireRow = v.object({
   source: v.union(v.literal("incident"), v.literal("mfd")), partial: v.union(v.string(), v.null()), toMinute: v.boolean(),
 });
 export const vFireType = v.object({ type: v.string(), calls: v.number() });
+
+// Health Compass Milwaukee (spec 2026-10-15-zip-health §3.1).
+export const vHealthLayer = v.union(v.literal("zip"), v.literal("county"), v.literal("place"));
+export const vHealthTopic = v.object({ key: v.string(), name: v.string(), description: v.string(), units: v.string(), decimals: v.number(), isCount: v.boolean(), keywords: v.string(), team: v.union(v.string(), v.null()), sources: v.array(v.string()) });
+export const vHealthFigure = v.object({ topic: v.string(), period: v.string(), value: v.number(), se: v.union(v.number(), v.null()) });

@@ -1,6 +1,6 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
-import { vBbox, vBoundaryKind, vCityProfile, vCover, vPlaceType, vDictionaryField, vGlossaryEntry, vKind, vMember, vMismatch, vProvenance, vPortraitTable, vStopKind, vStopRow, vFireRow, vFireType } from "./validators";
+import { vBbox, vBoundaryKind, vCityProfile, vCover, vPlaceType, vDictionaryField, vGlossaryEntry, vKind, vMember, vMismatch, vProvenance, vPortraitTable, vStopKind, vStopRow, vFireRow, vFireType, vHealthFigure, vHealthLayer, vHealthTopic } from "./validators";
 
 export default defineSchema({
   families: defineTable({
@@ -127,6 +127,10 @@ export default defineSchema({
   fireYears: defineTable(vFireRow).index("by_year", ["year"]),
   fireTypes: defineTable({ year: v.number(), ...vFireType.fields }).index("by_year", ["year"]),
   fireRefresh: defineTable({ year: v.number(), status: v.union(v.literal("counted"), v.literal("failed")), note: v.optional(v.string()), counted: v.number() }).index("by_year", ["year"]),
+  // Health Compass Milwaukee's figures, one row per place (37 ZIPs, the county, the city), replaced weekly together.
+  healthTopics: defineTable(vHealthTopic).index("by_key", ["key"]),
+  healthPlaces: defineTable({ layer: vHealthLayer, geo: v.string(), figures: v.array(vHealthFigure) }).index("by_geo", ["geo"]),
+  healthRefresh: defineTable({ status: v.union(v.literal("read"), v.literal("failed")), note: v.optional(v.string()), at: v.number(), places: v.number() }),
   cityFigures: defineTable({
     period: v.number(),
     values: v.record(v.string(), v.object({ estimate: v.number(), moe: v.union(v.number(), v.null()) })),

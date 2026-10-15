@@ -33,6 +33,8 @@ export interface FakeOptions {
   geocoderStatus?: number;
   census?: (url: string) => unknown; // the Census Bureau's ACS API (City of Milwaukee figures)
   censusStatus?: number;
+  healthCompass?: (url: string) => unknown; // Health Compass Milwaukee's API (/api/v1/topics/, /api/v1/data/)
+  healthStatus?: number;
 }
 
 export const DEFAULT_CARD = {
@@ -152,6 +154,7 @@ export function installFakeFetch(opts: FakeOptions = {}) {
     }
     if (url.includes("geocoding.geo.census.gov")) return json(opts.geocoderStatus ?? 200, opts.geocoder?.(url) ?? { result: { addressMatches: [] } });
     if (url.includes("api.census.gov")) return json(opts.censusStatus ?? 200, opts.census?.(url) ?? []);
+    if (url.includes("healthcompassmilwaukee.org/api/v1")) return json(opts.healthStatus ?? 200, opts.healthCompass?.(url) ?? { results: [] });
     return json(404, { error: `unexpected URL in test: ${url}` });
   });
 
