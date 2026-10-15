@@ -52,6 +52,16 @@ describe("timeSpan", () => {
       all: { cases: 2731, median: 64, open: 105, unreadable: 12, backwards: 17 },
     });
   });
+  it("never sends a small group's times for a file that names people (L4)", async () => {
+    const t = await seed();
+    await t.run(async (ctx) => {
+      const p = await ctx.db.query("cityProfiles").withIndex("by_family", (q) => q.eq("familyKey", KEY)).first();
+      await ctx.db.patch(p!._id, { namesPeople: true });
+    });
+    installFakeFetch({ citySql: (sql) => sql.includes("GROUP BY k") ? [{ k: "TINY", label: "Tiny", cases: "3", median: "800", p90: "900", open: "0", unreadable: "0", backwards: "0" }] : all });
+    const r = await t.withIdentity(reader).action(api.spans.timeSpan, { code: "P24", pair: "complaint-close", groupBy: "Department" });
+    expect(r).toMatchObject({ status: "ok", groups: [{ label: "Tiny", cases: 3, median: null, p90: null }], all: { cases: 2731, median: 64 } });
+  });
   it("says a file has no pair, and names the files that do", async () => {
     const t = await seed();
     const fake = installFakeFetch({ citySql: () => all });

@@ -26,3 +26,15 @@ describe("shaping a span answer", () => {
     expect(shapeSpan(full.slice(0, 3), row(null, "300", "1"), false, false).other).toBe(0);
   });
 });
+
+describe("files that name people (L4)", () => {
+  it("withholds times for groups and the All row under 10 cases, only when the file names people", () => {
+    const groups = [row("Small Dept", "9", "1200"), row("Big Dept", "10", "3000")];
+    const people = shapeSpan(groups, row(null, "9", "1500"), false, false, true);
+    expect(people.groups.map((g) => [g.label, g.cases, g.median, g.p90])).toEqual([["Small Dept", 9, null, null], ["Big Dept", 10, 3000, 3000]]);
+    expect(people.all).toMatchObject({ cases: 9, median: null, p90: null });
+    const plain = shapeSpan(groups, row(null, "9", "1500"), false, false);
+    expect(plain.groups[0].median).toBe(1200);
+    expect(plain.all.median).toBe(1500);
+  });
+});

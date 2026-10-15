@@ -9,7 +9,12 @@ const time = (x: unknown) => (x === null || x === undefined || x === "" || !Numb
 // The City's rows as numbers. A record with no group value is "(blank)". A group whose cases are all still open stays
 // (it may be the slowest); one with neither measured nor open cases, and a year group with no year (unreadable "from"
 // dates), is dropped; the All row still counts those.
-export function shapeSpan(groupRows: Record<string, unknown>[] | null, allRow: Record<string, unknown> | undefined, overlap: boolean, byYear: boolean) {
+// Under this many cases a group's times aren't shown (spec 2026-10-14-employee-tenure §6). In a file that names people
+// they aren't even sent: the AI, the card, the CSV and share links all get null, so no one's tenure leaks.
+export const MIN_CASES = 10;
+
+export function shapeSpan(groupRows: Record<string, unknown>[] | null, allRow: Record<string, unknown> | undefined, overlap: boolean, byYear: boolean, namesPeople = false) {
+  const withheld = <G extends { cases: number; median: number | null; p90: number | null }>(g: G): G => (namesPeople && g.cases < MIN_CASES ? { ...g, median: null, p90: null } : g);
   const groups: SpanGroup[] = (groupRows ?? [])
     .filter((r) => (count(r.cases) > 0 || count(r.open) > 0) && !(byYear && (r.label === null || r.label === undefined)))
     .map((r) => ({ label: r.label === null || r.label === undefined || r.label === "" ? "(blank)" : String(r.label), cases: count(r.cases), median: time(r.median), p90: time(r.p90), open: count(r.open) }));
@@ -18,5 +23,5 @@ export function shapeSpan(groupRows: Record<string, unknown>[] | null, allRow: R
   // Medians can't be combined, so the cut-off rest is a case count only; overlapping groups can't be summed at all.
   const cut = !overlap && (groupRows ?? []).length >= MAX_GROUPS;
   const other = cut ? Math.max(0, all.cases - groups.reduce((s, g) => s + g.cases, 0)) : 0;
-  return { groups, other, all };
+  return { groups: groups.map(withheld), other, all: withheld(all) };
 }

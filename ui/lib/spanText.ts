@@ -1,8 +1,9 @@
 import type { SpanResult } from "@/lib/ask/tools";
+import { MIN_CASES } from "../../convex/lib/spanShape";
 
 // The span card's words (spec 2026-10-12-time-spans-design.md §7), written by code from the server's numbers.
 export type SpanOk = Extract<SpanResult, { status: "ok" }>;
-export const MIN_CASES = 10;
+export { MIN_CASES };
 const enough = (g: { cases: number; median: number | null }) => g.cases >= MIN_CASES && g.median !== null;
 
 export function durationText(v: number | null, unit: "days" | "minutes"): string {

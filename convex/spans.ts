@@ -58,7 +58,7 @@ export const timeSpan = action({
         built.groupSql ? datastoreSql<Record<string, unknown>>(built.groupSql, SPAN_QUERY_TIMEOUT_MS) : Promise.resolve(null),
         datastoreSql<Record<string, unknown>>(built.allSql, SPAN_QUERY_TIMEOUT_MS),
       ]);
-      const shaped = shapeSpan(groupRows, allRows[0], built.overlap, built.groupLabel === "year");
+      const shaped = shapeSpan(groupRows, allRows[0], built.overlap, built.groupLabel === "year", data.profile.namesPeople);
       const { familyKey: _k, file: _f, ...out } = pair;
       return { status: "ok", code: data.code, name, pair: out, asOf, groupBy: built.groupLabel, overlap: built.overlap, period: built.period, filters: built.filterLabels, coverage: built.coverage, columns: built.columns, ...shaped };
     } catch (e) {
@@ -112,7 +112,7 @@ export const checkPairs = internalAction({
       if (!built.ok) { out.push({ id: pair.id, ok: false, error: built.status }); continue; }
       try {
         const rows = await datastoreSql<Record<string, unknown>>(built.allSql, SPAN_QUERY_TIMEOUT_MS);
-        out.push({ id: pair.id, ok: true, all: shapeSpan(null, rows[0], false, false).all });
+        out.push({ id: pair.id, ok: true, all: shapeSpan(null, rows[0], false, false, profile.namesPeople).all });
       } catch (e) {
         out.push({ id: pair.id, ok: false, error: e instanceof Error ? e.message : String(e) });
       }
