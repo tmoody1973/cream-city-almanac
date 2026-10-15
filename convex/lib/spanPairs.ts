@@ -2,8 +2,9 @@
 // each pair's dates, unit and caveat. Found by family key, never by dataset code (codes differ between databases).
 type PairText = { id: string; familyKey: string; file: string; from: string; name: string; things: string; toWhat: string; caveat: string };
 // A between pair measures from one date to another; an age (L2) measures the cases still open up to an as-of date.
-// verb: the summary's verb ("took" when unset), e.g. "had worked".
-export type BetweenPair = PairText & { kind: "between"; to: string; unit: "days" | "minutes"; missing: string; verb?: string };
+// verb: the summary's verb ("took" when unset), e.g. "had worked". openExpected: most rows have no end date by design
+// (current employees on a time-before-leaving pair), so the card doesn't warn that they outnumber the measured.
+export type BetweenPair = PairText & { kind: "between"; to: string; unit: "days" | "minutes"; missing: string; verb?: string; openExpected?: boolean };
 export type AgePair = PairText & { kind: "age"; openWhen?: string; asOf: "today" | "file"; unit: "days"; asOfNote: string };
 export type SpanPair = BetweenPair | AgePair;
 
@@ -28,7 +29,7 @@ export const SPAN_PAIRS: SpanPair[] = [
   { kind: "age", id: "vacant-age", familyKey: "city:vacant-buildings", file: "vacant buildings", from: "DATEOPENED", asOf: "today", name: "time vacant so far", things: "buildings", toWhat: "on the vacant list", unit: "days", caveat: "The City adds a building when it registers it as vacant and removes it when it is no longer vacant.", asOfNote: "As of {date}: buildings still on the City's vacant-building list. The date is when the City registered the building as vacant, not when it emptied. Buildings taken off the list aren't counted." },
   { kind: "age", id: "complaint-open-age", familyKey: COMPLAINTS, file: "citizen complaints against the Police and Fire Departments", from: "DateReported", openWhen: "Date Closed", asOf: "file", name: "time open so far", things: "open complaints", toWhat: "open", unit: "days", caveat: "Dates are typed by hand in more than one format; a few can't be read.", asOfNote: "As of {date}, when the City last updated this file. Complaints with no close date then are counted; some may have closed since." },
   { kind: "age", id: "tenure-current", familyKey: EMPLOYEES, file: "City employee pay records", from: "Start Date", openWhen: "Termination Date", asOf: "file", name: "time worked so far", things: "current employees", toWhat: "with the City", unit: "days", caveat: START, asOfNote: "As of {date}, when the City last updated this file: employees on its 2025 payroll with no termination date." },
-  { kind: "between", id: "tenure-left", familyKey: EMPLOYEES, file: "City employee pay records", from: "Start Date", to: "Termination Date", name: "time worked before leaving", things: "employees who left", toWhat: "before leaving", verb: "had worked", unit: "days", missing: "{n} employees are still with the City and aren't counted here.", caveat: START },
+  { kind: "between", id: "tenure-left", familyKey: EMPLOYEES, file: "City employee pay records", from: "Start Date", to: "Termination Date", name: "time worked before leaving", things: "employees who left", toWhat: "before leaving", verb: "had worked", openExpected: true, unit: "days", missing: "{n} employees are still with the City and aren't counted here.", caveat: START },
 ];
 
 export const pairsFor = (familyKey: string) => SPAN_PAIRS.filter((p) => p.familyKey === familyKey);

@@ -44,7 +44,11 @@ The City publishes an employee pay file (`city:city-employee-salary-data`) with 
 ## 3. Decisions (Tarik, 2026-10-14)
 
 - **Scope:** both current employees' tenure so far and departing employees' time worked.
-- **Privacy:** for files that name people, the server withholds the median and 9-in-10 time for any group, and for the All row, under **10** cases. Counts still show.
+- **Privacy:** for files that name people, the server withholds the median and 9-in-10 time for any group, and for the All row, under **10** cases.
+- **Strict rule** (Tarik, 2026-10-14, after the final review found that counts plus start-date slicing reveal one person's start date):
+  - no year split or date range;
+  - a group under 10 isn't listed at all, and joins "all other groups", which is hidden when it's under 10;
+  - an answer about fewer than 10 people is refused (`status: "private"`).
 - **Approach:** two entries in the existing "how long" list (no new tool or card), plus the server-side rule.
 
 ## 4. The list (`convex/lib/spanPairs.ts`)

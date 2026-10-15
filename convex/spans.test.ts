@@ -52,15 +52,23 @@ describe("timeSpan", () => {
       all: { cases: 2731, median: 64, open: 105, unreadable: 12, backwards: 17 },
     });
   });
-  it("never sends a small group's times for a file that names people (L4)", async () => {
+  it("on a file that names people: no year split or date range, no group under 10, and no answer under 10 (L4)", async () => {
     const t = await seed();
     await t.run(async (ctx) => {
       const p = await ctx.db.query("cityProfiles").withIndex("by_family", (q) => q.eq("familyKey", KEY)).first();
       await ctx.db.patch(p!._id, { namesPeople: true });
     });
-    installFakeFetch({ citySql: (sql) => sql.includes("GROUP BY k") ? [{ k: "TINY", label: "Tiny", cases: "3", median: "800", p90: "900", open: "0", unreadable: "0", backwards: "0" }] : all });
-    const r = await t.withIdentity(reader).action(api.spans.timeSpan, { code: "P24", pair: "complaint-close", groupBy: "Department" });
-    expect(r).toMatchObject({ status: "ok", groups: [{ label: "Tiny", cases: 3, median: null, p90: null }], all: { cases: 2731, median: 64 } });
+    const fake = installFakeFetch({ citySql: (sql) => sql.includes("GROUP BY k") ? [{ k: "TINY", label: "Tiny", cases: "3", median: "800", p90: "900", open: "0", unreadable: "0", backwards: "0" }, { k: "BIG", label: "Big", cases: "2700", median: "60", p90: "300", open: "0", unreadable: "0", backwards: "0" }] : all });
+    const ask = (a: Record<string, unknown>) => t.withIdentity(reader).action(api.spans.timeSpan, { code: "P24", pair: "complaint-close", ...a });
+    const slice = { status: "private", code: "P24", name: "Citizen Complaints", reason: "This file names people, so Ask doesn't measure it by year or by a date range: that could single someone out." };
+    expect(await ask({ groupBy: "year" })).toEqual(slice);
+    expect(await ask({ from: "2024-01-01" })).toEqual(slice);
+    expect(await ask({ to: "2024-12-31" })).toEqual(slice);
+    expect(fake.count("datastore_search_sql")).toBe(0);
+    const r = await ask({ groupBy: "Department" });
+    expect(r).toMatchObject({ status: "ok", namesPeople: true, groups: [{ label: "Big", cases: 2700, median: 60 }], all: { cases: 2731, median: 64 } });
+    installFakeFetch({ citySql: () => [{ ...all[0], cases: "6" }] });
+    expect(await ask({ filters: [{ column: "Department", values: ["Milwaukee Police Department"] }] })).toEqual({ status: "private", code: "P24", name: "Citizen Complaints", reason: "Fewer than 10 people match, and this file names people, so Ask doesn't report on a group that small." });
   });
   it("says a file has no pair, and names the files that do", async () => {
     const t = await seed();

@@ -72,7 +72,7 @@ export function spanNotes(r: SpanOk): { warning: string | null; notes: string[] 
   return {
     // When more lack an end date than were measured (311: 17,175 vs 10,599), the times describe only the minority.
     warning: [
-      ...(a.open > a.cases ? [`${n(a.open)} ${r.pair.things} have no end date, more than the ${n(a.cases)} measured, so these times describe only the ${r.pair.things} that have one.`] : []),
+      ...(a.open > a.cases && !(r.pair.kind === "between" && r.pair.openExpected) ? [`${n(a.open)} ${r.pair.things} have no end date, more than the ${n(a.cases)} measured, so these times describe only the ${r.pair.things} that have one.`] : []),
       ...(rows > 0 && a.unreadable * 5 > rows ? ["More than 1 in 5 dates here couldn't be read, so treat these times with caution."] : []),
     ].join(" ") || null,
     notes: [

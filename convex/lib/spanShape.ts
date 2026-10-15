@@ -20,8 +20,12 @@ export function shapeSpan(groupRows: Record<string, unknown>[] | null, allRow: R
     .map((r) => ({ label: r.label === null || r.label === undefined || r.label === "" ? "(blank)" : String(r.label), cases: count(r.cases), median: time(r.median), p90: time(r.p90), open: count(r.open) }));
   const a = allRow ?? {};
   const all = { label: "All", cases: count(a.cases), median: time(a.median), p90: time(a.p90), open: count(a.open), unreadable: count(a.unreadable), backwards: count(a.backwards) };
+  // In a file that names people, a group under 10 isn't shown at all (Tarik, 2026-10-14): its count with its label can
+  // single someone out. Its cases join the rest, and a rest under 10 isn't shown either.
+  const shown = namesPeople ? groups.filter((g) => g.cases >= MIN_CASES) : groups;
   // Medians can't be combined, so the cut-off rest is a case count only; overlapping groups can't be summed at all.
-  const cut = !overlap && (groupRows ?? []).length >= MAX_GROUPS;
-  const other = cut ? Math.max(0, all.cases - groups.reduce((s, g) => s + g.cases, 0)) : 0;
-  return { groups: groups.map(withheld), other, all: withheld(all) };
+  const cut = !overlap && ((groupRows ?? []).length >= MAX_GROUPS || shown.length < groups.length);
+  const rest = cut ? Math.max(0, all.cases - shown.reduce((s, g) => s + g.cases, 0)) : 0;
+  const other = namesPeople && rest < MIN_CASES ? 0 : rest;
+  return { groups: shown, other, all: withheld(all) };
 }

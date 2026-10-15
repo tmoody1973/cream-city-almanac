@@ -6,7 +6,7 @@ import { ageText, durationText, spanCells, spanColumns, spanNotes, spanRows, spa
 
 const pair = { kind: "between" as const, id: "complaint-close", name: "time to close", things: "complaints", toWhat: "to close", unit: "days" as const, missing: "{n} complaints aren't closed yet and aren't counted, so slow cases are under-counted.", caveat: "Dates are typed by hand in more than one format; a few can't be read.", from: "DateReported", to: "Date Closed" };
 const r = {
-  status: "ok" as const, code: "P24", name: "Citizen Complaints", pair, asOf: null, groupBy: "Department", overlap: false, period: "all records", filters: [], coverage: null, columns: ["Department", "Status"],
+  status: "ok" as const, code: "P24", name: "Citizen Complaints", pair, namesPeople: false, asOf: null, groupBy: "Department", overlap: false, period: "all records", filters: [], coverage: null, columns: ["Department", "Status"],
   groups: [
     { label: "Milwaukee Police Department", cases: 2437, median: 92, p90: 478.4, open: 105 },
     { label: "Milwaukee Fire Department", cases: 64, median: 22, p90: 86.7, open: 0 },
@@ -69,12 +69,12 @@ describe("span follow-ups and choices", () => {
   it("offers by year and another column, never the split already shown", () => {
     const f = spanFollowUps({ code: "P24", groupBy: "Department" }, r);
     expect(f.map((x) => x.label)).toEqual(["BY YEAR", "BY STATUS"]);
-    expect(f[0].question).toBe("How long did complaints take to close in Citizen Complaints (P24), by year?");
+    expect(f[0].question).toBe("How long did complaints take to close in Citizen Complaints (P24), by year? (pair complaint-close)");
   });
   it("keeps the card's filters and period, and skips a column the card is already filtered to", () => {
     const f = spanFollowUps({ code: "P24", groupBy: "Department", from: "2024-01-01", filters: [{ column: "Status", values: ["Closed"] }] }, r);
     expect(f.map((x) => x.label)).toEqual(["BY YEAR"]);
-    expect(f[0].question).toBe("How long did complaints take to close in Citizen Complaints (P24) where Status is Closed, from 2024-01-01, by year?");
+    expect(f[0].question).toBe("How long did complaints take to close in Citizen Complaints (P24) where Status is Closed, from 2024-01-01, by year? (pair complaint-close)");
   });
   it("turns a choose-pair refusal into one button per pair", () => {
     const c = spanChoices({ code: "P04" }, { status: "choose-pair", code: "P04", name: "Fire Incident Detail", pairs: [{ id: "fire-arrive", name: "time to arrive", from: "Date_Received", to: "Date_Arrived" }] });
@@ -105,7 +105,7 @@ describe("review fixes", () => {
 
 describe("ages (L2)", () => {
   const age = {
-    status: "ok" as const, code: "B12", name: "Vacant Buildings", groupBy: null, overlap: false, period: "all records", filters: [], coverage: null, columns: ["AldermanicDistrict"], asOf: "2026-10-14",
+    status: "ok" as const, code: "B12", name: "Vacant Buildings", namesPeople: false, groupBy: null, overlap: false, period: "all records", filters: [], coverage: null, columns: ["AldermanicDistrict"], asOf: "2026-10-14",
     pair: { kind: "age" as const, id: "vacant-age", from: "DATEOPENED", asOf: "today" as const, name: "time vacant so far", things: "buildings", toWhat: "on the vacant list", unit: "days" as const, caveat: "The City adds a building when it registers it as vacant and removes it when it is no longer vacant.", asOfNote: "As of {date}: buildings still on the City's vacant-building list. The date is when the City registered the building as vacant, not when it emptied. Buildings taken off the list aren't counted." },
     groups: [], other: 0, all: { label: "All", cases: 1750, median: 420, p90: 1300, open: 0, unreadable: 0, backwards: 1 },
   };
@@ -170,5 +170,19 @@ describe("long times and the verb (L4)", () => {
   });
   it("says too few, never a number, when a people-file's All row is withheld (review focus 1)", () => {
     expect(spanSummary({ ...r, groupBy: null, groups: [], all: { ...r.all, cases: 6, median: null, p90: null } } as never)).toMatch(/^Too few complaints were measured/);
+  });
+});
+
+describe("tenure cards (L4 review)", () => {
+  const left = { ...r, code: "C01", name: "City Employee Salary Data", columns: ["Department", "Job Title"], pair: { ...pair, id: "tenure-left", things: "employees who left", toWhat: "before leaving", verb: "had worked", openExpected: true, missing: "{n} employees are still with the City and aren't counted here." }, all: { ...r.all, cases: 991, open: 8066 } };
+  it("doesn't warn that current employees 'have no end date' on a time-before-leaving card", () => {
+    const n = spanNotes(left as never);
+    expect(n.warning).toBeNull();
+    expect(n.notes).toContain("8,066 employees are still with the City and aren't counted here.");
+  });
+  it("words a follow-up with the pair's verb and names the pair, and offers no year split on a people file", () => {
+    const f = spanFollowUps({ code: "C01", groupBy: "Department" }, { ...left, namesPeople: true } as never);
+    expect(f.map((x) => x.label)).toEqual(["BY JOB TITLE"]);
+    expect(f[0].question).toBe("How long had employees who left worked before leaving in City Employee Salary Data (C01), by Job Title? (pair tenure-left)");
   });
 });
