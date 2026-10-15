@@ -102,6 +102,11 @@ export function HowItWorks({ status, example, areas }: { status: CatalogStatus |
               City, the card says so; the figures cover the whole ZIP.
             </p>
             <p>
+              Ask can also show the Fire Department&apos;s calls and response times year by year, 2015 to now. The City&apos;s yearly files are
+              counted once a week into stored totals; from 2024 the City publishes from a new system, and the card says where the years
+              don&apos;t line up exactly.
+            </p>
+            <p>
               You can also ask about one neighborhood&apos;s census tracts, like &ldquo;the poverty rate in Bay View&apos;s tracts.&rdquo; Ask
               lists every tract with at least 10% of its area in the neighborhood, each with its own figure and range, and says how much of
               it is inside: &ldquo;61% of this tract is in Bay View.&rdquo; It never adds tracts together into one neighborhood number.

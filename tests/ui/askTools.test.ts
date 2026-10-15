@@ -11,6 +11,7 @@ const backend = (relateResult: unknown): AskBackend => ({
   stops: async () => ({ status: "refused", reason: "" }) as never,
   turnout: async () => ({ status: "refused", reason: "" }) as never,
   zip: async () => ({ status: "busy" }) as never,
+  fire: async () => ({ status: "refused", reason: "" }) as never,
 });
 
 const row = (i: number) => ({ geoid: `5507910${String(i).padStart(4, "0")}`, tract: String(i), neighborhood: "Harambee", value: 41.2, lo: 35.1, hi: 47.3, unreliable: false });
@@ -164,5 +165,25 @@ describe("zipProfile steering (Z1 review)", () => {
     expect(tool.description).toMatch(/cityShare is below 0\.5/);
     expect(tool.description).toMatch(/mainPlace/);
     expect(ASK_PROMPT).toMatch(/zipProfile[^\n]*cityShare is below 0\.5/);
+  });
+});
+
+describe("fireHistory (L3)", () => {
+  it("offers fireHistory for Fire Department years, passing the asked measure", async () => {
+    let asked: unknown;
+    const tool = askTools({ ...backend({}), fire: async (a) => { asked = a; return { status: "refused", reason: "" } as never; } }).find((t) => t.name === "fireHistory")!;
+    expect(tool.description).toMatch(/2015/);
+    expect(tool.description).toMatch(/types run 2015–2023 only/i);
+    await tool.execute({ measure: "arrive", group: "ems" } as never);
+    expect(asked).toEqual({ measure: "arrive", group: "ems" });
+    expect(ASK_PROMPT).toMatch(/fireHistory/);
+  });
+});
+
+describe("fireHistory routing (review #4)", () => {
+  it("sends any year's totals to fireHistory, even one year", () => {
+    const tool = askTools(backend({})).find((t) => t.name === "fireHistory")!;
+    expect(tool.description).toMatch(/even one year/i);
+    expect(ASK_PROMPT).toMatch(/fireHistory[^\n]*even one year/i);
   });
 });

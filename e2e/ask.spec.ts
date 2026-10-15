@@ -222,6 +222,16 @@ test.describe("signed in", () => {
     await expect(card.locator("[data-export]").getByRole("button", { name: "CSV" })).toBeVisible();
   });
 
+  test("a fire-history question draws the yearly card with the system-change note (L3)", async ({ page }) => {
+    await ask(page, "Show me fire calls each year");
+    const card = page.locator("[data-card=fire-history]:visible");
+    await expect(card).toBeVisible({ timeout: 40_000 });
+    await expect(card).toContainText("Milwaukee Fire Department · calls · 2015–");
+    await expect(card.locator("tbody tr").first()).toContainText("2015");
+    await expect(card).toContainText("new system (MFD Calls for Service)");
+    await expect(card.getByTitle("From the City of Milwaukee's open data")).toBeVisible();
+  });
+
   test("a how-long question draws a time-span card with medians, open cases and the export line", async ({ page }) => {
     test.skip(!(await page.request.get("https://data.milwaukee.gov/api/3/action/status_show").then((r) => r.ok()).catch(() => false)), "City API unreachable");
     await ask(page, "How long do complaints take to close, by department?");
