@@ -59,7 +59,7 @@ export function Landing({ stats }: { stats: Stats }) {
                 <tr>
                   <th scope="col">Source</th>
                   <th scope="col">What&apos;s in it</th>
-                  <th scope="col">Families</th>
+                  <th scope="col">Collections</th>
                 </tr>
               </thead>
               <tbody>
@@ -77,6 +77,15 @@ export function Landing({ stats }: { stats: Stats }) {
                     {stats.cityFamilies}
                   </td>
                 </tr>
+                {stats.healthMeasures > 0 && (
+                  <tr>
+                    <th scope="row">Health Compass Milwaukee</th>
+                    <td>Health, hospital visits, food and poverty by ZIP code, from the Milwaukee Health Care Partnership</td>
+                    <td className={styles.num} data-landing-count="health">
+                      {stats.healthMeasures}
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
             <p className={styles.example}>

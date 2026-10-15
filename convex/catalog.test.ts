@@ -259,6 +259,16 @@ describe("landing stats", () => {
     expect(s.newest[0]).toEqual({ code: expect.any(String), name: expect.any(String) });
   });
 
+  it("counts Health Compass's stored measures, zero before the first refresh", async () => {
+    const t = convexTest(schema, modules);
+    await seed(t);
+    expect((await t.query(api.catalog.landingStats, {})).healthMeasures).toBe(0);
+    await t.run(async (ctx) => {
+      for (const key of ["POV", "MQ35"]) await ctx.db.insert("healthTopics", { key, name: key, description: "", units: "%", decimals: 1, isCount: false, keywords: "", team: null, sources: [] });
+    });
+    expect((await t.query(api.catalog.landingStats, {})).healthMeasures).toBe(2);
+  });
+
   it("does not count guide pages as families", async () => {
     const t = convexTest(schema, modules);
     await seed(t);
