@@ -13,6 +13,7 @@ export function durationText(v: number | null, unit: "days" | "minutes"): string
     const m = Math.round(v);
     return `${Math.floor(m / 60)} h ${m % 60} min`;
   }
+  if (v >= 365) return `${(Math.round((v / 365) * 10) / 10).toFixed(1)} years`; // a year or more reads in years
   const d = v < 10 ? Math.round(v * 10) / 10 : Math.round(v);
   return `${d.toLocaleString("en-US")} ${d === 1 ? "day" : "days"}`;
 }
@@ -20,7 +21,7 @@ export function durationText(v: number | null, unit: "days" | "minutes"): string
 export const cellTime = (g: { cases: number }, v: number | null, unit: "days" | "minutes") => (g.cases < MIN_CASES ? "too few to say" : durationText(v, unit));
 
 // An age (L2): a year or more reads better in years ("2.1 years") than days ("761 days").
-export const ageText = (v: number | null) => (v !== null && Number.isFinite(v) && v >= 365 ? `${(Math.round((v / 365) * 10) / 10).toFixed(1)} years` : durationText(v, "days"));
+export const ageText = (v: number | null) => durationText(v, "days");
 const timeOf = (r: SpanOk) => (v: number | null) => (r.pair.kind === "age" ? ageText(v) : durationText(v, r.pair.unit));
 const asOfWords = (day: string) => new Date(`${day}T12:00:00Z`).toLocaleDateString("en-US", { dateStyle: "long", timeZone: "UTC" });
 
@@ -37,9 +38,10 @@ export function spanSummary(r: SpanOk): string {
     if (!split) return `${head[0].toUpperCase()}${head.slice(1)}; 1 in 10 for ${t(r.all.p90)} or more.`;
     return `Overall, ${head}. Longest: ${ranked[0].label} (${t(ranked[0].median)}); shortest: ${ranked.at(-1)!.label} (${t(ranked.at(-1)!.median)}).`;
   }
-  if (r.all.cases < MIN_CASES) return `Too few ${r.pair.things} were measured to say how long they took ${r.pair.toWhat} (${r.all.cases.toLocaleString("en-US")} measured).`;
-  const head = `half of the ${r.pair.things} measured took ${t(r.all.median)} or less ${r.pair.toWhat}`;
-  if (!split) return `${head[0].toUpperCase()}${head.slice(1)}; 9 in 10 took ${t(r.all.p90)} or less.`;
+  const verb = r.pair.verb ?? "took";
+  if (r.all.cases < MIN_CASES) return `Too few ${r.pair.things} were measured to say how long they ${verb} ${r.pair.toWhat} (${r.all.cases.toLocaleString("en-US")} measured).`;
+  const head = `half of the ${r.pair.things} measured ${verb} ${t(r.all.median)} or less ${r.pair.toWhat}`;
+  if (!split) return `${head[0].toUpperCase()}${head.slice(1)}; 9 in 10 ${verb} ${t(r.all.p90)} or less.`;
   const slow = ranked[0], fast = ranked.at(-1)!;
   return `Overall, ${head}. Slowest: ${slow.label} (${t(slow.median)}); fastest: ${fast.label} (${t(fast.median)}).`;
 }

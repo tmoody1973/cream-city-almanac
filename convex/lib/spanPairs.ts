@@ -2,13 +2,16 @@
 // each pair's dates, unit and caveat. Found by family key, never by dataset code (codes differ between databases).
 type PairText = { id: string; familyKey: string; file: string; from: string; name: string; things: string; toWhat: string; caveat: string };
 // A between pair measures from one date to another; an age (L2) measures the cases still open up to an as-of date.
-export type BetweenPair = PairText & { kind: "between"; to: string; unit: "days" | "minutes"; missing: string };
+// verb: the summary's verb ("took" when unset), e.g. "had worked".
+export type BetweenPair = PairText & { kind: "between"; to: string; unit: "days" | "minutes"; missing: string; verb?: string };
 export type AgePair = PairText & { kind: "age"; openWhen?: string; asOf: "today" | "file"; unit: "days"; asOfNote: string };
 export type SpanPair = BetweenPair | AgePair;
 
 const COMPLAINTS = "city:citizen-complaints-against-police-and-fire-departments-the-department-of-emergency-communication";
 const FIRE = "city:fire-incident-detail";
 const FIRE_2021 = "This file covers 2021 only.";
+const EMPLOYEES = "city:city-employee-salary-data";
+const START = "Start Date is as the City records it; it may be when someone began their current job rather than their first day with the City.";
 
 export const SPAN_PAIRS: SpanPair[] = [
   { kind: "between", id: "complaint-close", familyKey: COMPLAINTS, file: "citizen complaints against the Police and Fire Departments", from: "DateReported", to: "Date Closed", name: "time to close", things: "complaints", toWhat: "to close", unit: "days", missing: "{n} complaints aren't closed yet and aren't counted, so slow cases are under-counted.", caveat: "Dates are typed by hand in more than one format; a few can't be read." },
@@ -24,6 +27,8 @@ export const SPAN_PAIRS: SpanPair[] = [
   // L2 (2026-10-14): "still open" ages, measured to an as-of date (spec 2026-10-14-open-age-design.md §4).
   { kind: "age", id: "vacant-age", familyKey: "city:vacant-buildings", file: "vacant buildings", from: "DATEOPENED", asOf: "today", name: "time vacant so far", things: "buildings", toWhat: "on the vacant list", unit: "days", caveat: "The City adds a building when it registers it as vacant and removes it when it is no longer vacant.", asOfNote: "As of {date}: buildings still on the City's vacant-building list. The date is when the City registered the building as vacant, not when it emptied. Buildings taken off the list aren't counted." },
   { kind: "age", id: "complaint-open-age", familyKey: COMPLAINTS, file: "citizen complaints against the Police and Fire Departments", from: "DateReported", openWhen: "Date Closed", asOf: "file", name: "time open so far", things: "open complaints", toWhat: "open", unit: "days", caveat: "Dates are typed by hand in more than one format; a few can't be read.", asOfNote: "As of {date}, when the City last updated this file. Complaints with no close date then are counted; some may have closed since." },
+  { kind: "age", id: "tenure-current", familyKey: EMPLOYEES, file: "City employee pay records", from: "Start Date", openWhen: "Termination Date", asOf: "file", name: "time worked so far", things: "current employees", toWhat: "with the City", unit: "days", caveat: START, asOfNote: "As of {date}, when the City last updated this file: employees on its 2025 payroll with no termination date." },
+  { kind: "between", id: "tenure-left", familyKey: EMPLOYEES, file: "City employee pay records", from: "Start Date", to: "Termination Date", name: "time worked before leaving", things: "employees who left", toWhat: "before leaving", verb: "had worked", unit: "days", missing: "{n} employees are still with the City and aren't counted here.", caveat: START },
 ];
 
 export const pairsFor = (familyKey: string) => SPAN_PAIRS.filter((p) => p.familyKey === familyKey);

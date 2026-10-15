@@ -19,7 +19,7 @@ const ctx = { origin: "https://almanac.test", date: "October 12, 2026" };
 describe("durations", () => {
   it("writes days and minutes the way a reporter would", () => {
     expect(durationText(92, "days")).toBe("92 days");
-    expect(durationText(1478.4, "days")).toBe("1,478 days");
+    expect(durationText(1478.4, "days")).toBe("4.1 years");
     expect(durationText(0.5, "days")).toBe("0.5 days");
     expect(durationText(1, "days")).toBe("1 day");
     expect(durationText(4.6037, "minutes")).toBe("4.6 minutes");
@@ -32,7 +32,7 @@ describe("the span card's words", () => {
   it("titles the card and says what was found, slowest and fastest among groups with enough cases", () => {
     expect(spanTitle(r)).toBe("Citizen Complaints · time to close · by Department");
     expect(spanSummary(r)).toBe("Overall, half of the complaints measured took 64 days or less to close. Slowest: Milwaukee Police Department (92 days); fastest: Milwaukee Fire Department (22 days).");
-    expect(spanSummary({ ...r, groupBy: null, groups: [] })).toBe("Half of the complaints measured took 64 days or less to close; 9 in 10 took 400 days or less.");
+    expect(spanSummary({ ...r, groupBy: null, groups: [] })).toBe("Half of the complaints measured took 64 days or less to close; 9 in 10 took 1.1 years or less.");
   });
   it("notes open cases, unreadable and wrong-order dates, the caveat, and what too few means", () => {
     const { warning, notes } = spanNotes(r);
@@ -154,5 +154,21 @@ describe("pick-one buttons keep the measure that was asked (L2 review fix)", () 
       "How long is the time to close in Citizen Complaints (P24), by Department, from 2024-01-01? (pair complaint-close)",
       "How long is the time open so far in Citizen Complaints (P24), by Department, from 2024-01-01? (pair complaint-open-age)",
     ]);
+  });
+});
+
+describe("long times and the verb (L4)", () => {
+  it("shows 365 days or more as years everywhere, shorter as days (review focus 4)", () => {
+    expect(durationText(364, "days")).toBe("364 days");
+    expect(durationText(365, "days")).toBe("1.0 years");
+    expect(durationText(3065, "days")).toBe("8.4 years");
+  });
+  it("words a between pair with its verb, including the too-few sentence (review focus 3)", () => {
+    const left = { ...r, groupBy: null, groups: [], pair: { ...r.pair, things: "employees who left", toWhat: "before leaving", verb: "had worked" }, all: { ...r.all, median: 1241, p90: 4400 } };
+    expect(spanSummary(left as never)).toBe("Half of the employees who left measured had worked 3.4 years or less before leaving; 9 in 10 had worked 12.1 years or less.");
+    expect(spanSummary({ ...left, all: { ...left.all, cases: 4 } } as never)).toBe("Too few employees who left were measured to say how long they had worked before leaving (4 measured).");
+  });
+  it("says too few, never a number, when a people-file's All row is withheld (review focus 1)", () => {
+    expect(spanSummary({ ...r, groupBy: null, groups: [], all: { ...r.all, cases: 6, median: null, p90: null } } as never)).toMatch(/^Too few complaints were measured/);
   });
 });

@@ -92,7 +92,7 @@ describe("checkPairs", () => {
     const out = await t.action(internal.spans.checkPairs, {});
     expect(out.find((x) => x.id === "complaint-close")).toMatchObject({ ok: true, all: { cases: 2731 } });
     expect(out.find((x) => x.id === "311-close")).toMatchObject({ ok: false, error: "no profile" });
-    expect(out).toHaveLength(11); // one result per approved entry (L1 and L2 added two each)
+    expect(out).toHaveLength(13); // one result per approved entry (L1, L2 and L4 added two each)
   });
 });
 
