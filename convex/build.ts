@@ -5,6 +5,8 @@ import { internalAction, type ActionCtx } from "./_generated/server";
 import { fetchColumns, pdfUrl } from "./lib/arcgis";
 import type { Geometry } from "./lib/geo";
 import { allTractsUrl, cityShares, newestCountyUrl, parseTractShapes, type Hood } from "./lib/tractPlaces";
+import { parseZipShapes, zctaUrl } from "./lib/zipPlaces";
+import { COUNTY_ZIPS } from "./lib/zips";
 import { BOUNDARY_KINDS, BOUNDARY_LAYERS, boundaryShares, layerUrl, parseBoundaryLayer, unionOf, type BoundaryShape } from "./lib/boundaries";
 import { tractNumber } from "./lib/tractData";
 import {
@@ -433,6 +435,7 @@ export const refreshNeighborhoods = internalAction({
       notes.push(`City neighborhoods unavailable, kept last week's: ${message(e)}`);
     }
     notes.push(...(await refreshTractNeighborhoods(ctx, hoods)));
+    notes.push(...(await refreshZipNeighborhoods(ctx, hoods)));
     const { reports, places } = await ctx.runQuery(internal.buildStore.neighborhoodSources, {});
     const found: { name: string; year: number | null; tracts: string[] }[] = [];
     for (const r of reports) {
@@ -467,6 +470,21 @@ async function refreshTractNeighborhoods(ctx: ActionCtx, hoods: Hood[] | null): 
     return [];
   } catch (e) {
     return [`Tract neighborhoods unavailable, kept last week's: ${message(e)}`];
+  }
+}
+
+// Each county ZIP's City neighborhoods, from this run's City shapes and TIGERweb's ZIP outlines. Replaced only when both
+// were read and at least one ZIP matched; the card falls back to the ZIP's main town.
+async function refreshZipNeighborhoods(ctx: ActionCtx, hoods: Hood[] | null): Promise<string[]> {
+  try {
+    if (!hoods) throw new Error("the City's neighborhoods weren't read this week");
+    const zips = parseZipShapes(await (await fetchOk(zctaUrl(Object.keys(COUNTY_ZIPS)), "ZIP outlines")).json());
+    const rows = zips.map((z) => ({ zip: z.zip, city: cityShares(z.geometry, hoods) })).filter((r) => r.city.length > 0);
+    if (rows.length === 0) throw new Error("no ZIP matched a City neighborhood");
+    await ctx.runMutation(internal.buildStore.replaceZipNeighborhoods, { rows });
+    return [];
+  } catch (e) {
+    return [`ZIP neighborhoods unavailable, kept last week's: ${message(e)}`];
   }
 }
 

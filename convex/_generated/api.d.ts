@@ -80,6 +80,7 @@ import type * as lib_turnoutMath from "../lib/turnoutMath.js";
 import type * as lib_types from "../lib/types.js";
 import type * as lib_xlsx from "../lib/xlsx.js";
 import type * as lib_zipFigures from "../lib/zipFigures.js";
+import type * as lib_zipPlaces from "../lib/zipPlaces.js";
 import type * as lib_zips from "../lib/zips.js";
 import type * as limits from "../limits.js";
 import type * as map from "../map.js";
@@ -173,6 +174,7 @@ declare const fullApi: ApiFromModules<{
   "lib/types": typeof lib_types;
   "lib/xlsx": typeof lib_xlsx;
   "lib/zipFigures": typeof lib_zipFigures;
+  "lib/zipPlaces": typeof lib_zipPlaces;
   "lib/zips": typeof lib_zips;
   limits: typeof limits;
   map: typeof map;

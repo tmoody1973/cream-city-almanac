@@ -142,6 +142,9 @@ export default defineSchema({
     city: v.array(v.object({ name: v.string(), share: v.number() })),
   }).index("by_geoid", ["geoid"]),
 
+  // Each county ZIP's City neighborhoods (≥10% of its area, biggest first), matched weekly from TIGERweb's ZIP outlines.
+  zipNeighborhoods: defineTable({ zip: v.string(), city: v.array(v.object({ name: v.string(), share: v.number() })) }).index("by_zip", ["zip"]),
+
   // The City's boundary files (districts, wards, investment and development areas), replaced weekly per kind
   // (docs/superpowers/specs/2026-10-12-boundaries-design.md §4).
   boundaries: defineTable({
