@@ -225,6 +225,8 @@ export const landingStats = query({
       cityLive: city.filter((f) => f.live).length,
       newest,
       sampleCode: crime?.code ?? null,
+      // Health Compass measures stored by the weekly refresh (decision 050); 0 until the first one, and the row hides.
+      healthMeasures: (await ctx.db.query("healthTopics").collect()).length,
     };
   },
 });
