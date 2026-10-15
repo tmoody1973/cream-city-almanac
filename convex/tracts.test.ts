@@ -584,4 +584,18 @@ describe("by neighborhood (neighborhood answers)", () => {
     const r = await t.withIdentity(reader).action(api.tracts.relateTracts, { a: { code: "e02", column: "pov_rate" }, b: { code: "e02", column: "pov_rate" }, place: "City", year: "2022", mode: "relate" });
     expect(r).toMatchObject({ status: "ok", tool: "relate-n", n: 2, strength: "too-few" });
   });
+  it("falls back to tracts when populations are stored but no tract has neighborhood pieces (review I3)", async () => {
+    const t = await seedTracts();
+    await t.run(async (ctx) => { for (const f of povertyRows().features) await ctx.db.insert("tractPopulations", { geoid: f.attributes.GEOID as string, population: 2000, period: 2022 }); });
+    installFakeFetch({ columns: POV_FIELDS, tractRows: povertyRows });
+    const r = await t.withIdentity(reader).action(api.tracts.rankTracts, { code: "e02", column: "pov_rate", place: "City", year: "2022", direction: "high" });
+    expect(r).toMatchObject({ tool: "rank", unitNote: "Neighborhood figures aren't ready yet, so these are census areas." });
+  });
+  it("doesn't work out a mismatch from too few neighborhoods (review M5)", async () => {
+    const t = await seedNeighborhoods();
+    installFakeFetch({ columns: POV_FIELDS, tractRows: povertyRows });
+    const r = await t.withIdentity(reader).action(api.tracts.relateTracts, { a: { code: "e02", column: "pov_rate" }, b: { code: "e02", column: "pov_rate" }, place: "City", year: "2022", mode: "mismatch", aSide: "high", bSide: "low" });
+    expect(r).toMatchObject({ tool: "relate-n", n: 2, fits: [], close: [] });
+    expect((r as { cutA?: number }).cutA).toBeUndefined();
+  });
 });

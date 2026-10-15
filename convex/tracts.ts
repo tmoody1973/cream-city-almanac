@@ -256,7 +256,9 @@ const UNIT_NOTE = {
 async function neighborhoodsOf(ctx: ActionCtx, values: TractValue[]): Promise<ReturnType<typeof buildNeighborhoods> | null> {
   const { pieces, pops } = await ctx.runQuery(internal.tracts.neighborhoodInputs, {});
   if (!pops.length) return null;
-  return buildNeighborhoods(values, new Map(pieces.filter((p) => p.pieces.length).map((p) => [p.geoid, p.pieces as Piece[]])), new Map(pops.map((p) => [p.geoid, p.population])));
+  const built = buildNeighborhoods(values, new Map(pieces.filter((p) => p.pieces.length).map((p) => [p.geoid, p.pieces as Piece[]])), new Map(pops.map((p) => [p.geoid, p.population])));
+  // No pieces stored yet, or this year's tract ids aren't on the 2020 map: no neighborhood could be built.
+  return built.figures.length ? built : null;
 }
 const nRow = (f: NFigure, city: NFigure | null): NRow => ({ ...f, verdict: versusCity(f, city) });
 
@@ -489,7 +491,7 @@ export const relateTracts = action({
           const pairs = na.figures.flatMap((a) => (bBy.has(a.name) ? [{ name: a.name, a, b: bBy.get(a.name)! }] : []));
           const together = nTogether(pairs);
           const aSide = args.aSide ?? "high", bSide = args.bSide ?? "low";
-          const mm = args.mode === "mismatch" && nb.city ? nMismatch(pairs, aSide, bSide, nb.city.value) : null;
+          const mm = args.mode === "mismatch" && nb.city && together.n >= RELATE_MIN ? nMismatch(pairs, aSide, bSide, nb.city.value) : null;
           const both = (p: { name: string; a: NFigure; b: NFigure }) => ({ name: p.name, a: nRow(p.a, na.city), b: nRow(p.b, nb.city) });
           const { key, save } = await store(ctx, { tool: "relate-n", ...args });
           const detail: NRelateDetail = {

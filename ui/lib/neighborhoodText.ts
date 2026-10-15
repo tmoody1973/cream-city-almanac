@@ -2,6 +2,7 @@ import type { FollowUp } from "@/ui/components/FollowUps";
 import type { Header, NRankDetail, NRelateDetail, NRow } from "@/convex/tracts";
 import type { NFigure } from "@/convex/lib/neighborhoodFigures";
 import { exported, safeName, type CardExport, type Ctx } from "./cardExport";
+import { plainMeaning, rangeText, unitOf, valueText } from "./tractFormat";
 
 // Neighborhood answers' words and export (spec 2026-10-15-neighborhood-answers §6). Code writes every sentence and
 // figure; names, never dataset codes or column names, appear in the words (codes stay in links and the CSV).
@@ -10,10 +11,13 @@ export const CITY_NEIGHBORHOODS_LAYER = "https://milwaukeemaps.milwaukee.gov/arc
 const SITE = "https://www.creamcityalmanac.app";
 
 const plain = (h: Pick<Header, "name">) => h.name.replace(/\s*\([^)]*\)/g, "").toLowerCase();
-const isPct = (h: Header) => /percent|percentage|share|rate|%/i.test(h.meaning) || h.kind === "rate";
-const num = (v: number, h: Header) => (isPct(h) ? `${v.toFixed(1)}%` : v.toLocaleString("en-US", { maximumFractionDigits: 1 }));
-const fig = (f: Pick<NFigure, "value" | "lo" | "hi"> | null, h: Header) =>
-  !f ? "—" : f.lo === null || f.hi === null ? `${num(f.value, h)} (no range published)` : `${num(f.value, h)} (${num(f.lo, h)}–${num(f.hi, h)})`;
+// Units come from DYCU's own words for the column, as on the tract cards: a "rate" can be per 1,000, not a percent.
+const num = (v: number, h: Header) => valueText(v, unitOf(h.meaning));
+function fig(f: Pick<NFigure, "value" | "lo" | "hi"> | null, h: Header): string {
+  if (!f) return "—";
+  const t = rangeText(f, unitOf(h.meaning));
+  return f.lo === null || f.hi === null ? `${t.value} (no range published)` : t.span ? `${t.value} ${t.span}` : t.value;
+}
 const VERDICT = { higher: "clearly higher", lower: "clearly lower", same: "about the same", uncertain: "too uncertain to say", "no-range": "no range published" } as const;
 const verdict = (r: NRow) => (r.verdict ? VERDICT[r.verdict] : "—");
 const names = (rs: { name: string }[]) => `${rs.slice(0, 3).map((r) => r.name).join(", ")}${rs.length > 3 ? ` and ${rs.length - 3} more` : ""}`;
@@ -26,6 +30,7 @@ export function nLead(r: NDetail): { strong: string; rest: string | null } {
     if (r.strength === "little") return { strong: `Across neighborhoods, ${a} and ${b} show little pattern.`, rest: null };
     return { strong: `Neighborhoods with higher ${a} tend to have ${r.direction} ${b} (a ${r.strength} pattern).`, rest: null };
   }
+  if (r.cutA === undefined) return { strong: "Too few neighborhoods have both figures to say.", rest: null };
   const phrase = `${r.aSide ?? "high"} ${a} with ${r.bSide ?? "low"} ${b}`;
   if (r.fits.length) return { strong: `${r.fits.length === 1 ? "Clearest lead" : "Clear matches"}: ${names(r.fits)}.`, rest: r.close.length ? `Possible: ${names(r.close)}.` : null };
   if (r.close.length) return { strong: `No neighborhood clearly has ${phrase}. Possible: ${names(r.close)}.`, rest: null };
@@ -45,8 +50,15 @@ export function nTable(r: NDetail): { head: string[]; rows: string[][] } {
 }
 
 const headers = (r: NDetail) => (r.tool === "rank-n" ? [r.header] : [r.a, r.b]);
-export function nNotes(r: NDetail): string[] {
-  const out = headers(r).map((h) => `${h.name}: ${h.meaning}`);
+// The card counts the small neighborhoods and names three (Tarik, 2026-10-15: most are parks and institutions); the
+// export (full) names them all.
+function smallNote(small: { name: string }[], full: boolean): string {
+  if (full || small.length <= 3) return `Left out (fewer than 1,000 residents): ${small.map((s) => s.name).join(", ")}.`;
+  return `Left out: ${small.length} neighborhoods with fewer than 1,000 residents (${small.slice(0, 3).map((s) => s.name).join(", ")} and ${small.length - 3} more).`;
+}
+
+export function nNotes(r: NDetail, full = false): string[] {
+  const out = headers(r).map((h) => `${h.name}: ${plainMeaning(h.meaning)}`);
   out.push("Neighborhood figures are built from census areas, weighted by how many residents live in each part, so they're approximate.");
   if (r.tool === "relate-n" && r.mode === "mismatch" && r.cutA !== undefined) {
     out.push(`${r.aSide === "low" ? "Low" : "High"} ${plain(r.a)}: the third of neighborhoods with the ${r.aSide === "low" ? "least" : "most"} (${r.aSide === "low" ? "at or below" : "at or above"} ${num(r.cutA, r.a)}). ${r.bSide === "high" ? "High" : "Low"} ${plain(r.b)}: ${r.bSide === "high" ? "above" : "below"} the city's figure. "Clear" means a neighborhood's whole range is past both lines.`);
@@ -55,7 +67,7 @@ export function nNotes(r: NDetail): string[] {
   }
   const conf = headers(r)[0].confidence;
   if (conf) out.push(`Ranges are the margins of error (${conf}).`);
-  if (r.small.length) out.push(`Left out (fewer than 1,000 residents): ${r.small.map((s) => s.name).join(", ")}.`);
+  if (r.small.length) out.push(smallNote(r.small, full));
   if (r.tool === "rank-n" && r.thin.length) out.push(`Left out (too little data): ${r.thin.join(", ")}.`);
   return out;
 }
@@ -82,12 +94,24 @@ export function nExport(r: NDetail, ctx: Ctx): CardExport {
     lines: [lead.rest ? `${lead.strong} ${lead.rest}` : lead.strong, ...(cityLine(r) ? [cityLine(r) as string] : [])],
     csv: { head, rows },
     text: t,
-    notes: [...nNotes(r), ...credits(r), exported(ctx)],
+    notes: [...nNotes(r, true), ...credits(r), exported(ctx)],
     filename: safeName(["neighborhoods", ...headers(r).map((h) => h.code)]),
   };
 }
 
-export function nFollowUps(args: { code: string; column: string; place: string; year: string; direction?: string }, r: NDetail): FollowUp[] {
-  const h = r.tool === "rank-n" ? r.header : r.a;
-  return [{ label: "BY CENSUS AREA", question: `Rank census tracts by ${h.name} (${args.code}, ${args.column}, ${args.place} ${args.year}), by census tract.` }];
+type RankArgs = { code: string; column: string; place: string; year: string; direction?: string };
+type RelateArgs = { a: { code: string; column: string }; b: { code: string; column: string }; place: string; year: string; mode: "relate" | "mismatch"; aSide?: "high" | "low"; bSide?: "high" | "low" };
+
+// The same question by census tract, with the codes and columns spelled out so the tract tool gets them right.
+export function nFollowUps(args: RankArgs | RelateArgs, r: NDetail): FollowUp[] {
+  if (r.tool === "rank-n") {
+    const a = args as RankArgs;
+    return [{ label: "BY CENSUS AREA", question: `Rank census tracts by ${r.header.name} (${a.code}, ${a.column}, ${a.place} ${a.year}), by census tract.` }];
+  }
+  const a = args as RelateArgs;
+  const ids = `(${a.a.code} ${a.a.column}, ${a.b.code} ${a.b.column}, ${a.place} ${a.year})`;
+  const question = r.mode === "mismatch"
+    ? `Which census tracts have ${a.aSide ?? "high"} ${r.a.name} but ${a.bSide ?? "low"} ${r.b.name} ${ids}? By census tract.`
+    : `Do ${r.a.name} and ${r.b.name} go together across census tracts ${ids}? By census tract.`;
+  return [{ label: "BY CENSUS AREA", question }];
 }
