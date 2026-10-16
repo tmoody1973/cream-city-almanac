@@ -8,5 +8,5 @@ export const metadata: Metadata = { title: "Neighborhood fact sheets · Cream Ci
 
 export default async function Page() {
   const s = await fetchQuery(api.factSheet.sheet, { slug: "" });
-  return <FactSheetIndex areas={s.status === "not-found" ? s.areas : []} />;
+  return <FactSheetIndex areas={s.status === "not-found" ? s.areas : []} cityAreas={s.status === "not-found" ? s.cityAreas : []} />;
 }

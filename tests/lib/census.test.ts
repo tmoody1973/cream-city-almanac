@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { censusUrl, parseCensus, parseTractPopulations, requestsFor, scrubKey, tractPopulationUrl, zctaGeo } from "../../convex/lib/census";
+import { censusUrl, MIN_TRACTS_FETCHED, parseCensus, parseTractCensus, parseTractPopulations, requestsFor, scrubKey, TRACTS_GEO, tractPopulationUrl, tractRequests, zctaGeo } from "../../convex/lib/census";
 
 describe("Census requests", () => {
   it("asks for each code's estimate and margin for the City of Milwaukee", () => {
@@ -43,5 +43,36 @@ describe("tract populations (neighborhood answers §3.2)", () => {
     const json = [["B01003_001E", "state", "county", "tract"], ["4012", "55", "079", "186000"], ["-666666666", "55", "079", "000100"], ["0", "55", "079", "980000"]];
     expect(parseTractPopulations(json)).toEqual([{ geoid: "55079186000", population: 4012 }, { geoid: "55079980000", population: 0 }]);
     expect(() => parseTractPopulations({ error: "x" })).toThrow(/changed shape/);
+  });
+});
+
+describe("tract figures (spec 2026-10-16-city-neighborhood-fact-sheets §4.3)", () => {
+  it("asks for every Milwaukee County tract with the fact sheet's codes, without the ZIP card's race codes", () => {
+    const reqs = tractRequests();
+    expect(reqs.map((r) => r.kind).sort()).toEqual(["", "/profile", "/subject"]);
+    const all = reqs.flatMap((r) => r.codes);
+    expect(all).toContain("B17001_002");
+    expect(all).toContain("DP04_0136");
+    expect(all).toContain("S1501_C01_006");
+    expect(all.some((c) => c.startsWith("B03002"))).toBe(false);
+    expect(censusUrl(2024, "", ["B17001_002"], "k", TRACTS_GEO)).toContain("for=tract:*&in=state:55&in=county:079");
+    expect(MIN_TRACTS_FETCHED).toBe(250);
+  });
+  it("reads one row per tract, builds its GEOID, keeps 'no sampling error' as 0 and drops special values", () => {
+    const body = [
+      ["B17001_002E", "B17001_002M", "state", "county", "tract"],
+      ["400", "60", "55", "079", "186000"],
+      ["-666666666", "-222222222", "55", "079", "000100"],
+      ["50", "-555555555", "55", "079", "000200"],
+    ];
+    expect(parseTractCensus(body, ["B17001_002"])).toEqual([
+      { geoid: "55079186000", values: { B17001_002: { estimate: 400, moe: 60 } } },
+      { geoid: "55079000100", values: {} },
+      { geoid: "55079000200", values: { B17001_002: { estimate: 50, moe: 0 } } },
+    ]);
+  });
+  it("refuses a reply without tract columns", () => {
+    expect(() => parseTractCensus([["B17001_002E"], ["1"]], ["B17001_002"])).toThrow(/tract/);
+    expect(() => parseTractCensus({}, ["B17001_002"])).toThrow();
   });
 });

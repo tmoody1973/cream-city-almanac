@@ -78,7 +78,7 @@ export function About({ sampleCode, cityLive, riverwest }: { sampleCode: string 
                 </span>
               </Link>
             ) : null}
-            <p className={`${styles.text} ${styles.after}`}>For the 27 neighborhoods Data You Can Use profiles, a printable page shows poverty, income, renters, vacant homes, rent burden, car ownership and schooling, each next to the citywide figure, with a plain label: clearly higher, clearly lower, or about the same.</p>
+            <p className={`${styles.text} ${styles.after}`}>For the 27 neighborhoods Data You Can Use profiles, a printable page shows poverty, income, renters, vacant homes, rent burden, car ownership and schooling, each next to the citywide figure, with a plain label: clearly higher, clearly lower, or about the same. Every other City neighborhood has one built from census tracts, labeled as approximate.</p>
             <p className={styles.text}>
               {riverwest ? <Link href={`/n/${riverwest.slug}`}>Open {riverwest.name}&apos;s fact sheet →</Link> : <Link href="/n">Neighborhood fact sheets →</Link>}
             </p>

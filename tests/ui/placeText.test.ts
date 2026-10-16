@@ -66,11 +66,12 @@ describe("an address between neighborhood shapes (review fix)", () => {
 });
 
 describe("a City neighborhood DYCU doesn't profile", () => {
-  it("points to a City-records count Ask can answer there, not to census tracts", () => {
+  it("opens the neighborhood's sheet built from tracts, and still offers a City-records count in Ask", () => {
     const a = askAboutArea("Bay View");
-    expect(a.text).toBe("That address is in the City's Bay View neighborhood. Data You Can Use doesn't make a fact sheet for it, but Ask can count City records there.");
+    expect(a.text).toBe("That address is in the City's Bay View neighborhood.");
+    expect(a.sheet).toEqual({ href: "/n/bay-view", label: "Open Bay View's fact sheet →" });
     expect(a.question).toBe("How many robberies in Bay View this year?");
     expect(a.href).toBe(`/ask?prompt=${encodeURIComponent("How many robberies in Bay View this year?")}`);
-    expect(a.text).not.toMatch(/tract/i);
+    expect(askAboutArea("The Valley/Pigsville").sheet.href).toBe("/n/the-valley-pigsville");
   });
 });

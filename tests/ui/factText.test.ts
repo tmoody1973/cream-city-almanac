@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CENSUS_SOURCE, countLine, factSheetExport, margin, NOTE_APPROX, pct, populationNote, portraitCell, verdictText } from "../../ui/lib/factText";
+import { BUILT_SOURCE, builtNote, NOT_LOADED, CENSUS_SOURCE, countLine, factSheetExport, margin, MISSING_BUILT, NOTE_APPROX, pct, populationNote, portraitCell, smallLine, verdictText } from "../../ui/lib/factText";
 
 describe("fact sheet words", () => {
   it("writes rates, margins, counts and verdicts plainly", () => {
@@ -34,5 +34,35 @@ describe("review fixes", () => {
     expect(portraitCell({ estimate: "18894", moe: "n/a" })).toBe("18,894 n/a");
     expect(portraitCell({ estimate: "18894", moe: null })).toBe("18,894");
     expect(portraitCell(null)).toBe("");
+  });
+});
+
+describe("sheets built from census tracts (spec 2026-10-16 §6)", () => {
+  it("says where the numbers come from and how they were built, in the spec's words", () => {
+    expect(BUILT_SOURCE("2020–2024")).toBe("U.S. Census Bureau, 2020–2024 American Community Survey · built from census tracts");
+    expect(builtNote("Bay View", 7)).toBe("Built from 7 census tracts, each counted by the share of its land in Bay View. Approximate: it assumes residents are spread evenly within a tract. Ranges are the Census Bureau's margins of error, at 90% confidence.");
+    expect(builtNote("Bay View", 1)).toMatch(/^Built from 1 census tract, each/);
+    expect(smallLine(640)).toBe("Too few residents (about 640) for reliable Census figures.");
+    expect(MISSING_BUILT).not.toMatch(/DYCU/);
+  });
+  it("exports a built sheet without DYCU's source or a year link", () => {
+    const s = { status: "ok" as const, kind: "census" as const, slug: "bay-view", name: "Bay View", year: 2024, years: [], period: "2020–2024", headlines: [], tables: [], source: null, map: null, cityFetchedAt: null, built: { tracts: 7 } };
+    const e = factSheetExport(s, { origin: "https://x.test", date: "October 16, 2026" });
+    expect(e.notes.join(" ")).toContain("built from census tracts");
+    expect(e.notes.join(" ")).not.toContain("Data You Can Use");
+    expect(e.notes.join(" ")).toContain("https://x.test/n/bay-view");
+    expect(e.notes.join(" ")).not.toContain("?year=");
+  });
+});
+
+describe("a built sheet whose figures are missing (review: Important 1)", () => {
+  it("shows a dash, says once when figures haven't been loaded, and its export never blames DYCU", () => {
+    expect(MISSING_BUILT).toBe("—");
+    expect(NOT_LOADED).toBe("Census figures for this neighborhood haven't been loaded yet; they're fetched weekly.");
+    const h = { id: "poverty", label: "People in poverty", meaning: "", isCount: false, hood: null, city: null, verdict: "unknown" as const };
+    const s = { status: "ok" as const, kind: "census" as const, slug: "bay-view", name: "Bay View", year: 2024, years: [], period: "2020–2024", headlines: [h], tables: [], source: null, map: null, cityFetchedAt: null, built: { tracts: 7 }, loaded: false };
+    const e = factSheetExport(s, { origin: "https://x.test", date: "October 16, 2026" });
+    expect(JSON.stringify(e)).not.toContain("DYCU");
+    expect(e.lines).toContain(NOT_LOADED);
   });
 });

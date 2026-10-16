@@ -12,7 +12,7 @@ It draws on three sources: Data You Can Use, which publishes Milwaukee neighborh
 
 **Type your address.** You'll see which neighborhood you're in, your alder and aldermanic district, your voting ward, and your polling place, with notes on its accessible entrance and parking. The address goes to the U.S. Census Bureau to find its location, and the Almanac doesn't keep it.
 
-**Read your neighborhood's fact sheet.** For the 27 neighborhoods Data You Can Use profiles, a printable page shows poverty, income, renters, vacant homes, rent burden, car ownership and schooling, each one next to the citywide figure. A plain label says whether the neighborhood is clearly higher, clearly lower, or about the same as the city.
+**Read your neighborhood's fact sheet.** For the 27 neighborhoods Data You Can Use profiles, a printable page shows poverty, income, renters, vacant homes, rent burden, car ownership and schooling, each one next to the citywide figure. A plain label says whether the neighborhood is clearly higher, clearly lower, or about the same as the city. Every other City neighborhood has a fact sheet too, built from census tracts and labeled as approximate.
 
 **Ask a question in your own words.** "How many robberies were there in Harambee this year?" "Which neighborhoods have the highest rent burden?" "How long have Milwaukee's vacant buildings been vacant?" Ask answers with a card that shows the number, its source, and its fine print. Some of what it can answer:
 
