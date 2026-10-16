@@ -32,7 +32,7 @@ describe("a neighborhood built from census tracts", () => {
     expect(h.verdict).toBe("same");
   });
   it("marks a figure missing when tracts with its values hold under half the residents", () => {
-    const thin = new Map([[A, {}], [B, tract([300, 80], [1000, 90])]]);
+    const thin = new Map<string, Record<string, { estimate: number; moe: number | null }>>([[A, {}], [B, tract([300, 80], [1000, 90])]]);
     const r = buildCityFigures([{ geoid: A, share: 60 }, { geoid: B, share: 25 }], thin, pops, city);
     expect(poverty(r)!.hood).toBeNull();
   });
