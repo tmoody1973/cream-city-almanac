@@ -7,14 +7,14 @@ import { sampleView } from "@/ui/lib/landingSample";
 import { ProvenanceTag } from "./ProvenanceTag";
 import styles from "./landing.module.css";
 
-const QUESTION = "How many robberies in Harambee this year?";
+export const QUESTION = "How many robberies in Harambee this year?";
 // The NIBRS sheet's own "What" menu: column Offense_All, Robbery = 120 (the City's codes, same in every deployment).
 const ROBBERY = { column: "Offense_All", values: ["120"] };
 
 // A live count from the City, asked once when the page opens (the public map endpoint caches it ten minutes).
 // Until it arrives (and with scripts off), or if it can't, the card is the question and a link to ask it;
 // data-landing-sample says which (pending / done).
-export function LandingAskSample({ code }: { code: string | null }) {
+export function useRobberySample(code: string | null) {
   const run = useAction(api.map.mapCells);
   // Only what the card shows is kept, not the whole payload (map cells, groups).
   const [view, setView] = useState<ReturnType<typeof sampleView>>({ kind: "link" });
@@ -32,6 +32,11 @@ export function LandingAskSample({ code }: { code: string | null }) {
       live = false;
     };
   }, [code, run]);
+  return { view, settled };
+}
+
+export function LandingAskSample({ code }: { code: string | null }) {
+  const { view, settled } = useRobberySample(code);
   return (
     <div className={styles.sample} data-landing-sample={settled ? "done" : "pending"}>
       <p className={styles.sampleQ}>{QUESTION}</p>

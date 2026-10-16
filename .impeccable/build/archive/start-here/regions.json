@@ -1,0 +1,326 @@
+{
+ "regions": [
+  {
+   "id": "wordmark",
+   "kind": "text",
+   "box": {
+    "x": 0.0208,
+    "y": 0.0107,
+    "w": 0.304,
+    "h": 0.0693
+   },
+   "note": "CREAM CITY ALMANAC wordmark, heavy condensed black capitals"
+  },
+  {
+   "id": "site-nav",
+   "kind": "control",
+   "box": {
+    "x": 0.5606,
+    "y": 0.0137,
+    "w": 0.4219,
+    "h": 0.0586
+   },
+   "note": "SEARCH ASK SAVED in graphite, rule, START HERE ink with a thick underline bar (current), rule, HOW IT WORKS"
+  },
+  {
+   "id": "masthead-rule",
+   "kind": "chrome",
+   "box": {
+    "x": 0.0208,
+    "y": 0.084,
+    "w": 0.9583,
+    "h": 0.0137
+   },
+   "note": "thin ink rule under the masthead"
+  },
+  {
+   "id": "headline",
+   "kind": "text",
+   "box": {
+    "x": 0.0208,
+    "y": 0.1055,
+    "w": 0.1888,
+    "h": 0.0703
+   },
+   "note": "START HERE, large bold condensed black capitals"
+  },
+  {
+   "id": "lede",
+   "kind": "text",
+   "box": {
+    "x": 0.0208,
+    "y": 0.1719,
+    "w": 0.4479,
+    "h": 0.0332
+   },
+   "note": "plain sans lede: Three people, three questions, and how each gets an answer here."
+  },
+  {
+   "id": "reporter-label",
+   "kind": "chrome",
+   "box": {
+    "x": 0.0208,
+    "y": 0.2188,
+    "w": 0.3151,
+    "h": 0.042
+   },
+   "note": "gray band with A REPORTER in condensed capitals"
+  },
+  {
+   "id": "reporter-question",
+   "kind": "text",
+   "box": {
+    "x": 0.0247,
+    "y": 0.2647,
+    "w": 0.306,
+    "h": 0.1201
+   },
+   "note": "large bold condensed question: Do the neighborhoods with the most old housing also have the most asthma?"
+  },
+  {
+   "id": "reporter-steps",
+   "kind": "text",
+   "box": {
+    "x": 0.0247,
+    "y": 0.3887,
+    "w": 0.306,
+    "h": 0.1504
+   },
+   "note": "numbered plain sans steps"
+  },
+  {
+   "id": "reporter-excerpt",
+   "kind": "text",
+   "box": {
+    "x": 0.0208,
+    "y": 0.5508,
+    "w": 0.3151,
+    "h": 0.2637
+   },
+   "note": "excerpt box: gray-banded label H05 story angles, two bulleted AI-tagged angles, gray-banded label W01 caveat, one AI-tagged caveat; hairline border"
+  },
+  {
+   "id": "reporter-try",
+   "kind": "control",
+   "box": {
+    "x": 0.0208,
+    "y": 0.8086,
+    "w": 0.0638,
+    "h": 0.0371
+   },
+   "note": "Try it link with arrow, bold, underlined"
+  },
+  {
+   "id": "nonprofit-label",
+   "kind": "chrome",
+   "box": {
+    "x": 0.3542,
+    "y": 0.2188,
+    "w": 0.293,
+    "h": 0.042
+   },
+   "note": "gray band with A NONPROFIT in condensed capitals"
+  },
+  {
+   "id": "nonprofit-question",
+   "kind": "text",
+   "box": {
+    "x": 0.3581,
+    "y": 0.2617,
+    "w": 0.2838,
+    "h": 0.1152
+   },
+   "note": "large bold condensed question: Our grant application needs Harambee's poverty numbers, by age."
+  },
+  {
+   "id": "nonprofit-steps",
+   "kind": "text",
+   "box": {
+    "x": 0.3581,
+    "y": 0.3828,
+    "w": 0.2838,
+    "h": 0.1406
+   },
+   "note": "numbered plain sans steps"
+  },
+  {
+   "id": "nonprofit-excerpt",
+   "kind": "text",
+   "box": {
+    "x": 0.3542,
+    "y": 0.5381,
+    "w": 0.293,
+    "h": 0.2724
+   },
+   "note": "excerpt: hairline-boxed problem note, then a ruled table captioned Harambee, 2024: Poverty Status by Age with Estimate and \u00b1 Margin columns and three rows, then DYCU tag and Census table B17001"
+  },
+  {
+   "id": "nonprofit-try",
+   "kind": "control",
+   "box": {
+    "x": 0.3542,
+    "y": 0.8086,
+    "w": 0.0638,
+    "h": 0.0371
+   },
+   "note": "Try it link with arrow, bold, underlined"
+  },
+  {
+   "id": "resident-label",
+   "kind": "chrome",
+   "box": {
+    "x": 0.6647,
+    "y": 0.2188,
+    "w": 0.3144,
+    "h": 0.042
+   },
+   "note": "gray band with A RESIDENT in condensed capitals"
+  },
+  {
+   "id": "resident-question",
+   "kind": "text",
+   "box": {
+    "x": 0.6686,
+    "y": 0.2617,
+    "w": 0.3053,
+    "h": 0.0898
+   },
+   "note": "large bold condensed question: What has the air been like in Milwaukee lately?"
+  },
+  {
+   "id": "resident-steps",
+   "kind": "text",
+   "box": {
+    "x": 0.6686,
+    "y": 0.3711,
+    "w": 0.3053,
+    "h": 0.1113
+   },
+   "note": "numbered plain sans steps"
+  },
+  {
+   "id": "resident-excerpt",
+   "kind": "chrome",
+   "box": {
+    "x": 0.6647,
+    "y": 0.5059,
+    "w": 0.3144,
+    "h": 0.291
+   },
+   "note": "excerpt box: the live preview from the Hub, then the AI-tagged caveat line about citywide daily averages"
+  },
+  {
+   "id": "resident-try",
+   "kind": "control",
+   "box": {
+    "x": 0.6647,
+    "y": 0.8086,
+    "w": 0.0638,
+    "h": 0.0371
+   },
+   "note": "Try it link with arrow, bold, underlined"
+  },
+  {
+   "id": "column-rules",
+   "kind": "chrome",
+   "box": {
+    "x": 0.3372,
+    "y": 0.2158,
+    "w": 0.3242,
+    "h": 0.6377
+   },
+   "note": "two thin vertical rules between the three columns",
+   "container": true
+  },
+  {
+   "id": "guides-rule",
+   "kind": "chrome",
+   "box": {
+    "x": 0.0208,
+    "y": 0.8516,
+    "w": 0.9583,
+    "h": 0.0137
+   },
+   "note": "thin ink rule above the guides row"
+  },
+  {
+   "id": "guides-heading",
+   "kind": "text",
+   "box": {
+    "x": 0.0208,
+    "y": 0.8779,
+    "w": 0.1823,
+    "h": 0.0498
+   },
+   "note": "DYCU'S OWN GUIDES, bold condensed capitals"
+  },
+  {
+   "id": "guides-links",
+   "kind": "text",
+   "box": {
+    "x": 0.2474,
+    "y": 0.8701,
+    "w": 0.1497,
+    "h": 0.0869
+   },
+   "note": "three underlined links each with a boxed HUB tag: Getting Started, About the Data, Questions and Feedback"
+  },
+  {
+   "id": "guides-contact",
+   "kind": "text",
+   "box": {
+    "x": 0.5703,
+    "y": 0.8799,
+    "w": 0.1523,
+    "h": 0.0576
+   },
+   "note": "Questions about the data itself: hub@datayoucanuse.org"
+  },
+  {
+   "id": "how-link",
+   "kind": "control",
+   "box": {
+    "x": 0.8125,
+    "y": 0.8867,
+    "w": 0.1601,
+    "h": 0.0488
+   },
+   "note": "How the almanac works with arrow, bold, underlined"
+  },
+  {
+   "id": "reporter-divider",
+   "kind": "chrome",
+   "box": {
+    "x": 0.0234,
+    "y": 0.5449,
+    "w": 0.3099,
+    "h": 0.0098
+   },
+   "note": "thin rule between the reporter's steps and its excerpt"
+  },
+  {
+   "id": "guides-dividers",
+   "kind": "chrome",
+   "box": {
+    "x": 0.2214,
+    "y": 0.8711,
+    "w": 0.5599,
+    "h": 0.0879
+   },
+   "note": "short vertical rules dividing the guides row",
+   "container": true
+  },
+  {
+   "id": "bottom-rule",
+   "kind": "chrome",
+   "box": {
+    "x": 0.0195,
+    "y": 0.9629,
+    "w": 0.9609,
+    "h": 0.0137
+   },
+   "note": "thin ink rule closing the page"
+  }
+ ],
+ "allowUncovered": true
+}
