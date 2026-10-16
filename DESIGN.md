@@ -270,7 +270,7 @@ A laptop is a screen at least 1100px wide in landscape (`(min-width: 1100px) and
 - **Sheet pane:** sticky at the top of the window, at most the window's height, scrolling on its own, divided from the list by a hairline. The download bar pins to the pane's bottom edge.
 - **Ask rail:** a hairline-outlined strip that stays beside the pane (sticky 12px from the top, the window's height less 24px). ASK in condensed capitals opens Ask in the list's column (`?ask=1`); open, it shows a drawn cross over a small condensed CLOSE that brings the list back.
 - **Selection:** the newest item in the list opens in the pane on arrival. Choosing a row replaces it and records the choice in the address (`?q=…&open=CODE`), so a link, a reload, or Back and Forward restore the same view; choosing the already-open row adds no Back step. On a phone, a laptop link to an item that is not in the list opens that item's own sheet page.
-- **Fact sheet first:** a search that names one of DYCU's profiled neighborhoods as whole words ("riverwest crime") leads with one ruled block above the results, linking to `/n/<slug>` (`data-fact-lead`): FACT SHEET in small condensed capitals, the neighborhood's name in condensed bold at row-title size (24–30px), then "Its people and homes next to the rest of the city →". The results under it don't change. City neighborhoods DYCU doesn't profile get no line.
+- **Fact sheet first:** a search that names one of DYCU's profiled neighborhoods as whole words ("riverwest crime") leads with one ruled block above the results, linking to `/n/<slug>` (`data-fact-lead`): FACT SHEET in small condensed capitals, the neighborhood's name in condensed bold at row-title size (24–30px), then "Its people and homes next to the rest of the city →". The results under it don't change. City neighborhoods match too (their sheets are built from census tracts); a name DYCU profiles wins.
 - **Site links** move into the masthead; the bottom tab bar is phone-only and the dock holds only the credit line, in flow at the page end.
 
 ### How it works
@@ -440,6 +440,9 @@ From the approved comp, direction A, "the ledger" (`.impeccable/mocks/fact-sheet
 - **Verdicts** are printed in Saira uppercase, written by code. Grease pencil marks only a clear difference: a red ring for "clearly higher", a red underline for "clearly lower". "About the same" gets no mark.
 - **Phones:** each row stacks: the label, then the neighborhood's and the city's figures side by side, then the verdict. Never four squeezed columns.
 - **Print:** one US Letter page. There's no site chrome, buttons, year links or folded tables, and type and padding are smaller.
+- **Built from census tracts** (every City neighborhood DYCU doesn't profile; decision 054): the same ledger, with the period line reading "U.S. Census Bureau, 2020–2024 American Community Survey · built from census tracts" and a CENSUS tag; no year links; the people numeral reads "About N"; a missing figure reads "Too few census answers here"; under the table the method note ("Built from N census tracts, each counted by the share of its land in <name>. Approximate: …"), no DYCU tables, and the tract map captioned "The census tracts <name> is built from". A slug DYCU covers always opens DYCU's sheet.
+- **Small neighborhoods** (under 1,000 residents): the name, "Too few residents (about N) for reliable Census figures.", the tracts it sits in with each share of land, and the tract map. No figures.
+- **The `/n` list:** DYCU's areas under "Data You Can Use's neighborhood portraits", then "Every City neighborhood" (muted "Built from census tracts, so approximate."), A to Z without the names DYCU covers.
 
 ### Address lookup
 
@@ -447,7 +450,7 @@ From the approved comp, direction A, "the ledger" (`.impeccable/mocks/fact-sheet
   - It lists: the matched address with "(as the U.S. Census Bureau matched it)"; the census tract; the City neighborhood with its boundary named, or "Outside the City of Milwaukee"; and DYCU's area with "Open the fact sheet →".
   - The privacy line closes it in muted text.
   - Follow-ups ask about the places, never the property.
-- **A City neighborhood DYCU doesn't profile:** "That address is in the City's <name> neighborhood. Data You Can Use doesn't make a fact sheet for it, but Ask can count City records there." then the link "Try “How many robberies in <name> this year?” →", which opens Ask with the question typed in, never sent. Never census tracts: Ask answers a City-records count for every City neighborhood.
+- **A City neighborhood DYCU doesn't profile:** "That address is in the City's <name> neighborhood." with the link "Open <name>'s fact sheet →" (its sheet built from census tracts), then "Ask can also count City records there." with the link "Try “How many robberies in <name> this year?” →", which opens Ask with the question typed in, never sent.
 - **The `/n` box:** "Find your neighborhood" in Saira caps, one field and one Find button in the site's boxed-button style, with the answer under it and the privacy line in muted small text. A match opens the fact sheet directly.
 
 ### Boundaries

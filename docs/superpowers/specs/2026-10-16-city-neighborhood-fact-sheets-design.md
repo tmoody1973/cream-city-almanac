@@ -1,6 +1,6 @@
 # Fact sheets for every City neighborhood: design
 
-**Date:** 2026-10-16 · **Decision:** 054 · **Status:** approved in conversation, awaiting spec review
+**Date:** 2026-10-16 · **Decision:** 054 · **Status:** approved; implemented
 
 ## 1. Goal
 
