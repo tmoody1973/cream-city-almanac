@@ -525,6 +525,16 @@ Transparent raster PNGs of red grease-pencil ink, trimmed to their ink and sized
 
 **The One Motion Rule.** The pencil circle drawing on is the only animation in the system; nothing else fades, slides, or transitions, and reduced motion removes even that.
 
+### What's in the Almanac (`/about`)
+The product explained with its own working parts, set as an almanac's numbered front matter (approved comp `.impeccable/mocks/decision/about-contents.webp`, a layout reference; direction contract in `.impeccable/surfaces/app-about-page-tsx.md`). Linked from every page's footer and the phone menu.
+- **Order:** masthead; WHAT'S IN THE ALMANAC (h2, condensed capitals, clamp(36px, 9.7vw, 99px)) and one lede line; then numbered entries, each opened by a 2px ink rule, a giant condensed numeral in a left gutter (aria-hidden; the entry is a section named by its title) and a condensed-capitals title.
+- **The working parts:** 1 YOUR ADDRESS is the site's address box (`FindPlaceBox compact`: no small label, the short privacy line "Sent to the U.S. Census Bureau to find it; never kept.") with a line saying what the lookup shows; 2 YOUR NEIGHBORHOOD is one real fact-sheet row (Riverwest poverty beside the City's, from stored data) in a grey band that links to the sheet, its verdict underlined with the grease-pencil plate, then what fact sheets are and a visible link; 3 ASK IN PLAIN ENGLISH is the live City count card (`useRobberySample`, shared with the landing page), its CITY tag annotated "who wrote it" in Caveat with a pencil-arrow plate, then one line and an Ask link. Until a live number arrives the card is the question and a link, never a number.
+- **Below the first view:** 4 SEARCH | 5 HOW YOU KNOW share one rule with a hairline between them (stacked under 560px); 5 holds the source-tag legend (DYCU, CITY, CENSUS, HCM, AI) as one two-column grid. 6 WHAT YOU CAN ASK, 7 FOR REPORTERS, 8 FOR NONPROFITS, then GOOD TO KNOW (live daily-dataset count) and two closing links. Copy comes from `docs/marketing/cream-city-almanac-one-pager.md` and adds no claims.
+- **Red:** only the one underline and the one margin note with its arrow.
+- **Phones and the comp:** sizes are the comp's px ÷ 10.24 as vw, clamped so body type never drops under 16px. **Laptop is its own composition:** the site's laptop masthead and type scale (not the comp's proportions); entries 1-3 keep the comp's full-width order, 6's list runs in two columns, and 7 | 8 pair under one rule like 4 | 5.
+- **Plates:** `assets/plates/about-underline.png` and `about-arrow.png`, each carrying its generation prompt.
+- **Print:** the search box, address box and closing links drop out.
+
 ## Do's and Don'ts
 
 ### Do:

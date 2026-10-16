@@ -6,7 +6,7 @@ import { useState } from "react";
 import { api } from "@/convex/_generated/api";
 import type { PlaceResult } from "@/convex/places";
 import { PlaceBoundaries } from "./PlaceBoundaries";
-import { askAboutArea, notInCityText, PLACE_PRIVACY, placeRefusal, sheetFor } from "@/ui/lib/placeText";
+import { askAboutArea, notInCityText, PLACE_PRIVACY, PLACE_PRIVACY_SHORT, placeRefusal, sheetFor } from "@/ui/lib/placeText";
 import styles from "./factSheet.module.css";
 
 const AskAbout = ({ area }: { area: ReturnType<typeof askAboutArea> }) => (
@@ -31,7 +31,7 @@ function Panel({ r }: { r: Extract<PlaceResult, { status: "ok" }> }) {
 }
 
 // "Find your neighborhood": an address → a panel with its fact sheet and City boundaries. Nothing is stored.
-export function FindPlaceBox({ heading = true }: { heading?: boolean }) {
+export function FindPlaceBox({ heading = true, compact = false }: { heading?: boolean; compact?: boolean }) {
   const find = useAction(api.places.placeForBox);
   const [address, setAddress] = useState("");
   const [message, setMessage] = useState<React.ReactNode>(null);
@@ -52,14 +52,14 @@ export function FindPlaceBox({ heading = true }: { heading?: boolean }) {
   return (
     <form className={styles.find} onSubmit={submit}>
       {heading && <h3 className={styles.findLabel}>Find your neighborhood</h3>}
-      <label htmlFor="find-address" className={styles.muted}>Your address</label>
+      <label htmlFor="find-address" className={compact ? "visually-hidden" : styles.muted}>Your address</label>
       <div className={styles.findRow}>
         <input id="find-address" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="2400 W Center St" maxLength={200} autoComplete="street-address" />
         <button type="submit" className={styles.print} disabled={busy}>Find</button>
       </div>
       {/* Always on the page, so screen readers announce the answer when it fills in. A div: the panel holds lists. */}
       <div data-place-message role="status">{message}</div>
-      <p className={styles.muted}>{PLACE_PRIVACY}</p>
+      <p className={styles.muted}>{compact ? PLACE_PRIVACY_SHORT : PLACE_PRIVACY}</p>
     </form>
   );
 }

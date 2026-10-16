@@ -10,6 +10,8 @@ export function CreditFooter() {
       {" · "}
       <Link href="/start-here">Start here</Link>
       {" · "}
+      <Link href="/about">What&apos;s in the Almanac</Link>
+      {" · "}
       <Link href="/how-it-works">How it works</Link>
       {" · "}
       <Link href="/n">Neighborhood fact sheets</Link>

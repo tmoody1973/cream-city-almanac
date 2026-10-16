@@ -1,0 +1,9 @@
+STRUCTURE: one dense newspaper agate / box-score reference page.
+Under the masthead: condensed headline THE ALMANAC, AT A GLANCE and a full-width boxed address field "2400 W Center St" with a ruled FIND button, labeled ROW 0 · START WITH YOUR ADDRESS.
+Then a ruled table with column heads in small condensed capitals: YOU WANT TO KNOW | YOU GET | FROM. Rows in alternating gray bands, tabular figures:
+"What's my neighborhood like?" | Riverwest: 12.8% in poverty vs 22.8% citywide | DYCU
+"How many robberies near me?" | Harambee, this year: 29 | CITY
+"Who's my alder? Where do I vote?" | District 14 · Ward 237 · Beulah Brinton Community Center | CITY
+"How long do 311 requests take?" | median and 9-in-10 times | CITY
+"Which neighborhoods have the highest rent burden?" | ranked list with ranges | DYCU
+Footnote rows in small type beginning with a red grease-pencil asterisk: "* Reporters: every card exports with its source." "* Nonprofits: fact sheets print on one page."

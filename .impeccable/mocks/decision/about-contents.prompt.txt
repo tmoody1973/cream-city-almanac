@@ -1,0 +1,6 @@
+STRUCTURE: the page is an almanac's numbered table of contents, each entry a live working part.
+Under the masthead: headline WHAT'S IN THE ALMANAC in huge condensed capitals, one line of body "Milwaukee's public data, looked up and explained. Every number says where it came from."
+Then entry "1" as a giant condensed numeral beside YOUR ADDRESS, and a full-width boxed address field reading "2400 W Center St" with a ruled FIND button; a small muted line under it "Sent to the U.S. Census Bureau to find it; never kept."
+Then entry "2" YOUR NEIGHBORHOOD: one real fact-sheet row in a gray band: PEOPLE IN POVERTY · RIVERWEST 12.8% ± 2.1 points · CITY OF MILWAUKEE 22.8% · the verdict CLEARLY LOWER THAN THE CITY underlined in red grease pencil.
+Then entry "3" ASK IN PLAIN ENGLISH beginning: a boxed answer card "How many robberies in Harambee this year?" with a big condensed figure 29 and a caption "NIBRS Crime Data · Jan 1 – Oct 16, 2026 · In Harambee" and a boxed CITY tag. A red handwritten margin note pointing at the tag: "who wrote it".
+Entries 4 SEARCH and 5 HOW YOU KNOW peek at the bottom edge.
