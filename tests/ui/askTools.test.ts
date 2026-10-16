@@ -23,7 +23,7 @@ describe("tract tools", () => {
   it("routes ZIP health questions to zipHealth, and keeps tracts for questions that name them", () => {
     expect(askTools(backend({})).map((t) => t.name)).toContain("zipHealth");
     expect(ASK_PROMPT).toContain("use zipHealth, by ZIP code, from Health Compass Milwaukee");
-    expect(ASK_PROMPT).toContain("Use the tract tools only when the person names census tracts, a DYCU dataset or its code");
+    expect(ASK_PROMPT).toContain("use the tract tools only when the person names census tracts, a DYCU dataset or its code");
     expect(ASK_PROMPT).not.toContain("where is poverty high but food insecurity low");
   });
   it("offers rankTracts, compareYears and relateTracts", () => {
@@ -235,5 +235,9 @@ describe("neighborhood answers routing (spec 2026-10-15-neighborhood-answers §2
     expect(ASK_PROMPT).toContain("If the person says \"neighborhood\", answer by neighborhood; if they say \"ZIP\", use zipHealth or zipProfile.");
     expect(ASK_PROMPT).toContain("Housing, income, internet, education and jobs \"where\" questions answer by neighborhood with the tract tools (unit neighborhood, the default)");
     expect(ASK_PROMPT).toContain("unit \"tract\" only when the person asks about census tracts");
+  });
+  it("scopes the ZIP line's tract rule to health and food questions (follow-up)", () => {
+    expect(ASK_PROMPT).not.toContain("poverty or other community measures");
+    expect(ASK_PROMPT).toContain("For these health and food questions, use the tract tools only when the person names census tracts, a DYCU dataset or its code.");
   });
 });

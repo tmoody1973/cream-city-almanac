@@ -598,4 +598,14 @@ describe("by neighborhood (neighborhood answers)", () => {
     expect(r).toMatchObject({ tool: "relate-n", n: 2, fits: [], close: [] });
     expect((r as { cutA?: number }).cutA).toBeUndefined();
   });
+  it("names a comparison's neighborhoods left out for too little data (follow-up)", async () => {
+    const t = await seedNeighborhoods();
+    await t.run(async (ctx) => {
+      await ctx.db.insert("tractNeighborhoods", { geoid: "55079999999", city: [{ name: "East", share: 100 }], pieces: [{ name: "East", share: 100 }] });
+      await ctx.db.insert("tractPopulations", { geoid: "55079999999", population: 5000, period: 2022 });
+    });
+    installFakeFetch({ columns: POV_FIELDS, tractRows: povertyRows });
+    const r = await t.withIdentity(reader).action(api.tracts.relateTracts, { a: { code: "e02", column: "pov_rate" }, b: { code: "e02", column: "pov_rate" }, place: "City", year: "2022", mode: "relate" });
+    expect(r).toMatchObject({ tool: "relate-n", thin: ["East"] });
+  });
 });

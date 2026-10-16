@@ -77,7 +77,13 @@ export function nNotes(r: NDetail, full = false): string[] {
   const conf = headers(r)[0].confidence;
   if (conf) out.push(rangeNote(conf));
   if (r.small.length) out.push(smallNote(r.small, full));
-  if (r.tool === "rank-n" && r.thin.length) out.push(`Left out (too little data): ${r.thin.join(", ")}.`);
+  const thin = r.thin ?? []; // answers stored before this field existed have none
+  if (thin.length) out.push(`Left out (too little data): ${thin.join(", ")}.`);
+  const uncertain = r.tool === "rank-n" ? r.uncertain.map((x) => x.name) : r.uncertain;
+  if (uncertain.length) out.push(`Too uncertain to place: ${names(uncertain.map((name) => ({ name })))}.`);
+  // One census area means its whole range, which is why a high figure can still be "about the same".
+  const single = (r.tool === "rank-n" ? r.top : [...r.fits, ...r.close].map((p) => p.a)).filter((x) => x.tracts === 1);
+  if (single.length) out.push(`${names(single)} ${single.length === 1 ? "comes" : "come"} from a single census area, so ${single.length === 1 ? "its range is" : "their ranges are"} wide.`);
   return out;
 }
 
