@@ -58,18 +58,23 @@ async function tractMap(ctx: QueryCtx, name: string, year: number) {
   return url && tracts.length ? { url, geoids: tracts.map(tractGeoid) } : null;
 }
 
-const cityHoods = (ctx: QueryCtx) => ctx.db.query("neighborhoods").withIndex("by_definition_matchKey", (q) => q.eq("definition", "city")).collect();
-
-async function piecesFor(ctx: QueryCtx, name: string): Promise<Piece[]> {
-  const rows = await ctx.db.query("tractNeighborhoods").collect();
-  return rows.flatMap((r) => (r.pieces ?? []).filter((p) => p.name === name).map((p) => ({ geoid: r.geoid, share: p.share }))).sort((a, b) => b.share - a.share);
+// Each City neighborhood's tract pieces, from one read of the small tract table (never the neighborhoods' shapes, which
+// are megabytes: reading all of them on every sheet or search keystroke ran past Convex's 16 MB read limit).
+async function piecesByName(ctx: QueryCtx): Promise<Map<string, Piece[]>> {
+  const by = new Map<string, Piece[]>();
+  for (const r of await ctx.db.query("tractNeighborhoods").collect()) for (const p of r.pieces ?? []) by.set(p.name, [...(by.get(p.name) ?? []), { geoid: r.geoid, share: p.share }]);
+  for (const ps of by.values()) ps.sort((a, b) => b.share - a.share);
+  return by;
 }
+// ponytail: names from tract pieces, so a City neighborhood touching no tract by 1%+ (no residents) isn't listed; its page still opens.
+const cityNames = async (ctx: QueryCtx) => [...(await piecesByName(ctx)).keys()];
 
 // A City neighborhood DYCU doesn't profile, built from census tracts (spec 2026-10-16-city-neighborhood-fact-sheets §5–6).
-async function citySheet(ctx: QueryCtx, slug: string) {
-  const hood = (await cityHoods(ctx)).find((h) => areaSlug(h.name) === slug);
-  if (!hood) return null;
-  const pieces = await piecesFor(ctx, hood.name);
+async function citySheet(ctx: QueryCtx, slug: string, byName?: Map<string, Piece[]>) {
+  // A slug's words are the name's match key ("the-valley-pigsville" → "the valley pigsville"): one indexed read.
+  const hood = await ctx.db.query("neighborhoods").withIndex("by_definition_matchKey", (q) => q.eq("definition", "city").eq("matchKey", nameKey(slug.replace(/-/g, " ")))).first();
+  if (!hood || areaSlug(hood.name) !== slug) return null;
+  const pieces = (byName ?? (await piecesByName(ctx))).get(hood.name) ?? [];
   const pops = new Map<string, number>();
   const values = new Map<string, Record<string, Est>>();
   let period: number | null = null;
@@ -119,7 +124,7 @@ export const sheet = query({
     const census = asked ? await citySheet(ctx, asked) : null;
     if (census) return census;
     const dycu = new Set(all.flatMap((a) => a.slugs));
-    const cityAreas = (await cityHoods(ctx)).map((h) => ({ slug: areaSlug(h.name), name: h.name })).filter((h) => !dycu.has(h.slug)).sort((a, b) => a.name.localeCompare(b.name));
+    const cityAreas = (await cityNames(ctx)).map((name) => ({ slug: areaSlug(name), name })).filter((h) => !dycu.has(h.slug)).sort((a, b) => a.name.localeCompare(b.name));
     return { status: "not-found" as const, areas: all.map(({ slug: s, name }) => ({ slug: s, name })), cityAreas };
   },
 });
@@ -147,7 +152,7 @@ export const areaInSearch = query({
     const all = await portraitAreas(ctx);
     const hit = areaInText(q.slice(0, 200), all.map((a) => ({ ...a, spellings: [...new Set(a.members.map((m) => m.place as string))] })));
     if (hit) return { slug: hit.slug, name: hit.name };
-    const city = areaInText(q.slice(0, 200), (await cityHoods(ctx)).map((h) => ({ name: h.name, slug: areaSlug(h.name), spellings: [h.name] })));
+    const city = areaInText(q.slice(0, 200), (await cityNames(ctx)).map((name) => ({ name, slug: areaSlug(name), spellings: [name] })));
     return city ? { slug: city.slug, name: city.name } : null;
   },
 });
@@ -157,11 +162,12 @@ export const areaInSearch = query({
 export const checkCitySheets = internalQuery({
   args: { name: v.optional(v.string()) },
   handler: async (ctx, { name }) => {
-    const hoods = await cityHoods(ctx);
+    const byName = await piecesByName(ctx);
+    const hoods = [...byName.keys()].map((n) => ({ name: n }));
     let people = 0, small = 0, sheets = 0, thinFigures = 0;
     let built: unknown = undefined;
     for (const h of hoods) {
-      const s = await citySheet(ctx, areaSlug(h.name));
+      const s = await citySheet(ctx, areaSlug(h.name), byName);
       if (!s) continue;
       if (s.status === "small") { small++; people += s.people; continue; }
       sheets++;

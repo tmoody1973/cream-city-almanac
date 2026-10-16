@@ -2,6 +2,7 @@
 import { convexTest } from "convex-test";
 import { beforeEach, describe, expect, it } from "vitest";
 import { api, internal } from "./_generated/api";
+import { nameKey } from "./lib/neighborhoodNames";
 import schema from "./schema";
 
 const modules = import.meta.glob("./**/*.*s");
@@ -34,7 +35,7 @@ beforeEach(async () => {
     await ctx.db.insert("families", { key: "e02", code: "E02", name: "Households Living in Poverty", kind: "dataset", topic: "Economy", keywords: [], places: ["County"], years: [2023], latestModified: "2024-01-01", baseSearchText: "", searchText: "", dictionaryTab: null });
     await ctx.db.insert("members", { familyKey: "e02", hubId: "e1", title: "Poverty 2023", yearLabel: "2023", place: "County", years: [2023], kind: "dataset", landingPage: "", featureServerUrl: "https://services.arcgis.com/x/Poverty/FeatureServer/0", modified: "2024-01-01", downloads: {}, description: "", keywords: [] });
     // Two City neighborhoods built from two tracts, one small one, one with a DYCU name, one with a slash.
-    for (const name of ["Bay View", "Tiny Park", "Harambee", "The Valley/Pigsville"]) await ctx.db.insert("neighborhoods", { definition: "city", name, matchKey: name.toLowerCase() });
+    for (const name of ["Bay View", "Tiny Park", "Harambee", "The Valley/Pigsville"]) await ctx.db.insert("neighborhoods", { definition: "city", name, matchKey: nameKey(name) });
     await ctx.db.insert("tractNeighborhoods", { geoid: "55079000100", city: [], pieces: [{ name: "Bay View", share: 60 }, { name: "Tiny Park", share: 1 }, { name: "The Valley/Pigsville", share: 39 }] });
     await ctx.db.insert("tractNeighborhoods", { geoid: "55079000200", city: [], pieces: [{ name: "Bay View", share: 25 }] });
     await ctx.db.insert("tractPopulations", { geoid: "55079000100", population: 2000, period: 2024 });
@@ -124,7 +125,8 @@ describe("fact sheets built from census tracts", () => {
   });
   it("adds up every City neighborhood for the real-data check", async () => {
     await withTractFigures();
-    // Bay View 1,200 + 250 = 1,450 (a sheet); Tiny Park 20, The Valley/Pigsville 780, and the City's Harambee (no tract pieces, 0) are small.
-    expect(await t.query(internal.factSheet.checkCitySheets, {})).toMatchObject({ neighborhoods: 4, sheets: 1, small: 3, people: 2250 });
+    // Bay View 1,200 + 250 = 1,450 (a sheet); Tiny Park 20 and The Valley/Pigsville 780 are small. The City's Harambee
+    // touches no tract here, so it has no residents and isn't counted.
+    expect(await t.query(internal.factSheet.checkCitySheets, {})).toMatchObject({ neighborhoods: 3, sheets: 1, small: 2, people: 2250 });
   });
 });
