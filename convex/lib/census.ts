@@ -54,3 +54,20 @@ export function parseTractPopulations(json: unknown): { geoid: string; populatio
     return Number.isFinite(population) && population >= 0 && /^\d{11}$/.test(geoid) ? [{ geoid, population }] : [];
   });
 }
+
+// Every Milwaukee County tract, for the fact sheets built from tracts (spec 2026-10-16-city-neighborhood-fact-sheets §4.3).
+export const TRACTS_GEO = "for=tract:*&in=state:55&in=county:079";
+// Fewer tracts than this means a partial reply: keep last week's rows rather than replace a full week.
+export const MIN_TRACTS_FETCHED = 250;
+
+// The nine figures' codes per table kind, without the ZIP card's race codes (tracts don't need them).
+export const tractRequests = () => requestsFor().map((r) => ({ ...r, codes: r.codes.filter((c) => !RACE_CODES.includes(c)) }));
+
+// One row per tract; each row is read with parseCensus's rules, so a special value is never a number.
+export function parseTractCensus(body: unknown, codes: string[]): { geoid: string; values: Record<string, Est> }[] {
+  if (!Array.isArray(body) || !Array.isArray(body[0])) throw new Error("Census tract reply was not a table");
+  const [head, ...rows] = body as unknown[][];
+  const [s, c, t] = ["state", "county", "tract"].map((n) => head.indexOf(n));
+  if ([s, c, t].some((i) => i < 0)) throw new Error("Census tract reply has no tract columns");
+  return rows.map((r) => ({ geoid: `${r[s]}${r[c]}${r[t]}`, values: parseCensus([head, r], codes) }));
+}
