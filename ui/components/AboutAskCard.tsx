@@ -19,7 +19,7 @@ export function AboutAskCard({ code }: { code: string | null }) {
             <ProvenanceTag source="CITY" />
             <span className={styles.pencilNote} aria-hidden="true">
               who wrote it
-              <img src="/plates/about-arrow.png" alt="" className={styles.pencilArrow} width={238} height={268} />
+              <img src="/plates/about-arrow.png" alt="" className={styles.pencilArrow} width={84} height={95} />
             </span>
           </span>
         </div>

@@ -72,7 +72,7 @@ export function About({ sampleCode, cityLive, riverwest }: { sampleCode: string 
                   <span className={styles.verdict}>
                     {verdictText(riverwest.verdict)}
                     {(riverwest.verdict === "lower" || riverwest.verdict === "higher") && (
-                      <img src="/plates/about-underline.png" alt="" className={styles.pencilUnderline} width={1349} height={220} />
+                      <img src="/plates/about-underline.png" alt="" className={styles.pencilUnderline} width={480} height={78} />
                     )}
                   </span>
                 </span>
