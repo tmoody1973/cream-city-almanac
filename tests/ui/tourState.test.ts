@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clearDone, endAskStage, markDone, nextAskStage, pickTarget, replayKeys, shouldRun, tooltipFooter, type KeyStore } from "../../ui/lib/tourState";
+import { clearDone, endAskStage, markDone, nextAskStage, onScreen, pickTarget, replayKeys, shouldRun, tooltipFooter, type KeyStore } from "../../ui/lib/tourState";
 import { ASK_CARD_STEPS, ASK_STEPS, FRONT_STEPS } from "../../ui/lib/tourSteps";
 
 const store = (init: Record<string, string> = {}): KeyStore & { data: Record<string, string> } => {
@@ -61,8 +61,17 @@ describe("tour steps", () => {
       expect(s.title).toBe(s.title.toUpperCase());
       expect(s.content).not.toMatch(/\d/);
     }
-    expect(FRONT_STEPS[0]).toMatchObject({ targets: ['[data-tour="search"]'], title: "START WITH A WORD" });
+    expect(FRONT_STEPS[0]).toMatchObject({ targets: ['[data-tour="address"] input'], title: "START WITH YOUR ADDRESS" });
     expect(ASK_STEPS[0].targets).toEqual(['section[aria-label="Ask"] textarea', '[data-tour="ask-signin"]']);
     expect(ASK_CARD_STEPS.map((s) => s.targets[0])).toEqual(['[data-tour-card="tag"]', '[data-tour-card="export"]', '[data-tour-card="share"]', '[data-tour-card="next"]']);
+  });
+});
+
+describe("onScreen", () => {
+  it("is true only when the whole target fits in the window, so the tour scrolls just for targets out of view", () => {
+    expect(onScreen({ top: 250, bottom: 330 }, 900)).toBe(true);
+    expect(onScreen({ top: 850, bottom: 960 }, 900)).toBe(false);
+    expect(onScreen({ top: -20, bottom: 60 }, 900)).toBe(false);
+    expect(onScreen(null, 900)).toBe(false);
   });
 });

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ACTIONS, EVENTS, Joyride, STATUS, type EventData, type Step } from "react-joyride";
-import { markDone, pickTarget, safeStorage, type TourKey } from "@/ui/lib/tourState";
+import { markDone, onScreen, pickTarget, safeStorage, type TourKey } from "@/ui/lib/tourState";
 import type { TourStep } from "@/ui/lib/tourSteps";
 import { TourTooltip } from "./TourTooltip";
 
@@ -73,7 +73,7 @@ export default function Tour({ id, steps, onDone }: { id: TourKey; steps: TourSt
     <Joyride
       run={run}
       stepIndex={index}
-      steps={resolved}
+      steps={resolved.map((s, i) => (i === index ? { ...s, skipScroll: onScreen(document.querySelector(String(s.target))?.getBoundingClientRect() ?? null, window.innerHeight) } : s))}
       continuous
       onEvent={onEvent}
       tooltipComponent={TourTooltip}

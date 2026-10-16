@@ -63,3 +63,12 @@ test("the fact sheets are linked from the footer, How it works and the neighborh
     await expect(link).toHaveAttribute("href", "/n");
   }
 });
+
+test("a search that names a fact-sheet neighborhood leads with its sheet", async ({ page }) => {
+  await page.goto("/search?q=riverwest%20crime");
+  const lead = page.locator("[data-fact-lead] a");
+  await expect(lead).toContainText("Riverwest", { timeout: 15_000 });
+  await expect(lead).toHaveAttribute("href", "/n/riverwest");
+  await page.goto("/search?q=robbery");
+  await expect(page.locator("[data-fact-lead]")).toHaveCount(0);
+});

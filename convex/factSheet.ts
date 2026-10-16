@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import { internalQuery, query, type QueryCtx } from "./_generated/server";
 import { tablesFor } from "./catalog";
 import { areaSlug, FACTS, headline, neighborhoodFigure, tractGeoid, type PortraitTable } from "./lib/factSheet";
-import { matchName, nameKey } from "./lib/neighborhoodNames";
+import { areaInText, matchName, nameKey } from "./lib/neighborhoodNames";
 import { placeKey } from "./lib/portrait";
 import { newestCountyUrl } from "./lib/tractPlaces";
 
@@ -90,5 +90,15 @@ export const findSheet = query({
     const got = await assemble(ctx, m.row);
     if (!got) return { status: "no-neighborhood" as const, asked: neighborhood.slice(0, 80), nearest: [] };
     return { status: "ok" as const, slug: got.slug, name: got.name, year: got.year, period: got.period, headlines: got.headlines.filter((h) => CARD_FACTS.includes(h.id)) };
+  },
+});
+
+// Search: the fact sheet a search names ("riverwest crime" → Riverwest), so it can lead the results.
+export const areaInSearch = query({
+  args: { q: v.string() },
+  handler: async (ctx, { q }) => {
+    const all = await portraitAreas(ctx);
+    const hit = areaInText(q.slice(0, 200), all.map((a) => ({ ...a, spellings: [...new Set(a.members.map((m) => m.place as string))] })));
+    return hit ? { slug: hit.slug, name: hit.name } : null;
   },
 });

@@ -52,3 +52,6 @@ export const tooltipFooter = (index: number, size: number) => ({
 });
 
 export const pickTarget = (targets: string[], isVisible: (sel: string) => boolean): string | null => targets.find(isVisible) ?? null;
+
+// A step whose target already fits in the window doesn't scroll: opening the tour must not push the headline away.
+export const onScreen = (r: { top: number; bottom: number } | null, height: number): boolean => !!r && r.top >= 0 && r.bottom <= height;

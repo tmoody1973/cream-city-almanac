@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { FunctionReturnType } from "convex/server";
 import type { api } from "@/convex/_generated/api";
 import { CreditFooter } from "./CreditFooter";
+import { FindPlaceBox } from "./FindPlaceBox";
 import { LandingAskSample } from "./LandingAskSample";
 import { Masthead } from "./Masthead";
 import { ProvenanceTag } from "./ProvenanceTag";
@@ -18,11 +19,14 @@ export function Landing({ stats }: { stats: Stats }) {
     <div className={styles.page}>
       <Masthead side="" showDate={false} sideClassName={styles.side} nav={<SiteNav placement="masthead" current={null} />} />
       <main className={styles.main}>
-        <h2 className={styles.headline}>A guide to Milwaukee&apos;s public data.</h2>
-        <p className={styles.tagline}>Find it. Understand it. Check where it came from.</p>
+        <h2 className={styles.headline}>Look up your Milwaukee neighborhood.</h2>
+        <p className={styles.tagline}>Type your address to see it next to the rest of the city, or search any topic. Every number says where it came from.</p>
+        <div className={styles.address} data-tour="address">
+          <FindPlaceBox heading={false} />
+        </div>
         <form action="/search" method="get" className={styles.entry} role="search" data-tour="search">
           <label htmlFor="landing-q" className={styles.entryLabel}>
-            Topic:
+            Or a topic:
           </label>
           <input id="landing-q" name="q" type="search" placeholder="What are you looking into?" className={styles.entryInput} />
           <button type="submit" className={styles.button}>
