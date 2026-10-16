@@ -13,6 +13,10 @@ export const ASK_CITY = { kind: "token bucket" as const, rate: 60, period: HOUR,
 // Tract analyses from Ask; each reads DYCU's map server, which is shared, so same shape as City reads.
 export const ASK_TRACTS = { kind: "token bucket" as const, rate: 60, period: HOUR, capacity: 20 };
 
+// The shared e2e test account (convex/lib/testAccounts.ts, dev only): 10x the two limits a full browser suite drains.
+export const ASK_CITY_TEST = { kind: "token bucket" as const, rate: 600, period: HOUR, capacity: 200 };
+export const ASK_TRACTS_TEST = { kind: "token bucket" as const, rate: 600, period: HOUR, capacity: 200 };
+
 // Questions starting at once. The site budget only counts spend already recorded, so parallel questions could
 // overshoot it; these bound the overshoot: 5 at once per account (2 a minute after), 20 at once site-wide.
 export const ASK_RUNS = { kind: "token bucket" as const, rate: 120, period: HOUR, capacity: 5 };
@@ -34,6 +38,8 @@ export const rateLimiter = new RateLimiter(components.rateLimiter, {
   askEmbeds: ASK_EMBEDS,
   askCity: ASK_CITY,
   askTracts: ASK_TRACTS,
+  askCityTest: ASK_CITY_TEST,
+  askTractsTest: ASK_TRACTS_TEST,
   askRuns: ASK_RUNS,
   askRunsAll: ASK_RUNS_ALL,
   mapCity: MAP_CITY,

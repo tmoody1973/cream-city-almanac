@@ -9,6 +9,7 @@ import { buildSpan, SPAN_QUERY_TIMEOUT_MS } from "./lib/spanSql";
 import { pairEnd, pairsFor, SPAN_PAIRS, type AgePair, type BetweenPair, type SpanPair } from "./lib/spanPairs";
 import { MIN_CASES, shapeSpan, type SpanAll, type SpanGroup } from "./lib/spanShape";
 import { rateLimiter } from "./limits";
+import { accountLimit } from "./lib/testAccounts";
 
 // Spelled out per kind: Omit over a union keeps only the shared keys and loses the kind narrowing.
 type PairOut = Omit<BetweenPair, "familyKey" | "file"> | Omit<AgePair, "familyKey" | "file">;
@@ -40,7 +41,7 @@ export const timeSpan = action({
   handler: async (ctx, { code, pair: asked, ...args }): Promise<SpanResult> => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Sign in to ask");
-    if (!(await rateLimiter.limit(ctx, "askCity", { key: identity.tokenIdentifier })).ok) return { status: "busy" };
+    if (!(await rateLimiter.limit(ctx, accountLimit("askCity", identity), { key: identity.tokenIdentifier })).ok) return { status: "busy" };
     const wanted = code.trim().toUpperCase();
     const data = await ctx.runQuery(internal.city.countContext, { code: wanted });
     if (!data) return { status: "not-found", code: wanted };
