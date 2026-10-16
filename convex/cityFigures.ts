@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { internalAction, internalMutation, internalQuery } from "./_generated/server";
-import { censusUrl, parseCensus, requestsFor, scrubKey } from "./lib/census";
+import { censusUrl, MIN_TRACTS_FETCHED, parseCensus, parseTractCensus, requestsFor, scrubKey, tractRequests, TRACTS_GEO } from "./lib/census";
 import type { Est } from "./lib/factMath";
 import { fetchWithTimeout } from "./lib/http";
 
@@ -72,5 +72,42 @@ export const refreshCityFigures = internalAction({
       }
     }
     return notes;
+  },
+});
+
+export const replaceTractFigures = internalMutation({
+  args: { period: v.number(), rows: v.array(v.object({ geoid: v.string(), values: v.record(v.string(), vEst) })) },
+  handler: async (ctx, { period, rows }) => {
+    for (const old of await ctx.db.query("tractFigures").collect()) await ctx.db.delete(old._id);
+    const fetchedAt = Date.now();
+    for (const r of rows) await ctx.db.insert("tractFigures", { ...r, period, fetchedAt });
+  },
+});
+
+// Weekly (build.finish, after the City figures) or alone: `npx convex run cityFigures:refreshTractFigures`. Asks for the
+// newest stored City period, so a sheet and its City column match. Notes, never throws; a failure keeps last week's rows.
+export const refreshTractFigures = internalAction({
+  args: {},
+  handler: async (ctx): Promise<string[]> => {
+    const key = process.env.CENSUS_API_KEY;
+    if (!key) return ["CENSUS_API_KEY is not set (run: npx convex env set CENSUS_API_KEY <key>); tract figures not refreshed."];
+    const city = await ctx.runQuery(internal.cityFigures.latestCityFigures, {});
+    if (!city) return ["No City figures stored yet; tract figures not refreshed."];
+    try {
+      const by = new Map<string, Record<string, Est>>();
+      for (const r of tractRequests()) {
+        const res = await fetchWithTimeout(censusUrl(city.period, r.kind, r.codes, key, TRACTS_GEO), {}, TIMEOUT_MS);
+        if (!res.ok) throw new Error(`Census request failed: ${res.status}`);
+        const tracts = parseTractCensus(await res.json(), r.codes);
+        // Each table's reply must be whole: one short table would blank its figures on every sheet for a week.
+        if (tracts.length < MIN_TRACTS_FETCHED) throw new Error(`only ${tracts.length} tracts came back`);
+        for (const t of tracts) by.set(t.geoid, { ...(by.get(t.geoid) ?? {}), ...t.values });
+      }
+      await ctx.runMutation(internal.cityFigures.replaceTractFigures, { period: city.period, rows: [...by].map(([geoid, values]) => ({ geoid, values })) });
+      return [];
+    } catch (e) {
+      // Never store the key: error text from fetch can include the full request URL.
+      return [`Tract figures unavailable, kept last week's: ${scrubKey(e instanceof Error ? e.message : String(e))}`];
+    }
   },
 });

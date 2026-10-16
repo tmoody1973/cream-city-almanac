@@ -10,7 +10,10 @@ import { askAboutArea, notInCityText, PLACE_PRIVACY, PLACE_PRIVACY_SHORT, placeR
 import styles from "./factSheet.module.css";
 
 const AskAbout = ({ area }: { area: ReturnType<typeof askAboutArea> }) => (
-  <p>{area.text} <Link href={area.href}>Try &ldquo;{area.question}&rdquo; →</Link></p>
+  <>
+    <p>{area.text} <Link href={area.sheet.href}>{area.sheet.label}</Link></p>
+    <p>Ask can also count City records there. <Link href={area.href}>Try &ldquo;{area.question}&rdquo; →</Link></p>
+  </>
 );
 
 // Where an address is: its fact sheet link (or which City neighborhood it is in), then its City boundaries.

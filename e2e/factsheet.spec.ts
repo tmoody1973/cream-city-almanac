@@ -46,7 +46,7 @@ test("an address outside DYCU's areas says which City neighborhood it is in", as
   await page.goto("/n");
   await page.getByLabel("Your address").fill("2000 S Kinnickinnic Ave");
   await page.getByRole("button", { name: "Find" }).click();
-  await expect(page.locator("[data-place-message]")).toContainText(/neighborhood\. Data You Can Use doesn't make a fact sheet for it/, { timeout: 20_000 });
+  await expect(page.locator("[data-place-message]").getByRole("link", { name: /^Open .+'s fact sheet →$/ })).toHaveAttribute("href", /^\/n\/[a-z0-9-]+$/, { timeout: 20_000 });
   // The suggestion opens Ask with a question it can answer for any City neighborhood (a City-records count), never census tracts.
   const link = page.locator("[data-place-message]").getByRole("link", { name: /^Try “How many robberies in .+ this year\?” →$/ });
   await expect(link).toHaveAttribute("href", /^\/ask\?prompt=How%20many%20robberies%20in%20/);
@@ -79,4 +79,20 @@ test("a search that names a fact-sheet neighborhood leads with its sheet", async
   expect(size).toBeGreaterThanOrEqual(22);
   await page.goto("/search?q=robbery");
   await expect(page.locator("[data-fact-lead]")).toHaveCount(0);
+});
+
+test("a City neighborhood DYCU doesn't profile opens a sheet built from census tracts", async ({ page }) => {
+  await page.goto("/n/bay-view");
+  await expect(page.getByRole("heading", { level: 2 }).first()).toContainText("Bay View");
+  await expect(page.locator("[data-period]")).toContainText("built from census tracts");
+  await expect(page.locator("[data-period] abbr")).toHaveText("CENSUS");
+  await expect(page.locator("tbody tr[data-fact]")).toHaveCount(8);
+  await expect(page.getByText(/^Built from \d+ census tracts?, each counted by the share of its land in Bay View\./)).toBeVisible();
+  await expect(page.getByRole("link", { name: /^20\d\d$/ })).toHaveCount(0); // no year switcher
+});
+
+test("the fact sheet list adds every City neighborhood", async ({ page }) => {
+  await page.goto("/n");
+  await expect(page.getByRole("heading", { name: "Every City neighborhood" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Bay View", exact: true })).toHaveAttribute("href", "/n/bay-view");
 });

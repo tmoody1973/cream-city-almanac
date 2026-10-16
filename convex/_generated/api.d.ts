@@ -26,6 +26,7 @@ import type * as lib_boundaries from "../lib/boundaries.js";
 import type * as lib_card from "../lib/card.js";
 import type * as lib_census from "../lib/census.js";
 import type * as lib_chunk from "../lib/chunk.js";
+import type * as lib_cityFactSheet from "../lib/cityFactSheet.js";
 import type * as lib_cityFamilies from "../lib/cityFamilies.js";
 import type * as lib_cityMap from "../lib/cityMap.js";
 import type * as lib_cityMeasures from "../lib/cityMeasures.js";
@@ -123,6 +124,7 @@ declare const fullApi: ApiFromModules<{
   "lib/card": typeof lib_card;
   "lib/census": typeof lib_census;
   "lib/chunk": typeof lib_chunk;
+  "lib/cityFactSheet": typeof lib_cityFactSheet;
   "lib/cityFamilies": typeof lib_cityFamilies;
   "lib/cityMap": typeof lib_cityMap;
   "lib/cityMeasures": typeof lib_cityMeasures;

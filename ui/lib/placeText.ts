@@ -1,4 +1,5 @@
 import type { FollowUp } from "@/ui/components/FollowUps";
+import { areaSlug } from "@/convex/lib/factSheet";
 import type { PlaceResult } from "@/convex/places";
 
 export const PLACE_PRIVACY = "This address was sent to the U.S. Census Bureau's geocoder to find its location; Cream City Almanac doesn't keep it.";
@@ -45,11 +46,12 @@ export function placeFollowUps(r: Extract<PlaceResult, { status: "ok" }>): Follo
   return out;
 }
 
-// A City neighborhood DYCU doesn't profile has no fact sheet; Ask can still count City records inside its boundary.
+// A City neighborhood DYCU doesn't profile: its sheet built from census tracts, and a City-records count Ask can answer.
 export const askAboutArea = (neighborhood: string) => {
   const question = `How many robberies in ${neighborhood} this year?`;
   return {
-    text: `That address is in the City's ${neighborhood} neighborhood. Data You Can Use doesn't make a fact sheet for it, but Ask can count City records there.`,
+    text: `That address is in the City's ${neighborhood} neighborhood.`,
+    sheet: { href: `/n/${areaSlug(neighborhood)}`, label: `Open ${neighborhood}'s fact sheet →` },
     question,
     href: `/ask?prompt=${encodeURIComponent(question)}`,
   };

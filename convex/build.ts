@@ -385,6 +385,7 @@ export const finish = internalAction({
     let cityNotes: string[];
     try {
       cityNotes = await ctx.runAction(internal.cityFigures.refreshCityFigures, {});
+      cityNotes.push(...(await ctx.runAction(internal.cityFigures.refreshTractFigures, {})));
     } catch (e) {
       cityNotes = [`City figures refresh failed: ${message(e)}`];
     }
