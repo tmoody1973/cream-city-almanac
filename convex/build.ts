@@ -501,7 +501,11 @@ async function refreshTractPopulations(ctx: ActionCtx): Promise<string[]> {
     const rows = parseTractPopulations(await (await fetchOk(tractPopulationUrl(city.period, key), "Census tract populations")).json());
     if (rows.length === 0) throw new Error("the Census returned no tracts");
     await ctx.runMutation(internal.buildStore.replaceTractPopulations, { rows: rows.map((r) => ({ ...r, period: city.period })) });
-    return [];
+    // City tracts with no population count no residents, so their neighborhoods lean on the others (spec §7).
+    const have = new Set(rows.map((r) => r.geoid));
+    const { pieces } = await ctx.runQuery(internal.tracts.neighborhoodInputs, {});
+    const missing = pieces.filter((p) => p.pieces.length && !have.has(p.geoid)).length;
+    return missing ? [`${missing} City census ${missing === 1 ? "area has" : "areas have"} no Census population, so ${missing === 1 ? "its" : "their"} residents don't count toward neighborhood figures.`] : [];
   } catch (e) {
     return [`Tract populations unavailable, kept last week's: ${scrubKey(message(e))}`];
   }

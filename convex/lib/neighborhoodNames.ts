@@ -10,7 +10,7 @@ export function nameKey(s: string): string {
     .trim();
 }
 
-export const titleCase = (s: string) => s.toLowerCase().replace(/(^|[\s-])([a-z])/g, (_, sep: string, c: string) => sep + c.toUpperCase());
+export const titleCase = (s: string) => s.toLowerCase().replace(/(^|[\s\/-])([a-z])/g, (_, sep: string, c: string) => sep + c.toUpperCase());
 
 export function editDistance(a: string, b: string): number {
   let prev = Array.from({ length: b.length + 1 }, (_, j) => j);

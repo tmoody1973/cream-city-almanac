@@ -8,7 +8,7 @@ import { api } from "@/convex/_generated/api";
 import type { MapData } from "@/convex/lib/cityMap";
 import { escapeHtml, fetchLayer, labelFields } from "@/ui/lib/arcgisLayer";
 import { cellPopupText, cellsToGeoJSON, SOLID_OPACITY, summarySentence } from "@/ui/lib/mapCells";
-import { geojsonBounds, shapeSummary, tractShapesUrl } from "@/ui/lib/tractShapes";
+import { geojsonBounds, mapNote, shapeSummary, tractShapesUrl } from "@/ui/lib/tractShapes";
 import { useNight } from "@/ui/lib/useNight";
 import styles from "./map.module.css";
 
@@ -198,7 +198,7 @@ export default function CityMap({ cells = null, count = 0, boundary = null, laye
     const t = tractsNow.current;
     if (!t) return;
     const url = tractShapesUrl(t.url, [...t.fits, ...t.close], t.field);
-    if (!url) { setTractNote("Tract map unavailable."); return; }
+    if (!url) { setTractNote(mapNote(t.noun)); return; }
     const ctl = new AbortController();
     (async () => {
       try {
@@ -207,7 +207,7 @@ export default function CityMap({ cells = null, count = 0, boundary = null, laye
         if (!res.ok || body.error || !Array.isArray(body.features) || !body.features.length) throw new Error("no shapes");
         setTractData({ type: "FeatureCollection", features: body.features });
       } catch {
-        if (!ctl.signal.aborted) setTractNote("Tract map unavailable.");
+        if (!ctl.signal.aborted) setTractNote(mapNote(t.noun));
       }
     })();
     return () => ctl.abort();

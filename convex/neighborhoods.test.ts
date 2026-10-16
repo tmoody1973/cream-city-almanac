@@ -148,6 +148,12 @@ describe("refreshNeighborhoods", () => {
     expect(await t.run((ctx) => ctx.db.query("tractPopulations").collect())).toMatchObject([{ geoid: "55079186000", population: 4012, period: 2024 }]);
     vi.unstubAllEnvs();
   });
+  it("notes City tracts the Census gave no population (spec §7, follow-up)", async () => {
+    const t = await seed();
+    await withCensus(t);
+    installFakeFetch({ cityNeighborhoods: layer, tractShapes: tractLayer, zctaShapes: zipLayer, census: () => [["B01003_001E", "state", "county", "tract"], ["4012", "55", "079", "000100"]] });
+    expect(await t.action(internal.build.refreshNeighborhoods, {})).toEqual(["1 City census area has no Census population, so its residents don't count toward neighborhood figures."]);
+  });
   it("keeps last week's populations, and never puts the key in a note, when the Census fails (review focus 5)", async () => {
     const t = await seed();
     await t.run((ctx) => ctx.db.insert("cityFigures", { period: 2024, values: {}, fetchedAt: 0 }));

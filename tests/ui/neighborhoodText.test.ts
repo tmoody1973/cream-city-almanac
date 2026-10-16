@@ -74,4 +74,22 @@ describe("final review fixes", () => {
     expect(n).toContain("Ranges are the Census Bureau's margins of error, at 90% confidence.");
     expect(n.join("\n")).not.toMatch(/Estimate -|\(90% confidence \(Census\)\)/);
   });
+describe("follow-ups", () => {
+  const one = (name: string, value: number) => ({ ...row(name, value, "same"), tracts: 1 });
+  it("says which neighborhoods come from a single census area", () => {
+    const r = { ...rank, top: [row("Borchert Field", 76.3, "higher"), one("Bradley Estates", 73.5), one("Brynwood", 73.5)] };
+    expect(nNotes(r)).toContain("Bradley Estates, Brynwood come from a single census area, so their ranges are wide.");
+    expect(nNotes(rank).join("\n")).not.toContain("single census area");
+  });
+  it("names neighborhoods too uncertain to place", () => {
+    const r = { ...rank, uncertain: [one("Haymarket", 40)] };
+    expect(nNotes(r)).toContain("Too uncertain to place: Haymarket.");
+  });
+  it("names a comparison's neighborhoods left out for too little data", () => {
+    const rel: NRelateDetail = { status: "ok", tool: "relate-n", mode: "relate", a: head, b: head, city: { a: null, b: null }, n: 40, strength: "weak", direction: "higher", fits: [], close: [], uncertain: ["Haymarket"], small: [], thin: ["Lake Park"], key: "tracts:t" };
+    const n = nNotes(rel);
+    expect(n).toContain("Left out (too little data): Lake Park.");
+    expect(n).toContain("Too uncertain to place: Haymarket.");
+  });
+});
 });

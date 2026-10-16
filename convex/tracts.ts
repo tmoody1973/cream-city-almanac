@@ -359,7 +359,7 @@ export type RelateDetail = {
 // Neighborhood answers built from census tracts (spec 2026-10-15-neighborhood-answers §4–§5).
 export type NRow = NFigure & { verdict: NVerdict | null };
 export type NRankDetail = { status: "ok"; tool: "rank-n"; header: Header; direction: "high" | "low"; city: NFigure | null; top: NRow[]; uncertain: NRow[]; small: { name: string; residents: number }[]; thin: string[]; key: string };
-export type NRelateDetail = { status: "ok"; tool: "relate-n"; mode: "relate" | "mismatch"; a: Header; b: Header; city: { a: NFigure | null; b: NFigure | null }; n: number; strength: "too-few" | "little" | "weak" | "moderate" | "strong"; direction: "higher" | "lower"; aSide?: "high" | "low"; bSide?: "high" | "low"; cutA?: number; fits: { name: string; a: NRow; b: NRow }[]; close: { name: string; a: NRow; b: NRow }[]; uncertain: string[]; small: { name: string; residents: number }[]; key: string };
+export type NRelateDetail = { status: "ok"; tool: "relate-n"; mode: "relate" | "mismatch"; a: Header; b: Header; city: { a: NFigure | null; b: NFigure | null }; n: number; strength: "too-few" | "little" | "weak" | "moderate" | "strong"; direction: "higher" | "lower"; aSide?: "high" | "low"; bSide?: "high" | "low"; cutA?: number; fits: { name: string; a: NRow; b: NRow }[]; close: { name: string; a: NRow; b: NRow }[]; uncertain: string[]; small: { name: string; residents: number }[]; thin?: string[]; key: string };
 // RankDetail and RelateDetail gain: unitNote?: string
 
 
@@ -500,7 +500,8 @@ export const relateTracts = action({
             city: { a: na.city, b: nb.city }, n: together.n, strength: together.strength, direction: together.direction,
             ...(mm ? { aSide, bSide, cutA: mm.cutA } : {}),
             fits: (mm?.fits ?? []).map(both), close: (mm?.close ?? []).map(both), uncertain: mm?.uncertain ?? [],
-            small: [...na.small, ...nb.small.filter((s) => !na.small.some((x) => x.name === s.name))], key,
+            small: [...na.small, ...nb.small.filter((s) => !na.small.some((x) => x.name === s.name))],
+            thin: [...new Set([...na.thin, ...nb.thin])], key,
           };
           await save(detail);
           return detail;

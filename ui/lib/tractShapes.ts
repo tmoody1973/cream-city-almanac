@@ -1,9 +1,14 @@
 // The highlighted shapes' outlines. Ids are checked before they go in the where clause: tract ids or ZIPs (GEOID), or the
 // City layer's neighborhood names (letters, digits, spaces and . ' & - /; quotes doubled), so nothing else is injected.
+// When the outlines can't be drawn: "Neighborhood map unavailable." on a neighborhood card.
+export const mapNote = (noun?: string) => `${noun ? noun[0].toUpperCase() + noun.slice(1) : "Tract"} map unavailable.`;
+
 export function tractShapesUrl(featureServerUrl: string, ids: string[], field = "GEOID"): string | null {
   const ok = field === "GEOID" ? (g: string) => /^(\d{11}|\d{5})$/.test(g) : (g: string) => /^[A-Z0-9 .'&\/-]{1,60}$/.test(g);
-  if (!ids.length || ids.some((g) => !ok(g))) return null;
-  const where = `${field} IN (${ids.map((g) => `'${g.replace(/'/g, "''")}'`).join(",")})`;
+  // ponytail: an id that fails the check is dropped, not the whole map; nothing unchecked reaches the query.
+  const safe = ids.filter(ok);
+  if (!safe.length) return null;
+  const where = `${field} IN (${safe.map((g) => `'${g.replace(/'/g, "''")}'`).join(",")})`;
   return `${featureServerUrl}/query?where=${encodeURIComponent(where)}&outFields=${field}&outSR=4326&f=geojson`;
 }
 

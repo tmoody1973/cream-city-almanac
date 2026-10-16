@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { capTractIds, geojsonBounds, shapeSummary, tractShapesUrl } from "../../ui/lib/tractShapes";
+import { capTractIds, geojsonBounds, mapNote, shapeSummary, tractShapesUrl } from "../../ui/lib/tractShapes";
 
 describe("tract shapes", () => {
   it("asks for just those tracts as GeoJSON in map coordinates", () => {
@@ -7,8 +7,10 @@ describe("tract shapes", () => {
       "https://x/FeatureServer/0/query?where=" + encodeURIComponent("GEOID IN ('55079186000','55079030300')") + "&outFields=GEOID&outSR=4326&f=geojson",
     );
   });
-  it("refuses anything that isn't an 11-digit tract id, and an empty list", () => {
-    expect(tractShapesUrl("https://x/FeatureServer/0", ["55079186000", "1' OR '1'='1"])).toBeNull();
+  it("never puts anything but an 11-digit tract id in the query, and refuses an empty list", () => {
+    const url = tractShapesUrl("https://x/FeatureServer/0", ["55079186000", "1' OR '1'='1"]);
+    expect(url).toContain(encodeURIComponent("GEOID IN ('55079186000')"));
+    expect(decodeURIComponent(url!)).not.toContain("OR");
     expect(tractShapesUrl("https://x/FeatureServer/0", [])).toBeNull();
   });
 });
@@ -50,5 +52,16 @@ describe("geojsonBounds", () => {
   it("asks the City's neighborhood layer by name, doubling quotes and refusing anything else (review focus 3)", () => {
     expect(tractShapesUrl("https://x/MapServer/4", ["O'CONNOR", "ST. JOSEPH"], "NEIGHBORHD")).toContain(encodeURIComponent("NEIGHBORHD IN ('O''CONNOR','ST. JOSEPH')"));
     expect(tractShapesUrl("https://x/MapServer/4", ["X); DROP"], "NEIGHBORHD")).toBeNull();
+  });
+});
+
+describe("one odd name doesn't blank the map (follow-up)", () => {
+  it("drops a name it can't safely ask for and keeps the rest", () => {
+    const url = tractShapesUrl("https://x/MapServer/4", ["HARAMBEE", "BAD, NAME (X)", "LINDSAY HEIGHTS"], "NEIGHBORHD");
+    expect(url).toContain(encodeURIComponent("NEIGHBORHD IN ('HARAMBEE','LINDSAY HEIGHTS')"));
+  });
+  it("names the map that's missing", () => {
+    expect(mapNote("neighborhood")).toBe("Neighborhood map unavailable.");
+    expect(mapNote(undefined)).toBe("Tract map unavailable.");
   });
 });

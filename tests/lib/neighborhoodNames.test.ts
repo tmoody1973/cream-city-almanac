@@ -27,3 +27,9 @@ describe("neighborhood names", () => {
     expect(matchName("   ", rows).kind).toBe("none");
   });
 });
+
+describe("title case after a slash (follow-up)", () => {
+  it("capitalizes each part of a slashed City name", () => {
+    expect(titleCase("THE VALLEY/PIGSVILLE")).toBe("The Valley/Pigsville");
+  });
+});
