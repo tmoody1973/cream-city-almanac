@@ -104,9 +104,11 @@ describe("fact sheets built from census tracts", () => {
   it("gives a small neighborhood a page without figures, listing its tracts", async () => {
     expect(await t.query(api.factSheet.sheet, { slug: "tiny-park" })).toEqual(expect.objectContaining({ status: "small", name: "Tiny Park", people: 20, tracts: [{ number: "1", share: 1 }] }));
   });
-  it("opens with every figure missing before the first tract fetch, instead of the index", async () => {
+  it("opens with every figure missing before the first tract fetch, instead of the index, and says they aren't loaded", async () => {
     const r = await t.query(api.factSheet.sheet, { slug: "bay-view" });
-    expect(r).toMatchObject({ status: "ok", kind: "census" });
+    expect(r).toMatchObject({ status: "ok", kind: "census", loaded: false });
+    await withTractFigures();
+    expect(await t.query(api.factSheet.sheet, { slug: "bay-view" })).toMatchObject({ loaded: true });
     if (r.status === "ok") expect(r.headlines.filter((h) => !h.isCount).every((h) => h.hood === null)).toBe(true);
   });
   it("never pairs tract figures with a newer period's City column", async () => {
@@ -128,5 +130,17 @@ describe("fact sheets built from census tracts", () => {
     // Bay View 1,200 + 250 = 1,450 (a sheet); Tiny Park 20 and The Valley/Pigsville 780 are small. The City's Harambee
     // touches no tract here, so it has no residents and isn't counted.
     expect(await t.query(internal.factSheet.checkCitySheets, {})).toMatchObject({ neighborhoods: 3, sheets: 1, small: 2, people: 2250 });
+  });
+  it("sends a City neighborhood that's part of a DYCU area's name to DYCU's sheet everywhere (review: Important 2)", async () => {
+    await t.run(async (ctx) => {
+      await ctx.db.insert("neighborhoods", { definition: "city", name: "Layton Park", matchKey: nameKey("Layton Park") });
+      await ctx.db.insert("tractNeighborhoods", { geoid: "55079000300", city: [], pieces: [{ name: "Layton Park", share: 90 }] });
+      await ctx.db.insert("tractPopulations", { geoid: "55079000300", population: 4000, period: 2024 });
+    });
+    expect(await t.query(api.factSheet.sheet, { slug: "layton-park" })).toMatchObject({ status: "ok", name: "Silver City, Layton Park, and Burnham Park" });
+    expect((await t.query(api.factSheet.sheet, { slug: "layton-park" }) as { kind?: string }).kind).toBeUndefined();
+    const index = await t.query(api.factSheet.sheet, { slug: "" });
+    if (index.status === "not-found") expect(index.cityAreas.map((a) => a.slug)).not.toContain("layton-park");
+    expect(await t.query(api.factSheet.areaInSearch, { q: "layton park crime" })).toEqual({ slug: "silver-city-layton-park-and-burnham-park", name: "Silver City, Layton Park, and Burnham Park" });
   });
 });

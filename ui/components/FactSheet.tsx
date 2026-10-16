@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { Est } from "@/convex/lib/factMath";
 import type { Figure, Headline, PortraitTable } from "@/convex/lib/factSheet";
-import { BUILT_SOURCE, builtNote, CENSUS_SOURCE, countLine, factSheetExport, margin, MARGIN_NOTE, MISSING, MISSING_BUILT, NO_CITY, NOTE_APPROX, pct, populationNote, portraitCell, smallLine, verdictText } from "@/ui/lib/factText";
+import { BUILT_SOURCE, builtNote, CENSUS_SOURCE, NOT_LOADED, countLine, factSheetExport, margin, MARGIN_NOTE, MISSING, MISSING_BUILT, NO_CITY, NOTE_APPROX, pct, populationNote, portraitCell, smallLine, verdictText } from "@/ui/lib/factText";
 import { CreditFooter } from "./CreditFooter";
 import { ExportBar } from "./ExportBar";
 import { FindPlaceBox } from "./FindPlaceBox";
@@ -19,7 +19,7 @@ export type SheetOk = {
   status: "ok"; slug: string; name: string; year: number; years: number[]; period: string;
   headlines: Headline[]; tables: PortraitTable[]; source: { title: string; landingPage: string } | null;
   map: { url: string; geoids: string[] } | null; cityFetchedAt: number | null;
-  kind?: "census"; built?: { tracts: number };
+  kind?: "census"; built?: { tracts: number }; loaded?: boolean;
 };
 export type SheetSmall = { status: "small"; slug: string; name: string; people: number; tracts: { number: string; share: number }[]; map: { url: string; geoids: string[] } | null };
 
@@ -125,6 +125,7 @@ export function FactSheet({ s }: { s: SheetOk }) {
               </figure>
             )}
             <div className={styles.notes}>
+              {s.built && s.loaded === false && <p data-not-loaded>{NOT_LOADED}</p>}
               {s.built ? <p>{builtNote(s.name, s.built.tracts)}</p> : <p>{NOTE_APPROX} {MARGIN_NOTE}</p>}
               {!s.built && people?.hood && populationNote(s.tables) && <p className={styles.muted}>{populationNote(s.tables)}</p>}
               {s.tables.length > 0 && <Tables tables={s.tables} year={s.year} />}

@@ -110,4 +110,17 @@ describe("refreshTractFigures", () => {
     const notes = await t.action(internal.cityFigures.refreshTractFigures, {});
     expect(notes.join(" ")).not.toContain("SECRET123");
   });
+  it("refuses the week when any one table's reply is short, even if the others are full (review: Important 3)", async () => {
+    const t = await seed();
+    process.env.CENSUS_API_KEY = "k";
+    installFakeFetch({ census: reply });
+    await t.action(internal.cityFigures.refreshCityFigures, {});
+    installFakeFetch({ census: (url) => (isTract(url) ? tractReply(300)(url) : reply(url)) });
+    await t.action(internal.cityFigures.refreshTractFigures, {});
+    installFakeFetch({ census: (url) => (isTract(url) ? tractReply(url.includes("/acs5/profile") ? 12 : 300)(url) : reply(url)) });
+    expect((await t.action(internal.cityFigures.refreshTractFigures, {}))[0]).toMatch(/Tract figures unavailable, kept last week's: only 12 tracts/);
+    const rows = await t.run((ctx) => ctx.db.query("tractFigures").collect());
+    expect(rows).toHaveLength(300);
+    expect(rows.every((r) => r.values.DP04_0136)).toBe(true);
+  });
 });

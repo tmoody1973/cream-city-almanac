@@ -70,10 +70,23 @@ async function piecesByName(ctx: QueryCtx): Promise<Map<string, Piece[]>> {
 const cityNames = async (ctx: QueryCtx) => [...(await piecesByName(ctx)).keys()];
 
 // A City neighborhood DYCU doesn't profile, built from census tracts (spec 2026-10-16-city-neighborhood-fact-sheets §5–6).
-async function citySheet(ctx: QueryCtx, slug: string, byName?: Map<string, Piece[]>) {
-  // A slug's words are the name's match key ("the-valley-pigsville" → "the valley pigsville"): one indexed read.
+// A slug's words are the name's match key ("the-valley-pigsville" → "the valley pigsville"): one indexed read.
+async function cityHood(ctx: QueryCtx, slug: string) {
   const hood = await ctx.db.query("neighborhoods").withIndex("by_definition_matchKey", (q) => q.eq("definition", "city").eq("matchKey", nameKey(slug.replace(/-/g, " ")))).first();
-  if (!hood || areaSlug(hood.name) !== slug) return null;
+  return hood && areaSlug(hood.name) === slug ? hood : null;
+}
+
+// Decision 054, DYCU first: a City name that is, as whole words, part of exactly one DYCU area's name ("Layton Park" in
+// "Silver City, Layton Park, and Burnham Park") is that area, as Ask's findSheet already reads it.
+function dycuCovering(name: string, all: Awaited<ReturnType<typeof portraitAreas>>) {
+  const key = ` ${nameKey(name)} `;
+  const hits = all.filter((a) => a.members.some((m) => ` ${nameKey(m.place as string)} `.includes(key)));
+  return hits.length === 1 ? hits[0] : null;
+}
+
+async function citySheet(ctx: QueryCtx, slug: string, byName?: Map<string, Piece[]>) {
+  const hood = await cityHood(ctx, slug);
+  if (!hood) return null;
   const pieces = (byName ?? (await piecesByName(ctx))).get(hood.name) ?? [];
   const pops = new Map<string, number>();
   const values = new Map<string, Record<string, Est>>();
@@ -94,7 +107,7 @@ async function citySheet(ctx: QueryCtx, slug: string, byName?: Map<string, Piece
   if (built.status === "small") return { status: "small" as const, slug, name: hood.name, people: built.people, tracts: pieces.map((p) => ({ number: tractNumber(p.geoid), share: p.share })), map };
   return {
     status: "ok" as const, kind: "census" as const, slug, name: hood.name, year: y, years: [] as number[], period: `${y - 4}–${y}`,
-    headlines: built.headlines, tables: [], source: null, map, cityFetchedAt: city?.fetchedAt ?? null, built: { tracts: pieces.length },
+    headlines: built.headlines, tables: [], source: null, map, cityFetchedAt: city?.fetchedAt ?? null, built: { tracts: pieces.length }, loaded: period !== null,
   };
 }
 
@@ -121,10 +134,14 @@ export const sheet = query({
     const area = all.find((a) => a.slugs.includes(asked));
     const got = area ? await assemble(ctx, area, year) : null;
     if (got) return got;
+    const hood = asked ? await cityHood(ctx, asked) : null;
+    const cover = hood ? dycuCovering(hood.name, all) : null;
+    const covered = cover ? await assemble(ctx, cover, year) : null;
+    if (covered) return covered;
     const census = asked ? await citySheet(ctx, asked) : null;
     if (census) return census;
     const dycu = new Set(all.flatMap((a) => a.slugs));
-    const cityAreas = (await cityNames(ctx)).map((name) => ({ slug: areaSlug(name), name })).filter((h) => !dycu.has(h.slug)).sort((a, b) => a.name.localeCompare(b.name));
+    const cityAreas = (await cityNames(ctx)).map((name) => ({ slug: areaSlug(name), name })).filter((h) => !dycu.has(h.slug) && !dycuCovering(h.name, all)).sort((a, b) => a.name.localeCompare(b.name));
     return { status: "not-found" as const, areas: all.map(({ slug: s, name }) => ({ slug: s, name })), cityAreas };
   },
 });
@@ -153,7 +170,8 @@ export const areaInSearch = query({
     const hit = areaInText(q.slice(0, 200), all.map((a) => ({ ...a, spellings: [...new Set(a.members.map((m) => m.place as string))] })));
     if (hit) return { slug: hit.slug, name: hit.name };
     const city = areaInText(q.slice(0, 200), (await cityNames(ctx)).map((name) => ({ name, slug: areaSlug(name), spellings: [name] })));
-    return city ? { slug: city.slug, name: city.name } : null;
+    const cover = city ? dycuCovering(city.name, all) : null;
+    return cover ? { slug: cover.slug, name: cover.name } : city ? { slug: city.slug, name: city.name } : null;
   },
 });
 

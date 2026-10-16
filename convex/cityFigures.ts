@@ -98,9 +98,11 @@ export const refreshTractFigures = internalAction({
       for (const r of tractRequests()) {
         const res = await fetchWithTimeout(censusUrl(city.period, r.kind, r.codes, key, TRACTS_GEO), {}, TIMEOUT_MS);
         if (!res.ok) throw new Error(`Census request failed: ${res.status}`);
-        for (const t of parseTractCensus(await res.json(), r.codes)) by.set(t.geoid, { ...(by.get(t.geoid) ?? {}), ...t.values });
+        const tracts = parseTractCensus(await res.json(), r.codes);
+        // Each table's reply must be whole: one short table would blank its figures on every sheet for a week.
+        if (tracts.length < MIN_TRACTS_FETCHED) throw new Error(`only ${tracts.length} tracts came back`);
+        for (const t of tracts) by.set(t.geoid, { ...(by.get(t.geoid) ?? {}), ...t.values });
       }
-      if (by.size < MIN_TRACTS_FETCHED) throw new Error(`only ${by.size} tracts came back`);
       await ctx.runMutation(internal.cityFigures.replaceTractFigures, { period: city.period, rows: [...by].map(([geoid, values]) => ({ geoid, values })) });
       return [];
     } catch (e) {

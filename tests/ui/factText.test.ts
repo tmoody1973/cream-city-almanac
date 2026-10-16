@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BUILT_SOURCE, builtNote, CENSUS_SOURCE, countLine, factSheetExport, margin, MISSING_BUILT, NOTE_APPROX, pct, populationNote, portraitCell, smallLine, verdictText } from "../../ui/lib/factText";
+import { BUILT_SOURCE, builtNote, NOT_LOADED, CENSUS_SOURCE, countLine, factSheetExport, margin, MISSING_BUILT, NOTE_APPROX, pct, populationNote, portraitCell, smallLine, verdictText } from "../../ui/lib/factText";
 
 describe("fact sheet words", () => {
   it("writes rates, margins, counts and verdicts plainly", () => {
@@ -52,5 +52,17 @@ describe("sheets built from census tracts (spec 2026-10-16 §6)", () => {
     expect(e.notes.join(" ")).not.toContain("Data You Can Use");
     expect(e.notes.join(" ")).toContain("https://x.test/n/bay-view");
     expect(e.notes.join(" ")).not.toContain("?year=");
+  });
+});
+
+describe("a built sheet whose figures are missing (review: Important 1)", () => {
+  it("shows a dash, says once when figures haven't been loaded, and its export never blames DYCU", () => {
+    expect(MISSING_BUILT).toBe("—");
+    expect(NOT_LOADED).toBe("Census figures for this neighborhood haven't been loaded yet; they're fetched weekly.");
+    const h = { id: "poverty", label: "People in poverty", meaning: "", isCount: false, hood: null, city: null, verdict: "unknown" as const };
+    const s = { status: "ok" as const, kind: "census" as const, slug: "bay-view", name: "Bay View", year: 2024, years: [], period: "2020–2024", headlines: [h], tables: [], source: null, map: null, cityFetchedAt: null, built: { tracts: 7 }, loaded: false };
+    const e = factSheetExport(s, { origin: "https://x.test", date: "October 16, 2026" });
+    expect(JSON.stringify(e)).not.toContain("DYCU");
+    expect(e.lines).toContain(NOT_LOADED);
   });
 });
