@@ -179,7 +179,7 @@ test.describe("signed in", () => {
             rules: items.filter((e) => getComputedStyle(e, "::before").borderLeftWidth === "1px").map((e) => e.textContent),
           };
         });
-        expect({ path, width, ...r }).toEqual({ path, width, broken: [], past: expect.any(Number), startRule: "1px", rules: ["ABOUT", "START HERE", "HOW IT WORKS", "ACCOUNT"] });
+        expect({ path, width, ...r }).toEqual({ path, width, broken: [], past: expect.any(Number), startRule: "1px", rules: ["START HERE", "HOW IT WORKS", "ACCOUNT"] });
         expect(r.past, `${path} at ${width}`).toBeLessThanOrEqual(0);
       }
   });

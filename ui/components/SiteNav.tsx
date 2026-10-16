@@ -15,9 +15,12 @@ export function SiteNav({ placement, current }: { placement: Placement; current:
       <Link className={cls(current === "ask")} href="/ask" aria-current={current === "ask" ? "page" : undefined}>
         ASK
       </Link>
-      <span className={cls(false)} aria-disabled="true" title="Coming soon">
-        SAVED
-      </span>
+      {/* SAVED is a placeholder until saving ships: on the phone's tab bar only; the laptop masthead gives its room to ABOUT. */}
+      {dock && (
+        <span className={cls(false)} aria-disabled="true" title="Coming soon">
+          SAVED
+        </span>
+      )}
       {!dock && (
         <Link className={cls(current === "about")} href="/about" aria-current={current === "about" ? "page" : undefined}>
           ABOUT

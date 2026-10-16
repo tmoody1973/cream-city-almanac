@@ -572,9 +572,9 @@
     white-space: nowrap;
   }
 
-  /* ABOUT, START HERE and HOW IT WORKS (the last three links) sit apart from the section tabs, each behind a short rule;
+  /* START HERE and HOW IT WORKS (the last two links) sit apart from the section tabs, each behind a short rule;
      signed in, ACCOUNT and SIGN OUT (buttons) follow as one pair behind a single rule. */
-  .mastNav > a:nth-last-of-type(-n + 3),
+  .mastNav > a:nth-last-of-type(-n + 2),
   .mastNav > button:first-of-type {
     padding-left: var(--mast-gap);
     border-left: var(--hair);
@@ -808,9 +808,9 @@
 
 /* Finish review fixes (laptop). */
 @media (min-width: 1100px) and (orientation: landscape) {
-  /* ABOUT, START HERE, HOW IT WORKS and the account pair: the separator is drawn outside the link, so the current-page
+  /* START HERE, HOW IT WORKS and the account pair: the separator is drawn outside the link, so the current-page
      bar underlines only the words. */
-  .mastNav > a:nth-last-of-type(-n + 3),
+  .mastNav > a:nth-last-of-type(-n + 2),
   .mastNav > button:first-of-type {
     position: relative;
     margin-left: var(--mast-gap);
@@ -818,7 +818,7 @@
     border-left: 0;
   }
 
-  .mastNav > a:nth-last-of-type(-n + 3)::before,
+  .mastNav > a:nth-last-of-type(-n + 2)::before,
   .mastNav > button:first-of-type::before {
     content: "";
     position: absolute;
