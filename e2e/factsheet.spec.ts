@@ -46,7 +46,7 @@ test("an address outside DYCU's areas says which City neighborhood it is in", as
   await page.goto("/n");
   await page.getByLabel("Your address").fill("2000 S Kinnickinnic Ave");
   await page.getByRole("button", { name: "Find" }).click();
-  await expect(page.locator("[data-place-message]")).toContainText(/neighborhood\. Data You Can Use doesn't make a fact sheet for it/, { timeout: 20_000 });
+  await expect(page.locator("[data-place-message]").getByRole("link", { name: /^Open .+'s fact sheet →$/ })).toHaveAttribute("href", /^\/n\/[a-z0-9-]+$/, { timeout: 20_000 });
   // The suggestion opens Ask with a question it can answer for any City neighborhood (a City-records count), never census tracts.
   const link = page.locator("[data-place-message]").getByRole("link", { name: /^Try “How many robberies in .+ this year\?” →$/ });
   await expect(link).toHaveAttribute("href", /^\/ask\?prompt=How%20many%20robberies%20in%20/);
