@@ -13,6 +13,7 @@ import type { CityShare } from "./lib/tractPlaces";
 import { byClearance, changeOf, isUnreliable, mismatch, rankValues, relationship, spearman, type TractValue } from "./lib/tractStats";
 import { buildNeighborhoods, nMismatch, nTogether, versusCity, type NFigure, type NVerdict, type Piece } from "./lib/neighborhoodFigures";
 import { rateLimiter } from "./limits";
+import { accountLimit } from "./lib/testAccounts";
 import { loadProperty, NO_PROPERTY, propertyHead, propertySide, type PropertySide } from "./property";
 
 // Ask's tract analyses (docs/superpowers/specs/2026-10-10-ask-analyzes-design.md). The model gets a compact answer;
@@ -162,7 +163,7 @@ export async function spender(ctx: ActionCtx): Promise<Spend> {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) throw new Error("Sign in to ask");
   let charged: Promise<boolean> | null = null;
-  return () => (charged ??= rateLimiter.limit(ctx, "askTracts", { key: identity.tokenIdentifier }).then((r) => r.ok));
+  return () => (charged ??= rateLimiter.limit(ctx, accountLimit("askTracts", identity), { key: identity.tokenIdentifier }).then((r) => r.ok));
 }
 
 type Loaded = { values: TractValue[]; leftOut: number };

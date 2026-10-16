@@ -70,6 +70,7 @@ import type * as lib_spanShape from "../lib/spanShape.js";
 import type * as lib_spanSql from "../lib/spanSql.js";
 import type * as lib_stopMath from "../lib/stopMath.js";
 import type * as lib_stops from "../lib/stops.js";
+import type * as lib_testAccounts from "../lib/testAccounts.js";
 import type * as lib_text from "../lib/text.js";
 import type * as lib_titles from "../lib/titles.js";
 import type * as lib_tractData from "../lib/tractData.js";
@@ -166,6 +167,7 @@ declare const fullApi: ApiFromModules<{
   "lib/spanSql": typeof lib_spanSql;
   "lib/stopMath": typeof lib_stopMath;
   "lib/stops": typeof lib_stops;
+  "lib/testAccounts": typeof lib_testAccounts;
   "lib/text": typeof lib_text;
   "lib/titles": typeof lib_titles;
   "lib/tractData": typeof lib_tractData;
