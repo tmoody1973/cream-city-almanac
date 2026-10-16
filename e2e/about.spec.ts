@@ -30,3 +30,14 @@ test("/about is linked from every page's footer", async ({ page }) => {
   await page.getByRole("contentinfo").getByRole("link", { name: "What's in the Almanac" }).click();
   await expect(page).toHaveURL(/\/about$/);
 });
+
+test("/about is one click from the laptop masthead and from the home page's first screen", async ({ page }, info) => {
+  await page.goto("/");
+  await expect(page.getByRole("link", { name: "New here? See what's in the Almanac →" })).toHaveAttribute("href", "/about");
+  if (info.project.name !== "desktop") return;
+  await page.goto("/search");
+  const nav = page.getByRole("navigation", { name: "Site" });
+  await nav.getByRole("link", { name: "ABOUT", exact: true }).click();
+  await expect(page).toHaveURL(/\/about$/);
+  await expect(page.getByRole("navigation", { name: "Site" }).getByRole("link", { name: "ABOUT", exact: true })).toHaveAttribute("aria-current", "page");
+});

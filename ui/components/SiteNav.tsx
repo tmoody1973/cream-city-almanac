@@ -4,7 +4,7 @@ import styles from "./rundown.module.css";
 
 type Placement = "dock" | "masthead";
 
-export function SiteNav({ placement, current }: { placement: Placement; current: "search" | "ask" | "how" | "start" | null }) {
+export function SiteNav({ placement, current }: { placement: Placement; current: "search" | "ask" | "how" | "start" | "about" | null }) {
   const dock = placement === "dock";
   const cls = (active: boolean) => (dock ? (active ? styles.tabActive : styles.tab) : active ? styles.mastTabActive : styles.mastTab);
   return (
@@ -15,9 +15,17 @@ export function SiteNav({ placement, current }: { placement: Placement; current:
       <Link className={cls(current === "ask")} href="/ask" aria-current={current === "ask" ? "page" : undefined}>
         ASK
       </Link>
-      <span className={cls(false)} aria-disabled="true" title="Coming soon">
-        SAVED
-      </span>
+      {/* SAVED is a placeholder until saving ships: on the phone's tab bar only; the laptop masthead gives its room to ABOUT. */}
+      {dock && (
+        <span className={cls(false)} aria-disabled="true" title="Coming soon">
+          SAVED
+        </span>
+      )}
+      {!dock && (
+        <Link className={cls(current === "about")} href="/about" aria-current={current === "about" ? "page" : undefined}>
+          ABOUT
+        </Link>
+      )}
       {!dock && (
         <Link className={cls(current === "start")} href="/start-here" aria-current={current === "start" ? "page" : undefined} data-tour="start">
           START HERE

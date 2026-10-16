@@ -34,10 +34,10 @@ for (const path of PAGES) {
 test("the search works from the keyboard alone", async ({ page }, info) => {
   await page.goto("/search");
   // The search box comes right after the links above it in reading order (the wordmark's home link; laptop site links
-  // SEARCH, ASK, START HERE, HOW IT WORKS, or the phone's MENU; then the band's link). Some browsers skip links when
-  // tabbing, so allow up to six stops before it.
+  // SEARCH, ASK, ABOUT, START HERE, HOW IT WORKS, or the phone's MENU; then the band's link). Some browsers skip links
+  // when tabbing, so allow up to seven stops before it.
   await page.keyboard.press("Tab");
-  for (let i = 0; i < 6 && !(await page.getByLabel("TOPIC:").evaluate((el) => el === document.activeElement)); i++) await page.keyboard.press("Tab");
+  for (let i = 0; i < 7 && !(await page.getByLabel("TOPIC:").evaluate((el) => el === document.activeElement)); i++) await page.keyboard.press("Tab");
   await expect(page.getByLabel("TOPIC:")).toBeFocused();
   await page.keyboard.type("asthma");
   await expect(page.locator("[data-code='W01']")).toBeVisible();
