@@ -7,6 +7,7 @@ import { fetchWithTimeout } from "./lib/http";
 import { zipRows, type ZipRow } from "./lib/zipFigures";
 import { checkZip, COUNTY_ZIPS } from "./lib/zips";
 import { rateLimiter } from "./limits";
+import { accountLimit } from "./lib/testAccounts";
 
 const ZIP_TIMEOUT_MS = 15_000;
 export type ZipResult =
@@ -25,7 +26,7 @@ export const zipProfile = action({
     if (!z) return { status: "bad-zip", zip: zip.trim() };
     const area = COUNTY_ZIPS[z];
     if (!area) return { status: "outside", zip: z };
-    if (!(await rateLimiter.limit(ctx, "askCity", { key: identity.tokenIdentifier })).ok) return { status: "busy" };
+    if (!(await rateLimiter.limit(ctx, accountLimit("askCity", identity), { key: identity.tokenIdentifier })).ok) return { status: "busy" };
     const key = process.env.CENSUS_API_KEY;
     const city = await ctx.runQuery(internal.cityFigures.latestCityFigures, {});
     if (!key || !city) {

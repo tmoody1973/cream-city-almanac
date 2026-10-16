@@ -17,6 +17,7 @@ import { matchName } from "./lib/neighborhoodNames";
 import { MIN_HOMES, tractGeoid } from "./lib/propertyMeasures";
 import { newestCountyUrl } from "./lib/tractPlaces";
 import { rateLimiter } from "./limits";
+import { accountLimit } from "./lib/testAccounts";
 import { MAP_TTL_MS, mapKey } from "./map";
 import type { Fam } from "./tracts";
 
@@ -123,7 +124,7 @@ export const countRecords = action({
   handler: async (ctx, args): Promise<CountResult> => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Sign in to ask");
-    if (!(await rateLimiter.limit(ctx, "askCity", { key: identity.tokenIdentifier })).ok) return { status: "busy" as const };
+    if (!(await rateLimiter.limit(ctx, accountLimit("askCity", identity), { key: identity.tokenIdentifier })).ok) return { status: "busy" as const };
     if (args.measure) return runMeasure(ctx, { ...args, measure: args.measure });
     const result = await runCount(ctx, args);
     // Ask's card draws this map by calling api.map.mapCells with the same arguments; leave the answer where that
