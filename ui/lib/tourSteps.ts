@@ -3,7 +3,7 @@
 export type TourStep = { targets: string[]; title: string; content: string };
 
 export const FRONT_STEPS: TourStep[] = [
-  { targets: ['[data-tour="search"]'], title: "START WITH A WORD", content: "Type what you're looking into: a topic, a place, a dataset's name. DYCU's and the City's data and reports come up." },
+  { targets: ['[data-tour="address"] input'], title: "START WITH YOUR ADDRESS", content: "Type where you live to find your neighborhood, its alder and polling place. Or search a topic just below." },
   { targets: ['[data-tour="three"]'], title: "THREE WAYS IN", content: "Find the data, read what it means, and see where every number came from." },
   { targets: ['[data-tour="data"]'], title: "WHAT'S HERE", content: "DYCU's catalog and the City's open data, counted live." },
   { targets: ['[data-tour="ask"]'], title: "OR JUST ASK", content: "Ask in plain English. Code finds the numbers; the AI never writes one." },

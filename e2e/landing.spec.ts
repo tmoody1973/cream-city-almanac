@@ -2,10 +2,10 @@ import { expect, test } from "./fixtures";
 
 test("a bare / is the landing page; a campaign tag keeps it", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "A guide to Milwaukee's public data." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Look up your Milwaukee neighborhood." })).toBeVisible();
   await page.goto("/?utm_source=linkedin");
   await expect(page).toHaveURL(/\/\?utm_source=linkedin$/);
-  await expect(page.getByRole("heading", { name: "A guide to Milwaukee's public data." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Look up your Milwaukee neighborhood." })).toBeVisible();
 });
 
 test("links from before the move land on the same search view", async ({ page }) => {
@@ -34,7 +34,11 @@ test("Back to the rundown goes to search, not the landing page", async ({ page }
 test("the landing page explains the almanac, with live numbers and working links", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
-  await expect(page.getByText("Find it. Understand it. Check where it came from.")).toBeVisible();
+  await expect(page.getByText("Type your address to see it next to the rest of the city, or search any topic. Every number says where it came from.")).toBeVisible();
+  // The address comes first: its box sits above the topic search.
+  const address = await page.getByRole("textbox", { name: "Your address" }).boundingBox();
+  const topic = await page.getByRole("searchbox", { name: /topic/i }).boundingBox();
+  expect(address && topic && address.y < topic.y).toBe(true);
   for (const h of ["Find it", "Understand it", "Check where it came from", "The data", "Ask a question", "Who it's for"]) {
     await expect(page.getByRole("heading", { name: h, exact: true })).toBeVisible();
   }

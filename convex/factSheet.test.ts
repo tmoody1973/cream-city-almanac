@@ -57,6 +57,11 @@ describe("the fact sheet's data", () => {
     if (index.status === "not-found") expect(index.areas).toHaveLength(2);
     expect(await t.query(api.factSheet.sheet, { slug: "nowhere" })).toMatchObject({ status: "not-found", areas: expect.arrayContaining([{ slug: "harambee", name: "Harambee" }]) });
   });
+  it("names the fact sheet a search mentions, by any of its spellings, and nothing otherwise", async () => {
+    expect(await t.query(api.factSheet.areaInSearch, { q: "harambee crime" })).toEqual({ slug: "harambee", name: "Harambee" });
+    expect(await t.query(api.factSheet.areaInSearch, { q: "Silver City, Burnham Park, and Layton Park" })).toEqual({ slug: "silver-city-layton-park-and-burnham-park", name: "Silver City, Layton Park, and Burnham Park" });
+    expect(await t.query(api.factSheet.areaInSearch, { q: "robbery" })).toBeNull();
+  });
   it("finds a sheet by a typed name for Ask, and offers the nearest names on a miss", async () => {
     expect(await t.query(api.factSheet.findSheet, { neighborhood: "harambee" })).toMatchObject({ status: "ok", slug: "harambee", headlines: [{ id: "poverty" }, { id: "rent-burden" }, { id: "no-car" }] });
     expect(await t.query(api.factSheet.findSheet, { neighborhood: "Harambe" })).toMatchObject({ status: "no-neighborhood", nearest: expect.arrayContaining(["Harambee"]) });

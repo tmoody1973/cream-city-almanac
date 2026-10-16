@@ -1,6 +1,6 @@
 // tests/lib/neighborhoodNames.test.ts
 import { describe, expect, it } from "vitest";
-import { matchName, nameKey, titleCase } from "../../convex/lib/neighborhoodNames";
+import { areaInText, matchName, nameKey, titleCase } from "../../convex/lib/neighborhoodNames";
 
 const rows = ["HARAMBEE", "BAY VIEW", "SOUTH BAY VIEW", "WALKER'S POINT", "ST. JOSEPH", "RIVERWEST"].map((n) => ({ name: titleCase(n), matchKey: nameKey(n) }));
 
@@ -31,5 +31,26 @@ describe("neighborhood names", () => {
 describe("title case after a slash (follow-up)", () => {
   it("capitalizes each part of a slashed City name", () => {
     expect(titleCase("THE VALLEY/PIGSVILLE")).toBe("The Valley/Pigsville");
+  });
+});
+
+describe("areaInText", () => {
+  const areas = [
+    { name: "Riverwest", slug: "riverwest", spellings: ["Riverwest"] },
+    { name: "Historic Mitchell St.", slug: "historic-mitchell-st", spellings: ["Historic Mitchell St."] },
+    { name: "Silver City, Layton Park, and Burnham Park", slug: "silver-city-layton-park-and-burnham-park", spellings: ["Silver City, Layton Park, and Burnham Park", "Silver City, Burnham Park, and Layton Park"] },
+    { name: "Near South Side", slug: "near-south-side", spellings: ["Near South Side"] },
+  ];
+  it("finds an area named alone or inside other search words", () => {
+    expect(areaInText("Riverwest", areas)?.slug).toBe("riverwest");
+    expect(areaInText("riverwest crime", areas)?.slug).toBe("riverwest");
+    expect(areaInText("poverty in historic mitchell st", areas)?.slug).toBe("historic-mitchell-st");
+    expect(areaInText("silver city, burnham park, and layton park", areas)?.slug).toBe("silver-city-layton-park-and-burnham-park");
+  });
+  it("matches whole words only and ignores searches without an area", () => {
+    expect(areaInText("crime", areas)).toBeNull();
+    expect(areaInText("riverwestern", areas)).toBeNull();
+    expect(areaInText("south side", areas)).toBeNull();
+    expect(areaInText("", areas)).toBeNull();
   });
 });

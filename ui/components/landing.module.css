@@ -262,3 +262,13 @@
   font-size: var(--fs-small);
   margin: 6px 0 0;
 }
+
+/* The address box leads; the topic search follows it. */
+.address {
+  max-width: 760px;
+}
+
+.address > form {
+  max-width: none;
+  margin: 0 0 12px;
+}

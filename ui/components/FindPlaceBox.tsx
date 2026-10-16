@@ -27,7 +27,7 @@ function Panel({ r }: { r: Extract<PlaceResult, { status: "ok" }> }) {
 }
 
 // "Find your neighborhood": an address → a panel with its fact sheet and City boundaries. Nothing is stored.
-export function FindPlaceBox() {
+export function FindPlaceBox({ heading = true }: { heading?: boolean }) {
   const find = useAction(api.places.placeForBox);
   const [address, setAddress] = useState("");
   const [message, setMessage] = useState<React.ReactNode>(null);
@@ -47,7 +47,7 @@ export function FindPlaceBox() {
   }
   return (
     <form className={styles.find} onSubmit={submit}>
-      <h3 className={styles.findLabel}>Find your neighborhood</h3>
+      {heading && <h3 className={styles.findLabel}>Find your neighborhood</h3>}
       <label htmlFor="find-address" className={styles.muted}>Your address</label>
       <div className={styles.findRow}>
         <input id="find-address" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="2400 W Center St" maxLength={200} autoComplete="street-address" />

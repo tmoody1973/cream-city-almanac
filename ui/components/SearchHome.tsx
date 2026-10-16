@@ -14,6 +14,7 @@ import { AskPanel } from "./AskPanel";
 import { CatalogLine, type CatalogStatus } from "./CatalogLine";
 import { CreditFooter } from "./CreditFooter";
 import { ExplainerBand } from "./ExplainerBand";
+import { FactSheetLead } from "./FactSheetLead";
 import { Masthead } from "./Masthead";
 import { RundownList } from "./RundownList";
 import { SheetPane } from "./SheetPane";
@@ -179,6 +180,7 @@ export function SearchHome({ rundown, status }: { rundown: ResultRow[]; status: 
           {!searching && <ExplainerBand />}
           <SlugBar value={query} onChange={onQueryChange} showTags={!searching} />
           <p className={styles.notice} role="status">{notice ?? ""}</p>
+          {searching && <FactSheetLead q={query.trim()} />}
           {searching ? (
             state === "loading" && !response ? (
               <ol className={styles.rows} aria-busy="true" aria-label="Loading results">

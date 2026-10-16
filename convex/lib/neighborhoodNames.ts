@@ -34,3 +34,11 @@ export function matchName<T extends { name: string; matchKey: string }>(asked: s
   if (close.length) return { kind: "choose", names: close.slice(0, 5).map((r) => r.name) };
   return { kind: "none", nearest: nearest() };
 }
+
+// A fact-sheet area named anywhere in a search, as whole words ("riverwest crime" → Riverwest). The longest name wins.
+export function areaInText<T extends { name: string; spellings: string[] }>(text: string, areas: T[]): T | null {
+  const padded = ` ${nameKey(text)} `;
+  if (!padded.trim()) return null;
+  const hits = areas.flatMap((a) => a.spellings.map((s) => ({ a, key: nameKey(s) }))).filter(({ key }) => key && padded.includes(` ${key} `));
+  return hits.sort((x, y) => y.key.length - x.key.length)[0]?.a ?? null;
+}
