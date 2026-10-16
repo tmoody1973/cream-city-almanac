@@ -1,0 +1,5 @@
+STRUCTURE: a city newspaper front page.
+Under the masthead: a thin dateline rule "MILWAUKEE · OCTOBER 16, 2026 · FREE", then a banner headline across the full width in huge condensed capitals: LOOK UP YOUR MILWAUKEE NEIGHBORHOOD.
+The lead story: deck line "Type an address. See your neighborhood next to the rest of the city, your alder and your polling place." and the lede IS a full-width boxed address field "2400 W Center St" with a ruled FIND button.
+A boxed figure at right of the lead, ruled in ink: TODAY'S NUMBER, a big condensed 29, caption "robberies in Harambee this year, from the City", boxed CITY tag; a red grease-pencil ring around the 29.
+Below a heavy rule ("below the fold"), two narrow ruled columns with condensed heads: FOR REPORTERS ("A number you can stand behind, with its source and caveats on one card.") and FOR NONPROFITS ("Neighborhood figures beside the city's, with margins of error, on one printed page.").

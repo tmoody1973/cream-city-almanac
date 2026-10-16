@@ -2,6 +2,8 @@ import type { FollowUp } from "@/ui/components/FollowUps";
 import type { PlaceResult } from "@/convex/places";
 
 export const PLACE_PRIVACY = "This address was sent to the U.S. Census Bureau's geocoder to find its location; Cream City Almanac doesn't keep it.";
+// The same promise in a line, for the /about page's compact box.
+export const PLACE_PRIVACY_SHORT = "Sent to the U.S. Census Bureau to find it; never kept.";
 // In Ask the address is also part of the question the AI reads, like everything typed there.
 export const PLACE_PRIVACY_ASK = "This address was sent to the U.S. Census Bureau's geocoder to find its location, and, like every question here, to the AI; Cream City Almanac doesn't keep it.";
 // A point outside every neighborhood shape may still be in the City (lakefront, port, river gaps): never say it isn't.

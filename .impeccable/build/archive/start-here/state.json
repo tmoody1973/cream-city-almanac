@@ -1,0 +1,557 @@
+{
+  "tool": "build-phase",
+  "version": 2,
+  "startedAt": "2026-10-08T14:26:09.399Z",
+  "comp": ".impeccable/mocks/start-b-laptop.webp",
+  "direction": null,
+  "breakpoint": "1536x1024",
+  "artifact": null,
+  "phase": "review",
+  "phases": {
+    "comps": {
+      "status": "skipped",
+      "openedAt": null,
+      "closedAt": null,
+      "attempts": 0,
+      "notes": [
+        {
+          "at": "2026-10-08T14:26:09.399Z",
+          "text": "started with an approved comp; the comp round happened before this state (surface round or manual)"
+        }
+      ],
+      "gate": null,
+      "forced": null
+    },
+    "spec": {
+      "status": "closed",
+      "openedAt": "2026-10-08T14:26:09.399Z",
+      "closedAt": "2026-10-08T14:28:55.871Z",
+      "attempts": 5,
+      "notes": [],
+      "gate": {
+        "ok": true,
+        "reasons": [],
+        "summary": "29 regions, 0 plates, 14 text regions measured",
+        "at": "2026-10-08T14:28:55.871Z"
+      },
+      "forced": null
+    },
+    "plates": {
+      "status": "closed",
+      "openedAt": "2026-10-08T14:28:55.871Z",
+      "closedAt": "2026-10-08T14:28:55.890Z",
+      "attempts": 1,
+      "notes": [],
+      "gate": {
+        "ok": true,
+        "reasons": [],
+        "summary": "no plates owed",
+        "at": "2026-10-08T14:28:55.890Z"
+      },
+      "forced": null
+    },
+    "hero": {
+      "status": "closed",
+      "openedAt": "2026-10-08T14:28:55.890Z",
+      "closedAt": "2026-10-08T14:41:46.706Z",
+      "attempts": 16,
+      "notes": [],
+      "gate": {
+        "ok": false,
+        "reasons": [
+          "control nonprofit-try drifts to 64% (structure 57%, color 91%): its chrome differs from the comp's; open .impeccable/review/diff/hero/regions/nonprofit-try.png and match the border, fill, radius, chevron or arrow, and label size"
+        ],
+        "summary": "hero 80% (drift)",
+        "score": 0.7997,
+        "verdict": "drift",
+        "report": ".impeccable/review/diff/hero/report.json",
+        "sideBySide": "/Users/tarikmoody/Projects/dycu/inventory/.impeccable/review/diff/hero/side-by-side.png",
+        "worst": [
+          "headline drift 48%",
+          "resident-excerpt contradicted 49%",
+          "reporter-divider drift 50%"
+        ],
+        "worstIds": [
+          "headline",
+          "resident-excerpt",
+          "reporter-divider"
+        ],
+        "worstCrops": [
+          {
+            "id": "headline",
+            "verdict": "drift",
+            "score": {
+              "overall": 0.4811,
+              "structure": 0.3395,
+              "color": 0.7666,
+              "colorIntersection": 0.5569,
+              "paletteMatch": 0.8794,
+              "detail": 0.5049,
+              "detailRaw": 0.5987,
+              "detailAdded": 0.1875,
+              "bands": 0.44
+            },
+            "file": ".impeccable/review/diff/hero/regions/headline.png"
+          },
+          {
+            "id": "resident-excerpt",
+            "verdict": "contradicted",
+            "score": {
+              "overall": 0.4927,
+              "structure": 0.4197,
+              "color": 0.9254,
+              "colorIntersection": 0.8496,
+              "paletteMatch": 0.9663,
+              "detail": 0.1179,
+              "detailRaw": 0.2482,
+              "detailAdded": 0.2604,
+              "bands": 0.5667
+            },
+            "file": ".impeccable/review/diff/hero/regions/resident-excerpt.png"
+          },
+          {
+            "id": "reporter-divider",
+            "verdict": "drift",
+            "score": {
+              "overall": 0.4981,
+              "structure": 0.6661,
+              "color": 0.8431,
+              "colorIntersection": 0.7201,
+              "paletteMatch": 0.9093,
+              "detail": 0.0009,
+              "detailRaw": 0.204,
+              "detailAdded": 0.4063,
+              "bands": 0.36
+            },
+            "file": ".impeccable/review/diff/hero/regions/reporter-divider.png"
+          }
+        ],
+        "advisories": [
+          "(advisory, unchanged for 3+ attempts) text nonprofit-excerpt: cap height 15px in the build, 11.4px in the comp (+32%); set font-size so the cap height renders at 11.4px",
+          "(advisory, unchanged for 3+ attempts) text nonprofit-steps: 5 lines in the build, 6 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape"
+        ],
+        "regionVerdicts": {
+          "wordmark": "match",
+          "site-nav": "drift",
+          "masthead-rule": "match",
+          "headline": "drift",
+          "lede": "drift",
+          "reporter-label": "drift",
+          "reporter-question": "drift",
+          "reporter-steps": "drift",
+          "reporter-excerpt": "drift",
+          "reporter-try": "drift",
+          "nonprofit-label": "drift",
+          "nonprofit-question": "drift",
+          "nonprofit-steps": "drift",
+          "nonprofit-excerpt": "drift",
+          "nonprofit-try": "drift",
+          "resident-label": "drift",
+          "resident-question": "drift",
+          "resident-steps": "drift",
+          "resident-excerpt": "contradicted",
+          "resident-try": "drift",
+          "column-rules": "drift",
+          "guides-rule": "drift",
+          "guides-heading": "drift",
+          "guides-links": "drift",
+          "guides-contact": "drift",
+          "how-link": "drift",
+          "reporter-divider": "drift",
+          "guides-dividers": "drift",
+          "bottom-rule": "drift"
+        },
+        "at": "2026-10-08T14:41:46.704Z"
+      },
+      "forced": {
+        "at": "2026-10-08T14:41:46.706Z",
+        "reason": "The user confirmed comp B (start-b-laptop) is a layout reference, not a pixel target: Tarik (2026-10-08) chose 'Accept it (Recommended)', whose stated meaning was 'Record that the mockup's exact pixel positions are a reference, not a target'. Hero 80% overall, every region present; one control (nonprofit-try) at 64% from a ~6px vertical offset after 15 attempts, where each further nudge shifted other regions.",
+        "reasons": [
+          "control nonprofit-try drifts to 64% (structure 57%, color 91%): its chrome differs from the comp's; open .impeccable/review/diff/hero/regions/nonprofit-try.png and match the border, fill, radius, chevron or arrow, and label size"
+        ]
+      },
+      "readingsSeen": {
+        "text lede: cap height 32.5px in the build, 16px in the comp (+103%); set font-size so the cap height renders at 16px": 1,
+        "text reporter-steps: letter-spacing is wider than the comp's (gap 0.146 vs 0.080 of the cap height); set letter-spacing to close it by about 1px": 1,
+        "text reporter-excerpt: letter-spacing is wider than the comp's (gap 0.169 vs 0.083 of the cap height); set letter-spacing to close it by about 1px": 1,
+        "text nonprofit-steps: cap height 26.8px in the build, 12.3px in the comp (+118%); set font-size so the cap height renders at 12.3px": 1,
+        "text nonprofit-excerpt: letter-spacing is wider than the comp's (gap 0.145 vs 0.061 of the cap height); set letter-spacing to close it by about 1px": 2,
+        "text resident-question: cap height 14.1px in the build, 30.1px in the comp (-53%); set font-size so the cap height renders at 30.1px": 1,
+        "text resident-steps: cap height 26.8px in the build, 13.4px in the comp (+100%); set font-size so the cap height renders at 13.4px": 1,
+        "text guides-heading: cap height 13.8px in the build, 30.5px in the comp (-55%); set font-size so the cap height renders at 30.5px": 1,
+        "text guides-contact: letter-spacing is wider than the comp's (gap 0.159 vs 0.079 of the cap height); set letter-spacing to close it by about 1px": 1,
+        "text reporter-question: 1 line in the build, 2 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 1,
+        "text reporter-steps: 3 lines in the build, 6 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 1,
+        "text reporter-excerpt: 6 lines in the build, 7 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 3,
+        "text nonprofit-question: 1 line in the build, 2 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 1,
+        "text nonprofit-steps: 1 line in the build, 6 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 1,
+        "text nonprofit-excerpt: 6 lines in the build, 3 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 1,
+        "text resident-question: 1 line in the build, 2 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 1,
+        "text resident-steps: 1 line in the build, 4 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 1,
+        "text reporter-excerpt: the face renders 27% heavier than the comp's (ink density 0.62 vs 0.49); drop a weight step or use the ranked face": 1,
+        "chrome guides-rule: its ink is 14px tall in the build and 3px in the comp (+11px); match the height, not only the position": 5,
+        "chrome bottom-rule: its ink is 14px tall in the build and 2px in the comp (+12px); match the height, not only the position": 1,
+        "text reporter-steps: letter-spacing is wider than the comp's (gap 0.142 vs 0.080 of the cap height); set letter-spacing to close it by about 1px": 4,
+        "text reporter-excerpt: cap height 7.7px in the build, 12.1px in the comp (-36%); set font-size so the cap height renders at 12.1px": 1,
+        "text nonprofit-excerpt: cap height 15.8px in the build, 11.4px in the comp (+39%); set font-size so the cap height renders at 11.4px": 1,
+        "text resident-question: letter-spacing is wider than the comp's (gap 0.102 vs 0.067 of the cap height); set letter-spacing to close it by about 1px": 2,
+        "text reporter-steps: 5 lines in the build, 6 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 2,
+        "text nonprofit-steps: 2 lines in the build, 6 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 2,
+        "text nonprofit-excerpt: 4 lines in the build, 3 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 5,
+        "text resident-question: its first line starts 15px lower than in the comp (23px vs 8px into the region box); the spacing above it is too large": 1,
+        "text reporter-excerpt: cap height 8px in the build, 12.1px in the comp (-34%); set font-size so the cap height renders at 12.1px": 1,
+        "text nonprofit-excerpt: letter-spacing is wider than the comp's (gap 0.127 vs 0.061 of the cap height); set letter-spacing to close it by about 1px": 1,
+        "text guides-heading: cap height 10.2px in the build, 30.5px in the comp (-67%); set font-size so the cap height renders at 30.5px": 1,
+        "text guides-contact: cap height 8.2px in the build, 12.8px in the comp (-36%); set font-size so the cap height renders at 12.8px": 1,
+        "text reporter-excerpt: 8 lines in the build, 7 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 11,
+        "text nonprofit-steps: 3 lines in the build, 6 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 1,
+        "text guides-contact: 1 line in the build, 2 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 2,
+        "text guides-contact: it starts 104px further right than in the comp": 1,
+        "text reporter-question: letter-spacing is wider than the comp's (gap 0.113 vs 0.072 of the cap height); set letter-spacing to close it by about 1px": 1,
+        "text nonprofit-excerpt: cap height 16px in the build, 11.4px in the comp (+40%); set font-size so the cap height renders at 11.4px": 2,
+        "text resident-question: letter-spacing is wider than the comp's (gap 0.112 vs 0.067 of the cap height); set letter-spacing to close it by about 1px": 1,
+        "text guides-heading: cap height 20.3px in the build, 30.5px in the comp (-33%); set font-size so the cap height renders at 30.5px": 1,
+        "text reporter-excerpt: 9 lines in the build, 7 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 1,
+        "text nonprofit-steps: 4 lines in the build, 6 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 1,
+        "text resident-steps: 3 lines in the build, 4 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 1,
+        "text reporter-question: the face renders 38% heavier than the comp's (ink density 0.87 vs 0.63); drop a weight step or use the ranked face": 1,
+        "control how-link: its rule sits 15px into the box in the comp and 1px in the build (-14px), so the strip is shorter than the comp's; match the height, not only the position": 1,
+        "text reporter-excerpt: letter-spacing is wider than the comp's (gap 0.129 vs 0.083 of the cap height); set letter-spacing to close it by about 1px": 9,
+        "text resident-question: letter-spacing is wider than the comp's (gap 0.101 vs 0.067 of the cap height); set letter-spacing to close it by about 1px": 1,
+        "text guides-contact: letter-spacing is wider than the comp's (gap 0.163 vs 0.079 of the cap height); set letter-spacing to close it by about 1px": 1,
+        "text nonprofit-steps: 5 lines in the build, 6 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 14,
+        "control how-link: its rule sits 15px into the box in the comp and 5px in the build (-10px), so the strip is shorter than the comp's; match the height, not only the position": 1,
+        "text nonprofit-excerpt: cap height 16.6px in the build, 11.4px in the comp (+46%); set font-size so the cap height renders at 11.4px": 8,
+        "text nonprofit-excerpt: 5 lines in the build, 3 in the comp; the measure (max-width, font-size, letter-spacing) wraps it differently, so the block is a different shape": 8,
+        "control how-link: its rule sits 15px into the box in the comp and 21px in the build (+6px), so the strip is taller than the comp's; match the height, not only the position": 1,
+        "text guides-heading: cap height 23.3px in the build, 30.5px in the comp (-24%); set font-size so the cap height renders at 30.5px": 3,
+        "text guides-heading: its first line starts 17px lower than in the comp (27px vs 10px into the region box); the spacing above it is too large": 3,
+        "control how-link: its rule sits 15px into the box in the comp and 2px in the build (-13px), so the strip is shorter than the comp's; match the height, not only the position": 1,
+        "text nonprofit-excerpt: cap height 15px in the build, 11.4px in the comp (+32%); set font-size so the cap height renders at 11.4px": 5,
+        "text guides-heading: cap height 22.1px in the build, 30.5px in the comp (-28%); set font-size so the cap height renders at 30.5px": 1
+      },
+      "history": [
+        {
+          "at": "2026-10-08T14:37:30.422Z",
+          "score": 0.7964,
+          "worstIds": [
+            "headline",
+            "resident-excerpt",
+            "reporter-divider"
+          ],
+          "regionVerdicts": {
+            "wordmark": "match",
+            "site-nav": "drift",
+            "masthead-rule": "match",
+            "headline": "drift",
+            "lede": "drift",
+            "reporter-label": "drift",
+            "reporter-question": "drift",
+            "reporter-steps": "drift",
+            "reporter-excerpt": "drift",
+            "reporter-try": "drift",
+            "nonprofit-label": "drift",
+            "nonprofit-question": "drift",
+            "nonprofit-steps": "drift",
+            "nonprofit-excerpt": "drift",
+            "nonprofit-try": "drift",
+            "resident-label": "drift",
+            "resident-question": "drift",
+            "resident-steps": "drift",
+            "resident-excerpt": "contradicted",
+            "resident-try": "drift",
+            "column-rules": "drift",
+            "guides-rule": "drift",
+            "guides-heading": "drift",
+            "guides-links": "drift",
+            "guides-contact": "drift",
+            "how-link": "contradicted",
+            "reporter-divider": "drift",
+            "guides-dividers": "drift",
+            "bottom-rule": "drift"
+          },
+          "artifactHash": null
+        },
+        {
+          "at": "2026-10-08T14:37:53.472Z",
+          "score": 0.7958,
+          "worstIds": [
+            "headline",
+            "resident-excerpt",
+            "reporter-divider"
+          ],
+          "regionVerdicts": {
+            "wordmark": "match",
+            "site-nav": "drift",
+            "masthead-rule": "match",
+            "headline": "drift",
+            "lede": "drift",
+            "reporter-label": "drift",
+            "reporter-question": "drift",
+            "reporter-steps": "drift",
+            "reporter-excerpt": "drift",
+            "reporter-try": "drift",
+            "nonprofit-label": "drift",
+            "nonprofit-question": "drift",
+            "nonprofit-steps": "drift",
+            "nonprofit-excerpt": "drift",
+            "nonprofit-try": "drift",
+            "resident-label": "drift",
+            "resident-question": "drift",
+            "resident-steps": "drift",
+            "resident-excerpt": "contradicted",
+            "resident-try": "drift",
+            "column-rules": "drift",
+            "guides-rule": "drift",
+            "guides-heading": "drift",
+            "guides-links": "drift",
+            "guides-contact": "drift",
+            "how-link": "drift",
+            "reporter-divider": "drift",
+            "guides-dividers": "drift",
+            "bottom-rule": "drift"
+          },
+          "artifactHash": null
+        },
+        {
+          "at": "2026-10-08T14:38:24.132Z",
+          "score": 0.8018,
+          "worstIds": [
+            "headline",
+            "reporter-divider",
+            "resident-excerpt"
+          ],
+          "regionVerdicts": {
+            "wordmark": "match",
+            "site-nav": "drift",
+            "masthead-rule": "match",
+            "headline": "drift",
+            "lede": "drift",
+            "reporter-label": "drift",
+            "reporter-question": "drift",
+            "reporter-steps": "drift",
+            "reporter-excerpt": "drift",
+            "reporter-try": "drift",
+            "nonprofit-label": "drift",
+            "nonprofit-question": "drift",
+            "nonprofit-steps": "drift",
+            "nonprofit-excerpt": "drift",
+            "nonprofit-try": "drift",
+            "resident-label": "drift",
+            "resident-question": "drift",
+            "resident-steps": "drift",
+            "resident-excerpt": "contradicted",
+            "resident-try": "drift",
+            "column-rules": "drift",
+            "guides-rule": "drift",
+            "guides-heading": "drift",
+            "guides-links": "drift",
+            "guides-contact": "drift",
+            "how-link": "drift",
+            "reporter-divider": "drift",
+            "guides-dividers": "drift",
+            "bottom-rule": "drift"
+          },
+          "artifactHash": null
+        },
+        {
+          "at": "2026-10-08T14:38:53.663Z",
+          "score": 0.7997,
+          "worstIds": [
+            "headline",
+            "resident-excerpt",
+            "reporter-divider"
+          ],
+          "regionVerdicts": {
+            "wordmark": "match",
+            "site-nav": "drift",
+            "masthead-rule": "match",
+            "headline": "drift",
+            "lede": "drift",
+            "reporter-label": "drift",
+            "reporter-question": "drift",
+            "reporter-steps": "drift",
+            "reporter-excerpt": "drift",
+            "reporter-try": "drift",
+            "nonprofit-label": "drift",
+            "nonprofit-question": "drift",
+            "nonprofit-steps": "drift",
+            "nonprofit-excerpt": "drift",
+            "nonprofit-try": "drift",
+            "resident-label": "drift",
+            "resident-question": "drift",
+            "resident-steps": "drift",
+            "resident-excerpt": "contradicted",
+            "resident-try": "drift",
+            "column-rules": "drift",
+            "guides-rule": "drift",
+            "guides-heading": "drift",
+            "guides-links": "drift",
+            "guides-contact": "drift",
+            "how-link": "drift",
+            "reporter-divider": "drift",
+            "guides-dividers": "drift",
+            "bottom-rule": "drift"
+          },
+          "artifactHash": null
+        },
+        {
+          "at": "2026-10-08T14:39:16.488Z",
+          "score": 0.7923,
+          "worstIds": [
+            "guides-heading",
+            "guides-links",
+            "headline"
+          ],
+          "regionVerdicts": {
+            "wordmark": "match",
+            "site-nav": "drift",
+            "masthead-rule": "match",
+            "headline": "drift",
+            "lede": "drift",
+            "reporter-label": "drift",
+            "reporter-question": "drift",
+            "reporter-steps": "drift",
+            "reporter-excerpt": "drift",
+            "reporter-try": "drift",
+            "nonprofit-label": "drift",
+            "nonprofit-question": "drift",
+            "nonprofit-steps": "drift",
+            "nonprofit-excerpt": "drift",
+            "nonprofit-try": "drift",
+            "resident-label": "drift",
+            "resident-question": "drift",
+            "resident-steps": "drift",
+            "resident-excerpt": "contradicted",
+            "resident-try": "drift",
+            "column-rules": "drift",
+            "guides-rule": "drift",
+            "guides-heading": "contradicted",
+            "guides-links": "contradicted",
+            "guides-contact": "contradicted",
+            "how-link": "drift",
+            "reporter-divider": "drift",
+            "guides-dividers": "drift",
+            "bottom-rule": "missing"
+          },
+          "artifactHash": null
+        },
+        {
+          "at": "2026-10-08T14:41:46.706Z",
+          "score": 0.7997,
+          "worstIds": [
+            "headline",
+            "resident-excerpt",
+            "reporter-divider"
+          ],
+          "regionVerdicts": {
+            "wordmark": "match",
+            "site-nav": "drift",
+            "masthead-rule": "match",
+            "headline": "drift",
+            "lede": "drift",
+            "reporter-label": "drift",
+            "reporter-question": "drift",
+            "reporter-steps": "drift",
+            "reporter-excerpt": "drift",
+            "reporter-try": "drift",
+            "nonprofit-label": "drift",
+            "nonprofit-question": "drift",
+            "nonprofit-steps": "drift",
+            "nonprofit-excerpt": "drift",
+            "nonprofit-try": "drift",
+            "resident-label": "drift",
+            "resident-question": "drift",
+            "resident-steps": "drift",
+            "resident-excerpt": "contradicted",
+            "resident-try": "drift",
+            "column-rules": "drift",
+            "guides-rule": "drift",
+            "guides-heading": "drift",
+            "guides-links": "drift",
+            "guides-contact": "drift",
+            "how-link": "drift",
+            "reporter-divider": "drift",
+            "guides-dividers": "drift",
+            "bottom-rule": "drift"
+          },
+          "artifactHash": null
+        }
+      ],
+      "records": 3
+    },
+    "sections": {
+      "status": "closed",
+      "openedAt": "2026-10-08T14:41:46.706Z",
+      "closedAt": "2026-10-08T14:41:46.726Z",
+      "attempts": 1,
+      "notes": [],
+      "gate": {
+        "ok": true,
+        "reasons": [],
+        "summary": "no mechanical gate",
+        "at": "2026-10-08T14:41:46.726Z"
+      },
+      "forced": null
+    },
+    "motion": {
+      "status": "closed",
+      "openedAt": "2026-10-08T14:41:46.726Z",
+      "closedAt": "2026-10-08T14:41:46.742Z",
+      "attempts": 1,
+      "notes": [],
+      "gate": {
+        "ok": true,
+        "reasons": [],
+        "summary": "no mechanical gate",
+        "at": "2026-10-08T14:41:46.742Z"
+      },
+      "forced": null
+    },
+    "responsive": {
+      "status": "closed",
+      "openedAt": "2026-10-08T14:41:46.742Z",
+      "closedAt": "2026-10-08T15:42:59.203Z",
+      "attempts": 3,
+      "notes": [],
+      "gate": {
+        "ok": false,
+        "reasons": [
+          "at desktop width, region guides-contact is missing",
+          "at desktop width, region reporter-divider is missing",
+          "at desktop width, region bottom-rule is missing",
+          "at desktop width, region nonprofit-excerpt (text) is contradicted (structure 27%)"
+        ],
+        "summary": "desktop 80% (drift)",
+        "score": 0.7995,
+        "sideBySide": "/Users/tarikmoody/Projects/dycu/inventory/.impeccable/review/diff/desktop/side-by-side.png",
+        "at": "2026-10-08T15:42:59.194Z"
+      },
+      "forced": {
+        "at": "2026-10-08T15:42:59.203Z",
+        "reason": "The user confirmed comp B (start-b-laptop) is a layout reference, not a pixel target: Tarik (2026-10-08) chose 'Accept it (Recommended)', whose stated meaning was 'Record that the mockup's exact pixel positions are a reference, not a target'. At 1440 the layout holds with the same structure (80% overall); the three missing regions (guides-contact, reporter-divider, bottom-rule) are position offsets from scaling to the shorter viewport.",
+        "reasons": [
+          "at desktop width, region guides-contact is missing",
+          "at desktop width, region reporter-divider is missing",
+          "at desktop width, region bottom-rule is missing",
+          "at desktop width, region nonprofit-excerpt (text) is contradicted (structure 27%)"
+        ]
+      }
+    },
+    "review": {
+      "status": "closed",
+      "openedAt": "2026-10-08T15:42:59.203Z",
+      "closedAt": "2026-10-08T19:28:52.704Z",
+      "attempts": 0,
+      "notes": [],
+      "gate": null,
+      "forced": null
+    }
+  },
+  "finish": {
+    "disposition": "ship",
+    "at": "2026-10-08T19:28:52.703Z",
+    "phaseAtFinish": "review"
+  },
+  "plates": {}
+}
