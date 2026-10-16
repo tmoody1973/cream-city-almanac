@@ -14,7 +14,9 @@ export function FactSheetLead({ q }: { q: string }) {
   return (
     <p className={styles.factLead} data-fact-lead>
       <Link href={`/n/${area.slug}`}>
-        <strong>{area.name}</strong> · Neighborhood fact sheet: its people and homes next to the rest of the city →
+        <span className={styles.factLeadLabel}>Fact sheet</span>
+        <span className={styles.factLeadName} data-fact-lead-name>{area.name}</span>
+        <span>Its people and homes next to the rest of the city →</span>
       </Link>
     </p>
   );

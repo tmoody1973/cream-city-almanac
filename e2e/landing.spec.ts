@@ -45,6 +45,12 @@ test("the landing page explains the almanac, with live numbers and working links
   await expect(page.locator("[data-landing-count=dycu]")).toHaveText(/^\d+$/);
   await expect(page.locator("[data-landing-count=city]")).toHaveText(/^\d+$/);
   await expect(page.locator("[data-landing-count=health]")).toHaveText(/^\d+$/); // Health Compass measures (dev and prod are refreshed)
+  // Each count says what it counts; there is no "Collections" jargon.
+  await expect(page.getByRole("columnheader", { name: "Holds" })).toBeVisible();
+  await expect(page.locator("[data-landing-count=dycu]").locator("..")).toContainText("datasets and reports");
+  await expect(page.locator("[data-landing-count=city]").locator("..")).toContainText("datasets and maps");
+  await expect(page.locator("[data-landing-count=health]").locator("..")).toContainText("measures");
+  await expect(page.locator("main")).not.toContainText("Collections");
   await expect(page.getByText("Unofficial. Not affiliated with Data You Can Use or the City of Milwaukee.")).toBeVisible();
   // Whole words only ("RAG" must not match "average" or "coverage").
   expect(await page.locator("main").innerText()).not.toMatch(/open data portal|data catalog|\bplatform\b|\bdashboard\b|\btool\b|\bRAG\b|AI-powered/i);

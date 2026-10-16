@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { asOfDate, boundariesShown, BOUNDARIES_NOT_COVERED, BOUNDARIES_NOT_LOADED, notInCityText, PLACE_PRIVACY, pollingNote, PLACE_PRIVACY_ASK, placeFollowUps, placeRefusal, sheetFor } from "../../ui/lib/placeText";
+import { asOfDate, askAboutArea, boundariesShown, BOUNDARIES_NOT_COVERED, BOUNDARIES_NOT_LOADED, notInCityText, PLACE_PRIVACY, pollingNote, PLACE_PRIVACY_ASK, placeFollowUps, placeRefusal, sheetFor } from "../../ui/lib/placeText";
 
 const ok = { status: "ok" as const, matched: "2400 W CENTER ST, MILWAUKEE, WI, 53206", tract: { geoid: "55079008800", number: "88" }, neighborhood: "Harambee", inCity: true, dycu: [{ name: "Harambee", slug: "harambee" }], boundaries: { asOf: null, district: null, ward: null, investment: [], development: [] } };
 
@@ -62,5 +62,15 @@ describe("an address between neighborhood shapes (review fix)", () => {
     expect(boundariesShown({ ...gap, boundaries: { ...gap.boundaries, district: null, ward: null } })).toBe("not-covered");
     expect(boundariesShown({ ...ok, boundaries: { asOf: null, district: null, ward: null, investment: [], development: [] } })).toBe("not-loaded");
     expect(placeFollowUps(gap).map((f) => f.question)).toContain("Which wards are in District 3, and where do they vote?");
+  });
+});
+
+describe("a City neighborhood DYCU doesn't profile", () => {
+  it("points to a City-records count Ask can answer there, not to census tracts", () => {
+    const a = askAboutArea("Bay View");
+    expect(a.text).toBe("That address is in the City's Bay View neighborhood. Data You Can Use doesn't make a fact sheet for it, but Ask can count City records there.");
+    expect(a.question).toBe("How many robberies in Bay View this year?");
+    expect(a.href).toBe(`/ask?prompt=${encodeURIComponent("How many robberies in Bay View this year?")}`);
+    expect(a.text).not.toMatch(/tract/i);
   });
 });

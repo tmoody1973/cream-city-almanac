@@ -46,7 +46,11 @@ test("an address outside DYCU's areas says which City neighborhood it is in", as
   await page.goto("/n");
   await page.getByLabel("Your address").fill("2000 S Kinnickinnic Ave");
   await page.getByRole("button", { name: "Find" }).click();
-  await expect(page.locator("[data-place-message]")).toContainText(/neighborhood, which Data You Can Use doesn't profile/, { timeout: 20_000 });
+  await expect(page.locator("[data-place-message]")).toContainText(/neighborhood\. Data You Can Use doesn't make a fact sheet for it/, { timeout: 20_000 });
+  // The suggestion opens Ask with a question it can answer for any City neighborhood (a City-records count), never census tracts.
+  const link = page.locator("[data-place-message]").getByRole("link", { name: /^Try “How many robberies in .+ this year\?” →$/ });
+  await expect(link).toHaveAttribute("href", /^\/ask\?prompt=How%20many%20robberies%20in%20/);
+  await expect(page.locator("[data-place-message]")).not.toContainText("tracts");
 });
 
 test("the address box has a visible label matching its name, and an answer area screen readers already know", async ({ page }) => {
@@ -69,6 +73,10 @@ test("a search that names a fact-sheet neighborhood leads with its sheet", async
   const lead = page.locator("[data-fact-lead] a");
   await expect(lead).toContainText("Riverwest", { timeout: 15_000 });
   await expect(lead).toHaveAttribute("href", "/n/riverwest");
+  // A block that reads as a result, not a footnote: a FACT SHEET label and the name at row-title size.
+  await expect(page.locator("[data-fact-lead]")).toContainText(/fact sheet/i);
+  const size = await page.locator("[data-fact-lead-name]").evaluate((e) => parseFloat(getComputedStyle(e).fontSize));
+  expect(size).toBeGreaterThanOrEqual(22);
   await page.goto("/search?q=robbery");
   await expect(page.locator("[data-fact-lead]")).toHaveCount(0);
 });

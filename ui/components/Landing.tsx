@@ -63,31 +63,31 @@ export function Landing({ stats }: { stats: Stats }) {
                 <tr>
                   <th scope="col">Source</th>
                   <th scope="col">What&apos;s in it</th>
-                  <th scope="col">Collections</th>
+                  <th scope="col">Holds</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
                   <th scope="row">Data You Can Use</th>
                   <td>Neighborhood health, income and housing; reports read word by word</td>
-                  <td className={styles.num} data-landing-count="dycu">
-                    {stats.dycuFamilies}
+                  <td>
+                    <span className={styles.num} data-landing-count="dycu">{stats.dycuFamilies}</span> <span className={styles.unit}>datasets and reports</span>
                   </td>
                 </tr>
                 <tr>
                   <th scope="row">City of Milwaukee</th>
                   <td>Crime, fire and EMS calls, City services, property, elections, maps; {stats.cityLive} updated daily</td>
-                  <td className={styles.num} data-landing-count="city">
-                    {stats.cityFamilies}
+                  <td>
+                    <span className={styles.num} data-landing-count="city">{stats.cityFamilies}</span> <span className={styles.unit}>datasets and maps</span>
                   </td>
                 </tr>
                 {stats.healthMeasures > 0 && (
                   <tr>
                     <th scope="row">Health Compass Milwaukee</th>
                     <td>Health, hospital visits, food and poverty by ZIP code, from the Milwaukee Health Care Partnership</td>
-                    <td className={styles.num} data-landing-count="health">
-                      {stats.healthMeasures}
-                    </td>
+                    <td>
+                    <span className={styles.num} data-landing-count="health">{stats.healthMeasures}</span> <span className={styles.unit}>measures</span>
+                  </td>
                   </tr>
                 )}
               </tbody>

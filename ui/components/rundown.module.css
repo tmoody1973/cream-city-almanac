@@ -667,6 +667,7 @@
   }
 
   .askRail {
+    grid-column: 3;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -965,10 +966,41 @@
 
 .factLead {
   margin: 0;
-  padding: 14px 0;
+  padding: 16px 0;
   border-bottom: var(--rule);
 }
 
 .factLead a {
+  display: grid;
+  gap: 4px;
+  text-decoration: none;
+}
+
+.factLead a:hover .factLeadName,
+.factLead a:focus-visible .factLeadName {
+  text-decoration: underline;
+}
+
+.factLeadLabel {
+  font-family: var(--font-caps);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: var(--fs-small);
+}
+
+.factLeadName {
+  font-family: var(--font-caps);
+  font-weight: 700;
+  font-size: clamp(24px, 2vw, 30px);
+  line-height: 1;
+}
+
+.factLead a {
   color: var(--ink);
+}
+
+.paneWaiting {
+  margin: 40px clamp(16px, 2vw, 32px);
+  color: var(--muted);
+  font-size: var(--fs-small);
 }
