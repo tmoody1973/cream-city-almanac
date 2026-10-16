@@ -5,6 +5,9 @@ import { areaSlug, FACTS, headline, neighborhoodFigure, tractGeoid, type Portrai
 import { areaInText, matchName, nameKey } from "./lib/neighborhoodNames";
 import { placeKey } from "./lib/portrait";
 import { newestCountyUrl } from "./lib/tractPlaces";
+import { buildCityFigures, type Piece } from "./lib/cityFactSheet";
+import type { Est } from "./lib/factMath";
+import { tractNumber } from "./lib/tractData";
 
 // Every portrait × every headline: which entries don't resolve (spec §4: drop and note, never guess). Run on dev before relying on the list.
 export const checkFacts = internalQuery({
@@ -42,13 +45,52 @@ export async function portraitAreas(ctx: QueryCtx) {
   }).sort((a, b) => a.name.localeCompare(b.name));
 }
 
+async function countyTractUrl(ctx: QueryCtx) {
+  const e02 = await ctx.db.query("families").withIndex("by_code", (q) => q.eq("code", "E02")).first();
+  const ms = e02 ? await ctx.db.query("members").withIndex("by_family", (q) => q.eq("familyKey", e02.key)).collect() : [];
+  return newestCountyUrl(ms.filter((m) => m.featureServerUrl && m.place).map((m) => ({ place: m.place as string, year: m.yearLabel ?? String(m.years[0] ?? ""), url: m.featureServerUrl as string })));
+}
+
 async function tractMap(ctx: QueryCtx, name: string, year: number) {
   const def = await ctx.db.query("neighborhoods").withIndex("by_definition_matchKey", (q) => q.eq("definition", "dycu").eq("matchKey", placeKey(name))).first();
   const tracts = (def?.tracts ?? []).filter((e) => e.years.includes(year)).flatMap((e) => e.tracts);
-  const e02 = await ctx.db.query("families").withIndex("by_code", (q) => q.eq("code", "E02")).first();
-  const ms = e02 ? await ctx.db.query("members").withIndex("by_family", (q) => q.eq("familyKey", e02.key)).collect() : [];
-  const url = newestCountyUrl(ms.filter((m) => m.featureServerUrl && m.place).map((m) => ({ place: m.place as string, year: m.yearLabel ?? String(m.years[0] ?? ""), url: m.featureServerUrl as string })));
+  const url = await countyTractUrl(ctx);
   return url && tracts.length ? { url, geoids: tracts.map(tractGeoid) } : null;
+}
+
+const cityHoods = (ctx: QueryCtx) => ctx.db.query("neighborhoods").withIndex("by_definition_matchKey", (q) => q.eq("definition", "city")).collect();
+
+async function piecesFor(ctx: QueryCtx, name: string): Promise<Piece[]> {
+  const rows = await ctx.db.query("tractNeighborhoods").collect();
+  return rows.flatMap((r) => (r.pieces ?? []).filter((p) => p.name === name).map((p) => ({ geoid: r.geoid, share: p.share }))).sort((a, b) => b.share - a.share);
+}
+
+// A City neighborhood DYCU doesn't profile, built from census tracts (spec 2026-10-16-city-neighborhood-fact-sheets §5–6).
+async function citySheet(ctx: QueryCtx, slug: string) {
+  const hood = (await cityHoods(ctx)).find((h) => areaSlug(h.name) === slug);
+  if (!hood) return null;
+  const pieces = await piecesFor(ctx, hood.name);
+  const pops = new Map<string, number>();
+  const values = new Map<string, Record<string, Est>>();
+  let period: number | null = null;
+  for (const p of pieces) {
+    const pop = await ctx.db.query("tractPopulations").withIndex("by_geoid", (q) => q.eq("geoid", p.geoid)).first();
+    if (pop) pops.set(p.geoid, pop.population);
+    const f = await ctx.db.query("tractFigures").withIndex("by_geoid", (q) => q.eq("geoid", p.geoid)).first();
+    if (f) { values.set(p.geoid, f.values); period = f.period; }
+  }
+  const latest = await ctx.db.query("cityFigures").withIndex("by_period").order("desc").first();
+  const y = period ?? latest?.period ?? new Date().getFullYear() - 2;
+  // The City column is always the tract rows' period, never a newer one.
+  const city = await ctx.db.query("cityFigures").withIndex("by_period", (q) => q.eq("period", y)).first();
+  const url = await countyTractUrl(ctx);
+  const map = url && pieces.length ? { url, geoids: pieces.map((p) => p.geoid) } : null;
+  const built = buildCityFigures(pieces, values, pops, city?.values);
+  if (built.status === "small") return { status: "small" as const, slug, name: hood.name, people: built.people, tracts: pieces.map((p) => ({ number: tractNumber(p.geoid), share: p.share })), map };
+  return {
+    status: "ok" as const, kind: "census" as const, slug, name: hood.name, year: y, years: [] as number[], period: `${y - 4}–${y}`,
+    headlines: built.headlines, tables: [], source: null, map, cityFetchedAt: city?.fetchedAt ?? null, built: { tracts: pieces.length },
+  };
 }
 
 async function assemble(ctx: QueryCtx, area: Awaited<ReturnType<typeof portraitAreas>>[number], year?: number) {
@@ -73,7 +115,12 @@ export const sheet = query({
     const asked = slug.trim().toLowerCase();
     const area = all.find((a) => a.slugs.includes(asked));
     const got = area ? await assemble(ctx, area, year) : null;
-    return got ?? { status: "not-found" as const, areas: all.map(({ slug: s, name }) => ({ slug: s, name })) };
+    if (got) return got;
+    const census = asked ? await citySheet(ctx, asked) : null;
+    if (census) return census;
+    const dycu = new Set(all.flatMap((a) => a.slugs));
+    const cityAreas = (await cityHoods(ctx)).map((h) => ({ slug: areaSlug(h.name), name: h.name })).filter((h) => !dycu.has(h.slug)).sort((a, b) => a.name.localeCompare(b.name));
+    return { status: "not-found" as const, areas: all.map(({ slug: s, name }) => ({ slug: s, name })), cityAreas };
   },
 });
 
@@ -99,6 +146,29 @@ export const areaInSearch = query({
   handler: async (ctx, { q }) => {
     const all = await portraitAreas(ctx);
     const hit = areaInText(q.slice(0, 200), all.map((a) => ({ ...a, spellings: [...new Set(a.members.map((m) => m.place as string))] })));
-    return hit ? { slug: hit.slug, name: hit.name } : null;
+    if (hit) return { slug: hit.slug, name: hit.name };
+    const city = areaInText(q.slice(0, 200), (await cityHoods(ctx)).map((h) => ({ name: h.name, slug: areaSlug(h.name), spellings: [h.name] })));
+    return city ? { slug: city.slug, name: city.name } : null;
+  },
+});
+
+// The real-data check (spec §8.5): every City neighborhood's people added up, how many are small, how many figures are thin.
+// `npx convex run factSheet:checkCitySheets` (dev with OK; prod is Tarik's). With a name, also that neighborhood's built figures.
+export const checkCitySheets = internalQuery({
+  args: { name: v.optional(v.string()) },
+  handler: async (ctx, { name }) => {
+    const hoods = await cityHoods(ctx);
+    let people = 0, small = 0, sheets = 0, thinFigures = 0;
+    let built: unknown = undefined;
+    for (const h of hoods) {
+      const s = await citySheet(ctx, areaSlug(h.name));
+      if (!s) continue;
+      if (s.status === "small") { small++; people += s.people; continue; }
+      sheets++;
+      people += s.headlines.find((x) => x.isCount)?.hood?.count.estimate ?? 0;
+      thinFigures += s.headlines.filter((x) => !x.isCount && !x.hood).length;
+      if (name && h.name === name) built = s.headlines.map((x) => ({ id: x.id, rate: x.hood?.rate ?? null, count: x.hood?.count ?? null }));
+    }
+    return { neighborhoods: hoods.length, sheets, small, people, thinFigures, built };
   },
 });
