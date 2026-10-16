@@ -9,6 +9,17 @@ test("signed out, Ask offers sign-in and search stays public", async ({ page }, 
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 });
 
+test("on a laptop, opening Ask doesn't open an unrelated sheet beside it", async ({ page }, info) => {
+  test.skip(info.project.name !== "desktop", "laptop only");
+  await page.goto("/search?ask=1");
+  await expect(page.getByRole("button", { name: "Sign in to ask" })).toBeVisible();
+  await expect(page.locator("#sheet-pane")).toHaveCount(0);
+  await expect(page.getByText("Tables and maps from Ask's answers open here.")).toBeVisible();
+  // The Ask rail stays in its own narrow column at the right edge.
+  const rail = await page.getByRole("link", { name: "Close Ask" }).boundingBox();
+  expect(rail && rail.x > page.viewportSize()!.width * 0.85).toBe(true);
+});
+
 test("signed out, Ask shows the waiting question and links to examples", async ({ page }) => {
   await page.goto("/ask?prompt=" + encodeURIComponent("Rent & burden in Lincoln Park"));
   await expect(page.getByText("Your question is waiting: “Rent & burden in Lincoln Park”").filter({ visible: true })).toBeVisible({ timeout: 15_000 });

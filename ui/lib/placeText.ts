@@ -42,3 +42,13 @@ export function placeFollowUps(r: Extract<PlaceResult, { status: "ok" }>): Follo
   if (r.boundaries.district) out.push({ label: "ITS WARDS", question: `Which wards are in ${r.boundaries.district.name}, and where do they vote?` });
   return out;
 }
+
+// A City neighborhood DYCU doesn't profile has no fact sheet; Ask can still count City records inside its boundary.
+export const askAboutArea = (neighborhood: string) => {
+  const question = `How many robberies in ${neighborhood} this year?`;
+  return {
+    text: `That address is in the City's ${neighborhood} neighborhood. Data You Can Use doesn't make a fact sheet for it, but Ask can count City records there.`,
+    question,
+    href: `/ask?prompt=${encodeURIComponent(question)}`,
+  };
+};

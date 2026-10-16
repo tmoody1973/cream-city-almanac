@@ -92,7 +92,8 @@ export function SearchHome({ rundown, status }: { rundown: ResultRow[]; status: 
 
   const searching = query.trim().length > 0;
   const rows = searching ? response?.results ?? [] : rundown;
-  const selected = open ?? (laptop ? rows[0]?.code ?? null : null);
+  // While Ask is open, only what Ask (or the visitor) opens shows beside it: the newest item would be unrelated.
+  const selected = open ?? (laptop && !askOpen ? rows[0]?.code ?? null : null);
 
   // A neighborhood table a search result asked for; the auto-shown top row asks for its own.
   const [picked, setPicked] = useState<PortraitFocus | null>(null);
@@ -198,6 +199,7 @@ export function SearchHome({ rundown, status }: { rundown: ResultRow[]; status: 
           )}
         </main>
         )}
+        {laptop && askOpen && !selected && <p className={styles.paneWaiting}>Tables and maps from Ask&apos;s answers open here.</p>}
         {laptop && selected && (
           <SheetPane
             code={selected}

@@ -6,8 +6,12 @@ import { useState } from "react";
 import { api } from "@/convex/_generated/api";
 import type { PlaceResult } from "@/convex/places";
 import { PlaceBoundaries } from "./PlaceBoundaries";
-import { notInCityText, PLACE_PRIVACY, placeRefusal, sheetFor } from "@/ui/lib/placeText";
+import { askAboutArea, notInCityText, PLACE_PRIVACY, placeRefusal, sheetFor } from "@/ui/lib/placeText";
 import styles from "./factSheet.module.css";
+
+const AskAbout = ({ area }: { area: ReturnType<typeof askAboutArea> }) => (
+  <p>{area.text} <Link href={area.href}>Try &ldquo;{area.question}&rdquo; →</Link></p>
+);
 
 // Where an address is: its fact sheet link (or which City neighborhood it is in), then its City boundaries.
 function Panel({ r }: { r: Extract<PlaceResult, { status: "ok" }> }) {
@@ -19,7 +23,7 @@ function Panel({ r }: { r: Extract<PlaceResult, { status: "ok" }> }) {
       {slug && area
         ? <p><Link href={`/n/${slug}`}>Open {area}&apos;s fact sheet →</Link></p>
         : r.neighborhood
-          ? <p>That address is in the City&apos;s {r.neighborhood} neighborhood, which Data You Can Use doesn&apos;t profile. <Link href="/ask">Ask about its census tracts →</Link> (try &ldquo;What&apos;s the poverty rate in {r.neighborhood}&apos;s tracts?&rdquo;)</p>
+          ? <AskAbout area={askAboutArea(r.neighborhood)} />
           : <p>{notInCityText(r.tract.number)}</p>}
       <PlaceBoundaries r={r} meta={styles.muted} />
     </>
