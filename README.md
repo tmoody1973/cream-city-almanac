@@ -1,10 +1,10 @@
 # Cream City Almanac
 
-> A guide to Milwaukee's public data. Find it. Understand it. Check where it came from.
+> Look up your Milwaukee neighborhood. Every number says where it came from.
 
-An unofficial, phone-first guide to two public catalogs: [Data You Can Use](https://datayoucanuse.org)'s neighborhood data and the [City of Milwaukee's open data](https://data.milwaukee.gov). Not affiliated with either. Built by Tarik Moody.
+An unofficial, phone-first guide to Milwaukee's public data: [Data You Can Use](https://datayoucanuse.org)'s neighborhood data, the [City of Milwaukee's open data](https://data.milwaukee.gov), [Health Compass Milwaukee](https://www.healthcompassmilwaukee.org)'s ZIP code measures, and the U.S. Census Bureau's survey. Not affiliated with any of them. Built by Tarik Moody.
 
-**Live:** https://www.creamcityalmanac.app · **New here?** [Start here](https://www.creamcityalmanac.app/start-here) · [How it works](https://www.creamcityalmanac.app/how-it-works), a real dataset sheet annotated in plain English.
+**Live:** https://www.creamcityalmanac.app · **New here?** [What's in the Almanac](https://www.creamcityalmanac.app/about) · [Start here](https://www.creamcityalmanac.app/start-here) · [How it works](https://www.creamcityalmanac.app/how-it-works), a real dataset sheet annotated in plain English.
 
 ## Overview
 
@@ -12,11 +12,18 @@ Milwaukee publishes a lot of data, in two places that don't talk to each other. 
 
 - **Search by meaning, not exact titles.** "kids who can't afford food" finds Food Insecurity Prevalence. When nothing is close, it says so instead of listing unrelated data.
 - **Every dataset, grouped and coded.** DYCU's 382 items form 49 families; the City's 186 datasets form about 130. Each family has a permanent code like `F02`, so the 2022, 2023 and 2024 versions of one measure, or a City dataset's Current and Historical files, live together. City rows carry a CITY tag; daily feeds carry a LIVE mark.
-- **Plain-English dataset sheets.** What a dataset measures, a column guide, caveats, story angles, every file to download, and a live preview. Every fact carries its source: **DYCU** (DYCU's own definitions), **HUB** (the Hub listing), **CITY** (the City's catalog), **SOURCE** (the source agency's website), or **AI** (written by AI from the facts above).
-- **Ask, in plain English.** Sign in and ask a question; the answer points to the right dataset and, for the City's live data, counts the records (by date, type, district or neighborhood) and shows the number on a card with its source. Numbers come from the data, never from the AI's own words.
+- **Your address first.** Type an address on the home page or at `/n` to see your neighborhood, alder and aldermanic district, voting ward, and polling place (with its accessible entrance). The address goes to the Census Bureau's geocoder and is never stored.
+- **A fact sheet for every City neighborhood.** DYCU's 27 profiled neighborhoods get printable sheets from DYCU's own figures. Every other City neighborhood gets the same nine figures built from census tracts, each tract shared out by how much of its land lies in the neighborhood, tagged CENSUS and labeled approximate. Each figure sits beside the City's, with "clearly higher", "clearly lower" or "about the same".
+- **Plain-English dataset sheets.** What a dataset measures, a column guide, caveats, story angles, every file to download, and a live preview. Every fact carries its source: **DYCU** (DYCU's own definitions), **HUB** (the Hub listing), **CITY** (the City's catalog), **CENSUS** (the Census Bureau's survey), **HCM** (Health Compass Milwaukee), **SOURCE** (the source agency's website), or **AI** (written by AI from the facts above).
+- **Ask, in plain English.** Sign in and ask a question; the answer points to the right dataset and, for the City's live data, counts the records (by date, type, district or neighborhood) and shows the number on a card with its source. Numbers come from the data, never from the AI's own words. Ask can also:
+  - rank neighborhoods ("Which neighborhoods have the highest rent burden?") and test whether two measures go together, by neighborhood or by census tract;
+  - describe a ZIP code (who lives there) and its health, food and hospital-visit figures from Health Compass Milwaukee;
+  - answer history questions: crime counts and property values back to 2005, Fire Department calls since 2015, police stops 2019 to 2024, and election turnout;
+  - answer "how long" questions, like 311 requests, permits, and how long vacant buildings have been on the City's list.
+- **Take it with you.** Every answer card exports as a spreadsheet, plain text or an image with its source notes attached, and can be shared as a link anyone can open.
 - **The neighborhood translator.** DYCU reports neighborhoods by census tract (small areas the Census Bureau draws); the City counts by its own official neighborhood boundaries. The almanac matches the two, so "Harambee" means the same place in both.
 - **The map.** A count shows where it happened as shaded quarter-mile squares in three bands (1–4, 5–19, 20 or more), never as dots at addresses, inside the neighborhood's or the City's boundary. Located City sheets (crime, fire and EMS calls) get What / When / Where filters whose map you can share by link; the City's map layers (zoning, parcels, districts) draw for the area you're looking at.
-- **Day and night editions**, and a two-pane layout on laptops (the list beside the selected sheet, with Ask in a side rail).
+- **Day and night editions**, a two-pane layout on laptops (the list beside the selected sheet, with Ask in a side rail), a short first-visit tour, and [`/about`](https://www.creamcityalmanac.app/about), which explains the whole product with its own working parts.
 
 **Status:** live and in public use. Decisions, with what each one cost, are in [`docs/decisions/`](docs/decisions/).
 
@@ -27,13 +34,14 @@ A weekly job (a Convex cron, a function that runs on a schedule, Mondays 09:00 U
 1. Reads DYCU's Hub catalog feed and its inventory spreadsheet (which holds DYCU's column definitions), and the City's CKAN catalog.
 2. Groups items into families and assigns permanent codes. A code is never reused.
 3. Reads the 180 neighborhood report PDFs with Firecrawl so search can match text inside them.
-4. Profiles each live City dataset: its columns and most common values, the only things Ask may count by. It also refreshes the City's 190 neighborhood boundaries and the census-tract list behind the neighborhood translator.
-5. Asks Claude (through the Vercel AI Gateway) to write each family's plain-English card. DYCU's own column definitions always win over AI text.
-6. Indexes cards and report text for keyword search and meaning-based (vector) search, which finds text that *means* something similar.
+4. Profiles each live City dataset: its columns and most common values, the only things Ask may count by. It also refreshes the City's 190 neighborhood boundaries, the census-tract list behind the neighborhood translator, and the City's district, ward and investment-area boundaries.
+5. Fetches the Census Bureau's figures for the City and for every Milwaukee County census tract (the tract figures build the neighborhood fact sheets and answers), plus Health Compass Milwaukee's ZIP code measures, Fire Department yearly totals, police stop counts and election turnout, each stored so Ask reads them instantly.
+6. Asks Claude (through the Vercel AI Gateway) to write each family's plain-English card. DYCU's own column definitions always win over AI text.
+7. Indexes cards and report text for keyword search and meaning-based (vector) search, which finds text that *means* something similar.
 
 Unchanged items are skipped, so a typical weekly run costs cents. A failed run never replaces the live catalog.
 
-When someone asks a question, Ask's AI picks a tool: search the catalog, read a dataset sheet, or count City records. Counts run as live, read-only queries against the City's own database, built only from the columns and values in that dataset's profile, so the AI never writes the query. Maps are built the same way: the City returns quarter-mile cell counts, never coordinates, and only the cells reach the browser.
+When someone asks a question, Ask's AI picks a tested tool: search the catalog, read a dataset sheet, count City records, look up an address, rank or compare neighborhoods, describe a ZIP code, or read stored history. Counts run as live, read-only queries against the City's own database, built only from the columns and values in that dataset's profile, so the AI never writes the query. Maps are built the same way: the City returns quarter-mile cell counts, never coordinates, and only the cells reach the browser.
 
 ## Tech stack
 
@@ -44,10 +52,10 @@ When someone asks a question, Ask's AI picks a tool: search the catalog, read a 
 | Sign-in | Clerk 7 (needed for Ask only; browsing is open) |
 | Ask chat | CopilotKit 1.77 and the AI SDK, Claude Sonnet 5.5 through the Vercel AI Gateway |
 | Maps | MapLibre GL JS 6.11 with OpenFreeMap streets (free, no key); City layers from the City's ArcGIS map server |
-| Rate limiting | `@convex-dev/rate-limiter`: search embeddings, Ask, City counts, the public map |
+| Rate limiting | `@convex-dev/rate-limiter`: search embeddings, Ask, City counts, tract reads, address lookups, the public map |
 | AI | Claude Sonnet 5.5 for dataset cards and Ask; OpenAI `text-embedding-3-small` for search; all through the Vercel AI Gateway |
 | PDF reading | Firecrawl v2 |
-| Source data | DYCU ArcGIS Hub (DCAT feed and FeatureServer API); City of Milwaukee CKAN (`datastore_search_sql`) and ArcGIS REST |
+| Source data | DYCU ArcGIS Hub (DCAT feed and FeatureServer API); City of Milwaukee CKAN (`datastore_search_sql`) and ArcGIS REST; U.S. Census Bureau ACS 5-year API and geocoder; Health Compass Milwaukee |
 | Tests | Vitest 5 + convex-test, Playwright 1.63 + axe (phone and desktop), an Ask report card graded against the real AI |
 | Design | [Impeccable](DESIGN.md) comp-led build; system recorded in [`DESIGN.md`](DESIGN.md) |
 
@@ -103,7 +111,9 @@ npm run dev                  # http://localhost:3000
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY` | `.env.local`, Vercel | Sign-in | For Ask |
 | `CLERK_FRONTEND_API_URL` | Convex env | Lets Convex check Clerk's sign-in tokens (`CLERK_PREVIEW_FRONTEND_API_URL` for preview deploys) | For Ask |
 | `ASK_METER_SECRET` | `.env.local`, Vercel, Convex env | Lets the Ask route record each answer's AI spend | For Ask |
+| `CENSUS_API_KEY` | Convex env | The Census Bureau's survey: City and tract figures for fact sheets, ZIP profiles, tract populations. Never written to code, files or logs | For census figures |
 | `E2E_CLERK_USER_EMAIL` | `.env.local` | A test user for the signed-in browser tests | For e2e |
+| `TEST_ACCOUNTS` | Convex env, **dev only** | Comma-separated verified emails that get 10x the per-account City and tract limits, so back-to-back test runs don't drain them. Never set it on production | For e2e |
 
 Without `AI_GATEWAY_API_KEY`, search still works on keywords only and says so. Ask's limits live in the Convex `settings` table: 30 questions a day per person (200 for newsroom email domains) and a $10 site-wide daily AI cap, after which Ask pauses until tomorrow.
 
@@ -125,7 +135,8 @@ Without `AI_GATEWAY_API_KEY`, search still works on keywords only and says so. A
 ## Project structure
 
 ```
-app/                 Next.js routes: front door (/), search (/search), dataset sheets (/d/[code]), Ask (/ask, /ask/guide),
+app/                 Next.js routes: front door (/), search (/search), dataset sheets (/d/[code]), neighborhood fact sheets
+                     (/n, /n/[slug]), Ask (/ask, /ask/guide), shared cards (/s/[id]), What's in the Almanac (/about),
                      Start here, How it works, and the Ask API route (api/copilotkit)
 ui/components/       Rundown rows, dataset sheets, Ask panel and cards, the map, grease-pencil marks
 ui/lib/              Pure UI logic: formatting, marks, address parameters, map cells and layers
@@ -155,7 +166,7 @@ PRODUCT.md           Product brief: users, purpose, principles
 ## Design and decisions
 
 - [`DESIGN.md`](DESIGN.md): the Rundown design system (a radio show's rundown sheet: ruled rows, permanent codes, red used only as grease-pencil marks, including the line drawn around the area a map count covers).
-- [`docs/decisions/`](docs/decisions/): 25 numbered decision records, each with the options considered and the honest downside.
+- [`docs/decisions/`](docs/decisions/): 55 numbered decision records, each with the options considered and the honest downside.
 
 ## License
 
