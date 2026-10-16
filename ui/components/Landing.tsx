@@ -21,6 +21,9 @@ export function Landing({ stats }: { stats: Stats }) {
       <main className={styles.main}>
         <h2 className={styles.headline}>Look up your Milwaukee neighborhood.</h2>
         <p className={styles.tagline}>Type your address to see it next to the rest of the city, or search any topic. Every number says where it came from.</p>
+        <p className={styles.newHere}>
+          <Link href="/about">New here? See what&apos;s in the Almanac →</Link>
+        </p>
         <div className={styles.address} data-tour="address">
           <FindPlaceBox heading={false} />
         </div>

@@ -45,7 +45,7 @@ function Entry({ n, title, id, children, className }: { n: number; title: string
 export function About({ sampleCode, cityLive, riverwest }: { sampleCode: string | null; cityLive: number; riverwest: RiverwestRow | null }) {
   return (
     <div className={styles.page}>
-      <Masthead side="" showDate={false} sideClassName={styles.side} nav={<SiteNav placement="masthead" current={null} />} />
+      <Masthead side="" showDate={false} sideClassName={styles.side} nav={<SiteNav placement="masthead" current="about" />} />
       <main className={styles.main}>
         <h2 className={styles.headline}>What&apos;s in the Almanac</h2>
         <p className={styles.lede}>Milwaukee&apos;s public data, looked up and explained. Every number says where it came from.</p>

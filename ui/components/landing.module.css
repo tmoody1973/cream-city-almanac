@@ -31,7 +31,17 @@
 
 .tagline {
   font-size: var(--fs-body);
+  margin: 0 0 6px;
+}
+
+/* One link to /about for a first-time visitor, right under the tagline. */
+.newHere {
+  font-size: var(--fs-body);
   margin: 0 0 18px;
+}
+
+.newHere a {
+  color: var(--ink);
 }
 
 .entry {
