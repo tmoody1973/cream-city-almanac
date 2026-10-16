@@ -1,6 +1,5 @@
 "use client";
 import Link from "next/link";
-import arrow from "@/assets/plates/about-arrow.png";
 import { ProvenanceTag } from "./ProvenanceTag";
 import { QUESTION, useRobberySample } from "./LandingAskSample";
 import styles from "./about.module.css";
@@ -20,7 +19,7 @@ export function AboutAskCard({ code }: { code: string | null }) {
             <ProvenanceTag source="CITY" />
             <span className={styles.pencilNote} aria-hidden="true">
               who wrote it
-              <img src={arrow.src} alt="" className={styles.pencilArrow} width={arrow.width} height={arrow.height} />
+              <img src="/plates/about-arrow.png" alt="" className={styles.pencilArrow} width={238} height={268} />
             </span>
           </span>
         </div>

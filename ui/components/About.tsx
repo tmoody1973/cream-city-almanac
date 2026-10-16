@@ -1,6 +1,5 @@
 import Link from "next/link";
 import type { Est, Verdict } from "@/convex/lib/factMath";
-import underline from "@/assets/plates/about-underline.png";
 import { margin, pct, verdictText } from "@/ui/lib/factText";
 import { AboutAskCard } from "./AboutAskCard";
 import { CreditFooter } from "./CreditFooter";
@@ -73,7 +72,7 @@ export function About({ sampleCode, cityLive, riverwest }: { sampleCode: string 
                   <span className={styles.verdict}>
                     {verdictText(riverwest.verdict)}
                     {(riverwest.verdict === "lower" || riverwest.verdict === "higher") && (
-                      <img src={underline.src} alt="" className={styles.pencilUnderline} width={underline.width} height={underline.height} />
+                      <img src="/plates/about-underline.png" alt="" className={styles.pencilUnderline} width={1349} height={220} />
                     )}
                   </span>
                 </span>

@@ -532,7 +532,7 @@ The product explained with its own working parts, set as an almanac's numbered f
 - **Below the first view:** 4 SEARCH | 5 HOW YOU KNOW share one rule with a hairline between them (stacked under 560px); 5 holds the source-tag legend (DYCU, CITY, CENSUS, HCM, AI) as one two-column grid. 6 WHAT YOU CAN ASK, 7 FOR REPORTERS, 8 FOR NONPROFITS, then GOOD TO KNOW (live daily-dataset count) and two closing links. Copy comes from `docs/marketing/cream-city-almanac-one-pager.md` and adds no claims.
 - **Red:** only the one underline and the one margin note with its arrow.
 - **Phones and the comp:** sizes are the comp's px ÷ 10.24 as vw, clamped so body type never drops under 16px. **Laptop is its own composition:** the site's laptop masthead and type scale (not the comp's proportions); entries 1-3 keep the comp's full-width order, 6's list runs in two columns, and 7 | 8 pair under one rule like 4 | 5.
-- **Plates:** `assets/plates/about-underline.png` and `about-arrow.png`, each carrying its generation prompt.
+- **Plates:** served from `public/plates/about-underline.png` and `about-arrow.png` (by URL, like the search page's pencil marks); `assets/plates/` keeps the source copies, each carrying its generation prompt.
 - **Print:** the search box, address box and closing links drop out.
 
 ## Do's and Don'ts
