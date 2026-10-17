@@ -1,0 +1,21 @@
+{
+  "asOf": "2026-10-16",
+  "riverwest": {
+    "name": "Riverwest",
+    "label": "People in poverty",
+    "period": "2020–2024",
+    "rate": {
+      "estimate": 0.12811281128112811,
+      "moe": 0.020793483351820883
+    },
+    "city": {
+      "estimate": 0.22781536768844066,
+      "moe": 0.007619314723806859
+    },
+    "verdict": "clearly lower than the city"
+  },
+  "robbery": {
+    "count": 29,
+    "caption": "NIBRS Crime Data · Robbery · Jan 1, 2026 – Oct 16, 2026 · In Harambee (City of Milwaukee boundary)"
+  }
+}
