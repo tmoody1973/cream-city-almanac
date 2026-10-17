@@ -21,3 +21,7 @@ playwright-report/
 .agents/
 skills-lock.json
 .vercel
+
+# Explainer video (Remotion): renders and screenshot frames
+video/out/
+video/.frames/
