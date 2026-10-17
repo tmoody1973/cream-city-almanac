@@ -43,25 +43,34 @@ Same scene components, laid out for 1080×1920, cut shorter: Problem (0–119, C
 
 | ID | On-screen text | Source |
 |---|---|---|
+| N1 | Cream City Almanac | product name (wordmark) |
+| W1 | Crime reports · Fire calls · Property records · Voter turnout · Health surveys · Census figures | one-pager ¶1 |
 | C1 | Milwaukee publishes a lot of information about itself. | one-pager ¶1 |
 | C2 | Most of it sits in spreadsheets only a data analyst would open. | one-pager ¶1 |
 | C3 | Look up your Milwaukee neighborhood. Every number says where it came from. | one-pager tagline; /about lede |
 | C3a | Look up your Milwaukee neighborhood. | one-pager tagline (first sentence of C3); thumbnails only |
 | C4 | Type your address. See your neighborhood, alder, ward and polling place. | /about entry 1; one-pager |
+| K1 | Neighborhood · Alder · Ward · Polling place | /about entry 1 (callout labels) |
 | C5 | The Almanac doesn't keep your address. | one-pager "Type your address" |
 | C6 | Your neighborhood's figures, next to the city's. | one-pager "Read your neighborhood's fact sheet" |
+| K2 | City of Milwaukee | fact sheet's city column |
 | C7 | Every City neighborhood has a fact sheet. | one-pager (fact sheets for every City neighborhood, decision 054) |
 | Q1 | How many robberies in Harambee this year? | `QUESTION` in `ui/components/LandingAskSample.tsx` |
+| K4 | As of | label for the snapshot date on the Ask card |
 | C8 | Crime back to 2005 · Fire calls and response times since 2015 · How long vacant buildings have sat on the City's list · Health and food figures by ZIP code · Voter turnout | /about `CAN_ASK` (shortened, no new facts) |
 | C9 | The AI picks the right tool. Code does the math. | one-pager "Why you can trust the numbers" |
 | C10 | The AI never writes a number. | one-pager "Why you can trust the numbers" |
-| C11 | Tag names: Data You Can Use · City of Milwaukee · U.S. Census Bureau · Health Compass Milwaukee · Written by AI | /about `TAGS` |
+| T1 | DYCU · CITY · CENSUS · HCM · AI | /about `TAGS` |
+| C11 | Data You Can Use · City of Milwaukee · U.S. Census Bureau · Health Compass Milwaukee · Written by AI | /about `TAGS` |
+| L1 | For journalists | one-pager section heading |
+| L2 | For nonprofits | one-pager section heading |
 | C12 | The figure, its source and its caveats on one card. Export it or share a link. | one-pager "For journalists" |
 | C13 | A one-page fact sheet with the city's figures alongside, for grant applications. | one-pager "For nonprofits" |
 | C14 | Coming next: Wisconsin DNR open data on air, water and land. | Tarik, 2026-10-16 (general "coming next", no dataset names, no date) |
+| U1 | creamcityalmanac.app | the site's address |
 | C15 | Free. Start with your address. | one-pager "Good to know" (search and fact sheets open to everyone; Ask free with sign-in) |
 
-Rules: no number appears unless it comes from the data snapshot. No testimonials, no invented people. Nothing about a specific property, owner or person. The address shown is Milwaukee City Hall (200 E Wells St), never a home.
+Rules: every visible word comes from this table (scenes hold no literal text). No number appears unless it comes from the data snapshot. No testimonials, no invented people. Nothing about a specific property, owner or person. The address shown is Milwaukee City Hall (200 E Wells St), never a home.
 
 ## Look
 
