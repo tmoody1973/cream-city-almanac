@@ -1,54 +1,12 @@
-# Remotion video
+# Cream City Almanac explainer video
 
-<p align="center">
-  <a href="https://github.com/remotion-dev/logo">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://github.com/remotion-dev/logo/raw/main/animated-logo-banner-dark.apng">
-      <img alt="Animated Remotion Logo" src="https://github.com/remotion-dev/logo/raw/main/animated-logo-banner-light.gif">
-    </picture>
-  </a>
-</p>
+A Remotion project (video written as React code and rendered to MP4), kept separate from the site: it has its own packages, and the site's build, typecheck, tests and Vercel upload all skip this folder.
 
-Welcome to your Remotion project!
+- `npm test`: checks the on-screen copy against the spec's claims table, the timeline, the snapshot and the recording math.
+- `CONVEX_URL=https://spotted-tern-278.convex.cloud node scripts/snapshot.mjs`: refreshes the two on-screen figures from production (`src/data.json`, dated). It writes nothing if either answer can't be shown.
+- Re-record the City Hall address lookup (from the repo root): `node video/scripts/record-address.playwright.mjs`, then trim and extend it as decision 056 describes and update `src/clip.ts`. (`scripts/record-address.mjs` is the ego-browser version; on this machine it only reached 8.7 frames a second.)
+- `npx remotion studio`: preview. Each scene is also its own composition under Scenes.
+- `npx remotion render CreamCityAlmanac out/cream-city-almanac-90s.mp4` and `npx remotion render CreamCityAlmanacVertical out/cream-city-almanac-30s-vertical.mp4`: the videos.
+- `npx remotion still Thumbnail out/thumbnail-youtube.png` and `npx remotion still ThumbnailVertical out/thumbnail-vertical.png`: the covers.
 
-## Commands
-
-**Install Dependencies**
-
-```console
-npm i --loglevel=error
-```
-
-**Start Preview**
-
-```console
-npm run dev
-```
-
-**Render video**
-
-```console
-npx remotion render
-```
-
-**Upgrade Remotion**
-
-```console
-npx remotion upgrade
-```
-
-## Docs
-
-Get started with Remotion by reading the [fundamentals page](https://www.remotion.dev/docs/the-fundamentals).
-
-## Help
-
-We provide help on our [Discord server](https://discord.gg/6VzzNDwUwV).
-
-## Issues
-
-Found an issue with Remotion? [File an issue here](https://github.com/remotion-dev/remotion/issues/new).
-
-## License
-
-Note that for some entities a company license is needed. [Read the terms here](https://github.com/remotion-dev/remotion/blob/main/LICENSE.md).
+Music: see `MUSIC.md` (check the license before posting). Spec: `docs/superpowers/specs/2026-10-16-explainer-video-design.md`.
