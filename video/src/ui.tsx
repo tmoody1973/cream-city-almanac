@@ -2,10 +2,11 @@ import React from "react";
 import { Easing, Img, interpolate, spring, staticFile, useVideoConfig } from "remotion";
 import { C, F } from "./theme";
 
-// u: pixels per 1080 px of width (the layout rules' unit). tall: the vertical cut.
+// u: the layout rules' unit (1 = sizes for a 1080 px-wide frame). Capped by height so a 1920×1080 frame gets 1.3,
+// not 1.78: at 1.78 the text no longer fits 1080 px of height. tall: the vertical cut.
 export function useLayout() {
   const { width, height } = useVideoConfig();
-  return { tall: height > width, u: width / 1080, width, height };
+  return { tall: height > width, u: Math.min(width / 1080, height / 830), width, height };
 }
 
 // 0 → 1 between start and start + dur, eased out, clamped both ends.
