@@ -1,5 +1,6 @@
 import React from "react";
 import { Composition, Folder, Still } from "remotion";
+import { Master } from "./Master";
 import { S1Problem } from "./scenes/S1Problem";
 import { S2Reveal } from "./scenes/S2Reveal";
 import { S3Address } from "./scenes/S3Address";
@@ -24,6 +25,8 @@ export const RemotionRoot: React.FC = () => (
       <Composition id="S8-ComingNext" component={S8ComingNext} durationInFrames={150} fps={30} width={1920} height={1080} defaultProps={{ k: 1 }} />
       <Composition id="S9-Start" component={S9Start} durationInFrames={150} fps={30} width={1920} height={1080} defaultProps={{ k: 1 }} />
     </Folder>
+    <Composition id="CreamCityAlmanac" component={Master} durationInFrames={2700} fps={30} width={1920} height={1080} defaultProps={{ cut: "wide" as const }} />
+    <Composition id="CreamCityAlmanacVertical" component={Master} durationInFrames={900} fps={30} width={1080} height={1920} defaultProps={{ cut: "vertical" as const }} />
     <Still id="Thumbnail" component={Thumbnail} width={1280} height={720} />
     <Still id="ThumbnailVertical" component={Thumbnail} width={1080} height={1920} />
   </>

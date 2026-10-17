@@ -8,10 +8,10 @@ export const Thumbnail: React.FC = () => {
   const { u, tall } = useLayout();
   return (
     <Page>
-      <div style={{ fontFamily: F.mark, fontWeight: 900, fontStretch: "50%", fontSize: (tall ? 270 : 210) * u, lineHeight: 0.88, textTransform: "uppercase" }}>{COPY.N1.text}</div>
+      <div style={{ fontFamily: F.mark, fontWeight: 900, fontStretch: "50%", fontSize: 210 * u, lineHeight: 0.88, textTransform: "uppercase" }}>{COPY.N1.text}</div>
       <Rule p={1} weight={4} />
       <Underline p={1}>
-        <Headline size={tall ? 1.15 : 1}>{COPY.C3a.text}</Headline>
+        <Headline size={tall ? 0.9 : 1}>{COPY.C3a.text}</Headline>
       </Underline>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 16 * u }}>
         {COPY.T1.text.split(" · ").map((t) => <Tag key={t} name={t} />)}
