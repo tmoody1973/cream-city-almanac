@@ -4,7 +4,7 @@ A Remotion project (video written as React code and rendered to MP4), kept separ
 
 - `npm test`: checks the on-screen copy against the spec's claims table, the timeline, the snapshot and the recording math.
 - `CONVEX_URL=https://spotted-tern-278.convex.cloud node scripts/snapshot.mjs`: refreshes the two on-screen figures from production (`src/data.json`, dated). It writes nothing if either answer can't be shown.
-- Re-record the City Hall address lookup (from the repo root): `node video/scripts/record-address.playwright.mjs`, then trim and extend it as decision 056 describes and update `src/clip.ts`. (`scripts/record-address.mjs` is the ego-browser version; on this machine it only reached 8.7 frames a second.)
+- Re-record the City Hall address lookup (from the repo root): `node video/scripts/record-address.playwright.mjs` prints `typingAt` and `resultAt`; then `node video/scripts/webm-to-clip.mjs <typingAt - 1>` trims the start and holds the last frame so the clip outlasts the address scene; then set `RESULT_AT` in `src/clip.ts` to `resultAt` minus that trim. `npm test` fails if the clip is shorter than 15.5 s. (`scripts/record-address.mjs` is the ego-browser version; on this machine it only reached 8.7 frames a second.)
 - `npx remotion studio`: preview. Each scene is also its own composition under Scenes.
 - `npx remotion render CreamCityAlmanac out/cream-city-almanac-90s.mp4` and `npx remotion render CreamCityAlmanacVertical out/cream-city-almanac-30s-vertical.mp4`: the videos.
 - `npx remotion still Thumbnail out/thumbnail-youtube.png` and `npx remotion still ThumbnailVertical out/thumbnail-vertical.png`: the covers.
