@@ -14,7 +14,10 @@ Success: someone who has never heard of the Almanac can watch it muted and say (
 
 1. `CreamCityAlmanac` composition: 1920×1080, 30 fps, 90 s (2700 frames). Rendered to `video/out/cream-city-almanac-90s.mp4`.
 2. `CreamCityAlmanacVertical` composition: 1080×1920, 30 fps, 30 s (900 frames). Rendered to `video/out/cream-city-almanac-30s-vertical.mp4`.
-3. Both are rendered only when Tarik asks. `video/out/` is git-ignored.
+3. `Thumbnail` still: 1280×720 PNG for YouTube's custom thumbnail, `video/out/thumbnail-youtube.png`. `ThumbnailVertical` still: 1080×1920 PNG for the Instagram/TikTok/Shorts cover, `video/out/thumbnail-vertical.png`. Both show the wordmark "Cream City Almanac", C3a ("Look up your Milwaukee neighborhood."), a red grease-pencil circle, and the five source tags. (Added at Tarik's request, 2026-10-16.)
+4. All are rendered only when Tarik asks. `video/out/` is git-ignored.
+
+**Frame 0 is never blank.** Platforms that take frame 0 as the cover must get a designed frame: scene 1 opens with the six file names already on the page (they shuffle and pile up, rather than falling onto empty paper).
 
 ## Scenes (90 s wide)
 
@@ -22,7 +25,7 @@ Every on-screen sentence must appear in the Claims table below with its source.
 
 | # | Frames | Scene | On screen |
 |---|---|---|---|
-| 1 | 0–239 (8 s) | Problem | Words fall onto paper: "Crime reports", "Fire calls", "Property records", "Voter turnout", "Health surveys", "Census figures". Then C1, C2. |
+| 1 | 0–239 (8 s) | Problem | Frame 0 already shows the words on paper; they shuffle and pile up: "Crime reports", "Fire calls", "Property records", "Voter turnout", "Health surveys", "Census figures". Then C1, C2. |
 | 2 | 240–449 (7 s) | Reveal | Masthead "Cream City Almanac" draws on with a red grease-pencil rule. C3. |
 | 3 | 450–899 (15 s) | Your address | The real recording (below) plays inside a ruled frame. Red-pencil circles mark neighborhood, alder, ward and polling place as each appears. C4, C5. |
 | 4 | 900–1259 (12 s) | Fact sheet | Riverwest poverty rate as a bar beside the city's, each with its margin of error drawn as a range; the verdict label stamps in. C6, C7. |
@@ -43,6 +46,7 @@ Same scene components, laid out for 1080×1920, cut shorter: Problem (0–119, C
 | C1 | Milwaukee publishes a lot of information about itself. | one-pager ¶1 |
 | C2 | Most of it sits in spreadsheets only a data analyst would open. | one-pager ¶1 |
 | C3 | Look up your Milwaukee neighborhood. Every number says where it came from. | one-pager tagline; /about lede |
+| C3a | Look up your Milwaukee neighborhood. | one-pager tagline (first sentence of C3); thumbnails only |
 | C4 | Type your address. See your neighborhood, alder, ward and polling place. | /about entry 1; one-pager |
 | C5 | The Almanac doesn't keep your address. | one-pager "Type your address" |
 | C6 | Your neighborhood's figures, next to the city's. | one-pager "Read your neighborhood's fact sheet" |
@@ -61,12 +65,12 @@ Rules: no number appears unless it comes from the data snapshot. No testimonials
 
 ## Look
 
-From `DESIGN.md`: paper `#ffffff`, ink `#111111`, band `#ededea`, muted `#5c5c5c`, grease pencil `#d7261e`. Headlines in Saira Extra Condensed, body in Vazirmatn, both loaded with `@remotion/google-fonts`. Ruled lines and red-pencil marks are the motion language: lines draw on, marks circle and underline, tags stamp. Text sizes follow Remotion's layout rules (headline ≥ 84 px, supporting ≥ 44 px at 1080 px wide; key text ≥ 80 px from the sides and ≥ 100 px from top and bottom).
+From `DESIGN.md`: paper `#ffffff`, ink `#111111`, band `#ededea`, muted `#5c5c5c`, grease pencil `#d7261e`. Same four fonts as `app/layout.tsx`, loaded with `@remotion/google-fonts`: Saira (variable width, 50% width, weight 900) for the wordmark only; Saira Extra Condensed 700/900 for caps headlines; Caveat 600 for grease-pencil handwriting; Vazirmatn 400/500/700 for body. Ruled lines and red-pencil marks are the motion language: lines draw on, marks circle and underline, tags stamp. Text sizes follow Remotion's layout rules (headline ≥ 84 px, supporting ≥ 44 px at 1080 px wide; key text ≥ 80 px from the sides and ≥ 100 px from top and bottom).
 
 ## How it's built
 
-1. **Data snapshot.** `video/scripts/snapshot.mjs` calls production's public endpoints with `ConvexHttpClient`: `factSheet.sheet({slug:"riverwest"})` for the poverty row, `catalog.landingStats` for the sample code, then `map.mapCells` with the same arguments `useRobberySample` uses (Harambee, `Offense_All` = 120, from Jan 1 of the current Chicago year). It writes `video/src/data.json` with the values and `asOf` (the date it ran). The prod URL is passed as `CONVEX_URL`; it is a public URL, not a secret. If any call fails, the script exits non-zero and writes nothing.
-2. **Recording.** `video/scripts/record-address.sh` runs one ego-browser script against `https://www.creamcityalmanac.app/about`: it starts the page screencast through `page.cdp("Page.startScreencast")`, types the City Hall address, waits for the result, and stops, saving JPEG frames with timestamps. ffmpeg turns them into `video/public/address.mp4` at 30 fps. Fallback if the frames are too uneven: Playwright `recordVideo` against the same page.
+1. **Data snapshot.** `video/scripts/snapshot.mjs` calls production's public endpoints with `ConvexHttpClient`: `factSheet.sheet({slug:"riverwest"})` for the poverty row, `catalog.landingStats` for the sample code, then `map.mapCells` with the same arguments `useRobberySample` uses (Harambee, `Offense_All` = 120, from Jan 1 of the current Chicago year). It writes `video/src/data.json` with the values and `asOf` (the date it ran). The prod URL is passed as `CONVEX_URL=https://spotted-tern-278.convex.cloud` (public, embedded in the live site's scripts; dev is a different deployment). If any call fails, the script exits non-zero and writes nothing.
+2. **Recording.** ego-browser can send browser commands but can't listen for the screencast's frame events, so `video/scripts/record-address.mjs` (run through `ego-browser nodejs`) captures `page.screenshot()` in a tight loop while it types the City Hall address into the live `/about` page, saving numbered PNGs and their timestamps. ffmpeg assembles them at their real timing into `video/public/address.mp4` at 30 fps. Gate: if the loop reaches at least 15 captures per second, ego-browser's clip is used; below that, `video/scripts/record-address.playwright.mjs` records the same steps with Playwright's `recordVideo` (Playwright is already a dev dependency of the site) and that clip is used instead.
 3. **Music.** One instrumental from a royalty-free library (YouTube Audio Library or Pixabay Music). File in `video/public/music.mp3`; `video/MUSIC.md` records the title, artist, source URL and the license page URL. Tarik checks the license before posting. Scene cuts land on the track's beats.
 4. **Remotion project.** `video/` scaffolded with `npx create-video@latest --yes --blank --no-tailwind`, with its own `package.json`. One component per scene under `video/src/scenes/`, each also registered as its own composition in a `Scenes` folder so it can be previewed and trimmed alone. Wide and vertical layouts share components and read `useVideoConfig()` width/height.
 5. **Isolation.** `video/` is outside the site's `tsconfig.json` include list and Vitest's include globs; `video/node_modules` and `video/out` are git-ignored; the Next build never touches it. Site CI is unaffected.
@@ -84,4 +88,4 @@ Write `docs/decisions/056-explainer-video.md`: rebuilt scenes plus one real reco
 
 ## Out of scope
 
-Narration and captions files, uploading or posting, thumbnails, other aspect ratios (1:1), localization, any change to the web app.
+Narration and captions files, uploading or posting, other aspect ratios (1:1), localization, any change to the web app.
