@@ -18,6 +18,18 @@ export function FactSheetLead({ q }: { q: string }) {
         <span className={styles.factLeadName} data-fact-lead-name>{area.name}</span>
         <span>Its people and homes next to the rest of the city →</span>
       </Link>
+      {"within" in area && area.within.length > 0 && (
+        <span className={styles.factWithin} data-fact-within>
+          All its census tracts are in Data You Can Use&rsquo;s{" "}
+          {area.within.map((w: { slug: string; name: string }, i: number) => (
+            <span key={w.slug}>
+              {i > 0 && " and "}
+              <Link href={`/n/${w.slug}`}>{w.name}</Link>
+            </span>
+          ))}{" "}
+          {area.within.length > 1 ? "areas" : "area"}, a larger area with its own sheet.
+        </span>
+      )}
     </p>
   );
 }

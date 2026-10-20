@@ -70,7 +70,7 @@ test("the fact sheets are linked from the footer, How it works and the neighborh
 
 test("a search that names a fact-sheet neighborhood leads with its sheet", async ({ page }) => {
   await page.goto("/search?q=riverwest%20crime");
-  const lead = page.locator("[data-fact-lead] a");
+  const lead = page.locator("[data-fact-lead] > a");
   await expect(lead).toContainText("Riverwest", { timeout: 15_000 });
   await expect(lead).toHaveAttribute("href", "/n/riverwest");
   // A block that reads as a result, not a footnote: a FACT SHEET label and the name at row-title size.
@@ -79,6 +79,15 @@ test("a search that names a fact-sheet neighborhood leads with its sheet", async
   expect(size).toBeGreaterThanOrEqual(22);
   await page.goto("/search?q=robbery");
   await expect(page.locator("[data-fact-lead]")).toHaveCount(0);
+});
+
+test("a City neighborhood inside a DYCU area points to that area's sheet too", async ({ page }) => {
+  await page.goto("/search?q=arlington%20heights");
+  await expect(page.locator("[data-fact-lead-name]")).toHaveText("Arlington Heights", { timeout: 15_000 });
+  const within = page.locator("[data-fact-within] a");
+  await expect(within).toHaveText("United Community");
+  await expect(within).toHaveAttribute("href", "/n/united-community");
+  await expect(page.locator("[data-fact-within]")).toContainText(/census tracts/);
 });
 
 test("a City neighborhood DYCU doesn't profile opens a sheet built from census tracts", async ({ page }) => {
