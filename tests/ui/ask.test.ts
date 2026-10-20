@@ -157,6 +157,7 @@ const backend: AskBackend = {
   turnout: async () => ({ status: "refused", reason: "" }) as never,
   zip: async () => ({ status: "busy" }) as never,
   fire: async () => ({ status: "refused", reason: "" }) as never,
+  requests311: async () => ({ status: "empty" }) as never,
   health: async () => ({ status: "unavailable" }) as never,
 };
 const tool = (name: string) => askTools(backend).find((t) => t.name === name)!;

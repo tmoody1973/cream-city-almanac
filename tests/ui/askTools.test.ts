@@ -13,6 +13,7 @@ const backend = (relateResult: unknown): AskBackend => ({
   zip: async () => ({ status: "busy" }) as never,
   health: async () => ({ status: "unavailable" }) as never,
   fire: async () => ({ status: "refused", reason: "" }) as never,
+  requests311: async () => ({ status: "empty" }) as never,
 });
 
 const row = (i: number) => ({ geoid: `5507910${String(i).padStart(4, "0")}`, tract: String(i), neighborhood: "Harambee", value: 41.2, lo: 35.1, hi: 47.3, unreliable: false });

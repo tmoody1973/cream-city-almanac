@@ -2,6 +2,7 @@ import { changeExport, countExport, measureExport, numberExport, quoteText, rank
 import { stopsExport } from "./stopsText";
 import { changeCardText, rankCardText, relateCardText } from "./tractCardText";
 import { fireExport } from "./fireText";
+import { requests311Export } from "./requests311Text";
 import { turnoutExport } from "./turnoutText";
 import { zipHealthExport } from "./zipHealthText";
 import { nExport } from "./neighborhoodText";
@@ -10,7 +11,7 @@ import { nExport } from "./neighborhoodText";
 // the same export the card's CSV, text and PNG come from. Runs in Convex, so it imports only plain functions.
 // Ask's fact-sheet card has no export (its answer lacks the sheet's source); it links to the public /n page instead.
 
-export const SHAREABLE = ["getNumber", "countRecords", "timeSpan", "rankTracts", "compareYears", "relateTracts", "countStops", "countTurnout", "fireHistory", "readReport", "zipHealth"] as const;
+export const SHAREABLE = ["getNumber", "countRecords", "timeSpan", "rankTracts", "compareYears", "relateTracts", "countStops", "countTurnout", "fireHistory", "count311", "readReport", "zipHealth"] as const;
 export type ShareTool = (typeof SHAREABLE)[number];
 export const isShareable = (t: string): t is ShareTool => (SHAREABLE as readonly string[]).includes(t);
 
@@ -43,6 +44,7 @@ export function shareCard(tool: ShareTool, result: unknown, ctx: Ctx): Shared | 
     case "countStops": return ok ? card(stopsExport(r as never, ctx)) : null;
     case "countTurnout": return ok ? card(turnoutExport(r as never, ctx)) : null;
     case "fireHistory": return ok ? card(fireExport(r as never, ctx)) : null;
+    case "count311": return ok ? card(requests311Export(r as never, ctx)) : null;
     case "zipHealth": return ok ? card(zipHealthExport(r as never, ctx)) : null;
     case "rankTracts": return ok && r.tool === "rank" ? card(rankExport(r as never, rankCardText(r as never), ctx)) : ok && r.tool === "rank-n" ? card(nExport(r as never, ctx)) : null;
     case "compareYears": return ok && r.tool === "change" ? card(changeExport(r as never, changeCardText(r as never), ctx)) : null;
