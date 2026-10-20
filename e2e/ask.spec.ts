@@ -273,8 +273,7 @@ test.describe("signed in", () => {
     await expect(card.getByTitle("From the City of Milwaukee's open data")).toBeVisible();
   });
 
-  // Needs dev 311 counts (plan 2026-10-20-311 Task 7 runs refresh311 on dev); fixme until then.
-  test.fixme("a 311 question draws the place-vs-city card", async ({ page }) => {
+  test("a 311 question draws the place-vs-city card", async ({ page }) => {
     await ask(page, "Show me potholes in arlington heights");
     const card = page.locator("[data-card=requests-311]:visible");
     await expect(card).toBeVisible({ timeout: 40_000 });
