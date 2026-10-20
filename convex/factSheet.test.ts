@@ -122,8 +122,23 @@ describe("fact sheets built from census tracts", () => {
     expect(index).toMatchObject({ status: "not-found", cityAreas: [{ slug: "bay-view", name: "Bay View" }, { slug: "the-valley-pigsville", name: "The Valley/Pigsville" }, { slug: "tiny-park", name: "Tiny Park" }] });
   });
   it("leads a search with a City neighborhood's sheet, DYCU's first on a shared name", async () => {
-    expect(await t.query(api.factSheet.areaInSearch, { q: "bay view crime" })).toEqual({ slug: "bay-view", name: "Bay View" });
+    expect(await t.query(api.factSheet.areaInSearch, { q: "bay view crime" })).toEqual({ slug: "bay-view", name: "Bay View", within: [] });
     expect(await t.query(api.factSheet.areaInSearch, { q: "harambee crime" })).toEqual({ slug: "harambee", name: "Harambee" });
+  });
+  it("names the DYCU area whose tracts hold all of a searched City neighborhood, never one that holds only part", async () => {
+    await t.run(async (ctx) => {
+      await ctx.db.insert("members", member("u24", "United Community", 2024));
+      await ctx.db.insert("neighborhoods", { definition: "dycu", name: "United Community", matchKey: "united-community", tracts: [{ years: [2021], tracts: ["99"] }, { years: [2024], tracts: ["42", "45", "46"] }] });
+      await ctx.db.insert("neighborhoods", { definition: "city", name: "Arlington Heights", matchKey: nameKey("Arlington Heights") });
+      await ctx.db.insert("tractNeighborhoods", { geoid: "55079004500", city: [], pieces: [{ name: "Arlington Heights", share: 40 }] });
+      await ctx.db.insert("tractNeighborhoods", { geoid: "55079004600", city: [], pieces: [{ name: "Arlington Heights", share: 70 }] });
+    });
+    expect(await t.query(api.factSheet.areaInSearch, { q: "arlington heights potholes" })).toEqual({
+      slug: "arlington-heights", name: "Arlington Heights", within: [{ slug: "united-community", name: "United Community" }],
+    });
+    // Bay View's tracts sit in no DYCU area; Harambee's own search is DYCU's sheet, which needs no pointer.
+    expect(await t.query(api.factSheet.areaInSearch, { q: "bay view" })).toEqual({ slug: "bay-view", name: "Bay View", within: [] });
+    expect(await t.query(api.factSheet.areaInSearch, { q: "harambee" })).toEqual({ slug: "harambee", name: "Harambee" });
   });
   it("adds up every City neighborhood for the real-data check", async () => {
     await withTractFigures();
