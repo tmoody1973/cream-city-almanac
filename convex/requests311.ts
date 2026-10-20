@@ -1,11 +1,13 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
-import { internalAction, internalMutation, internalQuery, type ActionCtx, type QueryCtx } from "./_generated/server";
+import { internalAction, internalMutation, internalQuery, query, type ActionCtx, type QueryCtx } from "./_generated/server";
 import { datastoreSql, datastoreSqlPage, resourceModified } from "./lib/ckan";
 import { geocodeBatch } from "./lib/censusBatch";
 import { inBbox, inShape, type Bbox, type Geometry } from "./lib/geo";
-import { addDays, cleanAddress, daysToClose, mergeHist, parseBatchReply, toBatchCsv, yearOf, type Hist } from "./lib/requests311";
+import { tractGeoid } from "./lib/factSheet";
+import { matchName, nameKey } from "./lib/neighborhoodNames";
+import { addDays, cleanAddress, daysToClose, medianOf, mergeHist, parseBatchReply, resolveTypes, toBatchCsv, yearOf, type Hist } from "./lib/requests311";
 import { vRequests311File, vRequests311Tally } from "./validators";
 
 // City 311 requests counted by place (spec 2026-10-20-311-by-neighborhood, decision 057). Each refresh writes its own
@@ -209,5 +211,83 @@ export const countChunk = internalAction({
     } catch (e) {
       await endFile(ctx, runId, queue, message(e));
     }
+  },
+});
+
+// ── Ask's count311 ──────────────────────────────────────────────────────────────────────────────────────────────────
+
+export const CAVEAT = "311 dates have no time of day, so a request closed the same day counts as 0 days.";
+type Fig = { requests: number; closed: number; medianDays: number | null };
+type Row = Doc<"requests311">;
+const newestTracts = (d: Doc<"neighborhoods">) => [...(d.tracts ?? [])].sort((x, y) => Math.max(0, ...y.years) - Math.max(0, ...x.years))[0]?.tracts ?? [];
+
+function fig(rows: Row[]): Fig {
+  const days = rows.reduce<Hist>((h, r) => mergeHist(h, r.days), {});
+  return { requests: rows.reduce((s, r) => s + r.requests, 0), closed: rows.reduce((s, r) => s + r.closed, 0), medianDays: medianOf(days) };
+}
+
+// DYCU areas whose newest tracts hold every tract the City neighborhood touches, or that share its name.
+async function dycuNoteFor(ctx: QueryCtx, name: string, dycu: Doc<"neighborhoods">[]): Promise<string | null> {
+  const geoids = (await ctx.db.query("tractNeighborhoods").collect()).filter((r) => (r.pieces ?? []).some((p) => p.name === name)).map((r) => r.geoid);
+  const holding = geoids.length ? dycu.filter((d) => { const held = new Set(newestTracts(d).map(tractGeoid)); return geoids.every((g) => held.has(g)); }) : [];
+  if (holding.length) return `All its census tracts are in Data You Can Use's ${holding.map((d) => d.name).join(" and ")} area, a larger area; ask for it by name for its count.`;
+  const same = dycu.find((d) => d.name.toLowerCase() === name.toLowerCase());
+  return same ? `Data You Can Use's ${same.name} area is built from census tracts, so its counts differ from the City neighborhood's.` : null;
+}
+
+export const count311 = query({
+  args: { place: v.optional(v.string()), type: v.optional(v.string()), from: v.optional(v.number()), to: v.optional(v.number()), groupBy: v.optional(v.union(v.literal("type"), v.literal("year"))) },
+  handler: async (ctx, a) => {
+    const runs = await liveRuns(ctx);
+    const live = [runs.historical, runs.current].filter((r) => r !== null);
+    if (!live.length) return { status: "empty" as const };
+    const read = (kind: Row["kind"], place: string) =>
+      Promise.all(live.map((r) => ctx.db.query("requests311").withIndex("by_run_kind_place", (q) => q.eq("runId", r.runId).eq("kind", kind).eq("place", place)).collect())).then((x) => x.flat());
+
+    // A year belongs to one file: the historical file's years, and only newer ones from the current file.
+    const cityAll = await read("city", "city");
+    const histMax = Math.max(-Infinity, ...cityAll.filter((r) => r.runId === runs.historical?.runId).map((r) => r.year));
+    const owned = (r: Row) => r.runId === runs.historical?.runId || r.year > histMax;
+    const years = cityAll.filter(owned).map((r) => r.year);
+    const newest = Math.max(...years);
+    const from = a.from ?? a.to ?? newest, to = a.to ?? a.from ?? newest;
+
+    const known = [...new Set(cityAll.map((r) => r.type))].sort();
+    const typed = resolveTypes(a.type, known);
+    if ("choices" in typed) return { status: "no-type" as const, asked: a.type ?? "", choices: typed.choices };
+    const keep = (r: Row) => owned(r) && r.year >= from && r.year <= to && typed.types.includes(r.type);
+
+    const asked = a.place?.trim() ?? "";
+    const city = await ctx.db.query("neighborhoods").withIndex("by_definition_matchKey", (q) => q.eq("definition", "city")).collect();
+    const dycu = await ctx.db.query("neighborhoods").withIndex("by_definition_matchKey", (q) => q.eq("definition", "dycu")).collect();
+    let place: { name: string; kind: "city" | "hood" | "dycu"; tracts: string[]; dycuNote: string | null };
+    let rows: Row[];
+    if (!asked) {
+      place = { name: "Milwaukee", kind: "city", tracts: [], dycuNote: null };
+      rows = cityAll;
+    } else {
+      const m = matchName(asked, city);
+      if (m.kind === "one") {
+        place = { name: m.row.name, kind: "hood", tracts: [], dycuNote: await dycuNoteFor(ctx, m.row.name, dycu) };
+        rows = await read("hood", m.row.name);
+      } else {
+        const d = matchName(asked, dycu.map((x) => ({ ...x, matchKey: nameKey(x.name) })));
+        if (d.kind === "one") {
+          const tracts = newestTracts(d.row);
+          place = { name: d.row.name, kind: "dycu", tracts, dycuNote: null };
+          rows = (await Promise.all(tracts.map((tr) => read("tract", tractGeoid(tr))))).flat();
+        } else if (m.kind === "choose") return { status: "choose" as const, asked, choices: m.names };
+        else return { status: "no-place" as const, asked, nearest: m.kind === "none" ? m.nearest : [] };
+      }
+    }
+
+    const mine = rows.filter(keep);
+    const unplaced = Object.fromEntries(await Promise.all((["noAddress", "noMatch", "outside"] as const).map(async (k) => [k, (await read("unplaced", k)).filter(keep).reduce((s, r) => s + r.requests, 0)]))) as Record<"noAddress" | "noMatch" | "outside", number>;
+    const by = (key: (r: Row) => string) => [...new Set(mine.map(key))].sort().map((label) => ({ label, fig: fig(mine.filter((r) => key(r) === label)) }));
+    return {
+      status: "ok" as const, place, types: typed.types, from, to, total: fig(mine), city: fig(cityAll.filter(keep)),
+      rows: a.groupBy === "type" ? by((r) => r.type) : a.groupBy === "year" ? by((r) => String(r.year)) : [],
+      unplaced, counted: Math.max(...live.map((r) => r.finished ?? r.started)), caveat: CAVEAT,
+    };
   },
 });

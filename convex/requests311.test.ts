@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 import { convexTest } from "convex-test";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { internal } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import { liveRuns } from "./requests311";
 import schema from "./schema";
 
@@ -171,5 +171,67 @@ describe("311 refresh", () => {
     await t.finishAllScheduledFunctions(vi.runAllTimers);
     expect((await runs()).find((r) => r.file === "current")?.note).toMatch(/TITLE/);
     expect(await t.run((ctx) => ctx.db.query("requests311").collect())).toEqual([]);
+  });
+});
+
+describe("count311", () => {
+  const tally = (kind: "city" | "hood" | "tract" | "unplaced", place: string, year: number, type: string, requests: number, days: Record<string, number> = {}) =>
+    ({ kind, place, year, type, requests, closed: Object.values(days).reduce((s, n) => s + n, 0), days });
+  const makeLive = async (file: "current" | "historical", tallies: ReturnType<typeof tally>[]) => {
+    const runId = await t.mutation(internal.requests311.startRun, { file, modified: "m" });
+    await t.mutation(internal.requests311.addTallies, { runId, tallies, matched: 0, noMatch: 0, noAddress: 0 });
+    await t.mutation(internal.requests311.finishRun, { runId });
+  };
+  const seed = async () => {
+    await t.run(async (ctx) => {
+      await ctx.db.insert("neighborhoods", { definition: "city", name: "Arlington Heights", matchKey: "arlington heights" });
+      await ctx.db.insert("neighborhoods", { definition: "city", name: "Bay View", matchKey: "bay view" });
+      await ctx.db.insert("neighborhoods", { definition: "dycu", name: "United Community", matchKey: "united-community", tracts: [{ years: [2021], tracts: ["99"] }, { years: [2024], tracts: ["45", "46"] }] });
+      await ctx.db.insert("tractNeighborhoods", { geoid: "55079004500", city: [], pieces: [{ name: "Arlington Heights", share: 40 }] });
+      await ctx.db.insert("tractNeighborhoods", { geoid: "55079004600", city: [], pieces: [{ name: "Arlington Heights", share: 70 }] });
+    });
+    await makeLive("historical", [tally("city", "city", 2025, "Potholes", 100, { "3": 80 }), tally("hood", "Arlington Heights", 2025, "Potholes", 10, { "5": 6 })]);
+    await makeLive("current", [
+      tally("city", "city", 2025, "Potholes", 999), // a year the historical file owns: never counted from here
+      tally("city", "city", 2026, "Potholes", 50, { "2": 30, "6": 10 }), tally("city", "city", 2026, "Pothole in Alley", 5, { "1": 5 }),
+      tally("city", "city", 2026, "Dead Animal", 7),
+      tally("hood", "Arlington Heights", 2026, "Potholes", 4, { "4": 2, "8": 2 }), tally("hood", "Arlington Heights", 2026, "Pothole in Alley", 1, { "9": 1 }),
+      tally("tract", "55079004500", 2026, "Potholes", 3, { "4": 3 }), tally("tract", "55079004600", 2026, "Potholes", 2, { "8": 2 }),
+      tally("unplaced", "noAddress", 2026, "Potholes", 6), tally("unplaced", "noMatch", 2026, "Potholes", 1), tally("unplaced", "outside", 2026, "Potholes", 2),
+    ]);
+  };
+
+  it("answers a neighborhood next to the city, with the unplaced counts", async () => {
+    await seed();
+    const r = await t.query(api.requests311.count311, { place: "arlington heights", type: "potholes" });
+    expect(r).toMatchObject({
+      status: "ok", place: { name: "Arlington Heights", kind: "hood" }, types: ["Potholes", "Pothole in Alley"], from: 2026, to: 2026,
+      total: { requests: 5, closed: 5, medianDays: 8 }, city: { requests: 55, closed: 45, medianDays: 2 }, unplaced: { noAddress: 6, noMatch: 1, outside: 2 },
+      caveat: "311 dates have no time of day, so a request closed the same day counts as 0 days.",
+    });
+    if (r.status === "ok") expect(r.place.dycuNote).toMatch(/United Community/);
+  });
+  it("adds up a DYCU area from its newest tracts", async () => {
+    await seed();
+    expect(await t.query(api.requests311.count311, { place: "United Community", type: "potholes" })).toMatchObject({
+      status: "ok", place: { name: "United Community", kind: "dycu", tracts: ["45", "46"] }, total: { requests: 5, medianDays: 4 },
+    });
+  });
+  it("never answers citywide for an unknown place", async () => {
+    await seed();
+    expect(await t.query(api.requests311.count311, { place: "Atlantis" })).toMatchObject({ status: "no-place", asked: "Atlantis" });
+  });
+  it("counts a year in both files once, from the historical file, and groups by year", async () => {
+    await seed();
+    const r = await t.query(api.requests311.count311, { type: "potholes", from: 2025, to: 2026, groupBy: "year" });
+    expect(r).toMatchObject({ status: "ok", place: { kind: "city" }, city: { requests: 155 } });
+    if (r.status === "ok") expect(r.rows.map((x) => [x.label, x.fig.requests])).toEqual([["2025", 100], ["2026", 55]]);
+  });
+  it("offers choices for a type it can't place", async () => {
+    await seed();
+    expect(await t.query(api.requests311.count311, { type: "snow" })).toMatchObject({ status: "no-type", asked: "snow" });
+  });
+  it("says nothing is counted before the first run", async () => {
+    expect(await t.query(api.requests311.count311, {})).toEqual({ status: "empty" });
   });
 });
