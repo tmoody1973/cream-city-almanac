@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { geocodeBatch } from "./censusBatch";
 import { addDays, cleanAddress, daysToClose, medianOf, mergeHist, parseBatchReply, resolveTypes, toBatchCsv, yearOf } from "./requests311";
 
 describe("311 helpers", () => {
@@ -36,5 +37,26 @@ describe("311 helpers", () => {
     expect(resolveTypes("dead animal", known)).toEqual({ types: ["Dead Animal"] });
     expect(resolveTypes(undefined, known)).toEqual({ types: known });
     expect(resolveTypes("snow", known)).toMatchObject({ choices: expect.any(Array) });
+  });
+});
+
+describe("the Census batch call", () => {
+  afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
+  it("retries once, then succeeds", async () => {
+    vi.useFakeTimers();
+    const fetch = vi.fn().mockResolvedValueOnce(new Response("busy", { status: 503 })).mockResolvedValueOnce(new Response("ok", { status: 200 }));
+    vi.stubGlobal("fetch", fetch);
+    const p = geocodeBatch('"a","1 X ST","MILWAUKEE","WI","53202"\n');
+    await vi.runAllTimersAsync();
+    await expect(p).resolves.toBe("ok");
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+  it("throws after two failures", async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("no", { status: 500 })));
+    const p = geocodeBatch("x\n");
+    const caught = p.catch((e: Error) => e);
+    await vi.runAllTimersAsync();
+    expect(String(await caught)).toMatch(/Census geocoder failed: 500/);
   });
 });
