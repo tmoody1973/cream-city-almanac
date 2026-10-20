@@ -66,7 +66,9 @@ export function medianOf(h: Hist): number | null {
 }
 
 export const TYPE_GROUPS = {
-  potholes: ["Potholes", "Pothole in Alley"],
+  // The City retitled potholes over time: "Pothole" until 2023-11-12, then "Potholes"; "Pothole Alley Request" (2023–24),
+  // then "Pothole in Alley". Every title of the same request counts, or a multi-year answer shows a false drop.
+  potholes: ["Potholes", "Pothole", "Pothole in Alley", "Pothole Alley Request"],
   streetlights: ["Street Light Out", "Area Dark"],
   dumping: ["Large Items Discarded on Private Property", "Scattered Litter and Debris on Private Property"],
 } as const satisfies Record<string, readonly string[]>;
@@ -87,4 +89,16 @@ export function resolveTypes(asked: string | undefined, known: string[]): { type
   const hits = known.filter((t) => { const w = words(t); return words(a).every((x) => w.includes(x)); });
   if (hits.length) return { types: hits };
   return { choices: [...known].sort((x, y) => editDistance(x.toLowerCase(), a) - editDistance(y.toLowerCase(), a)).slice(0, 8) };
+}
+
+// The years an answer covers: newest by default, "from" runs up to the newest, "to" back to the first; clamped to the
+// counted years, and never a range wholly outside them (that would be a made-up 0). missing: years in range with no counts.
+export function yearRange(asked: { from?: number; to?: number }, counted: number[]):
+  { from: number; to: number; missing: number[] } | { outside: true; first: number; last: number } {
+  const first = Math.min(...counted), last = Math.max(...counted);
+  const from = Math.max(asked.from ?? (asked.to !== undefined ? first : last), first);
+  const to = Math.min(asked.to ?? last, last);
+  if (from > to) return { outside: true, first, last };
+  const have = new Set(counted);
+  return { from, to, missing: Array.from({ length: to - from + 1 }, (_, i) => from + i).filter((y) => !have.has(y)) };
 }

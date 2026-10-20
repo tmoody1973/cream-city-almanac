@@ -296,7 +296,7 @@ export function askTools(b: AskBackend): AskTool[] {
     },
     {
       name: "count311",
-      description: "City 311 service requests (potholes, streetlights, dumping, or any request type) for a City neighborhood, a Data You Can Use area, or citywide, by year 2020 to now, from stored counts: requests, how many closed, and median days to close, next to the city. If it returns choose, no-place or no-type, offer its choices; never answer citywide for a place it couldn't find. The card carries every figure and note; don't restate them.",
+      description: "City 311 service requests (potholes, streetlights, dumping, or any request type) for a City neighborhood, a Data You Can Use area, or citywide, by year 2020 to now, from stored counts: requests, how many closed, and median days to close, next to the city. With no years it answers the newest year; from alone runs to the newest; to alone runs from 2020. If it returns choose, no-place or no-type, offer its choices; never answer citywide for a place it couldn't find. The card carries every figure and note; don't restate them.",
       parameters: requests311Params,
       execute: (a: z.infer<typeof requests311Params>) => b.requests311(a),
     },

@@ -50,7 +50,7 @@ This fits the rule that nothing about a person or an address is stored. Decision
 
 The weekly catalog build (`convex/build.ts`, next to `refreshFire`) calls `requests311.refresh311`. Steps:
 
-1. **Choose files.** The current file is always recounted. The historical file is recounted only when its `last_modified` differs from the one stored after its last successful count, since it's static in practice. The first run counts both.
+1. **Choose files.** The current file is always recounted. The historical file is recounted only when its contents change: a fingerprint of row count, newest creation date and newest close date, stored with each run. The City re-uploads both files daily, so `last_modified` can't tell a changed file from a re-pushed one (found in review, 2026-10-20). The first run counts both. A run still "running" after 3 hours is marked failed, since a timed-out chunk never reaches its own error handling. A run younger than that makes the refresh skip that file, so two refreshes never count at once. The build's notes give each file's last result.
 2. **Page through the file** with the datastore API, selecting `_id`, `CREATIONDATE`, `CLOSEDDATETIME`, `OBJECTDESC` and `TITLE` only.
 3. **Batch.** Group rows into chunks of up to 5,000 distinct addresses, deduplicated within the chunk. Each chunk runs as its own scheduled action, because Convex actions stop at 10 minutes. The Census call for 5,000 addresses should take about 100 seconds at the tested rate.
 4. **Clean each address** (pure function, tested):
@@ -75,7 +75,7 @@ New public query `requests311.count311`, and an Ask tool `count311`.
 
 - **Inputs:**
   - `place`: a City neighborhood name, a DYCU area name, or empty for citywide.
-  - `type`: optional. Request types match by words against the stored `TITLE`s, with groups: "potholes" covers "Potholes" and "Pothole in Alley"; "streetlights" covers "Street Light Out" and "Area Dark"; "dumping" covers "Large Items Discarded on Private Property" and "Scattered Litter and Debris on Private Property".
+  - `type`: optional. Request types match by words against the stored `TITLE`s, with groups: "potholes" covers "Potholes" and "Pothole in Alley", plus the City's earlier titles for the same requests, "Pothole" (until 2023-11-12) and "Pothole Alley Request" (2023–24); "streetlights" covers "Street Light Out" and "Area Dark"; "dumping" covers "Large Items Discarded on Private Property" and "Scattered Litter and Debris on Private Property".
   - `from` / `to`: years.
   - `groupBy`: `type` or `year`.
 - **Output:**

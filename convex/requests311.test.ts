@@ -18,7 +18,7 @@ const live = () => t.run((ctx) => liveRuns(ctx));
 
 describe("311 count store", () => {
   it("upserts tallies across calls", async () => {
-    const runId = await t.mutation(internal.requests311.startRun, { file: "current", modified: "m1" });
+    const runId = await t.mutation(internal.requests311.startRun, { file: "current", fingerprint: "f1" });
     await t.mutation(internal.requests311.addTallies, { runId, tallies: [pothole(2, { "1": 2 })], matched: 2, noMatch: 0, noAddress: 1 });
     await t.mutation(internal.requests311.addTallies, { runId, tallies: [pothole(3, { "1": 1, "4": 2 })], matched: 3, noMatch: 1, noAddress: 0 });
     const [r] = await rows(runId);
@@ -28,11 +28,11 @@ describe("311 count store", () => {
   });
 
   it("readers see the old run until finish, then the old rows are deleted", async () => {
-    const a = await t.mutation(internal.requests311.startRun, { file: "current", modified: "m1" });
+    const a = await t.mutation(internal.requests311.startRun, { file: "current", fingerprint: "f1" });
     await t.mutation(internal.requests311.addTallies, { runId: a, tallies: [pothole(5)], matched: 5, noMatch: 0, noAddress: 0 });
     await t.mutation(internal.requests311.finishRun, { runId: a });
     vi.advanceTimersByTime(1000);
-    const b = await t.mutation(internal.requests311.startRun, { file: "current", modified: "m2" });
+    const b = await t.mutation(internal.requests311.startRun, { file: "current", fingerprint: "f2" });
     await t.mutation(internal.requests311.addTallies, { runId: b, tallies: [pothole(7)], matched: 7, noMatch: 0, noAddress: 0 });
     expect((await live()).current?.runId).toBe(a);
     await t.mutation(internal.requests311.finishRun, { runId: b });
@@ -43,7 +43,7 @@ describe("311 count store", () => {
   });
 
   it("a failed run never goes live and its rows are deleted", async () => {
-    const a = await t.mutation(internal.requests311.startRun, { file: "historical", modified: "m1" });
+    const a = await t.mutation(internal.requests311.startRun, { file: "historical", fingerprint: "f1" });
     await t.mutation(internal.requests311.addTallies, { runId: a, tallies: [pothole(5)], matched: 5, noMatch: 0, noAddress: 0 });
     await t.mutation(internal.requests311.failRun, { runId: a, note: "Census geocoder failed: 500" });
     await t.finishAllScheduledFunctions(vi.runAllTimers);
@@ -58,7 +58,7 @@ describe("311 count store", () => {
 type FakeRow = { _id: number; CREATIONDATE: string | null; CLOSEDDATETIME: string | null; OBJECTDESC: string | null; TITLE?: string | null };
 const CUR = "bf2b508a-5bfa-49da-8846-d87ffeee020a", HIST = "abdfe983-e856-40cd-bee2-85e78454344a";
 const IN_A = { lat: 43.05, lon: -87.95 }, OUTSIDE = { lat: 43.3, lon: -87.5 };
-function fake(o: { rows: Record<string, FakeRow[]>; modified: Record<string, string[]>; places: Record<string, { lat: number; lon: number } | null>; censusStatus?: number }) {
+function fake(o: { rows: Record<string, FakeRow[]>; fp: Record<string, string[]>; places: Record<string, { lat: number; lon: number } | null>; censusStatus?: number }) {
   const geocodes: string[] = [];
   const ok = (result: unknown) => new Response(JSON.stringify({ success: true, result }), { status: 200 });
   vi.stubGlobal("fetch", async (u: string | URL, init?: RequestInit) => {
@@ -75,11 +75,10 @@ function fake(o: { rows: Record<string, FakeRow[]>; modified: Record<string, str
       return new Response(reply, { status: 200 });
     }
     const params = new URL(url).searchParams;
-    if (url.includes("resource_show")) { const q = o.modified[params.get("id")!]; return ok({ last_modified: q.length > 1 ? q.shift() : q[0] }); }
     const sql = params.get("sql")!;
     const res = /FROM "([^"]+)"/.exec(sql)![1];
     const all = o.rows[res] ?? [];
-    if (/COUNT\(\*\)/.test(sql)) return ok({ records: [{ n: String(all.length) }] });
+    if (/COUNT\(\*\)/.test(sql)) { const q = o.fp[res]; return ok({ records: [{ n: String(all.length), c: q.length > 1 ? q.shift() : q[0], x: "x" }] }); }
     const [, limit, offset] = /LIMIT (\d+) OFFSET (\d+)/.exec(sql)!;
     return ok({ records: all.slice(+offset, +offset + +limit) });
   });
@@ -108,7 +107,7 @@ const runs = () => t.run((ctx) => ctx.db.query("requests311Runs").collect());
 describe("311 refresh", () => {
   it("counts a small file end to end, storing no address", async () => {
     await seedHoods();
-    fake({ rows: { [CUR]: FILE7, [HIST]: [] }, modified: { [CUR]: ["m1"], [HIST]: ["h1"] }, places: PLACES });
+    fake({ rows: { [CUR]: FILE7, [HIST]: [] }, fp: { [CUR]: ["c1"], [HIST]: ["h1"] }, places: PLACES });
     await t.action(internal.requests311.refresh311, {});
     await t.finishAllScheduledFunctions(vi.runAllTimers);
     expect(await count("city", "city")).toBe(7);
@@ -124,9 +123,9 @@ describe("311 refresh", () => {
 
   it("skips the historical file when the City hasn't changed it", async () => {
     await seedHoods();
-    const h = await t.mutation(internal.requests311.startRun, { file: "historical", modified: "h1" });
+    const h = await t.mutation(internal.requests311.startRun, { file: "historical", fingerprint: "7|h1|x" });
     await t.mutation(internal.requests311.finishRun, { runId: h });
-    fake({ rows: { [CUR]: FILE7, [HIST]: FILE7 }, modified: { [CUR]: ["m1"], [HIST]: ["h1"] }, places: PLACES });
+    fake({ rows: { [CUR]: FILE7, [HIST]: FILE7 }, fp: { [CUR]: ["c1"], [HIST]: ["h1"] }, places: PLACES });
     await t.action(internal.requests311.refresh311, {});
     await t.finishAllScheduledFunctions(vi.runAllTimers);
     expect((await runs()).filter((r) => r.file === "historical").map((r) => r.runId)).toEqual([h]);
@@ -134,9 +133,9 @@ describe("311 refresh", () => {
 
   it("fails, keeping old counts, when the City file changes mid-run", async () => {
     await seedHoods();
-    const old = await t.mutation(internal.requests311.startRun, { file: "current", modified: "m0" });
+    const old = await t.mutation(internal.requests311.startRun, { file: "current", fingerprint: "f0" });
     await t.mutation(internal.requests311.finishRun, { runId: old });
-    fake({ rows: { [CUR]: FILE7, [HIST]: [] }, modified: { [CUR]: ["m1", "m2"], [HIST]: ["h1"] }, places: PLACES });
+    fake({ rows: { [CUR]: FILE7, [HIST]: [] }, fp: { [CUR]: ["c1", "c2"], [HIST]: ["h1"] }, places: PLACES });
     await t.action(internal.requests311.refresh311, {});
     await t.finishAllScheduledFunctions(vi.runAllTimers);
     expect((await live()).current?.runId).toBe(old);
@@ -145,7 +144,7 @@ describe("311 refresh", () => {
 
   it("fails below an 80% match rate", async () => {
     await seedHoods();
-    fake({ rows: { [CUR]: FILE7, [HIST]: [] }, modified: { [CUR]: ["m1"], [HIST]: ["h1"] }, places: { [`100 E A ST`]: IN_A } });
+    fake({ rows: { [CUR]: FILE7, [HIST]: [] }, fp: { [CUR]: ["c1"], [HIST]: ["h1"] }, places: { [`100 E A ST`]: IN_A } });
     await t.action(internal.requests311.refresh311, {});
     await t.finishAllScheduledFunctions(vi.runAllTimers);
     expect((await live()).current).toBeNull();
@@ -154,9 +153,9 @@ describe("311 refresh", () => {
 
   it("fails, keeping old counts, when the geocoder is down twice", async () => {
     await seedHoods();
-    const old = await t.mutation(internal.requests311.startRun, { file: "current", modified: "m0" });
+    const old = await t.mutation(internal.requests311.startRun, { file: "current", fingerprint: "f0" });
     await t.mutation(internal.requests311.finishRun, { runId: old });
-    fake({ rows: { [CUR]: FILE7, [HIST]: [] }, modified: { [CUR]: ["m1"], [HIST]: ["h1"] }, places: PLACES, censusStatus: 500 });
+    fake({ rows: { [CUR]: FILE7, [HIST]: [] }, fp: { [CUR]: ["c1"], [HIST]: ["h1"] }, places: PLACES, censusStatus: 500 });
     await t.action(internal.requests311.refresh311, {});
     await t.finishAllScheduledFunctions(vi.runAllTimers);
     expect((await live()).current?.runId).toBe(old);
@@ -166,7 +165,7 @@ describe("311 refresh", () => {
   it("fails naming the column when the City drops one", async () => {
     await seedHoods();
     const noTitle = FILE7.map(({ TITLE: _t, ...r }) => r);
-    fake({ rows: { [CUR]: noTitle, [HIST]: [] }, modified: { [CUR]: ["m1"], [HIST]: ["h1"] }, places: PLACES });
+    fake({ rows: { [CUR]: noTitle, [HIST]: [] }, fp: { [CUR]: ["c1"], [HIST]: ["h1"] }, places: PLACES });
     await t.action(internal.requests311.refresh311, {});
     await t.finishAllScheduledFunctions(vi.runAllTimers);
     expect((await runs()).find((r) => r.file === "current")?.note).toMatch(/TITLE/);
@@ -174,11 +173,54 @@ describe("311 refresh", () => {
   });
 });
 
+describe("311 refresh bookkeeping (review: Important 4, 5)", () => {
+  const HOUR = 3_600_000;
+  it("marks a run that stopped without finishing as failed, then counts again", async () => {
+    await seedHoods();
+    vi.setSystemTime(Date.UTC(2026, 9, 19, 9));
+    const stuck = await t.mutation(internal.requests311.startRun, { file: "current", fingerprint: "f0" });
+    vi.setSystemTime(Date.UTC(2026, 9, 19, 13));
+    fake({ rows: { [CUR]: FILE7, [HIST]: [] }, fp: { [CUR]: ["c1"], [HIST]: ["h1"] }, places: PLACES });
+    const notes = await t.action(internal.requests311.refresh311, {});
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    expect((await runs()).find((r) => r.runId === stuck)).toMatchObject({ status: "failed", note: "Stopped without finishing" });
+    expect((await live()).current?.runId).not.toBe(stuck);
+    expect(notes.join(" ")).toMatch(/current/);
+  });
+  it("skips a file another refresh is still counting", async () => {
+    await seedHoods();
+    vi.setSystemTime(Date.UTC(2026, 9, 19, 9));
+    await t.mutation(internal.requests311.startRun, { file: "current", fingerprint: "f0" });
+    vi.setSystemTime(Date.UTC(2026, 9, 19, 9) + HOUR);
+    fake({ rows: { [CUR]: FILE7, [HIST]: [] }, fp: { [CUR]: ["c1"], [HIST]: ["h1"] }, places: PLACES });
+    const notes = await t.action(internal.requests311.refresh311, {});
+    expect(notes.join(" ")).toMatch(/current: still counting/);
+    expect((await runs()).filter((r) => r.file === "current")).toHaveLength(1);
+  });
+  it("reports each file's last finished run in the build notes", async () => {
+    await seedHoods();
+    const h = await t.mutation(internal.requests311.startRun, { file: "historical", fingerprint: "7|h1|x" });
+    await t.mutation(internal.requests311.failRun, { runId: h, note: "Census geocoder failed: 500" });
+    fake({ rows: { [CUR]: FILE7, [HIST]: FILE7 }, fp: { [CUR]: ["c1"], [HIST]: ["h1"] }, places: PLACES });
+    const notes = await t.action(internal.requests311.refresh311, {});
+    expect(notes.join(" ")).toMatch(/historical: last run failed: Census geocoder failed: 500/);
+  });
+  it("recounts the historical file only when its contents change, not when the City re-uploads it", async () => {
+    await seedHoods();
+    const h = await t.mutation(internal.requests311.startRun, { file: "historical", fingerprint: "7|h1|x" });
+    await t.mutation(internal.requests311.finishRun, { runId: h });
+    fake({ rows: { [CUR]: FILE7, [HIST]: FILE7 }, fp: { [CUR]: ["c1"], [HIST]: ["h2"] }, places: PLACES });
+    await t.action(internal.requests311.refresh311, {});
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    expect((await live()).historical?.fingerprint).toBe("7|h2|x");
+  });
+});
+
 describe("count311", () => {
   const tally = (kind: "city" | "hood" | "tract" | "unplaced", place: string, year: number, type: string, requests: number, days: Record<string, number> = {}) =>
     ({ kind, place, year, type, requests, closed: Object.values(days).reduce((s, n) => s + n, 0), days });
   const makeLive = async (file: "current" | "historical", tallies: ReturnType<typeof tally>[]) => {
-    const runId = await t.mutation(internal.requests311.startRun, { file, modified: "m" });
+    const runId = await t.mutation(internal.requests311.startRun, { file, fingerprint: "f" });
     await t.mutation(internal.requests311.addTallies, { runId, tallies, matched: 0, noMatch: 0, noAddress: 0 });
     await t.mutation(internal.requests311.finishRun, { runId });
   };
@@ -190,7 +232,11 @@ describe("count311", () => {
       await ctx.db.insert("tractNeighborhoods", { geoid: "55079004500", city: [], pieces: [{ name: "Arlington Heights", share: 40 }] });
       await ctx.db.insert("tractNeighborhoods", { geoid: "55079004600", city: [], pieces: [{ name: "Arlington Heights", share: 70 }] });
     });
-    await makeLive("historical", [tally("city", "city", 2025, "Potholes", 100, { "3": 80 }), tally("hood", "Arlington Heights", 2025, "Potholes", 10, { "5": 6 })]);
+    await makeLive("historical", [
+      tally("city", "city", 2020, "Pothole", 40, { "5": 40 }), tally("hood", "Arlington Heights", 2020, "Pothole", 3, { "5": 3 }),
+      tally("city", "city", 2025, "Potholes", 100, { "3": 80 }), tally("hood", "Arlington Heights", 2025, "Potholes", 10, { "5": 6 }),
+      tally("hood", "Menomonee Valley", 2025, "Potholes", 9),
+    ]);
     await makeLive("current", [
       tally("city", "city", 2025, "Potholes", 999), // a year the historical file owns: never counted from here
       tally("city", "city", 2026, "Potholes", 50, { "2": 30, "6": 10 }), tally("city", "city", 2026, "Pothole in Alley", 5, { "1": 5 }),
@@ -205,7 +251,7 @@ describe("count311", () => {
     await seed();
     const r = await t.query(api.requests311.count311, { place: "arlington heights", type: "potholes" });
     expect(r).toMatchObject({
-      status: "ok", place: { name: "Arlington Heights", kind: "hood" }, types: ["Potholes", "Pothole in Alley"], from: 2026, to: 2026,
+      status: "ok", place: { name: "Arlington Heights", kind: "hood" }, types: ["Potholes", "Pothole", "Pothole in Alley"], from: 2026, to: 2026,
       total: { requests: 5, closed: 5, medianDays: 8 }, city: { requests: 55, closed: 45, medianDays: 2 }, unplaced: { noAddress: 6, noMatch: 1, outside: 2 },
       caveat: "311 dates have no time of day, so a request closed the same day counts as 0 days.",
     });
@@ -230,6 +276,19 @@ describe("count311", () => {
   it("offers choices for a type it can't place", async () => {
     await seed();
     expect(await t.query(api.requests311.count311, { type: "snow" })).toMatchObject({ status: "no-type", asked: "snow" });
+  });
+  it("counts the City's 2020 'Pothole' title and runs 'from' up to now, naming the years it lacks (review: Critical 1, Important 2)", async () => {
+    await seed();
+    const r = await t.query(api.requests311.count311, { place: "arlington heights", type: "potholes", from: 2020 });
+    expect(r).toMatchObject({ status: "ok", from: 2020, to: 2026, total: { requests: 18 }, missing: [2021, 2022, 2023, 2024] });
+  });
+  it("refuses years before the City's files start, instead of a zero (review: Important 3)", async () => {
+    await seed();
+    expect(await t.query(api.requests311.count311, { from: 2015, to: 2019 })).toEqual({ status: "no-years", first: 2020, last: 2026 });
+  });
+  it("finds a City neighborhood from its counted requests, without reading outlines (review: Important 6)", async () => {
+    await seed();
+    expect(await t.query(api.requests311.count311, { place: "menomonee valley", from: 2025, to: 2025 })).toMatchObject({ status: "ok", place: { name: "Menomonee Valley", kind: "hood" }, total: { requests: 9 } });
   });
   it("says nothing is counted before the first run", async () => {
     expect(await t.query(api.requests311.count311, {})).toEqual({ status: "empty" });

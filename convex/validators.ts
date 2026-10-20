@@ -169,6 +169,8 @@ export const vRequests311File = v.union(v.literal("current"), v.literal("histori
 export const vRequests311Run = v.object({
   file: vRequests311File, runId: v.string(),
   status: v.union(v.literal("running"), v.literal("live"), v.literal("failed"), v.literal("retired")),
-  modified: v.union(v.string(), v.null()), started: v.number(), finished: v.union(v.number(), v.null()), note: v.union(v.string(), v.null()),
+  // The file's contents in one line (rows | newest creation | newest close): the City re-uploads both files daily, so
+  // its last_modified date can't tell a changed file from a re-pushed one. hoods: the City neighborhoods counted.
+  fingerprint: v.union(v.string(), v.null()), hoods: v.array(v.string()), started: v.number(), finished: v.union(v.number(), v.null()), note: v.union(v.string(), v.null()),
   matched: v.number(), noMatch: v.number(), noAddress: v.number(),
 });

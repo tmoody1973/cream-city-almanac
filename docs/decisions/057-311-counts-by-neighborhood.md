@@ -9,7 +9,7 @@ An Arlington Heights organizer asked for a training. Neighbors there had asked C
 ## Options
 
 1. **Geocode, keep only counts.** Each week, send the addresses to the Census geocoder, place each point in a neighborhood, store counts and days-to-close only.
-   - **Cost:** a real build. About 70 minutes for the first run and about 15 minutes a week after. Around 1% of addresses don't match. About a fifth of rows have no address at all, so they can't be placed.
+   - **Cost:** a real build. About 70 minutes for the first run and about 15 minutes a week after. The 15 minutes assumes the 2020–2025 file is skipped when its contents haven't changed: the City re-uploads it daily, so the Almanac compares contents, not upload dates. Around 1% of addresses don't match. About a fifth of rows have no address at all, so they can't be placed.
 2. **Geocode and keep each request's point.** Any question becomes possible, including block level and maps.
    - **Cost:** the Almanac would hold the location of every resident's complaint. That runs against the project's rule that nothing about a person or an address is stored.
 3. **Count by ZIP code,** which is already at the end of each address.

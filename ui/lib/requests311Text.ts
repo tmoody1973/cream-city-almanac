@@ -1,18 +1,21 @@
 import type { Requests311Answer } from "@/lib/ask/tools";
 import type { FollowUp } from "@/ui/components/FollowUps";
+import { TYPE_GROUPS } from "@/convex/lib/requests311";
 import { exported, safeName, type CardExport, type Ctx } from "./cardExport";
 
 // City 311 requests for a place next to the city (spec 2026-10-20-311-by-neighborhood §5).
 export type Requests311Ok = Extract<Requests311Answer, { status: "ok" }>;
 type Fig = Requests311Ok["total"];
 
+// The groups' titles live with the count (convex/lib/requests311.ts); the card only names them.
 const GROUPS = {
-  potholes: { word: "pothole", types: ["Potholes", "Pothole in Alley"] },
-  streetlights: { word: "streetlight", types: ["Street Light Out", "Area Dark"] },
-  dumping: { word: "dumping", types: ["Large Items Discarded on Private Property", "Scattered Litter and Debris on Private Property"] },
-} as const;
+  potholes: { word: "pothole", types: TYPE_GROUPS.potholes },
+  streetlights: { word: "streetlight", types: TYPE_GROUPS.streetlights },
+  dumping: { word: "dumping", types: TYPE_GROUPS.dumping },
+};
 type Group = keyof typeof GROUPS;
-const groupOf = (types: string[]) => (Object.keys(GROUPS) as Group[]).find((g) => GROUPS[g].types.length === types.length && GROUPS[g].types.every((t) => types.includes(t)));
+// An answer holds the group's titles that have requests, so any non-empty part of a group is that group.
+const groupOf = (types: string[]) => (Object.keys(GROUPS) as Group[]).find((g) => types.length > 0 && types.every((t) => (GROUPS[g].types as readonly string[]).includes(t)));
 const typeWord = (r: Requests311Ok) => { const g = groupOf(r.types); return g ? GROUPS[g].word : r.types.length === 1 ? r.types[0] : "311"; };
 const years = (r: Requests311Ok) => (r.from === r.to ? String(r.from) : `${r.from}–${r.to}`);
 const placeName = (r: Requests311Ok) => (r.place.kind === "city" ? "Milwaukee" : r.place.name);
@@ -36,7 +39,8 @@ export function unplacedNote(r: Requests311Ok): string | null {
 }
 export const sourceLine = (r: Requests311Ok) =>
   `City of Milwaukee 311 call center requests, placed by address with the Census Bureau's geocoder; addresses aren't kept. Counted ${new Date(r.counted).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}.`;
-export const notesOf = (r: Requests311Ok) => [unplacedNote(r), r.place.dycuNote, r.caveat, sourceLine(r)].filter((x): x is string => !!x);
+const missingNote = (r: Requests311Ok) => (r.missing.length ? `No 311 counts for ${r.missing.join(", ")} in the City's files right now.` : null);
+export const notesOf = (r: Requests311Ok) => [missingNote(r), unplacedNote(r), r.place.dycuNote, r.caveat, sourceLine(r)].filter((x): x is string => !!x);
 
 export function requests311Export(r: Requests311Ok, ctx: Ctx): CardExport {
   const byGroup = r.rows.length > 0;

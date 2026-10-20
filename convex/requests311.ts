@@ -2,12 +2,12 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import { internalAction, internalMutation, internalQuery, query, type ActionCtx, type QueryCtx } from "./_generated/server";
-import { datastoreSql, datastoreSqlPage, resourceModified } from "./lib/ckan";
+import { datastoreSql, datastoreSqlPage } from "./lib/ckan";
 import { geocodeBatch } from "./lib/censusBatch";
 import { inBbox, inShape, type Bbox, type Geometry } from "./lib/geo";
 import { tractGeoid } from "./lib/factSheet";
 import { matchName, nameKey } from "./lib/neighborhoodNames";
-import { addDays, cleanAddress, daysToClose, medianOf, mergeHist, parseBatchReply, resolveTypes, toBatchCsv, yearOf, type Hist } from "./lib/requests311";
+import { addDays, cleanAddress, daysToClose, medianOf, mergeHist, parseBatchReply, resolveTypes, toBatchCsv, yearOf, yearRange, type Hist } from "./lib/requests311";
 import { vRequests311File, vRequests311Tally } from "./validators";
 
 // City 311 requests counted by place (spec 2026-10-20-311-by-neighborhood, decision 057). Each refresh writes its own
@@ -25,10 +25,10 @@ export async function liveRuns(ctx: QueryCtx): Promise<Record<File, Doc<"request
 }
 
 export const startRun = internalMutation({
-  args: { file: vRequests311File, modified: v.union(v.string(), v.null()) },
-  handler: async (ctx, { file, modified }) => {
+  args: { file: vRequests311File, fingerprint: v.union(v.string(), v.null()) },
+  handler: async (ctx, { file, fingerprint }) => {
     const runId = `${file}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    await ctx.db.insert("requests311Runs", { file, runId, status: "running", modified, started: Date.now(), finished: null, note: null, matched: 0, noMatch: 0, noAddress: 0 });
+    await ctx.db.insert("requests311Runs", { file, runId, status: "running", fingerprint, hoods: [], started: Date.now(), finished: null, note: null, matched: 0, noMatch: 0, noAddress: 0 });
     return runId;
   },
 });
@@ -45,8 +45,14 @@ export const addTallies = internalMutation({
       if (old) await ctx.db.patch(old._id, { requests: old.requests + t.requests, closed: old.closed + t.closed, days: mergeHist(old.days, t.days) });
       else await ctx.db.insert("requests311", { runId, ...t });
     }
-    await ctx.db.patch(run._id, { matched: run.matched + matched, noMatch: run.noMatch + noMatch, noAddress: run.noAddress + noAddress });
+    const hoods = [...new Set([...run.hoods, ...tallies.filter((t) => t.kind === "hood").map((t) => t.place)])].sort();
+    await ctx.db.patch(run._id, { matched: run.matched + matched, noMatch: run.noMatch + noMatch, noAddress: run.noAddress + noAddress, hoods });
   },
+});
+
+export const setFingerprint = internalMutation({
+  args: { runId: v.string(), fingerprint: v.string() },
+  handler: async (ctx, { runId, fingerprint }) => { const run = await runOf(ctx, runId); if (run) await ctx.db.patch(run._id, { fingerprint }); },
 });
 
 export const finishRun = internalMutation({
@@ -94,8 +100,16 @@ const COLUMNS = ["CREATIONDATE", "CLOSEDDATETIME", "OBJECTDESC", "TITLE"] as con
 const SHAPES_PAGE = 20;
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
-export const runsNow = internalQuery({ args: {}, handler: (ctx) => liveRuns(ctx) });
-export const runModified = internalQuery({ args: { runId: v.string() }, handler: async (ctx, { runId }) => (await runOf(ctx, runId))?.modified ?? null });
+const STALE_MS = 3 * 3_600_000; // a whole first run takes about 70 minutes; one running past 3 hours has stopped
+export const allRuns = internalQuery({ args: {}, handler: (ctx) => ctx.db.query("requests311Runs").collect() });
+export const runFingerprint = internalQuery({ args: { runId: v.string() }, handler: async (ctx, { runId }) => (await runOf(ctx, runId))?.fingerprint ?? null });
+
+// The file's contents in one line; a re-upload of the same rows keeps it, a new or closed request changes it.
+async function fingerprintOf(file: File): Promise<{ fingerprint: string; total: number }> {
+  const [r] = await datastoreSql<{ n: string; c: string | null; x: string | null }>(
+    `SELECT COUNT(*) AS n, MAX("CREATIONDATE") AS c, MAX("CLOSEDDATETIME") AS x FROM "${FILES[file]}"`);
+  return { fingerprint: `${r.n}|${r.c}|${r.x}`, total: Number(r.n) };
+}
 
 // The City neighborhoods' outlines, 20 at a time: all 190 in one read pass Convex's 16 MB limit (factSheet.ts).
 export const hoodShapes = internalQuery({
@@ -109,22 +123,37 @@ export const hoodShapes = internalQuery({
 export const refresh311 = internalAction({
   args: {},
   handler: async (ctx): Promise<string[]> => {
-    const { historical } = await ctx.runQuery(internal.requests311.runsNow, {});
-    const histModified = await resourceModified(FILES.historical);
-    const queue: File[] = ["current", ...(historical && historical.modified === histModified ? [] : (["historical"] as const))];
-    await ctx.scheduler.runAfter(0, internal.requests311.startFile, { file: queue[0], queue: queue.slice(1) });
-    return [`311: counting ${queue.join(" and ")} in the background`];
+    const runs = await ctx.runQuery(internal.requests311.allRuns, {});
+    const notes: string[] = [];
+    const queue: File[] = [];
+    for (const file of ["current", "historical"] as const) {
+      const mine = runs.filter((r) => r.file === file);
+      const last = mine.filter((r) => r.finished !== null && r.status !== "running").sort((a, b) => b.finished! - a.finished!)[0];
+      if (last) notes.push(`311 ${file}: last run ${last.status === "retired" ? "replaced" : last.status}${last.note ? `: ${last.note}` : ""}`);
+      // Scheduled actions run at most once: a chunk that timed out never reached its catch, so its run is ended here.
+      for (const r of mine.filter((x) => x.status === "running" && Date.now() - x.started >= STALE_MS)) await ctx.runMutation(internal.requests311.failRun, { runId: r.runId, note: "Stopped without finishing" });
+      if (mine.some((x) => x.status === "running" && Date.now() - x.started < STALE_MS)) { notes.push(`311 ${file}: still counting`); continue; }
+      if (file === "historical") {
+        const live = mine.find((r) => r.status === "live");
+        if (live && live.fingerprint === (await fingerprintOf(file)).fingerprint) continue;
+      }
+      queue.push(file);
+    }
+    if (queue.length) {
+      await ctx.scheduler.runAfter(0, internal.requests311.startFile, { file: queue[0], queue: queue.slice(1) });
+      notes.push(`311: counting ${queue.join(" and ")} in the background`);
+    }
+    return notes;
   },
 });
 
 export const startFile = internalAction({
   args: { file: vRequests311File, queue: v.array(vRequests311File) },
   handler: async (ctx, { file, queue }) => {
-    const modified = await resourceModified(FILES[file]);
-    const runId = await ctx.runMutation(internal.requests311.startRun, { file, modified });
+    const runId = await ctx.runMutation(internal.requests311.startRun, { file, fingerprint: null });
     try {
-      const [{ n }] = await datastoreSql<{ n: string }>(`SELECT COUNT(*) AS n FROM "${FILES[file]}"`);
-      const total = Number(n);
+      const { fingerprint, total } = await fingerprintOf(file);
+      await ctx.runMutation(internal.requests311.setFingerprint, { runId, fingerprint });
       if (!Number.isFinite(total) || total <= 0) throw new Error("City 311 file has no rows");
       await ctx.scheduler.runAfter(0, internal.requests311.countChunk, { runId, file, offset: 0, total, queue });
     } catch (e) {
@@ -206,7 +235,7 @@ export const countChunk = internalAction({
         await ctx.scheduler.runAfter(0, internal.requests311.countChunk, { runId, file, offset: offset + CHUNK, total, queue });
         return;
       }
-      const changed = (await resourceModified(FILES[file])) !== (await ctx.runQuery(internal.requests311.runModified, { runId }));
+      const changed = (await fingerprintOf(file)).fingerprint !== (await ctx.runQuery(internal.requests311.runFingerprint, { runId }));
       await endFile(ctx, runId, queue, changed ? "City file changed during the count" : null);
     } catch (e) {
       await endFile(ctx, runId, queue, message(e));
@@ -227,8 +256,8 @@ function fig(rows: Row[]): Fig {
 }
 
 // DYCU areas whose newest tracts hold every tract the City neighborhood touches, or that share its name.
-async function dycuNoteFor(ctx: QueryCtx, name: string, dycu: Doc<"neighborhoods">[]): Promise<string | null> {
-  const geoids = (await ctx.db.query("tractNeighborhoods").collect()).filter((r) => (r.pieces ?? []).some((p) => p.name === name)).map((r) => r.geoid);
+function dycuNoteFor(pieces: Doc<"tractNeighborhoods">[], name: string, dycu: Doc<"neighborhoods">[]): string | null {
+  const geoids = pieces.filter((r) => (r.pieces ?? []).some((p) => p.name === name)).map((r) => r.geoid);
   const holding = geoids.length ? dycu.filter((d) => { const held = new Set(newestTracts(d).map(tractGeoid)); return geoids.every((g) => held.has(g)); }) : [];
   if (holding.length) return `All its census tracts are in Data You Can Use's ${holding.map((d) => d.name).join(" and ")} area, a larger area; ask for it by name for its count.`;
   const same = dycu.find((d) => d.name.toLowerCase() === name.toLowerCase());
@@ -248,9 +277,9 @@ export const count311 = query({
     const cityAll = await read("city", "city");
     const histMax = Math.max(-Infinity, ...cityAll.filter((r) => r.runId === runs.historical?.runId).map((r) => r.year));
     const owned = (r: Row) => r.runId === runs.historical?.runId || r.year > histMax;
-    const years = cityAll.filter(owned).map((r) => r.year);
-    const newest = Math.max(...years);
-    const from = a.from ?? a.to ?? newest, to = a.to ?? a.from ?? newest;
+    const range = yearRange(a, [...new Set(cityAll.filter(owned).map((r) => r.year))]);
+    if ("outside" in range) return { status: "no-years" as const, first: range.first, last: range.last };
+    const { from, to, missing } = range;
 
     const known = [...new Set(cityAll.map((r) => r.type))].sort();
     const typed = resolveTypes(a.type, known);
@@ -258,7 +287,11 @@ export const count311 = query({
     const keep = (r: Row) => owned(r) && r.year >= from && r.year <= to && typed.types.includes(r.type);
 
     const asked = a.place?.trim() ?? "";
-    const city = await ctx.db.query("neighborhoods").withIndex("by_definition_matchKey", (q) => q.eq("definition", "city")).collect();
+    // City names without their outlines (all 190 shapes are megabytes): the neighborhoods the live runs counted, and
+    // the ones with residents in a tract, so a neighborhood with no requests yet still answers 0, not "no such place".
+    const pieces = await ctx.db.query("tractNeighborhoods").collect();
+    const names = [...new Set([...live.flatMap((r) => r.hoods), ...pieces.flatMap((p) => (p.pieces ?? []).map((x) => x.name))])];
+    const city = names.map((name) => ({ name, matchKey: nameKey(name) }));
     const dycu = await ctx.db.query("neighborhoods").withIndex("by_definition_matchKey", (q) => q.eq("definition", "dycu")).collect();
     let place: { name: string; kind: "city" | "hood" | "dycu"; tracts: string[]; dycuNote: string | null };
     let rows: Row[];
@@ -268,7 +301,7 @@ export const count311 = query({
     } else {
       const m = matchName(asked, city);
       if (m.kind === "one") {
-        place = { name: m.row.name, kind: "hood", tracts: [], dycuNote: await dycuNoteFor(ctx, m.row.name, dycu) };
+        place = { name: m.row.name, kind: "hood", tracts: [], dycuNote: dycuNoteFor(pieces, m.row.name, dycu) };
         rows = await read("hood", m.row.name);
       } else {
         const d = matchName(asked, dycu.map((x) => ({ ...x, matchKey: nameKey(x.name) })));
@@ -285,7 +318,7 @@ export const count311 = query({
     const unplaced = Object.fromEntries(await Promise.all((["noAddress", "noMatch", "outside"] as const).map(async (k) => [k, (await read("unplaced", k)).filter(keep).reduce((s, r) => s + r.requests, 0)]))) as Record<"noAddress" | "noMatch" | "outside", number>;
     const by = (key: (r: Row) => string) => [...new Set(mine.map(key))].sort().map((label) => ({ label, fig: fig(mine.filter((r) => key(r) === label)) }));
     return {
-      status: "ok" as const, place, types: typed.types, from, to, total: fig(mine), city: fig(cityAll.filter(keep)),
+      status: "ok" as const, place, types: typed.types, from, to, missing, total: fig(mine), city: fig(cityAll.filter(keep)),
       rows: a.groupBy === "type" ? by((r) => r.type) : a.groupBy === "year" ? by((r) => String(r.year)) : [],
       unplaced, counted: Math.max(...live.map((r) => r.finished ?? r.started)), caveat: CAVEAT,
     };

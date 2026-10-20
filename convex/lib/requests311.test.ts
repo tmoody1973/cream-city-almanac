@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { geocodeBatch } from "./censusBatch";
-import { addDays, cleanAddress, daysToClose, medianOf, mergeHist, parseBatchReply, resolveTypes, toBatchCsv, yearOf } from "./requests311";
+import { addDays, cleanAddress, daysToClose, medianOf, mergeHist, parseBatchReply, resolveTypes, toBatchCsv, yearOf, yearRange } from "./requests311";
 
 describe("311 helpers", () => {
   it("cleans an address, dropping a unit and keeping Milwaukee as a street", () => {
@@ -38,6 +38,18 @@ describe("311 helpers", () => {
     expect(resolveTypes(undefined, known)).toEqual({ types: known });
     expect(resolveTypes("snow", known)).toMatchObject({ choices: expect.any(Array) });
   });
+  it("counts the City's older pothole titles in the group (review: Critical 1)", () => {
+    const known = ["Pothole", "Pothole Alley Request", "Pothole in Alley", "Potholes", "Dead Animal"];
+    expect(resolveTypes("potholes", known)).toEqual({ types: ["Potholes", "Pothole", "Pothole in Alley", "Pothole Alley Request"] });
+  });
+  it("defaults years to the newest, runs 'from' up to now, and never invents years (review: Important 2, 3)", () => {
+    const counted = [2020, 2021, 2025, 2026];
+    expect(yearRange({}, counted)).toEqual({ from: 2026, to: 2026, missing: [] });
+    expect(yearRange({ from: 2021 }, counted)).toEqual({ from: 2021, to: 2026, missing: [2022, 2023, 2024] });
+    expect(yearRange({ to: 2021 }, counted)).toEqual({ from: 2020, to: 2021, missing: [] });
+    expect(yearRange({ from: 2015, to: 2020 }, counted)).toEqual({ from: 2020, to: 2020, missing: [] });
+    expect(yearRange({ from: 2015, to: 2019 }, counted)).toEqual({ outside: true, first: 2020, last: 2026 });
+  });
 });
 
 describe("the Census batch call", () => {
@@ -50,6 +62,12 @@ describe("the Census batch call", () => {
     await vi.runAllTimersAsync();
     await expect(p).resolves.toBe("ok");
     expect(fetch).toHaveBeenCalledTimes(2);
+  });
+  it("gives up on a call that hangs, so a chunk can still fail cleanly (review: Important 4)", async () => {
+    let signal: AbortSignal | undefined;
+    vi.stubGlobal("fetch", vi.fn(async (_u: string, init?: RequestInit) => { signal = init?.signal ?? undefined; return new Response("ok"); }));
+    await geocodeBatch("x\n");
+    expect(signal).toBeInstanceOf(AbortSignal);
   });
   it("throws after two failures", async () => {
     vi.useFakeTimers();
