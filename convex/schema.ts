@@ -1,6 +1,6 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
-import { vBbox, vBoundaryKind, vCityProfile, vCover, vPlaceType, vDictionaryField, vGlossaryEntry, vKind, vMember, vMismatch, vProvenance, vPortraitTable, vStopKind, vStopRow, vFireRow, vFireType, vHealthFigure, vHealthLayer, vHealthTopic } from "./validators";
+import { vBbox, vBoundaryKind, vCityProfile, vCover, vPlaceType, vDictionaryField, vGlossaryEntry, vKind, vMember, vMismatch, vProvenance, vPortraitTable, vStopKind, vStopRow, vFireRow, vFireType, vHealthFigure, vHealthLayer, vHealthTopic, vRequests311Row, vRequests311Run } from "./validators";
 
 export default defineSchema({
   families: defineTable({
@@ -127,6 +127,13 @@ export default defineSchema({
   fireYears: defineTable(vFireRow).index("by_year", ["year"]),
   fireTypes: defineTable({ year: v.number(), ...vFireType.fields }).index("by_year", ["year"]),
   fireRefresh: defineTable({ year: v.number(), status: v.union(v.literal("counted"), v.literal("failed")), note: v.optional(v.string()), counted: v.number() }).index("by_year", ["year"]),
+  // City 311 requests as counts only, per place × type × year, tagged with the run that wrote them (spec 2026-10-20-311,
+  // decision 057). No address, point or comment is stored. Readers follow each file's live run in requests311Runs.
+  requests311: defineTable(vRequests311Row)
+    .index("by_run_key", ["runId", "kind", "place", "year", "type"])
+    .index("by_run_kind_place", ["runId", "kind", "place"])
+    .index("by_run", ["runId"]),
+  requests311Runs: defineTable(vRequests311Run).index("by_file", ["file"]).index("by_runId", ["runId"]),
   // Health Compass Milwaukee's figures, one row per place (37 ZIPs, the county, the city), replaced weekly together.
   healthTopics: defineTable(vHealthTopic).index("by_key", ["key"]),
   healthPlaces: defineTable({ layer: vHealthLayer, geo: v.string(), population: v.optional(v.union(v.number(), v.null())), figures: v.array(vHealthFigure) }).index("by_geo", ["geo"]),
