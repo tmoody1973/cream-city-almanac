@@ -69,6 +69,19 @@ async function piecesByName(ctx: QueryCtx): Promise<Map<string, Piece[]>> {
 // ponytail: names from tract pieces, so a City neighborhood touching no tract by 1%+ (no residents) isn't listed; its page still opens.
 const cityNames = async (ctx: QueryCtx) => [...(await piecesByName(ctx)).keys()];
 
+// DYCU areas whose newest tract list holds every tract a City neighborhood touches ("Arlington Heights" → "United Community").
+// DYCU's reports name tracts, not City neighborhoods, so this is the only honest link between the two; partial overlaps aren't named.
+async function dycuHolding(ctx: QueryCtx, pieces: Piece[], all: Awaited<ReturnType<typeof portraitAreas>>) {
+  if (!pieces.length) return [];
+  const rows = await ctx.db.query("neighborhoods").withIndex("by_definition_matchKey", (q) => q.eq("definition", "dycu")).collect();
+  return rows.flatMap((r) => {
+    const newest = [...(r.tracts ?? [])].sort((x, y) => Math.max(0, ...y.years) - Math.max(0, ...x.years))[0];
+    const held = new Set((newest?.tracts ?? []).map(tractGeoid));
+    const area = all.find((a) => placeKey(a.name) === r.matchKey);
+    return area && pieces.every((p) => held.has(p.geoid)) ? [{ slug: area.slug, name: area.name }] : [];
+  });
+}
+
 // A City neighborhood DYCU doesn't profile, built from census tracts (spec 2026-10-16-city-neighborhood-fact-sheets §5–6).
 // A slug's words are the name's match key ("the-valley-pigsville" → "the valley pigsville"): one indexed read.
 async function cityHood(ctx: QueryCtx, slug: string) {
@@ -169,9 +182,11 @@ export const areaInSearch = query({
     const all = await portraitAreas(ctx);
     const hit = areaInText(q.slice(0, 200), all.map((a) => ({ ...a, spellings: [...new Set(a.members.map((m) => m.place as string))] })));
     if (hit) return { slug: hit.slug, name: hit.name };
-    const city = areaInText(q.slice(0, 200), (await cityNames(ctx)).map((name) => ({ name, slug: areaSlug(name), spellings: [name] })));
+    const byName = await piecesByName(ctx);
+    const city = areaInText(q.slice(0, 200), [...byName.keys()].map((name) => ({ name, slug: areaSlug(name), spellings: [name] })));
     const cover = city ? dycuCovering(city.name, all) : null;
-    return cover ? { slug: cover.slug, name: cover.name } : city ? { slug: city.slug, name: city.name } : null;
+    if (cover) return { slug: cover.slug, name: cover.name };
+    return city ? { slug: city.slug, name: city.name, within: await dycuHolding(ctx, byName.get(city.name) ?? [], all) } : null;
   },
 });
 

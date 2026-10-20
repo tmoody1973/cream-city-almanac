@@ -999,6 +999,18 @@
   color: var(--ink);
 }
 
+.factWithin {
+  display: block;
+  margin-top: 8px;
+  font-size: var(--fs-small);
+  color: var(--muted);
+}
+
+.factLead .factWithin a {
+  display: inline;
+  text-decoration: underline;
+}
+
 .paneWaiting {
   margin: 40px clamp(16px, 2vw, 32px);
   color: var(--muted);
