@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
-import { internalAction, internalMutation, internalQuery, query, type ActionCtx, type QueryCtx } from "./_generated/server";
+import { internalAction, internalMutation, internalQuery, query, type ActionCtx, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { datastoreSql, datastoreSqlPage } from "./lib/ckan";
 import { geocodeBatch } from "./lib/censusBatch";
 import { inBbox, inShape, type Bbox, type Geometry } from "./lib/geo";
@@ -25,34 +25,102 @@ export async function liveRuns(ctx: QueryCtx): Promise<Record<File, Doc<"request
 }
 
 export const startRun = internalMutation({
-  args: { file: vRequests311File, fingerprint: v.union(v.string(), v.null()) },
-  handler: async (ctx, { file, fingerprint }) => {
+  args: { file: vRequests311File, fingerprint: v.union(v.string(), v.null()), queue: v.optional(v.array(vRequests311File)) },
+  handler: async (ctx, { file, fingerprint, queue }) => {
     const runId = `${file}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    await ctx.db.insert("requests311Runs", { file, runId, status: "running", fingerprint, hoods: [], started: Date.now(), finished: null, note: null, matched: 0, noMatch: 0, noAddress: 0 });
+    await ctx.db.insert("requests311Runs", {
+      file, runId, status: "running", fingerprint, hoods: [], started: Date.now(), finished: null, note: null,
+      matched: 0, noMatch: 0, noAddress: 0, next: 0, attempt: 0, queue: queue ?? [],
+    });
     return runId;
   },
 });
 
-// A chunk's tallies (callers send at most 1,000) added onto the run's rows, plus its geocoding totals.
+const atStep = (run: Doc<"requests311Runs"> | null, step: number): run is Doc<"requests311Runs"> =>
+  run !== null && run.status === "running" && (run.next ?? 0) === step;
+
+// A step's tallies (callers send at most 1,000) added onto the run's rows. Each row keeps its figures from before this
+// step, so rollbackStep can undo a step that was stopped between batches.
 export const addTallies = internalMutation({
-  args: { runId: v.string(), tallies: v.array(vRequests311Tally), matched: v.number(), noMatch: v.number(), noAddress: v.number() },
-  handler: async (ctx, { runId, tallies, matched, noMatch, noAddress }) => {
+  args: { runId: v.string(), step: v.number(), tallies: v.array(vRequests311Tally) },
+  handler: async (ctx, { runId, step, tallies }) => {
     const run = await runOf(ctx, runId);
-    if (!run || run.status !== "running") throw new Error(`311 run ${runId} isn't running`);
+    if (!atStep(run, step)) throw new Error(`311 run ${runId} isn't counting step ${step}`);
     for (const t of tallies) {
       const old = await ctx.db.query("requests311").withIndex("by_run_key", (q) =>
         q.eq("runId", runId).eq("kind", t.kind).eq("place", t.place).eq("year", t.year).eq("type", t.type)).first();
-      if (old) await ctx.db.patch(old._id, { requests: old.requests + t.requests, closed: old.closed + t.closed, days: mergeHist(old.days, t.days) });
-      else await ctx.db.insert("requests311", { runId, ...t });
+      if (!old) { await ctx.db.insert("requests311", { runId, ...t, step }); continue; }
+      const before = old.step === step ? old.before : { requests: old.requests, closed: old.closed, days: old.days };
+      await ctx.db.patch(old._id, { requests: old.requests + t.requests, closed: old.closed + t.closed, days: mergeHist(old.days, t.days), step, before });
     }
     const hoods = [...new Set([...run.hoods, ...tallies.filter((t) => t.kind === "hood").map((t) => t.place)])].sort();
-    await ctx.db.patch(run._id, { matched: run.matched + matched, noMatch: run.noMatch + noMatch, noAddress: run.noAddress + noAddress, hoods });
+    await ctx.db.patch(run._id, { hoods });
   },
 });
 
-export const setFingerprint = internalMutation({
-  args: { runId: v.string(), fingerprint: v.string() },
-  handler: async (ctx, { runId, fingerprint }) => { const run = await runOf(ctx, runId); if (run) await ctx.db.patch(run._id, { fingerprint }); },
+// Puts back up to 1,000 rows a stopped step had added to; returns how many, so the caller repeats until 0.
+export const rollbackStep = internalMutation({
+  args: { runId: v.string(), step: v.number() },
+  handler: async (ctx, { runId, step }) => {
+    const page = await ctx.db.query("requests311").withIndex("by_run_step", (q) => q.eq("runId", runId).eq("step", step)).take(1000);
+    for (const r of page) {
+      if (r.before) await ctx.db.patch(r._id, { ...r.before, step: undefined, before: undefined });
+      else await ctx.db.delete(r._id);
+    }
+    return page.length;
+  },
+});
+
+export const setTotal = internalMutation({
+  args: { runId: v.string(), total: v.number(), fingerprint: v.optional(v.string()) },
+  handler: async (ctx, { runId, total, fingerprint }) => {
+    const run = await runOf(ctx, runId);
+    if (run) await ctx.db.patch(run._id, { total, ...(fingerprint === undefined ? {} : { fingerprint }) });
+  },
+});
+
+// A step starts: null if the run has ended or moved past it (a stale copy). Otherwise it counts a try and sets a
+// watchdog: Convex stops an action at 10 minutes, so a step not ended 15 minutes on has stopped.
+const WATCH_MS = 15 * 60_000;
+const MAX_ATTEMPTS = 3;
+export const beginStep = internalMutation({
+  args: { runId: v.string(), step: v.number() },
+  handler: async (ctx, { runId, step }) => {
+    const run = await runOf(ctx, runId);
+    if (!atStep(run, step)) return null;
+    const attempt = (run.attempt ?? 0) + 1;
+    await ctx.db.patch(run._id, { attempt });
+    await ctx.scheduler.runAfter(WATCH_MS, internal.requests311.watchStep, { runId, step, attempt });
+    return { file: run.file, queue: run.queue ?? [] };
+  },
+});
+
+// A step's geocoding totals and its move to the next step, in one transaction, so they count once. It also schedules
+// what comes next, so no gap is left between a finished step and the next one.
+export const endStep = internalMutation({
+  args: { runId: v.string(), step: v.number(), matched: v.number(), noMatch: v.number(), noAddress: v.number() },
+  handler: async (ctx, { runId, step, matched, noMatch, noAddress }) => {
+    const run = await runOf(ctx, runId);
+    if (!atStep(run, step)) return;
+    const next = step + CHUNK;
+    await ctx.db.patch(run._id, { matched: run.matched + matched, noMatch: run.noMatch + noMatch, noAddress: run.noAddress + noAddress, next, attempt: 0 });
+    if (run.total === undefined) return;
+    if (next < run.total) await ctx.scheduler.runAfter(0, internal.requests311.countChunk, { runId, step: next });
+    else await ctx.scheduler.runAfter(0, internal.requests311.finishFile, { runId });
+  },
+});
+
+// The watchdog: if the step hasn't ended, it reruns it (which rolls back what it half-saved), up to 3 tries.
+export const watchStep = internalMutation({
+  args: { runId: v.string(), step: v.number(), attempt: v.number() },
+  handler: async (ctx, { runId, step, attempt }) => {
+    const run = await runOf(ctx, runId);
+    if (!atStep(run, step) || run.attempt !== attempt) return;
+    if (attempt < MAX_ATTEMPTS) { await ctx.scheduler.runAfter(0, internal.requests311.countChunk, { runId, step }); return; }
+    await failIn(ctx, run, `A counting step stopped ${MAX_ATTEMPTS} times`);
+    const queue = run.queue ?? [];
+    if (queue.length) await ctx.scheduler.runAfter(0, internal.requests311.startFile, { file: queue[0], queue: queue.slice(1) });
+  },
 });
 
 export const finishRun = internalMutation({
@@ -70,13 +138,15 @@ export const finishRun = internalMutation({
 });
 
 // A failed run keeps the file's live run as it was; its own rows go.
+async function failIn(ctx: MutationCtx, run: Doc<"requests311Runs">, note: string) {
+  await ctx.db.patch(run._id, { status: "failed", finished: Date.now(), note });
+  await ctx.scheduler.runAfter(0, internal.requests311.deleteRows, { runId: run.runId });
+}
 export const failRun = internalMutation({
   args: { runId: v.string(), note: v.string() },
   handler: async (ctx, { runId, note }) => {
     const run = await runOf(ctx, runId);
-    if (!run || run.status !== "running") return;
-    await ctx.db.patch(run._id, { status: "failed", finished: Date.now(), note });
-    await ctx.scheduler.runAfter(0, internal.requests311.deleteRows, { runId });
+    if (run && run.status === "running") await failIn(ctx, run, note);
   },
 });
 
@@ -90,8 +160,9 @@ export const deleteRows = internalMutation({
 });
 
 // ── The weekly refresh ──────────────────────────────────────────────────────────────────────────────────────────────
-// refresh311 → startFile → countChunk → countChunk … → finishRun (or failRun) → the next file's startFile. One file and
-// one Census request at a time. Scheduled arguments are offsets and IDs only, never rows or addresses.
+// refresh311 → startFile → countChunk (step 0) → endStep → countChunk (step 5000) … → finishFile → finishRun (or failRun)
+// → the next file's startFile. One file and one Census request at a time. Scheduled arguments are offsets and IDs only,
+// never rows or addresses. A step Convex stops partway is rerun by watchStep, after rolling back what it saved.
 
 export const FILES = { current: "bf2b508a-5bfa-49da-8846-d87ffeee020a", historical: "abdfe983-e856-40cd-bee2-85e78454344a" } as const;
 export const CHUNK = 5000;
@@ -100,9 +171,9 @@ const COLUMNS = ["CREATIONDATE", "CLOSEDDATETIME", "OBJECTDESC", "TITLE"] as con
 const SHAPES_PAGE = 20;
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
-const STALE_MS = 3 * 3_600_000; // a whole first run takes about 70 minutes; one running past 3 hours has stopped
+const STALE_MS = 3 * 3_600_000; // a first run takes about 70 minutes plus any reruns; one running past 3 hours has stopped
 export const allRuns = internalQuery({ args: {}, handler: (ctx) => ctx.db.query("requests311Runs").collect() });
-export const runFingerprint = internalQuery({ args: { runId: v.string() }, handler: async (ctx, { runId }) => (await runOf(ctx, runId))?.fingerprint ?? null });
+export const runInfo = internalQuery({ args: { runId: v.string() }, handler: (ctx, { runId }) => runOf(ctx, runId) });
 
 // The file's contents in one line; a re-upload of the same rows keeps it, a new or closed request changes it.
 async function fingerprintOf(file: File): Promise<{ fingerprint: string; total: number }> {
@@ -150,12 +221,12 @@ export const refresh311 = internalAction({
 export const startFile = internalAction({
   args: { file: vRequests311File, queue: v.array(vRequests311File) },
   handler: async (ctx, { file, queue }) => {
-    const runId = await ctx.runMutation(internal.requests311.startRun, { file, fingerprint: null });
+    const runId = await ctx.runMutation(internal.requests311.startRun, { file, fingerprint: null, queue });
     try {
       const { fingerprint, total } = await fingerprintOf(file);
-      await ctx.runMutation(internal.requests311.setFingerprint, { runId, fingerprint });
       if (!Number.isFinite(total) || total <= 0) throw new Error("City 311 file has no rows");
-      await ctx.scheduler.runAfter(0, internal.requests311.countChunk, { runId, file, offset: 0, total, queue });
+      await ctx.runMutation(internal.requests311.setTotal, { runId, total, fingerprint });
+      await ctx.scheduler.runAfter(0, internal.requests311.countChunk, { runId, step: 0 });
     } catch (e) {
       await endFile(ctx, runId, queue, message(e));
     }
@@ -186,12 +257,16 @@ function tallyInto(m: Map<string, Tally>, kind: Tally["kind"], place: string, ye
   m.set(key, { ...t, requests: t.requests + 1, closed: t.closed + (closed ? 1 : 0), days: days === null ? t.days : addDays(t.days, days) });
 }
 
+// One step: rows step to step + 5,000. Safe to run again for the same step; only the run's current step does anything.
 export const countChunk = internalAction({
-  args: { runId: v.string(), file: vRequests311File, offset: v.number(), total: v.number(), queue: v.array(vRequests311File) },
-  handler: async (ctx, { runId, file, offset, total, queue }) => {
+  args: { runId: v.string(), step: v.number() },
+  handler: async (ctx, { runId, step }) => {
+    const run: { file: File; queue: File[] } | null = await ctx.runMutation(internal.requests311.beginStep, { runId, step });
+    if (!run) return;
     try {
+      while ((await ctx.runMutation(internal.requests311.rollbackStep, { runId, step })) > 0);
       const { records, truncated } = await datastoreSqlPage<Record<string, string | null>>(
-        `SELECT "_id",${COLUMNS.map((c) => `"${c}"`).join(",")} FROM "${FILES[file]}" ORDER BY "_id" LIMIT ${CHUNK} OFFSET ${offset}`);
+        `SELECT "_id",${COLUMNS.map((c) => `"${c}"`).join(",")} FROM "${FILES[run.file]}" ORDER BY "_id" LIMIT ${CHUNK} OFFSET ${step}`);
       if (truncated) throw new Error("City cut the 311 page short");
       const missing = COLUMNS.filter((c) => records.length && !(c in records[0]));
       if (missing.length) throw new Error(`City 311 file is missing column ${missing.join(", ")}`);
@@ -226,19 +301,25 @@ export const countChunk = internalAction({
         tallyInto(tallies, hood ? "hood" : "unplaced", hood ? hood.name : "outside", year, type, closed, days);
       });
       const all = [...tallies.values()];
-      for (let i = 0; i < Math.max(all.length, 1); i += 1000) {
-        const first = i === 0;
-        await ctx.runMutation(internal.requests311.addTallies, { runId, tallies: all.slice(i, i + 1000), matched: first ? matched : 0, noMatch: first ? noMatch : 0, noAddress: first ? noAddress : 0 });
-      }
-
-      if (offset + CHUNK < total) {
-        await ctx.scheduler.runAfter(0, internal.requests311.countChunk, { runId, file, offset: offset + CHUNK, total, queue });
-        return;
-      }
-      const changed = (await fingerprintOf(file)).fingerprint !== (await ctx.runQuery(internal.requests311.runFingerprint, { runId }));
-      await endFile(ctx, runId, queue, changed ? "City file changed during the count" : null);
+      for (let i = 0; i < all.length; i += 1000) await ctx.runMutation(internal.requests311.addTallies, { runId, step, tallies: all.slice(i, i + 1000) });
+      await ctx.runMutation(internal.requests311.endStep, { runId, step, matched, noMatch, noAddress });
     } catch (e) {
-      await endFile(ctx, runId, queue, message(e));
+      await endFile(ctx, runId, run.queue, message(e));
+    }
+  },
+});
+
+// After the last step: the file must be the one the count started on.
+export const finishFile = internalAction({
+  args: { runId: v.string() },
+  handler: async (ctx, { runId }) => {
+    const run: Doc<"requests311Runs"> | null = await ctx.runQuery(internal.requests311.runInfo, { runId });
+    if (!run || run.status !== "running") return;
+    try {
+      const changed = (await fingerprintOf(run.file)).fingerprint !== run.fingerprint;
+      await endFile(ctx, runId, run.queue ?? [], changed ? "City file changed during the count" : null);
+    } catch (e) {
+      await endFile(ctx, runId, run.queue ?? [], message(e));
     }
   },
 });

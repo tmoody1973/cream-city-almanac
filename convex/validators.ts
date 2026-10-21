@@ -164,7 +164,12 @@ export const vRequests311Tally = v.object({
   kind: vRequests311Kind, place: v.string(), year: v.number(), type: v.string(),
   requests: v.number(), closed: v.number(), days: v.record(v.string(), v.number()),
 });
-export const vRequests311Row = v.object({ runId: v.string(), ...vRequests311Tally.fields });
+// step: the offset of the step that last added to the row, and before: the row's figures ahead of that step, so a step
+// stopped partway can be rolled back and redone without counting twice.
+export const vRequests311Row = v.object({
+  runId: v.string(), ...vRequests311Tally.fields, step: v.optional(v.number()),
+  before: v.optional(v.object({ requests: v.number(), closed: v.number(), days: v.record(v.string(), v.number()) })),
+});
 export const vRequests311File = v.union(v.literal("current"), v.literal("historical"));
 export const vRequests311Run = v.object({
   file: vRequests311File, runId: v.string(),
@@ -173,4 +178,6 @@ export const vRequests311Run = v.object({
   // its last_modified date can't tell a changed file from a re-pushed one. hoods: the City neighborhoods counted.
   fingerprint: v.union(v.string(), v.null()), hoods: v.array(v.string()), started: v.number(), finished: v.union(v.number(), v.null()), note: v.union(v.string(), v.null()),
   matched: v.number(), noMatch: v.number(), noAddress: v.number(),
+  // next: the offset of the next step to count; attempt: tries at that step; queue: files to count after this one.
+  total: v.optional(v.number()), next: v.optional(v.number()), attempt: v.optional(v.number()), queue: v.optional(v.array(vRequests311File)),
 });

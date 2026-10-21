@@ -63,7 +63,8 @@ The weekly catalog build (`convex/build.ts`, next to `refreshFire`) calls `reque
    - A bounding-box check runs first.
 7. **Tally** each chunk into a staging table (`requests311Stage`, keyed by run ID, file, place, type and year) by adding counts and histograms. No addresses go into staging.
 8. **Swap in.** When the last chunk of a file finishes, one mutation per year replaces that file's year rows from staging, then clears the staging rows for the run. Readers never see a half-counted year.
-9. **Status table** `requests311Refresh`, one row per file: last run, status, `last_modified`, and the matched, unmatched and no-address totals. The build's notes list failures the way fire's do.
+9. **A step Convex stops partway** (added 2026-10-20, decision 058). The implementation tallies straight into the run's rows rather than a staging table. Each row keeps its figures from before the step that last touched it. Every step's start schedules a watchdog 15 minutes later. If the step hasn't ended by then, the watchdog reruns it, and the rerun first rolls back what the stopped try saved. After 3 tries the run fails and the old counts stay. A step's totals and its move to the next step are saved in one transaction, so they count once.
+10. **Status table** `requests311Refresh`, one row per file: last run, status, `last_modified`, and the matched, unmatched and no-address totals. The build's notes list failures the way fire's do.
 
 **Cost:** first run about 209,000 rows, so about 42 chunks and roughly 70 minutes of Census calls spread across chained actions. A typical week is about 40,000 current-year rows: 8 chunks, about 15 minutes. Free, no key.
 

@@ -132,7 +132,8 @@ export default defineSchema({
   requests311: defineTable(vRequests311Row)
     .index("by_run_key", ["runId", "kind", "place", "year", "type"])
     .index("by_run_kind_place", ["runId", "kind", "place"])
-    .index("by_run", ["runId"]),
+    .index("by_run", ["runId"])
+    .index("by_run_step", ["runId", "step"]),
   requests311Runs: defineTable(vRequests311Run).index("by_file", ["file"]).index("by_runId", ["runId"]),
   // Health Compass Milwaukee's figures, one row per place (37 ZIPs, the county, the city), replaced weekly together.
   healthTopics: defineTable(vHealthTopic).index("by_key", ["key"]),
