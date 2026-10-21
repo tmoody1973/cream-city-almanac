@@ -20,6 +20,8 @@ The 311 count (decision 057) runs as a chain of steps of 5,000 requests each. On
 **Option 1. Claude recommended it and Tarik approved it ("do your pick") on 2026-10-20.**
 - A stop costs one rerun of one step (a few minutes), not a 40-minute recount, and no one has to watch for it.
 - The step's totals and its move to the next step are saved together, so a duplicated end can't count twice.
+- Each try of a step has a number, and only the newest try may save or end the run. A copy started by hand while another is still running (how the dev double count happened) can't write. Found in review.
+- Each step is scheduled together with its watchdog, including the final "finish" step, so a step killed before its first save is still rerun. Found in review.
 
 ## What we gave up
 

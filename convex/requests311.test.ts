@@ -19,10 +19,10 @@ const live = () => t.run((ctx) => liveRuns(ctx));
 describe("311 count store", () => {
   it("upserts tallies across calls", async () => {
     const runId = await t.mutation(internal.requests311.startRun, { file: "current", fingerprint: "f1" });
-    await t.mutation(internal.requests311.addTallies, { runId, tallies: [pothole(2, { "1": 2 })], step: 0 });
-    await t.mutation(internal.requests311.endStep, { runId, step: 0, matched: 2, noMatch: 0, noAddress: 1 });
-    await t.mutation(internal.requests311.addTallies, { runId, tallies: [pothole(3, { "1": 1, "4": 2 })], step: 5000 });
-    await t.mutation(internal.requests311.endStep, { runId, step: 5000, matched: 3, noMatch: 1, noAddress: 0 });
+    await t.mutation(internal.requests311.addTallies, { runId, tallies: [pothole(2, { "1": 2 })], step: 0, attempt: 0 });
+    await t.mutation(internal.requests311.endStep, { runId, step: 0, attempt: 0, matched: 2, noMatch: 0, noAddress: 1 });
+    await t.mutation(internal.requests311.addTallies, { runId, tallies: [pothole(3, { "1": 1, "4": 2 })], step: 5000, attempt: 0 });
+    await t.mutation(internal.requests311.endStep, { runId, step: 5000, attempt: 0, matched: 3, noMatch: 1, noAddress: 0 });
     const [r] = await rows(runId);
     expect(r).toMatchObject({ requests: 5, closed: 5, days: { "1": 3, "4": 2 } });
     const run = await t.run((ctx) => ctx.db.query("requests311Runs").withIndex("by_runId", (q) => q.eq("runId", runId)).first());
@@ -31,11 +31,11 @@ describe("311 count store", () => {
 
   it("readers see the old run until finish, then the old rows are deleted", async () => {
     const a = await t.mutation(internal.requests311.startRun, { file: "current", fingerprint: "f1" });
-    await t.mutation(internal.requests311.addTallies, { runId: a, tallies: [pothole(5)], step: 0 });
+    await t.mutation(internal.requests311.addTallies, { runId: a, tallies: [pothole(5)], step: 0, attempt: 0 });
     await t.mutation(internal.requests311.finishRun, { runId: a });
     vi.advanceTimersByTime(1000);
     const b = await t.mutation(internal.requests311.startRun, { file: "current", fingerprint: "f2" });
-    await t.mutation(internal.requests311.addTallies, { runId: b, tallies: [pothole(7)], step: 0 });
+    await t.mutation(internal.requests311.addTallies, { runId: b, tallies: [pothole(7)], step: 0, attempt: 0 });
     expect((await live()).current?.runId).toBe(a);
     await t.mutation(internal.requests311.finishRun, { runId: b });
     expect((await live()).current?.runId).toBe(b);
@@ -46,7 +46,7 @@ describe("311 count store", () => {
 
   it("a failed run never goes live and its rows are deleted", async () => {
     const a = await t.mutation(internal.requests311.startRun, { file: "historical", fingerprint: "f1" });
-    await t.mutation(internal.requests311.addTallies, { runId: a, tallies: [pothole(5)], step: 0 });
+    await t.mutation(internal.requests311.addTallies, { runId: a, tallies: [pothole(5)], step: 0, attempt: 0 });
     await t.mutation(internal.requests311.failRun, { runId: a, note: "Census geocoder failed: 500" });
     await t.finishAllScheduledFunctions(vi.runAllTimers);
     expect((await live()).historical).toBeNull();
@@ -223,39 +223,43 @@ describe("311 refresh bookkeeping (review: Important 4, 5)", () => {
 describe("a step that stops partway", () => {
   const WATCH = 15 * 60_000;
   const cityRow = (requests: number) => ({ kind: "city" as const, place: "city", year: 2026, type: "Potholes", requests, closed: 0, days: {} });
+  const setTotal = (runId: string, total: number, next = 0) => t.run(async (ctx) => {
+    const run = await ctx.db.query("requests311Runs").withIndex("by_runId", (q) => q.eq("runId", runId)).first();
+    await ctx.db.patch(run!._id, { total, next });
+  });
   const runOf = (runId: string) => t.run((ctx) => ctx.db.query("requests311Runs").withIndex("by_runId", (q) => q.eq("runId", runId)).first());
 
   it("rolls back a half-saved step to where the last finished step left it", async () => {
     const runId = await t.mutation(internal.requests311.startRun, { file: "current", fingerprint: "f" });
-    await t.mutation(internal.requests311.addTallies, { runId, tallies: [pothole(2, { "1": 2 })], step: 0 });
-    await t.mutation(internal.requests311.endStep, { runId, step: 0, matched: 2, noMatch: 0, noAddress: 0 });
+    await t.mutation(internal.requests311.addTallies, { runId, tallies: [pothole(2, { "1": 2 })], step: 0, attempt: 0 });
+    await t.mutation(internal.requests311.endStep, { runId, step: 0, attempt: 0, matched: 2, noMatch: 0, noAddress: 0 });
     // Step 5000 saves one batch, then dies.
-    await t.mutation(internal.requests311.addTallies, { runId, tallies: [pothole(3, { "4": 3 }), cityRow(3)], step: 5000 });
+    await t.mutation(internal.requests311.addTallies, { runId, tallies: [pothole(3, { "4": 3 }), cityRow(3)], step: 5000, attempt: 0 });
     while ((await t.mutation(internal.requests311.rollbackStep, { runId, step: 5000 })) > 0);
     expect(await rows(runId)).toEqual([expect.objectContaining({ kind: "hood", requests: 2, closed: 2, days: { "1": 2 } })]);
     // Redone in full, it counts once.
-    await t.mutation(internal.requests311.addTallies, { runId, tallies: [pothole(3, { "4": 3 }), cityRow(3)], step: 5000 });
-    await t.mutation(internal.requests311.endStep, { runId, step: 5000, matched: 3, noMatch: 0, noAddress: 0 });
+    await t.mutation(internal.requests311.addTallies, { runId, tallies: [pothole(3, { "4": 3 }), cityRow(3)], step: 5000, attempt: 0 });
+    await t.mutation(internal.requests311.endStep, { runId, step: 5000, attempt: 0, matched: 3, noMatch: 0, noAddress: 0 });
     expect((await rows(runId)).map((r) => [r.kind, r.requests]).sort()).toEqual([["city", 3], ["hood", 5]]);
     expect(await runOf(runId)).toMatchObject({ matched: 5, next: 10000 });
   });
 
   it("counts a step's totals once, even if its end is sent twice", async () => {
     const runId = await t.mutation(internal.requests311.startRun, { file: "current", fingerprint: "f" });
-    await t.mutation(internal.requests311.endStep, { runId, step: 0, matched: 4, noMatch: 1, noAddress: 2 });
-    await t.mutation(internal.requests311.endStep, { runId, step: 0, matched: 4, noMatch: 1, noAddress: 2 });
+    await t.mutation(internal.requests311.endStep, { runId, step: 0, attempt: 0, matched: 4, noMatch: 1, noAddress: 2 });
+    await t.mutation(internal.requests311.endStep, { runId, step: 0, attempt: 0, matched: 4, noMatch: 1, noAddress: 2 });
     expect(await runOf(runId)).toMatchObject({ matched: 4, noMatch: 1, noAddress: 2, next: 5000 });
-    await expect(t.mutation(internal.requests311.addTallies, { runId, tallies: [pothole(1)], step: 0 })).rejects.toThrow(/step/);
+    await expect(t.mutation(internal.requests311.addTallies, { runId, tallies: [pothole(1)], step: 0, attempt: 0 })).rejects.toThrow(/step/);
   });
 
   it("reruns a step that went quiet, undoing what it half-saved, and the file counts exactly", async () => {
     await seedHoods();
     fake({ rows: { [CUR]: FILE7, [HIST]: [] }, fp: { [CUR]: ["c1"], [HIST]: ["h1"] }, places: PLACES });
     const runId = await t.mutation(internal.requests311.startRun, { file: "current", fingerprint: "7|c1|x" });
-    await t.mutation(internal.requests311.setTotal, { runId, total: 7 });
+    await setTotal(runId, 7);
     // The first try at step 0 starts, saves a stray batch, and is killed.
-    expect(await t.mutation(internal.requests311.beginStep, { runId, step: 0 })).not.toBeNull();
-    await t.mutation(internal.requests311.addTallies, { runId, tallies: [cityRow(100)], step: 0 });
+    const first = await t.mutation(internal.requests311.beginStep, { runId, step: 0 });
+    await t.mutation(internal.requests311.addTallies, { runId, tallies: [cityRow(100)], step: 0, attempt: first!.attempt });
     vi.advanceTimersByTime(WATCH);
     await t.finishAllScheduledFunctions(vi.runAllTimers);
     expect((await live()).current?.runId).toBe(runId);
@@ -266,14 +270,42 @@ describe("a step that stops partway", () => {
 
   it("a stale copy of a finished step does nothing", async () => {
     const runId = await t.mutation(internal.requests311.startRun, { file: "current", fingerprint: "f" });
-    await t.mutation(internal.requests311.setTotal, { runId, total: 9000 });
-    await t.mutation(internal.requests311.endStep, { runId, step: 0, matched: 1, noMatch: 0, noAddress: 0 });
+    await setTotal(runId, 9000);
+    await t.mutation(internal.requests311.endStep, { runId, step: 0, attempt: 0, matched: 1, noMatch: 0, noAddress: 0 });
     expect(await t.mutation(internal.requests311.beginStep, { runId, step: 0 })).toBeNull();
+  });
+
+  it("a replaced try of a step can't write to the run or fail it (review: two copies of one step)", async () => {
+    const runId = await t.mutation(internal.requests311.startRun, { file: "current", fingerprint: "f" });
+    await setTotal(runId, 7);
+    const a = await t.mutation(internal.requests311.beginStep, { runId, step: 0 });
+    const b = await t.mutation(internal.requests311.beginStep, { runId, step: 0 });
+    await expect(t.mutation(internal.requests311.addTallies, { runId, tallies: [pothole(1)], step: 0, attempt: a!.attempt })).rejects.toThrow(/step/);
+    await t.mutation(internal.requests311.endStep, { runId, step: 0, attempt: a!.attempt, matched: 9, noMatch: 0, noAddress: 0 });
+    expect(await t.mutation(internal.requests311.failRun, { runId, note: "x", step: 0, attempt: a!.attempt })).toBe(false);
+    expect(await runOf(runId)).toMatchObject({ status: "running", matched: 0, next: 0, attempt: b!.attempt });
+  });
+
+  it("retries what comes after a step when it's killed before it starts (review: finish had no watchdog)", async () => {
+    await seedHoods();
+    fake({ rows: { [CUR]: FILE7, [HIST]: [] }, fp: { [CUR]: ["c1"], [HIST]: ["h1"] }, places: PLACES });
+    const runId = await t.mutation(internal.requests311.startRun, { file: "current", fingerprint: "7|c1|x" });
+    await setTotal(runId, 7);
+    await t.mutation(internal.requests311.addTallies, { runId, tallies: [{ ...cityRow(7), year: 2026 }], step: 0, attempt: 0 });
+    await t.mutation(internal.requests311.endStep, { runId, step: 0, attempt: 0, matched: 5, noMatch: 1, noAddress: 1 });
+    // Convex kills the action endStep scheduled before its first save.
+    await t.run(async (ctx) => {
+      for (const f of await ctx.db.system.query("_scheduled_functions").collect())
+        if (f.state.kind === "pending" && f.scheduledTime <= Date.now()) await ctx.scheduler.cancel(f._id);
+    });
+    vi.advanceTimersByTime(WATCH);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    expect((await live()).current?.runId).toBe(runId);
   });
 
   it("fails the run after a step stops three times, keeping the old counts", async () => {
     const runId = await t.mutation(internal.requests311.startRun, { file: "current", fingerprint: "f" });
-    await t.mutation(internal.requests311.setTotal, { runId, total: 7 });
+    await setTotal(runId, 7);
     for (let i = 0; i < 3; i++) await t.mutation(internal.requests311.beginStep, { runId, step: 0 });
     await t.mutation(internal.requests311.watchStep, { runId, step: 0, attempt: 3 });
     expect(await runOf(runId)).toMatchObject({ status: "failed", note: "A counting step stopped 3 times" });
@@ -285,7 +317,7 @@ describe("count311", () => {
     ({ kind, place, year, type, requests, closed: Object.values(days).reduce((s, n) => s + n, 0), days });
   const makeLive = async (file: "current" | "historical", tallies: ReturnType<typeof tally>[]) => {
     const runId = await t.mutation(internal.requests311.startRun, { file, fingerprint: "f" });
-    await t.mutation(internal.requests311.addTallies, { runId, tallies, step: 0 });
+    await t.mutation(internal.requests311.addTallies, { runId, tallies, step: 0, attempt: 0 });
     await t.mutation(internal.requests311.finishRun, { runId });
   };
   const seed = async () => {
