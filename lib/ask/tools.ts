@@ -21,8 +21,9 @@ export type StopsAnswer = FunctionReturnType<typeof api.stops.countStops>;
 export type TurnoutAnswer = FunctionReturnType<typeof api.elections.countTurnout>;
 export type ZipAnswer = FunctionReturnType<typeof api.zips.zipProfile>;
 export type FireAnswer = FunctionReturnType<typeof api.fire.fireHistory>;
+export type Requests311Answer = FunctionReturnType<typeof api.requests311.count311>;
 export type ZipHealthAnswer = FunctionReturnType<typeof api.health.zipHealth>;
-export type AskToolName = "searchCatalog" | "showDataset" | "previewData" | "getNumber" | "readReport" | "countRecords" | "rankTracts" | "compareYears" | "relateTracts" | "timeSpan" | "factSheet" | "findPlace" | "boundariesFor" | "countStops" | "countTurnout" | "zipProfile" | "fireHistory" | "zipHealth";
+export type AskToolName = "searchCatalog" | "showDataset" | "previewData" | "getNumber" | "readReport" | "countRecords" | "rankTracts" | "compareYears" | "relateTracts" | "timeSpan" | "factSheet" | "findPlace" | "boundariesFor" | "countStops" | "countTurnout" | "zipProfile" | "fireHistory" | "zipHealth" | "count311";
 
 export interface AskBackend {
   search(a: { query: string; topic?: string; place?: string; year?: number }): Promise<SearchResponse>;
@@ -41,6 +42,7 @@ export interface AskBackend {
   turnout(a: z.infer<typeof turnoutParams>): Promise<TurnoutAnswer>;
   zip(a: z.infer<typeof zipParams>): Promise<ZipAnswer>;
   fire(a: z.infer<typeof fireParams>): Promise<FireAnswer>;
+  requests311(a: z.infer<typeof requests311Params>): Promise<Requests311Answer>;
   health(a: z.infer<typeof zipHealthParams>): Promise<ZipHealthAnswer>;
 }
 
@@ -103,6 +105,14 @@ export const fireParams = z.object({
   type: z.string().max(80).optional().describe("A call type such as Auto Fire, for calls only"),
   from: z.number().int().optional(),
   to: z.number().int().optional(),
+});
+// count311's arguments (spec 2026-10-20-311-by-neighborhood §5).
+export const requests311Params = z.object({
+  place: z.string().max(80).optional().describe("A City neighborhood (Arlington Heights) or a Data You Can Use area (United Community); leave empty for citywide"),
+  type: z.string().max(80).optional().describe("potholes, streetlights, dumping, or a 311 request type such as Dead Animal; leave empty for every type"),
+  from: z.number().int().optional(),
+  to: z.number().int().optional(),
+  groupBy: z.enum(["type", "year"]).optional(),
 });
 export const zipParams = z.object({ zip: z.string().max(12).describe("One 5-digit ZIP code, e.g. 53212.") });
 const side = z.enum(["high", "low"]);
@@ -283,6 +293,12 @@ export function askTools(b: AskBackend): AskTool[] {
       description: "Milwaukee Fire Department calls and response times by year, 2015 to now, from stored yearly totals: calls per year (all, EMS, or other; or one call type), and median time to dispatch or time to arrive. Call types run 2015–2023 only. Any year's total calls or response times come from here, even one year (set from and to to that year); only breakdowns within a year by ZIP or place go to countRecords or timeSpan. If it returns choose, pick a type from its choices and call again; if refused, tell the person why. The card carries every figure and note; don't restate them.",
       parameters: fireParams,
       execute: (a: z.infer<typeof fireParams>) => b.fire(a),
+    },
+    {
+      name: "count311",
+      description: "City 311 service requests (potholes, streetlights, dumping, or any request type) for a City neighborhood, a Data You Can Use area, or citywide, by year 2020 to now, from stored counts: requests, how many closed, and median days to close, next to the city. With no years it answers the newest year; from alone runs to the newest; to alone runs from 2020. If it returns choose, no-place or no-type, offer its choices; never answer citywide for a place it couldn't find. The card carries every figure and note; don't restate them.",
+      parameters: requests311Params,
+      execute: (a: z.infer<typeof requests311Params>) => b.requests311(a),
     },
     {
       name: "rankTracts",

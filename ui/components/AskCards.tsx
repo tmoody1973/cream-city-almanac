@@ -8,7 +8,7 @@ import { passageBlocks } from "@/ui/lib/askPassage";
 import { propertyCountSummary } from "@/ui/lib/tractSummary";
 import { formatPortraitMargin, formatPortraitNumber } from "@/ui/lib/portrait";
 import { api } from "@/convex/_generated/api";
-import { boundaryParams, changeParams, countParams, rankParams, relateParams, spanParams, stopsParams, turnoutParams, zipParams, fireParams, zipHealthParams, type ZipHealthAnswer, type StopsAnswer, type TurnoutAnswer, type ZipAnswer, type FireAnswer, type SheetResult, type PlaceAnswer, type BoundariesAnswer, type ChangeResult, type CountForModel, type CountResult, type RankResult, type RelateResult, type SpanResult } from "@/lib/ask/tools";
+import { boundaryParams, changeParams, countParams, rankParams, relateParams, spanParams, stopsParams, turnoutParams, zipParams, fireParams, requests311Params, zipHealthParams, type Requests311Answer, type ZipHealthAnswer, type StopsAnswer, type TurnoutAnswer, type ZipAnswer, type FireAnswer, type SheetResult, type PlaceAnswer, type BoundariesAnswer, type ChangeResult, type CountForModel, type CountResult, type RankResult, type RelateResult, type SpanResult } from "@/lib/ask/tools";
 import { CityMap } from "./CityMapLoader";
 import { LivePreview } from "./LivePreview";
 import { OpenLink, type Open } from "./OpenLink";
@@ -35,6 +35,8 @@ import { NeighborhoodRankCard, NeighborhoodRelateCard } from "./NeighborhoodCard
 import { nFollowUps } from "@/ui/lib/neighborhoodText";
 import { zipHealthChoices, zipHealthFollowUps, zipHealthRefusal } from "@/ui/lib/zipHealthText";
 import { FireHistoryCard } from "./FireHistoryCard";
+import { Requests311Card } from "./Requests311Card";
+import { requests311FollowUps } from "@/ui/lib/requests311Text";
 import { fireChoices, fireFollowUps } from "@/ui/lib/fireText";
 import { zipRefusal } from "@/ui/lib/zipText";
 import { turnoutFollowUps } from "@/ui/lib/turnoutText";
@@ -485,6 +487,17 @@ export function AskCards({ onOpen }: { onOpen?: (search: string) => void }) {
     if (r.status === "choose") return <FollowUps pick items={fireChoices(r)} id={props.toolCallId} />;
     if (r.status === "refused") return <p className={styles.failed} data-card="fire-refusal">{r.reason}</p>;
     return <><ShareScope tool="fireHistory" args={props.parameters}><FireHistoryCard r={r} /></ShareScope><FollowUps items={fireFollowUps(r)} id={props.toolCallId} /></>;
+  } }, []);
+
+  useRenderTool({ name: "count311", parameters: requests311Params, render: (props) => {
+    if (props.status !== "complete") return <Busy />;
+    const r = parse<Requests311Answer>(props.result);
+    if (!r) return <Failed />;
+    if (r.status === "empty") return <p className={styles.failed} data-card="requests-311-refusal">311 requests haven&rsquo;t been counted yet. Try again after the next weekly refresh.</p>;
+    if (r.status === "choose" || r.status === "no-type") return <FollowUps pick items={r.choices.map((c) => ({ label: c.toUpperCase(), question: r.status === "choose" ? `${props.parameters.type ?? "311"} requests in ${c}` : `${c} requests in ${props.parameters.place || "Milwaukee"}` }))} id={props.toolCallId} />;
+    if (r.status === "no-years") return <p className={styles.failed} data-card="requests-311-refusal">The City&rsquo;s 311 files cover {r.first} to {r.last}; ask for years in that range.</p>;
+    if (r.status === "no-place") return <p className={styles.failed} data-card="requests-311-refusal">No City neighborhood or Data You Can Use area is called &ldquo;{r.asked}&rdquo;.{r.nearest.length ? ` Closest: ${r.nearest.join(", ")}.` : ""}</p>;
+    return <><ShareScope tool="count311" args={props.parameters}><Requests311Card r={r} /></ShareScope><FollowUps items={requests311FollowUps(r)} id={props.toolCallId} /></>;
   } }, []);
 
   useRenderTool({ name: "getNumber", parameters: z.object({ neighborhood: z.string() }), render: (props) => {

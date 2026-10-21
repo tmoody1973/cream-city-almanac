@@ -16,6 +16,7 @@ async function rerun(ctx: ActionCtx, tool: ShareTool, args: never): Promise<unkn
     case "countStops": return ctx.runQuery(api.stops.countStops, args);
     case "countTurnout": return ctx.runQuery(api.elections.countTurnout, args);
     case "fireHistory": return ctx.runQuery(api.fire.fireHistory, args);
+    case "count311": return ctx.runQuery(api.requests311.count311, args);
     case "zipHealth": return ctx.runQuery(api.health.zipHealth, args);
     case "countRecords": return ctx.runAction(api.city.countRecords, args);
     case "timeSpan": return ctx.runAction(api.spans.timeSpan, args);

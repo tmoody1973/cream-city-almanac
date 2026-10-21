@@ -37,3 +37,7 @@ Dated entries, written by Tarik. Each answers three things: what did we expect, 
 2. We expected tract IDs to differ between DYCU's data tables and its report definitions. What happened: one formula connects them (a tract ID is the county code followed by the tract number times 100), so a tract can be named from either. What do we now believe?
 3. We expected a column's margin of error to be named the same way everywhere. What happened: it was not, and a rule that looked for one spelling would have left most columns without a range; matching DYCU's own definitions found 123 of 146. What do we now believe?
 -->
+
+<!-- Suggested entry (Tarik to write), 2026-10-20, 311 counts. See decision 058.
+We expected a counting step that Convex stopped ("Transient error while executing action") to have saved nothing, because the run's "matched" total hadn't moved, so resuming it looked safe. What happened: the step had saved most of its counts before it stopped; the totals were simply saved in a different batch. Resuming counted those 5,000 rows twice, and 2020 came out 4,941 over the City's own figure. The year-by-year check against the City's totals caught it. What do we now believe?
+-->

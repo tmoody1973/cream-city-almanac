@@ -94,7 +94,7 @@ export function newestTurnCallIds(messages: CallMsg[]): Set<string> {
 
 // When an answer reaches an analysis card, its catalog searches and dataset sheets were lookups on the way there: they
 // fold (spec 2026-10-15-plain-replies §3). A preview never folds: live rows or a chart can be the answer itself.
-const ANALYSIS = new Set(["countRecords", "timeSpan", "rankTracts", "compareYears", "relateTracts", "getNumber", "factSheet", "zipProfile", "zipHealth", "fireHistory", "countStops", "countTurnout", "findPlace", "boundariesFor", "readReport"]);
+const ANALYSIS = new Set(["countRecords", "timeSpan", "rankTracts", "compareYears", "relateTracts", "getNumber", "factSheet", "zipProfile", "zipHealth", "fireHistory", "count311", "countStops", "countTurnout", "findPlace", "boundariesFor", "readReport"]);
 const LOOKUPS = new Set(["searchCatalog", "showDataset"]);
 
 // Only an analysis that answered folds the lookups: after a refusal ("no locations", "not found") or while the call

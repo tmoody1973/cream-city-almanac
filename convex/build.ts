@@ -407,13 +407,19 @@ export const finish = internalAction({
     } catch (e) {
       fireNotes = [`Fire history refresh failed: ${message(e)}`];
     }
+    let threeOneOneNotes: string[];
+    try {
+      threeOneOneNotes = await ctx.runAction(internal.requests311.refresh311, {});
+    } catch (e) {
+      threeOneOneNotes = [`311 refresh failed: ${message(e)}`];
+    }
     let healthNotes: string[];
     try {
       healthNotes = await ctx.runAction(internal.health.refreshHealth, {});
     } catch (e) {
       healthNotes = [`Health Compass refresh failed: ${message(e)}`];
     }
-    await ctx.runMutation(internal.buildStore.completeBuild, { buildId, orphanChunksDeleted: deleted, notes: [...neighborhoodNotes, ...boundaryNotes, ...cityNotes, ...stopNotes, ...turnoutNotes, ...fireNotes, ...healthNotes] });
+    await ctx.runMutation(internal.buildStore.completeBuild, { buildId, orphanChunksDeleted: deleted, notes: [...neighborhoodNotes, ...boundaryNotes, ...cityNotes, ...stopNotes, ...turnoutNotes, ...fireNotes, ...threeOneOneNotes, ...healthNotes] });
   },
 });
 

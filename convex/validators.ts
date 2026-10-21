@@ -156,3 +156,28 @@ export const vFireType = v.object({ type: v.string(), calls: v.number() });
 export const vHealthLayer = v.union(v.literal("zip"), v.literal("county"), v.literal("place"));
 export const vHealthTopic = v.object({ key: v.string(), name: v.string(), description: v.string(), units: v.string(), decimals: v.number(), isCount: v.boolean(), keywords: v.string(), team: v.union(v.string(), v.null()), sources: v.array(v.string()) });
 export const vHealthFigure = v.object({ topic: v.string(), period: v.string(), value: v.number(), se: v.union(v.number(), v.null()) });
+
+// 311 counts (spec 2026-10-20-311-by-neighborhood): place is "city", a City neighborhood name, a tract GEOID, or for
+// "unplaced" the reason (noAddress, noMatch, outside). days is { whole days to close: requests }.
+export const vRequests311Kind = v.union(v.literal("city"), v.literal("hood"), v.literal("tract"), v.literal("unplaced"));
+export const vRequests311Tally = v.object({
+  kind: vRequests311Kind, place: v.string(), year: v.number(), type: v.string(),
+  requests: v.number(), closed: v.number(), days: v.record(v.string(), v.number()),
+});
+// step: the offset of the step that last added to the row, and before: the row's figures ahead of that step, so a step
+// stopped partway can be rolled back and redone without counting twice.
+export const vRequests311Row = v.object({
+  runId: v.string(), ...vRequests311Tally.fields, step: v.optional(v.number()),
+  before: v.optional(v.object({ requests: v.number(), closed: v.number(), days: v.record(v.string(), v.number()) })),
+});
+export const vRequests311File = v.union(v.literal("current"), v.literal("historical"));
+export const vRequests311Run = v.object({
+  file: vRequests311File, runId: v.string(),
+  status: v.union(v.literal("running"), v.literal("live"), v.literal("failed"), v.literal("retired")),
+  // The file's contents in one line (rows | newest creation | newest close): the City re-uploads both files daily, so
+  // its last_modified date can't tell a changed file from a re-pushed one. hoods: the City neighborhoods counted.
+  fingerprint: v.union(v.string(), v.null()), hoods: v.array(v.string()), started: v.number(), finished: v.union(v.number(), v.null()), note: v.union(v.string(), v.null()),
+  matched: v.number(), noMatch: v.number(), noAddress: v.number(),
+  // next: the offset of the next step to count; attempt: tries at that step; queue: files to count after this one.
+  total: v.optional(v.number()), next: v.optional(v.number()), attempt: v.optional(v.number()), queue: v.optional(v.array(vRequests311File)),
+});

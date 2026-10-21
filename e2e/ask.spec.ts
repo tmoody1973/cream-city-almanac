@@ -273,6 +273,15 @@ test.describe("signed in", () => {
     await expect(card.getByTitle("From the City of Milwaukee's open data")).toBeVisible();
   });
 
+  test("a 311 question draws the place-vs-city card", async ({ page }) => {
+    await ask(page, "Show me potholes in arlington heights");
+    const card = page.locator("[data-card=requests-311]:visible");
+    await expect(card).toBeVisible({ timeout: 40_000 });
+    await expect(card).toContainText("Pothole requests in Arlington Heights");
+    await expect(card.locator("thead")).toContainText("City");
+    await expect(card).toContainText("311 dates have no time of day, so a request closed the same day counts as 0 days.");
+  });
+
   test("a City-employee tenure question draws a so-far card in years (L4)", async ({ page }) => {
     test.skip(!(await page.request.get("https://data.milwaukee.gov/api/3/action/status_show").then((r) => r.ok()).catch(() => false)), "City API unreachable");
     await ask(page, "How long have city employees worked here, by department?");

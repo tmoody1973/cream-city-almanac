@@ -13,6 +13,7 @@ export function convexBackend(token: string): AskBackend {
     turnout: (a) => fetchQuery(api.elections.countTurnout, a),
     zip: (a) => fetchAction(api.zips.zipProfile, a, { token }),
     fire: (a) => fetchQuery(api.fire.fireHistory, a),
+    requests311: (a) => fetchQuery(api.requests311.count311, a),
     health: (a) => fetchQuery(api.health.zipHealth, a),
     place: (a) => fetchAction(api.places.findPlace, a, { token }),
     boundaries: (a) => fetchAction(api.places.boundariesFor, a, { token }),
